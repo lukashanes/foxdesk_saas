@@ -92,10 +92,18 @@ function current_user($force_refresh = false)
 
     if ($user === null || $force_refresh) {
         $sql = "SELECT * FROM users WHERE id = ? AND is_active = 1";
+        $params = [$_SESSION['user_id']];
         if (users_deleted_at_column_exists()) {
             $sql .= " AND deleted_at IS NULL";
         }
-        $user = db_fetch_one($sql, [$_SESSION['user_id']]);
+        if (!empty($_SESSION['tenant_id']) && tenant_scoped_table_has_column('users')) {
+            $sql .= " AND tenant_id = ?";
+            $params[] = (int) $_SESSION['tenant_id'];
+        }
+        $user = db_fetch_one($sql, $params);
+        if ($user && function_exists('set_current_tenant_from_user')) {
+            set_current_tenant_from_user($user);
+        }
     }
 
     return $user;
@@ -148,10 +156,12 @@ function is_agent()
 function login($email, $password)
 {
     $sql = "SELECT * FROM users WHERE email = ? AND is_active = 1";
+    $params = [$email];
     if (users_deleted_at_column_exists()) {
         $sql .= " AND deleted_at IS NULL";
     }
-    $user = db_fetch_one($sql, [$email]);
+    $sql .= " ORDER BY id ASC LIMIT 1";
+    $user = db_fetch_one($sql, $params);
 
     if ($user && password_verify($password, $user['password'])) {
         // Clear any stale remember-me cookie from a previous user
@@ -163,6 +173,9 @@ function login($email, $password)
         $_SESSION['user_email'] = $user['email'];
         $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
         $_SESSION['user_role'] = $user['role'];
+        if (function_exists('set_current_tenant_from_user')) {
+            set_current_tenant_from_user($user);
+        }
         $allowed_langs = ['en', 'cs', 'de', 'it', 'es'];
         $lang = strtolower(trim((string) ($user['language'] ?? '')));
         if (!in_array($lang, $allowed_langs, true)) {
@@ -252,7 +265,13 @@ function set_remember_token($user_id)
 {
     if (!ensure_remember_token_column()) return;
 
-    $user = db_fetch_one("SELECT * FROM users WHERE id = ? AND is_active = 1", [(int) $user_id]);
+    $sql = "SELECT * FROM users WHERE id = ? AND is_active = 1";
+    $params = [(int) $user_id];
+    if (tenant_scoped_table_has_column('users')) {
+        $sql .= " AND tenant_id = ?";
+        $params[] = current_tenant_id();
+    }
+    $user = db_fetch_one($sql, $params);
     if (!$user || !remember_me_allowed_for_user($user)) {
         try {
             db_update('users', ['remember_token' => null], 'id = ?', [(int) $user_id]);
@@ -318,6 +337,9 @@ function validate_remember_token()
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['user_name']  = $user['first_name'] . ' ' . $user['last_name'];
     $_SESSION['user_role']  = $user['role'];
+    if (function_exists('set_current_tenant_from_user')) {
+        set_current_tenant_from_user($user);
+    }
 
     $allowed_langs = ['en', 'cs', 'de', 'it', 'es'];
     $lang = strtolower(trim((string) ($user['language'] ?? '')));
@@ -373,10 +395,18 @@ function get_user($id)
 {
     static $cache = [];
     $id = (int) $id;
-    if (!isset($cache[$id])) {
-        $cache[$id] = db_fetch_one("SELECT * FROM users WHERE id = ?", [$id]);
+    $tenant_id = function_exists('current_tenant_id') ? current_tenant_id() : 0;
+    $key = $tenant_id . ':' . $id;
+    if (!isset($cache[$key])) {
+        $sql = "SELECT * FROM users WHERE id = ?";
+        $params = [$id];
+        if (tenant_scoped_table_has_column('users')) {
+            $sql .= " AND tenant_id = ?";
+            $params[] = $tenant_id;
+        }
+        $cache[$key] = db_fetch_one($sql, $params);
     }
-    return $cache[$id];
+    return $cache[$key];
 }
 
 /**
@@ -389,12 +419,17 @@ function get_all_users()
     if (users_deleted_at_column_exists()) {
         $conditions[] = "deleted_at IS NULL";
     }
+    $params = [];
+    if (tenant_scoped_table_has_column('users')) {
+        $conditions[] = "tenant_id = ?";
+        $params[] = current_tenant_id();
+    }
     $conditions[] = "email NOT LIKE 'deleted-user-%@invalid.local'";
     if (!empty($conditions)) {
         $sql .= " WHERE " . implode(' AND ', $conditions);
     }
     $sql .= " ORDER BY first_name, last_name";
-    return db_fetch_all($sql);
+    return db_fetch_all($sql, $params);
 }
 
 /**
@@ -406,9 +441,14 @@ function get_clients()
     if (users_deleted_at_column_exists()) {
         $sql .= " AND deleted_at IS NULL";
     }
+    $params = [];
+    if (tenant_scoped_table_has_column('users')) {
+        $sql .= " AND tenant_id = ?";
+        $params[] = current_tenant_id();
+    }
     $sql .= " AND email NOT LIKE 'deleted-user-%@invalid.local'";
     $sql .= " ORDER BY first_name, last_name";
-    return db_fetch_all($sql);
+    return db_fetch_all($sql, $params);
 }
 
 /**
@@ -418,7 +458,7 @@ function create_user($email, $password, $first_name, $last_name = '', $role = 'u
 {
     $hash = password_hash($password, PASSWORD_DEFAULT);
 
-    return db_insert('users', [
+    $data = [
         'email' => $email,
         'password' => $hash,
         'first_name' => $first_name,
@@ -427,7 +467,12 @@ function create_user($email, $password, $first_name, $last_name = '', $role = 'u
         'language' => $language,
         'is_active' => 1,
         'created_at' => date('Y-m-d H:i:s')
-    ]);
+    ];
+    if (tenant_scoped_table_has_column('users')) {
+        $data['tenant_id'] = current_tenant_id();
+    }
+
+    return db_insert('users', $data);
 }
 
 /**
@@ -510,10 +555,15 @@ function authenticate_api_token()
 
     // Load the linked user
     $sql = "SELECT * FROM users WHERE id = ? AND is_active = 1";
+    $params = [$token_row['user_id']];
     if (users_deleted_at_column_exists()) {
         $sql .= " AND deleted_at IS NULL";
     }
-    $user = db_fetch_one($sql, [$token_row['user_id']]);
+    if (!empty($token_row['tenant_id']) && tenant_scoped_table_has_column('users')) {
+        $sql .= " AND tenant_id = ?";
+        $params[] = (int) $token_row['tenant_id'];
+    }
+    $user = db_fetch_one($sql, $params);
 
     if (!$user) {
         return null;
@@ -524,6 +574,9 @@ function authenticate_api_token()
     $_SESSION['user_email'] = $user['email'];
     $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
     $_SESSION['user_role'] = $user['role'];
+    if (function_exists('set_current_tenant_from_user')) {
+        set_current_tenant_from_user($user);
+    }
 
     // Update last_used_at (fire-and-forget, don't fail on error)
     update_token_last_used((int) $token_row['id']);

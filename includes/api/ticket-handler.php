@@ -66,12 +66,16 @@ function api_get_active_organization_by_id($organization_id) {
         return null;
     }
 
+    $params = [$organization_id];
     $sql = "SELECT * FROM organizations WHERE id = ?";
     if (function_exists('column_exists') && column_exists('organizations', 'is_active')) {
         $sql .= " AND is_active = 1";
     }
+    if (function_exists('tenant_sql_filter')) {
+        $sql .= tenant_sql_filter('organizations', '', $params);
+    }
 
-    return db_fetch_one($sql, [$organization_id]);
+    return db_fetch_one($sql, $params);
 }
 
 function api_get_active_ticket_type_by_slug($slug) {

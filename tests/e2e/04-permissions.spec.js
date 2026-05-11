@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const { test, expect, request } = require('@playwright/test');
 const { baseURL } = require('./env');
-const { dbQuery, php, getCsrf } = require('./helpers');
+const { dbQuery, php, getCsrf, login } = require('./helpers');
 
 function sqlString(value) {
   return `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "''")}'`;
@@ -30,14 +30,16 @@ function seedPermissionFixture() {
   dbQuery("DELETE FROM tickets WHERE hash IN ('e2ealpha00000001', 'e2ebeta00000001')");
   dbQuery("DELETE FROM users WHERE email IN ('agent.scope@example.test', 'beta.client@example.test')");
   dbQuery("DELETE FROM organizations WHERE name IN ('E2E Alpha Scope', 'E2E Beta Scope')");
+  const tenant = rowObject(dbQuery("SELECT id FROM tenants WHERE slug = 'default' LIMIT 1"));
+  const tenantId = Number(tenant.id);
 
   dbQuery(`
-    INSERT INTO organizations (name, is_active, created_at)
-    VALUES ('E2E Alpha Scope', 1, NOW())
+    INSERT INTO organizations (tenant_id, name, is_active, created_at)
+    VALUES (${tenantId}, 'E2E Alpha Scope', 1, NOW())
   `);
   dbQuery(`
-    INSERT INTO organizations (name, is_active, created_at)
-    VALUES ('E2E Beta Scope', 1, NOW())
+    INSERT INTO organizations (tenant_id, name, is_active, created_at)
+    VALUES (${tenantId}, 'E2E Beta Scope', 1, NOW())
   `);
 
   const ids = rowObject(dbQuery(`
@@ -63,8 +65,9 @@ function seedPermissionFixture() {
   };
 
   dbQuery(`
-    INSERT INTO users (email, password, first_name, last_name, role, permissions, organization_id, is_active, created_at)
+    INSERT INTO users (tenant_id, email, password, first_name, last_name, role, permissions, organization_id, is_active, created_at)
     VALUES (
+      ${tenantId},
       'agent.scope@example.test',
       ${sqlString(hash)},
       'Agent',
@@ -85,8 +88,9 @@ function seedPermissionFixture() {
   `);
 
   dbQuery(`
-    INSERT INTO users (email, password, first_name, last_name, role, permissions, organization_id, is_active, created_at)
+    INSERT INTO users (tenant_id, email, password, first_name, last_name, role, permissions, organization_id, is_active, created_at)
     VALUES (
+      ${tenantId},
       'beta.client@example.test',
       ${sqlString(hash)},
       'Beta',
@@ -116,10 +120,10 @@ function seedPermissionFixture() {
   const betaUserId = Number(userIds.beta_user_id);
 
   dbQuery(`
-    INSERT INTO tickets (hash, title, description, type, priority_id, user_id, organization_id, status_id, tags, is_archived, created_at)
+    INSERT INTO tickets (tenant_id, hash, title, description, type, priority_id, user_id, organization_id, status_id, tags, is_archived, created_at)
     VALUES
-      ('e2ealpha00000001', 'Alpha Scope Visible Ticket', 'Only alpha scoped agents can see this', 'general', ${priorityId}, ${agentId}, ${alphaOrgId}, ${statusId}, 'alpha-visible', 0, NOW()),
-      ('e2ebeta00000001', 'Beta Scope Hidden Ticket', 'This must not leak to alpha scoped agents', 'general', ${priorityId}, ${betaUserId}, ${betaOrgId}, ${statusId}, 'beta-hidden', 0, NOW())
+      (${tenantId}, 'e2ealpha00000001', 'Alpha Scope Visible Ticket', 'Only alpha scoped agents can see this', 'general', ${priorityId}, ${agentId}, ${alphaOrgId}, ${statusId}, 'alpha-visible', 0, NOW()),
+      (${tenantId}, 'e2ebeta00000001', 'Beta Scope Hidden Ticket', 'This must not leak to alpha scoped agents', 'general', ${priorityId}, ${betaUserId}, ${betaOrgId}, ${statusId}, 'beta-hidden', 0, NOW())
     ON DUPLICATE KEY UPDATE
       title = VALUES(title),
       description = VALUES(description),
@@ -134,8 +138,8 @@ function seedPermissionFixture() {
   const token = 'e2e-agent-scope-token';
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   dbQuery(`
-    INSERT INTO api_tokens (user_id, name, token_hash, token_prefix, is_active, created_at)
-    VALUES (${agentId}, 'E2E scope token', '${tokenHash}', 'e2e-agent', 1, NOW())
+    INSERT INTO api_tokens (tenant_id, user_id, name, token_hash, token_prefix, is_active, created_at)
+    VALUES (${tenantId}, ${agentId}, 'E2E scope token', '${tokenHash}', 'e2e-agent', 1, NOW())
     ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), is_active = 1
   `);
 
@@ -146,6 +150,48 @@ function seedPermissionFixture() {
     betaUserId,
     betaTicketCode: `TK-${String(Number(betaTicket.id) + 10000).padStart(5, '0')}`,
     token
+  };
+}
+
+function seedTenantIsolationFixture() {
+  dbQuery("DELETE FROM tickets WHERE hash = 'e2etenantb0001'");
+  dbQuery("DELETE FROM users WHERE email = 'tenant-b-admin@example.test'");
+  dbQuery("DELETE FROM organizations WHERE name = 'E2E Tenant B Org'");
+  dbQuery("DELETE FROM tenants WHERE slug = 'tenant-b-e2e'");
+
+  dbQuery(`
+    INSERT INTO tenants (uuid, name, slug, status, created_at)
+    VALUES ('11111111-2222-4333-8444-555555555555', 'Tenant B E2E', 'tenant-b-e2e', 'active', NOW())
+  `);
+  const tenant = rowObject(dbQuery("SELECT id FROM tenants WHERE slug = 'tenant-b-e2e' LIMIT 1"));
+  const tenantId = Number(tenant.id);
+  const passwordHash = php("echo password_hash('TenantBPass123!', PASSWORD_DEFAULT);").trim();
+  const ids = rowObject(dbQuery(`
+    SELECT
+      (SELECT id FROM statuses ORDER BY sort_order ASC, id ASC LIMIT 1) AS status_id,
+      (SELECT id FROM priorities ORDER BY is_default DESC, sort_order ASC, id ASC LIMIT 1) AS priority_id
+  `));
+
+  dbQuery(`
+    INSERT INTO organizations (tenant_id, name, is_active, created_at)
+    VALUES (${tenantId}, 'E2E Tenant B Org', 1, NOW())
+  `);
+  const org = rowObject(dbQuery("SELECT id FROM organizations WHERE name = 'E2E Tenant B Org' LIMIT 1"));
+
+  dbQuery(`
+    INSERT INTO users (tenant_id, email, password, first_name, last_name, role, is_active, organization_id, created_at)
+    VALUES (${tenantId}, 'tenant-b-admin@example.test', ${sqlString(passwordHash)}, 'TenantB', 'Admin', 'admin', 1, ${Number(org.id)}, NOW())
+  `);
+  const user = rowObject(dbQuery("SELECT id FROM users WHERE email = 'tenant-b-admin@example.test' LIMIT 1"));
+
+  dbQuery(`
+    INSERT INTO tickets (tenant_id, hash, title, description, type, priority_id, user_id, organization_id, status_id, tags, is_archived, created_at)
+    VALUES (${tenantId}, 'e2etenantb0001', 'Tenant B Confidential Ticket', 'Must not be visible to default tenant admin', 'general', ${Number(ids.priority_id)}, ${Number(user.id)}, ${Number(org.id)}, ${Number(ids.status_id)}, 'tenant-b-hidden', 0, NOW())
+  `);
+
+  const ticket = rowObject(dbQuery("SELECT id FROM tickets WHERE hash = 'e2etenantb0001' LIMIT 1"));
+  return {
+    ticketCode: `TK-${String(Number(ticket.id) + 10000).padStart(5, '0')}`
   };
 }
 
@@ -199,4 +245,17 @@ test('organization-scoped agent cannot create tickets for hidden users or organi
   });
   expect(hiddenOwner.status()).toBe(403);
   await api.dispose();
+});
+
+test('default tenant admin cannot search tickets from another tenant', async ({ page }) => {
+  const fixture = seedTenantIsolationFixture();
+  await login(page);
+
+  const titleSearch = await page.request.get('/index.php?page=api&action=search-tickets&q=Tenant%20B%20Confidential');
+  expect(titleSearch.status()).toBe(200);
+  expect(await titleSearch.json()).toMatchObject({ success: true, tickets: [] });
+
+  const codeSearch = await page.request.get(`/index.php?page=api&action=search-tickets&q=${fixture.ticketCode}`);
+  expect(codeSearch.status()).toBe(200);
+  expect(await codeSearch.json()).toMatchObject({ success: true, tickets: [] });
 });

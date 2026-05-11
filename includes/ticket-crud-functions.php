@@ -24,7 +24,12 @@ function generate_ticket_hash() {
         }
 
         // Check if hash already exists
-        $existing = db_fetch_one("SELECT id FROM tickets WHERE hash = ?", [$hash]);
+        $params = [$hash];
+        $sql = "SELECT id FROM tickets WHERE hash = ?";
+        if (function_exists('tenant_sql_filter')) {
+            $sql .= tenant_sql_filter('tickets', '', $params);
+        }
+        $existing = db_fetch_one($sql, $params);
         if (!$existing) {
             return $hash;
         }
@@ -42,7 +47,8 @@ function get_ticket_by_hash($hash) {
         return null;
     }
 
-    return db_fetch_one("SELECT t.*,
+    $params = [$hash];
+    $sql = "SELECT t.*,
                                 s.name as status_name, s.color as status_color,
                                 u.first_name, u.last_name, u.email, u.avatar,
                                 o.name as organization_name,
@@ -54,7 +60,12 @@ function get_ticket_by_hash($hash) {
                          LEFT JOIN organizations o ON t.organization_id = o.id
                          LEFT JOIN priorities p ON t.priority_id = p.id
                          LEFT JOIN users a ON t.assignee_id = a.id
-                         WHERE t.hash = ?", [$hash]);
+                         WHERE t.hash = ?";
+    if (function_exists('tenant_sql_filter')) {
+        $sql .= tenant_sql_filter('tickets', 't', $params);
+    }
+
+    return db_fetch_one($sql, $params);
 }
 
 /**
@@ -64,7 +75,12 @@ function get_ticket_id_by_hash($hash) {
     if (empty($hash)) {
         return null;
     }
-    $ticket = db_fetch_one("SELECT id FROM tickets WHERE hash = ?", [$hash]);
+    $params = [$hash];
+    $sql = "SELECT id FROM tickets WHERE hash = ?";
+    if (function_exists('tenant_sql_filter')) {
+        $sql .= tenant_sql_filter('tickets', '', $params);
+    }
+    $ticket = db_fetch_one($sql, $params);
     return $ticket ? (int)$ticket['id'] : null;
 }
 
@@ -254,7 +270,8 @@ function get_tickets_count($filters = []) {
  * Get ticket by ID
  */
 function get_ticket($id) {
-    return db_fetch_one("SELECT t.*,
+    $params = [$id];
+    $sql = "SELECT t.*,
                                 s.name as status_name, s.color as status_color, s.is_closed,
                                 u.first_name, u.last_name, u.email, u.avatar,
                                 o.name as organization_name,
@@ -266,7 +283,12 @@ function get_ticket($id) {
                          LEFT JOIN organizations o ON t.organization_id = o.id
                          LEFT JOIN priorities p ON t.priority_id = p.id
                          LEFT JOIN users a ON t.assignee_id = a.id
-                         WHERE t.id = ?", [$id]);
+                         WHERE t.id = ?";
+    if (function_exists('tenant_sql_filter')) {
+        $sql .= tenant_sql_filter('tickets', 't', $params);
+    }
+
+    return db_fetch_one($sql, $params);
 }
 
 /**
@@ -276,7 +298,8 @@ function get_tickets_by_ids(array $ids) {
     $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
     if (empty($ids)) return [];
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $rows = db_fetch_all("SELECT t.*,
+    $params = $ids;
+    $sql = "SELECT t.*,
                                 s.name as status_name, s.color as status_color, s.is_closed,
                                 u.first_name, u.last_name, u.email, u.avatar,
                                 o.name as organization_name,
@@ -288,7 +311,11 @@ function get_tickets_by_ids(array $ids) {
                          LEFT JOIN organizations o ON t.organization_id = o.id
                          LEFT JOIN priorities p ON t.priority_id = p.id
                          LEFT JOIN users a ON t.assignee_id = a.id
-                         WHERE t.id IN ({$placeholders})", $ids);
+                         WHERE t.id IN ({$placeholders})";
+    if (function_exists('tenant_sql_filter')) {
+        $sql .= tenant_sql_filter('tickets', 't', $params);
+    }
+    $rows = db_fetch_all($sql, $params);
     $keyed = [];
     foreach ($rows as $row) {
         $keyed[(int)$row['id']] = $row;
@@ -413,6 +440,9 @@ function create_ticket($data) {
         'status_id' => $data['status_id'] ?? $default_status['id'],
         'created_at' => date('Y-m-d H:i:s')
     ];
+    if (tenant_scoped_table_has_column('tickets')) {
+        $ticket_data['tenant_id'] = !empty($user['tenant_id']) ? (int) $user['tenant_id'] : tenant_value_for_insert($data);
+    }
 
     // Generate unique hash for secure URL
     if (ticket_hash_column_exists()) {

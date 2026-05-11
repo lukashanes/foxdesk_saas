@@ -4,10 +4,11 @@ const { dbQuery, php, getCsrf, login } = require('./helpers');
 
 function ensureClientUser() {
   const hash = php("echo password_hash('ClientPass123!', PASSWORD_DEFAULT);").trim();
+  const tenantId = Number(dbQuery("SELECT id FROM tenants WHERE slug = 'default' LIMIT 1").trim().split('\n').pop());
   dbQuery(`
-    INSERT INTO users (email, password, first_name, last_name, role, is_active, created_at)
-    VALUES ('client@example.test', '${hash.replaceAll("'", "''")}', 'Client', 'User', 'user', 1, NOW())
-    ON DUPLICATE KEY UPDATE deleted_at = NULL, is_active = 1, role = 'user'
+    INSERT INTO users (tenant_id, email, password, first_name, last_name, role, is_active, created_at)
+    VALUES (${tenantId}, 'client@example.test', '${hash.replaceAll("'", "''")}', 'Client', 'User', 'user', 1, NOW())
+    ON DUPLICATE KEY UPDATE tenant_id = VALUES(tenant_id), deleted_at = NULL, is_active = 1, role = 'user'
   `);
   const output = dbQuery("SELECT id FROM users WHERE email = 'client@example.test' LIMIT 1");
   return Number(output.trim().split('\n').pop());

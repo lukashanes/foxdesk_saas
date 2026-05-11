@@ -279,7 +279,12 @@ function api_agent_create_ticket()
     }
 
     // Fetch the created ticket for the response
-    $ticket = db_fetch_one("SELECT id, hash, title FROM tickets WHERE id = ?", [$ticket_id]);
+    $ticket_params = [$ticket_id];
+    $ticket_sql = "SELECT id, hash, title FROM tickets WHERE id = ?";
+    if (function_exists('tenant_sql_filter')) {
+        $ticket_sql .= tenant_sql_filter('tickets', '', $ticket_params);
+    }
+    $ticket = db_fetch_one($ticket_sql, $ticket_params);
 
     $response = [
         'ticket_id' => (int) $ticket_id,

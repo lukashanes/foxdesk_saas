@@ -500,14 +500,23 @@ function get_flash()
 function get_organizations($include_inactive = false)
 {
     static $cache = [];
-    $key = $include_inactive ? 'all' : 'active';
+    $key = (function_exists('current_tenant_id') ? current_tenant_id() : 0) . ':' . ($include_inactive ? 'all' : 'active');
     if (isset($cache[$key])) return $cache[$key];
     $sql = "SELECT * FROM organizations";
+    $conditions = [];
+    $params = [];
     if (!$include_inactive) {
-        $sql .= " WHERE is_active = 1";
+        $conditions[] = "is_active = 1";
+    }
+    if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('organizations')) {
+        $conditions[] = "tenant_id = ?";
+        $params[] = current_tenant_id();
+    }
+    if (!empty($conditions)) {
+        $sql .= " WHERE " . implode(' AND ', $conditions);
     }
     $sql .= " ORDER BY name";
-    $cache[$key] = db_fetch_all($sql);
+    $cache[$key] = db_fetch_all($sql, $params);
     return $cache[$key];
 }
 
@@ -518,10 +527,18 @@ function get_organization($id)
 {
     static $cache = [];
     $id = (int) $id;
-    if (!isset($cache[$id])) {
-        $cache[$id] = db_fetch_one("SELECT * FROM organizations WHERE id = ?", [$id]);
+    $tenant_id = function_exists('current_tenant_id') ? current_tenant_id() : 0;
+    $key = $tenant_id . ':' . $id;
+    if (!isset($cache[$key])) {
+        $sql = "SELECT * FROM organizations WHERE id = ?";
+        $params = [$id];
+        if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('organizations')) {
+            $sql .= " AND tenant_id = ?";
+            $params[] = $tenant_id;
+        }
+        $cache[$key] = db_fetch_one($sql, $params);
     }
-    return $cache[$id];
+    return $cache[$key];
 }
 
 

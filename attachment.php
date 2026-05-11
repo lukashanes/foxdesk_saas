@@ -51,6 +51,12 @@ if (file_exists(BASE_PATH . '/includes/database.php')) {
 if (function_exists('foxdesk_bootstrap_session')) {
     foxdesk_bootstrap_session();
 }
+if (file_exists(BASE_PATH . '/includes/tenant-functions.php')) {
+    require_once BASE_PATH . '/includes/tenant-functions.php';
+    if (function_exists('ensure_tenant_baseline')) {
+        ensure_tenant_baseline();
+    }
+}
 if (file_exists(BASE_PATH . '/includes/functions.php')) {
     require_once BASE_PATH . '/includes/functions.php';
 }

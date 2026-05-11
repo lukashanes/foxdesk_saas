@@ -42,6 +42,8 @@ ini_set('log_errors', '1');
 
 require_once BASE_PATH . '/includes/database.php';
 foxdesk_bootstrap_session();
+require_once BASE_PATH . '/includes/tenant-functions.php';
+ensure_tenant_baseline();
 
 // Force UTF-8 for all HTML responses to prevent mojibake in translations.
 ini_set('default_charset', 'UTF-8');

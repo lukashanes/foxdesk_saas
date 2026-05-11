@@ -31,12 +31,18 @@ function get_ticket_attachments($ticket_id) {
                          ) tma ON tma.attachment_id = a.id";
     }
 
-    return db_fetch_all("SELECT a.*, u.first_name, u.last_name, {$storage_select}
+    $params = [$ticket_id];
+    $sql = "SELECT a.*, u.first_name, u.last_name, {$storage_select}
                          FROM attachments a
                          LEFT JOIN users u ON a.uploaded_by = u.id
                          {$storage_join}
-                         WHERE a.ticket_id = ?
-                         ORDER BY a.created_at ASC", [$ticket_id]);
+                         WHERE a.ticket_id = ?";
+    if (function_exists('tenant_sql_filter')) {
+        $sql .= tenant_sql_filter('attachments', 'a', $params);
+    }
+    $sql .= " ORDER BY a.created_at ASC";
+
+    return db_fetch_all($sql, $params);
 }
 
 /**
@@ -222,7 +228,12 @@ function delete_attachment_file($filename) {
  * Get attachment by ID
  */
 function get_attachment($id) {
-    return db_fetch_one("SELECT * FROM attachments WHERE id = ?", [$id]);
+    $params = [$id];
+    $sql = "SELECT * FROM attachments WHERE id = ?";
+    if (function_exists('tenant_sql_filter')) {
+        $sql .= tenant_sql_filter('attachments', '', $params);
+    }
+    return db_fetch_one($sql, $params);
 }
 
 /**
@@ -251,30 +262,34 @@ function find_attachment_by_relative_path($relative_path)
         && ($relative_path === $upload_dir || str_starts_with($relative_path, $upload_dir . '/'))
     ) {
         $filename = basename($relative_path);
-        return db_fetch_one(
-            "SELECT a.*, c.is_internal AS comment_is_internal
+        $params = [$filename];
+        $sql = "SELECT a.*, c.is_internal AS comment_is_internal
              FROM attachments a
              LEFT JOIN comments c ON c.id = a.comment_id
-             WHERE a.filename = ?
-             LIMIT 1",
-            [$filename]
-        );
+             WHERE a.filename = ?";
+        if (function_exists('tenant_sql_filter')) {
+            $sql .= tenant_sql_filter('attachments', 'a', $params);
+        }
+        $sql .= " LIMIT 1";
+        return db_fetch_one($sql, $params);
     }
 
     if (!$has_ticket_message_attachments) {
         return null;
     }
 
-    return db_fetch_one(
-        "SELECT a.*, c.is_internal AS comment_is_internal, tma.storage_path
+    $params = [$relative_path];
+    $sql = "SELECT a.*, c.is_internal AS comment_is_internal, tma.storage_path
          FROM ticket_message_attachments tma
          LEFT JOIN attachments a ON a.id = tma.attachment_id
          LEFT JOIN comments c ON c.id = a.comment_id
          WHERE tma.storage_path = ?
          ORDER BY tma.id DESC
-         LIMIT 1",
-        [$relative_path]
-    );
+         LIMIT 1";
+    if (function_exists('tenant_sql_filter')) {
+        $sql = str_replace(' ORDER BY', tenant_sql_filter('ticket_message_attachments', 'tma', $params) . ' ORDER BY', $sql);
+    }
+    return db_fetch_one($sql, $params);
 }
 
 /**

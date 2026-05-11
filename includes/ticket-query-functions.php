@@ -168,6 +168,10 @@ function build_ticket_where_clause($filters, &$params)
     $sql = " WHERE 1=1";
     $has_ticket_access = ticket_access_table_exists();
 
+    if (function_exists('tenant_sql_filter')) {
+        $sql .= tenant_sql_filter('tickets', 't', $params);
+    }
+
     if (!empty($filters['ticket_id'])) {
         $sql .= " AND t.id = ?";
         $params[] = (int) $filters['ticket_id'];

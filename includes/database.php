@@ -89,6 +89,12 @@ function validate_sql_identifier($name)
 function db_insert($table, $data)
 {
     validate_sql_identifier($table);
+    if (function_exists('tenant_scoped_table_has_column')
+        && function_exists('current_tenant_id')
+        && tenant_scoped_table_has_column($table)
+        && !array_key_exists('tenant_id', $data)) {
+        $data['tenant_id'] = current_tenant_id();
+    }
     foreach (array_keys($data) as $col) {
         validate_sql_identifier($col);
     }

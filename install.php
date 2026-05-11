@@ -189,10 +189,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
                 ]);
                 
-                // Create admin user
+                // Create default tenant and admin user
+                $tenant_uuid = sprintf(
+                    '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+                    random_int(0, 0xffff),
+                    random_int(0, 0xffff),
+                    random_int(0, 0xffff),
+                    random_int(0x4000, 0x4fff),
+                    random_int(0x8000, 0xbfff),
+                    random_int(0, 0xffff),
+                    random_int(0, 0xffff),
+                    random_int(0, 0xffff)
+                );
+                $stmt = $pdo->prepare("INSERT INTO tenants (uuid, name, slug, status, created_at) VALUES (?, ?, 'default', 'active', NOW())");
+                $stmt->execute([$tenant_uuid, $app_name !== '' ? $app_name : 'FoxDesk']);
+                $tenant_id = (int) $pdo->lastInsertId();
+
                 $hash = password_hash($admin_pass, PASSWORD_DEFAULT);
-                $stmt = $pdo->prepare("INSERT INTO users (email, password, first_name, last_name, role, is_active, created_at) VALUES (?, ?, ?, ?, 'admin', 1, NOW())");
-                $stmt->execute([$admin_email, $hash, $admin_name, $admin_surname]);
+                $stmt = $pdo->prepare("INSERT INTO users (tenant_id, email, password, first_name, last_name, role, is_active, created_at) VALUES (?, ?, ?, ?, ?, 'admin', 1, NOW())");
+                $stmt->execute([$tenant_id, $admin_email, $hash, $admin_name, $admin_surname]);
                 
                 // Insert default statuses
                 $statuses = [

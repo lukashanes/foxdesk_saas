@@ -1,9 +1,26 @@
 -- FoxDesk Database Schema
 -- Compatible with MySQL 5.7+ and MariaDB 10.2+
 
+-- Tenants table
+CREATE TABLE IF NOT EXISTS tenants (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    uuid CHAR(36) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(120) NOT NULL UNIQUE,
+    primary_domain VARCHAR(255) NULL,
+    plan VARCHAR(50) NOT NULL DEFAULT 'starter',
+    status ENUM('active', 'trialing', 'past_due', 'suspended', 'canceled') NOT NULL DEFAULT 'active',
+    trial_ends_at DATETIME NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_status (status),
+    INDEX idx_domain (primary_domain)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Organizations table
 CREATE TABLE IF NOT EXISTS organizations (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     name VARCHAR(255) NOT NULL,
     ico VARCHAR(20),
     address TEXT,
@@ -15,6 +32,7 @@ CREATE TABLE IF NOT EXISTS organizations (
     is_active TINYINT(1) DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_name (name),
     INDEX idx_active (is_active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -22,6 +40,7 @@ CREATE TABLE IF NOT EXISTS organizations (
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     first_name VARCHAR(100) NOT NULL,
@@ -50,6 +69,7 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL,
     INDEX idx_email (email),
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_role (role),
     INDEX idx_reset_token (reset_token),
     INDEX idx_organization (organization_id),
@@ -106,6 +126,7 @@ CREATE TABLE IF NOT EXISTS ticket_types (
 -- Tickets table
 CREATE TABLE IF NOT EXISTS tickets (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     hash VARCHAR(16) NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT,
@@ -130,6 +151,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     FOREIGN KEY (assignee_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (ticket_type_id) REFERENCES ticket_types(id) ON DELETE SET NULL,
     UNIQUE INDEX idx_hash (hash),
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_user (user_id),
     INDEX idx_organization (organization_id),
     INDEX idx_status (status_id),
@@ -148,6 +170,7 @@ CREATE TABLE IF NOT EXISTS tickets (
 -- Comments table
 CREATE TABLE IF NOT EXISTS comments (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     ticket_id INT NOT NULL,
     user_id INT NOT NULL,
     content TEXT NOT NULL,
@@ -156,6 +179,7 @@ CREATE TABLE IF NOT EXISTS comments (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_ticket (ticket_id),
     INDEX idx_user (user_id),
     INDEX idx_ticket_created (ticket_id, created_at)
@@ -164,6 +188,7 @@ CREATE TABLE IF NOT EXISTS comments (
 -- Ticket time tracking entries
 CREATE TABLE IF NOT EXISTS ticket_time_entries (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     ticket_id INT NOT NULL,
     user_id INT NOT NULL,
     comment_id INT,
@@ -181,6 +206,7 @@ CREATE TABLE IF NOT EXISTS ticket_time_entries (
     FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE SET NULL,
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_ticket (ticket_id),
     INDEX idx_user (user_id),
     INDEX idx_comment (comment_id),
@@ -192,6 +218,7 @@ CREATE TABLE IF NOT EXISTS ticket_time_entries (
 -- Attachments table
 CREATE TABLE IF NOT EXISTS attachments (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     ticket_id INT NOT NULL,
     comment_id INT,
     filename VARCHAR(255) NOT NULL,
@@ -203,6 +230,7 @@ CREATE TABLE IF NOT EXISTS attachments (
     FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
     FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE SET NULL,
     FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_ticket (ticket_id),
     INDEX idx_comment (comment_id),
     INDEX idx_uploaded_by (uploaded_by)
@@ -211,6 +239,7 @@ CREATE TABLE IF NOT EXISTS attachments (
 -- Ticket shares table (public links)
 CREATE TABLE IF NOT EXISTS ticket_shares (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     ticket_id INT NOT NULL,
     token_hash CHAR(64) NOT NULL UNIQUE,
     created_by INT,
@@ -220,6 +249,7 @@ CREATE TABLE IF NOT EXISTS ticket_shares (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_ticket (ticket_id),
     INDEX idx_revoked (is_revoked),
     INDEX idx_expires (expires_at)
@@ -228,6 +258,7 @@ CREATE TABLE IF NOT EXISTS ticket_shares (
 -- Report shares table (public links)
 CREATE TABLE IF NOT EXISTS report_shares (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     organization_id INT NOT NULL,
     report_template_id INT NULL,
     token_hash CHAR(64) NOT NULL UNIQUE,
@@ -239,6 +270,7 @@ CREATE TABLE IF NOT EXISTS report_shares (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_org (organization_id),
     INDEX idx_report_template (report_template_id),
     INDEX idx_revoked (is_revoked),
@@ -248,6 +280,7 @@ CREATE TABLE IF NOT EXISTS report_shares (
 -- Ticket access table (internal shared access)
 CREATE TABLE IF NOT EXISTS ticket_access (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     ticket_id INT NOT NULL,
     user_id INT NOT NULL,
     created_by INT,
@@ -256,6 +289,7 @@ CREATE TABLE IF NOT EXISTS ticket_access (
     FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_ticket (ticket_id),
     INDEX idx_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -263,6 +297,7 @@ CREATE TABLE IF NOT EXISTS ticket_access (
 -- Activity log table
 CREATE TABLE IF NOT EXISTS activity_log (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     ticket_id INT NOT NULL,
     user_id INT,
     action VARCHAR(50) NOT NULL,
@@ -270,6 +305,7 @@ CREATE TABLE IF NOT EXISTS activity_log (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_ticket (ticket_id),
     INDEX idx_user (user_id),
     INDEX idx_created (created_at)
@@ -290,12 +326,14 @@ CREATE TABLE IF NOT EXISTS rate_limits (
 -- Security log table
 CREATE TABLE IF NOT EXISTS security_log (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     event_type VARCHAR(50) NOT NULL,
     user_id INT NULL,
     ip_address VARCHAR(45) NOT NULL,
     context TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_event (event_type),
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_user (user_id),
     INDEX idx_created (created_at),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -328,6 +366,7 @@ CREATE TABLE IF NOT EXISTS email_templates (
 -- Recurring tasks table
 CREATE TABLE IF NOT EXISTS recurring_tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     ticket_type_id INT,
@@ -355,6 +394,7 @@ CREATE TABLE IF NOT EXISTS recurring_tasks (
     FOREIGN KEY (priority_id) REFERENCES priorities(id) ON DELETE SET NULL,
     FOREIGN KEY (status_id) REFERENCES statuses(id),
     FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_active (is_active),
     INDEX idx_next_run (next_run_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -362,6 +402,7 @@ CREATE TABLE IF NOT EXISTS recurring_tasks (
 -- Report templates table
 CREATE TABLE IF NOT EXISTS report_templates (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     uuid CHAR(36) NOT NULL UNIQUE,
     organization_id INT NOT NULL,
     created_by_user_id INT,
@@ -386,6 +427,7 @@ CREATE TABLE IF NOT EXISTS report_templates (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
     FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_org (organization_id),
     INDEX idx_uuid (uuid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -393,6 +435,7 @@ CREATE TABLE IF NOT EXISTS report_templates (
 -- Report snapshots table
 CREATE TABLE IF NOT EXISTS report_snapshots (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     report_template_id INT NOT NULL,
     kpi_data JSON,
     chart_data JSON,
@@ -401,12 +444,14 @@ CREATE TABLE IF NOT EXISTS report_snapshots (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (report_template_id) REFERENCES report_templates(id) ON DELETE CASCADE,
     FOREIGN KEY (generated_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_template (report_template_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Debug log table
 CREATE TABLE IF NOT EXISTS debug_log (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     channel VARCHAR(50) DEFAULT 'general',
     level VARCHAR(20) DEFAULT 'info',
     message TEXT,
@@ -415,6 +460,7 @@ CREATE TABLE IF NOT EXISTS debug_log (
     ip_address VARCHAR(45),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_channel (channel),
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_level (level),
     INDEX idx_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -422,11 +468,13 @@ CREATE TABLE IF NOT EXISTS debug_log (
 -- Page views table (lightweight user activity tracking)
 CREATE TABLE IF NOT EXISTS page_views (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     user_id INT NOT NULL,
     page VARCHAR(50) NOT NULL,
     section VARCHAR(50) DEFAULT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user (user_id),
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_page (page),
     INDEX idx_created (created_at),
     INDEX idx_user_page (user_id, page)
@@ -435,6 +483,7 @@ CREATE TABLE IF NOT EXISTS page_views (
 -- Allowed inbound senders table
 CREATE TABLE IF NOT EXISTS allowed_senders (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     type ENUM('email','domain') NOT NULL,
     value VARCHAR(255) NOT NULL,
     user_id INT NULL,
@@ -442,6 +491,7 @@ CREATE TABLE IF NOT EXISTS allowed_senders (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uniq_type_value (type, value),
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_active (active),
     INDEX idx_user (user_id),
     CONSTRAINT fk_allowed_senders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -450,6 +500,7 @@ CREATE TABLE IF NOT EXISTS allowed_senders (
 -- Ticket messages from email ingest
 CREATE TABLE IF NOT EXISTS ticket_messages (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     ticket_id INT NOT NULL,
     direction ENUM('in','out') NOT NULL DEFAULT 'in',
     user_id INT NULL,
@@ -467,6 +518,7 @@ CREATE TABLE IF NOT EXISTS ticket_messages (
     uid INT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uniq_ticket_messages_message_id (message_id),
+    INDEX idx_tenant_id (tenant_id),
     UNIQUE KEY uniq_ticket_messages_mailbox_uid (mailbox, uid),
     INDEX idx_ticket (ticket_id),
     INDEX idx_comment (comment_id),
@@ -480,6 +532,7 @@ CREATE TABLE IF NOT EXISTS ticket_messages (
 -- Email message attachment metadata mapping
 CREATE TABLE IF NOT EXISTS ticket_message_attachments (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     ticket_message_id INT NOT NULL,
     attachment_id INT NULL,
     filename VARCHAR(255) NOT NULL,
@@ -489,6 +542,7 @@ CREATE TABLE IF NOT EXISTS ticket_message_attachments (
     content_id VARCHAR(255) NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_message (ticket_message_id),
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_attachment (attachment_id),
     CONSTRAINT fk_tma_message FOREIGN KEY (ticket_message_id) REFERENCES ticket_messages(id) ON DELETE CASCADE,
     CONSTRAINT fk_tma_attachment FOREIGN KEY (attachment_id) REFERENCES attachments(id) ON DELETE SET NULL
@@ -497,6 +551,7 @@ CREATE TABLE IF NOT EXISTS ticket_message_attachments (
 -- Ingest logs for idempotency and troubleshooting
 CREATE TABLE IF NOT EXISTS email_ingest_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     mailbox VARCHAR(120) NOT NULL,
     uid INT NOT NULL,
     message_id VARCHAR(255) NULL,
@@ -505,6 +560,7 @@ CREATE TABLE IF NOT EXISTS email_ingest_logs (
     error TEXT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uniq_mailbox_uid (mailbox, uid),
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_message_id (message_id),
     INDEX idx_status_created (status, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -519,6 +575,7 @@ CREATE TABLE IF NOT EXISTS email_ingest_state (
 -- API tokens for agent/automation access
 CREATE TABLE IF NOT EXISTS api_tokens (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     user_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     token_hash CHAR(64) NOT NULL,
@@ -528,6 +585,7 @@ CREATE TABLE IF NOT EXISTS api_tokens (
     last_used_at DATETIME NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uniq_token_hash (token_hash),
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_user (user_id),
     INDEX idx_active (is_active),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -536,6 +594,7 @@ CREATE TABLE IF NOT EXISTS api_tokens (
 -- Notifications table
 CREATE TABLE IF NOT EXISTS notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
     user_id INT NOT NULL,
     ticket_id INT NULL,
     type VARCHAR(50) NOT NULL DEFAULT 'info',
@@ -546,6 +605,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
     FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_tenant_id (tenant_id),
     INDEX idx_user (user_id),
     INDEX idx_user_read (user_id, is_read),
     INDEX idx_ticket (ticket_id),
