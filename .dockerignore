@@ -1,0 +1,10 @@
+.git
+node_modules
+playwright-report
+test-results
+tests/e2e/.auth
+config.php
+uploads
+storage
+backups
+.DS_Store

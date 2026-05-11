@@ -13,6 +13,8 @@ test('public report token works and expired token is rejected', async ({ page })
     define('BASE_PATH', '/var/www/html');
     require_once BASE_PATH . '/config.php';
     require_once BASE_PATH . '/includes/database.php';
+    require_once BASE_PATH . '/includes/tenant-functions.php';
+    ensure_tenant_baseline();
     require_once BASE_PATH . '/includes/functions.php';
     require_once BASE_PATH . '/includes/settings-functions.php';
     require_once BASE_PATH . '/includes/ticket-share-functions.php';

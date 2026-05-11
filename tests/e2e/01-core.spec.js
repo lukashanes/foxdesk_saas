@@ -25,17 +25,17 @@ test('admin can create a ticket, upload an attachment, and download it', async (
   });
   await page.locator('#file-input').setInputFiles(attachmentPath);
   await page.locator('button[type="submit"]').click();
-  await page.waitForURL(/page=ticket|ticket/);
+  await page.waitForURL(/page=ticket&id=\d+/);
 
   await expect(page.locator('body')).toContainText('E2E ticket with attachment');
   await expect(page.locator('body')).toContainText('Attachments');
   await expect(page.locator('body')).toContainText('foxdesk-e2e-attachment.txt');
 
-  const downloadPromise = page.waitForEvent('download');
-  await page.getByText('foxdesk-e2e-attachment.txt').first().click();
-  const download = await downloadPromise;
-  const downloadedPath = await download.path();
-  expect(fs.readFileSync(downloadedPath, 'utf8')).toContain('hello from foxdesk e2e');
+  const attachmentHref = await page.locator('a[href*="attachment.php"]', { hasText: 'foxdesk-e2e-attachment.txt' }).first().getAttribute('href');
+  expect(attachmentHref).toBeTruthy();
+  const attachmentResponse = await page.request.get(attachmentHref);
+  expect(attachmentResponse.ok()).toBeTruthy();
+  expect(await attachmentResponse.text()).toContain('hello from foxdesk e2e');
 });
 
 test('logout and login flow works', async ({ browser }) => {

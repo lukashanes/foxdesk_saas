@@ -7,10 +7,17 @@ function ensureClientUser() {
   const tenantId = Number(dbQuery("SELECT id FROM tenants WHERE slug = 'default' LIMIT 1").trim().split('\n').pop());
   dbQuery(`
     INSERT INTO users (tenant_id, email, password, first_name, last_name, role, is_active, created_at)
-    VALUES (${tenantId}, 'client@example.test', '${hash.replaceAll("'", "''")}', 'Client', 'User', 'user', 1, NOW())
-    ON DUPLICATE KEY UPDATE tenant_id = VALUES(tenant_id), deleted_at = NULL, is_active = 1, role = 'user'
+    VALUES (${tenantId}, 'client.impersonation@example.test', '${hash.replaceAll("'", "''")}', 'Client', 'User', 'user', 1, NOW())
+    ON DUPLICATE KEY UPDATE
+      tenant_id = VALUES(tenant_id),
+      password = VALUES(password),
+      first_name = VALUES(first_name),
+      last_name = VALUES(last_name),
+      deleted_at = NULL,
+      is_active = 1,
+      role = 'user'
   `);
-  const output = dbQuery("SELECT id FROM users WHERE email = 'client@example.test' LIMIT 1");
+  const output = dbQuery("SELECT id FROM users WHERE email = 'client.impersonation@example.test' LIMIT 1");
   return Number(output.trim().split('\n').pop());
 }
 
