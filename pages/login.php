@@ -446,6 +446,11 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                     </button>
                 </form>
 
+                <div class="text-center text-sm mt-5" style="color: var(--text-muted);">
+                    Need a new FoxDesk?
+                    <a href="<?php echo url('signup'); ?>" class="font-medium" style="color: var(--primary);">Create workspace</a>
+                </div>
+
                 <form method="get" class="flex flex-col items-center justify-center gap-2 mt-8">
                     <?php foreach ($lang_params as $key => $value): ?>
                         <input type="hidden" name="<?php echo e($key); ?>" value="<?php echo e($value); ?>">

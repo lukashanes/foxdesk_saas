@@ -90,6 +90,27 @@ function ensure_tenant_baseline(): void
         }
         $default_id = (int) (db_fetch_one("SELECT id FROM tenants WHERE slug = 'default' LIMIT 1")['id'] ?? 1);
 
+        $tenant_columns = [
+            'owner_user_id' => "ALTER TABLE tenants ADD COLUMN owner_user_id INT NULL AFTER status",
+            'billing_email' => "ALTER TABLE tenants ADD COLUMN billing_email VARCHAR(255) NULL AFTER owner_user_id",
+            'stripe_customer_id' => "ALTER TABLE tenants ADD COLUMN stripe_customer_id VARCHAR(255) NULL AFTER billing_email",
+            'stripe_subscription_id' => "ALTER TABLE tenants ADD COLUMN stripe_subscription_id VARCHAR(255) NULL AFTER stripe_customer_id",
+            'subscription_status' => "ALTER TABLE tenants ADD COLUMN subscription_status VARCHAR(50) NOT NULL DEFAULT 'manual' AFTER stripe_subscription_id",
+            'max_users' => "ALTER TABLE tenants ADD COLUMN max_users INT NOT NULL DEFAULT 10 AFTER subscription_status",
+            'max_agents' => "ALTER TABLE tenants ADD COLUMN max_agents INT NOT NULL DEFAULT 3 AFTER max_users",
+            'suspended_at' => "ALTER TABLE tenants ADD COLUMN suspended_at DATETIME NULL AFTER trial_ends_at",
+        ];
+        foreach ($tenant_columns as $column => $sql) {
+            if (!column_exists('tenants', $column)) {
+                db_query($sql);
+            }
+        }
+
+        if (table_exists('users') && !column_exists('users', 'is_platform_admin')) {
+            db_query("ALTER TABLE users ADD COLUMN is_platform_admin TINYINT(1) NOT NULL DEFAULT 0 AFTER role");
+            db_query("ALTER TABLE users ADD INDEX idx_platform_admin (is_platform_admin)");
+        }
+
         foreach (tenant_owned_tables() as $table) {
             if (!table_exists($table) || column_exists($table, 'tenant_id')) {
                 continue;
@@ -109,6 +130,16 @@ function ensure_tenant_baseline(): void
         foreach (tenant_owned_tables() as $table) {
             if (tenant_scoped_table_has_column($table)) {
                 db_query("UPDATE {$table} SET tenant_id = ? WHERE tenant_id IS NULL", [$default_id]);
+            }
+        }
+
+        if (table_exists('users') && column_exists('users', 'is_platform_admin')) {
+            $platform_count = (int) (db_fetch_one("SELECT COUNT(*) AS c FROM users WHERE is_platform_admin = 1")['c'] ?? 0);
+            if ($platform_count === 0) {
+                db_query(
+                    "UPDATE users SET is_platform_admin = 1 WHERE tenant_id = ? AND role = 'admin' AND is_active = 1 ORDER BY id ASC LIMIT 1",
+                    [$default_id]
+                );
             }
         }
     } catch (Throwable $e) {
@@ -172,4 +203,112 @@ function tenant_value_for_insert(array $data = []): int
     }
 
     return current_tenant_id();
+}
+
+function tenant_slug_from_name(string $name): string
+{
+    $slug = strtolower(trim($name));
+    $slug = preg_replace('/[^a-z0-9]+/i', '-', $slug);
+    $slug = trim((string) $slug, '-');
+    return $slug !== '' ? substr($slug, 0, 80) : 'workspace';
+}
+
+function tenant_unique_slug(string $name): string
+{
+    $base = tenant_slug_from_name($name);
+    $slug = $base;
+    $i = 2;
+    while (db_fetch_one("SELECT id FROM tenants WHERE slug = ? LIMIT 1", [$slug])) {
+        $slug = substr($base, 0, 70) . '-' . $i;
+        $i++;
+    }
+    return $slug;
+}
+
+function is_platform_admin(?array $user = null): bool
+{
+    if (!function_exists('current_user')) {
+        return false;
+    }
+    $user = $user ?: current_user();
+    return $user && !empty($user['is_platform_admin']);
+}
+
+function require_platform_admin(): void
+{
+    if (!is_platform_admin()) {
+        http_response_code(403);
+        header('Location: index.php?page=dashboard');
+        exit;
+    }
+}
+
+function create_tenant_workspace(array $data): array
+{
+    ensure_tenant_baseline();
+
+    $workspace_name = trim((string) ($data['workspace_name'] ?? ''));
+    $admin_email = strtolower(trim((string) ($data['admin_email'] ?? '')));
+    $admin_first = trim((string) ($data['admin_first_name'] ?? ''));
+    $admin_last = trim((string) ($data['admin_last_name'] ?? ''));
+    $password = (string) ($data['password'] ?? '');
+
+    if ($workspace_name === '' || $admin_email === '' || $admin_first === '' || $password === '') {
+        throw new InvalidArgumentException('Workspace name, admin email, first name, and password are required.');
+    }
+    if (!filter_var($admin_email, FILTER_VALIDATE_EMAIL)) {
+        throw new InvalidArgumentException('Enter a valid admin email.');
+    }
+    if (strlen($password) < 12) {
+        throw new InvalidArgumentException('Password must be at least 12 characters.');
+    }
+    if (db_fetch_one("SELECT id FROM users WHERE email = ? LIMIT 1", [$admin_email])) {
+        throw new InvalidArgumentException('A user with this email already exists.');
+    }
+
+    $db = get_db();
+    $db->beginTransaction();
+    try {
+        $slug = tenant_unique_slug($workspace_name);
+        $tenant_id = (int) db_insert('tenants', [
+            'uuid' => tenant_generate_uuid(),
+            'name' => $workspace_name,
+            'slug' => $slug,
+            'status' => $data['status'] ?? 'trialing',
+            'plan' => $data['plan'] ?? 'starter',
+            'billing_email' => $data['billing_email'] ?? $admin_email,
+            'subscription_status' => $data['subscription_status'] ?? 'trialing',
+            'max_users' => (int) ($data['max_users'] ?? 10),
+            'max_agents' => (int) ($data['max_agents'] ?? 3),
+            'trial_ends_at' => $data['trial_ends_at'] ?? date('Y-m-d H:i:s', strtotime('+14 days')),
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $admin_id = (int) db_insert('users', [
+            'tenant_id' => $tenant_id,
+            'email' => $admin_email,
+            'password' => password_hash($password, PASSWORD_DEFAULT),
+            'first_name' => $admin_first,
+            'last_name' => $admin_last,
+            'role' => 'admin',
+            'is_active' => 1,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        db_update('tenants', ['owner_user_id' => $admin_id], 'id = ?', [$tenant_id]);
+
+        db_insert('organizations', [
+            'tenant_id' => $tenant_id,
+            'name' => $workspace_name,
+            'contact_email' => $admin_email,
+            'is_active' => 1,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        $db->commit();
+        return ['tenant_id' => $tenant_id, 'user_id' => $admin_id, 'slug' => $slug];
+    } catch (Throwable $e) {
+        $db->rollBack();
+        throw $e;
+    }
 }

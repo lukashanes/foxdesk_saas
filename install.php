@@ -206,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $tenant_id = (int) $pdo->lastInsertId();
 
                 $hash = password_hash($admin_pass, PASSWORD_DEFAULT);
-                $stmt = $pdo->prepare("INSERT INTO users (tenant_id, email, password, first_name, last_name, role, is_active, created_at) VALUES (?, ?, ?, ?, ?, 'admin', 1, NOW())");
+                $stmt = $pdo->prepare("INSERT INTO users (tenant_id, email, password, first_name, last_name, role, is_platform_admin, is_active, created_at) VALUES (?, ?, ?, ?, ?, 'admin', 1, 1, NOW())");
                 $stmt->execute([$tenant_id, $admin_email, $hash, $admin_name, $admin_surname]);
                 
                 // Insert default statuses

@@ -108,7 +108,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 // Pages that don't require login
-$public_pages = ['login', 'logout', 'forgot-password', 'reset-password', 'ticket-share', 'report-share', 'report-public', 'api', 'health', 'cron'];
+$public_pages = ['login', 'logout', 'signup', 'forgot-password', 'reset-password', 'ticket-share', 'report-share', 'report-public', 'api', 'health', 'cron'];
 
 // Check authentication
 if (!in_array($page, $public_pages)) {
@@ -263,6 +263,10 @@ switch ($page) {
         require_once BASE_PATH . '/pages/login.php';
         break;
 
+    case 'signup':
+        require_once BASE_PATH . '/pages/signup.php';
+        break;
+
     case 'logout':
         logout();
         header('Location: index.php?page=login');
@@ -279,6 +283,10 @@ switch ($page) {
 
     case 'dashboard':
         require_once BASE_PATH . '/pages/dashboard.php';
+        break;
+
+    case 'platform':
+        require_once BASE_PATH . '/pages/platform.php';
         break;
 
     case 'tickets':
