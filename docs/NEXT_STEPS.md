@@ -10,24 +10,21 @@
 
 ## Immediate Next Steps
 
-1. Create real Stripe test products and recurring prices for `starter` and `pro`.
+1. Create real Stripe test products and recurring prices for FoxDesk Cloud base subscription and metered extra storage.
 2. Add production-style environment handling for secrets on Hetzner: app config, database credentials, Stripe keys, webhook secret, mail credentials, and backup credentials.
-3. Add plan limit enforcement in the app:
-   - max users
-   - max agents
-   - storage quota
-   - optional ticket/month limit
-   - feature flags per plan
+3. Add Stripe usage reporting for metered storage:
+   - calculate billable extra GB
+   - report usage to Stripe on a schedule
+   - make reports idempotent per billing period
 4. Add billing lifecycle rules:
    - trial grace period
    - `past_due` grace period
    - suspension after failed payment grace period
    - reactivation after successful payment
-5. Add usage counters and display them in Platform and Billing:
-   - users
-   - agents
-   - tickets
-   - storage used
+5. Expand usage counters:
+   - storage used by local attachments
+   - storage used by future R2 objects
+   - email/API volume for abuse monitoring
 6. Move attachments/backups toward object storage:
    - first add storage abstraction
    - then support local disk and Cloudflare R2
@@ -62,7 +59,7 @@
 - Backups are automated and restore-tested.
 - Attachments are stored outside the app server disk.
 - Stripe subscription state is enforced in-app.
-- Plan limits are enforced in-app.
+- Storage overage is metered and reported to Stripe.
 - Admin can suspend/reactivate tenants.
 - Public routes are rate-limited and bot-protected.
 - Error logging and uptime monitoring are active.

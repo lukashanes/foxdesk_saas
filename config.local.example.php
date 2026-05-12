@@ -19,8 +19,12 @@ define('TRUST_PROXY', false);
 define('BILLING_ENABLED', false);
 define('STRIPE_SECRET_KEY', '');
 define('STRIPE_WEBHOOK_SECRET', 'whsec_test');
-define('STRIPE_PRICE_STARTER', '');
-define('STRIPE_PRICE_PRO', '');
+define('STRIPE_PRICE_CLOUD_BASE', '');
+define('STRIPE_PRICE_STORAGE_OVERAGE', '');
+define('BILLING_CURRENCY', 'EUR');
+define('BILLING_CLOUD_BASE_PRICE_CENTS', 1900);
+define('BILLING_STORAGE_OVERAGE_PRICE_CENTS', 79);
+define('BILLING_INCLUDED_STORAGE_BYTES', 1073741824);
 define('STRIPE_SUCCESS_URL', APP_URL . '/index.php?page=platform&billing=success');
 define('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=platform&billing=cancelled');
 

@@ -38,19 +38,20 @@ Cloudflare-only is a later option. It would require a larger rewrite from PHP/Ma
 
 ## Billing Model
 
-Recommended first plans:
+Recommended first commercial model:
 
-- Free trial: limited users/tickets/storage.
-- Starter: small team, basic email-to-ticket, limited storage.
-- Pro: more users, automation, reports, larger storage.
-- Business: priority support, custom domain, higher limits, advanced audit/export.
+- One public plan: FoxDesk Cloud.
+- Unlimited users, clients, agents, and tickets.
+- 1 GB storage included.
+- Extra storage is billed monthly per started GB.
+- Keep fair-use protection, rate limits, and abuse monitoring for extreme workloads.
 
 Billing integration requirements:
 
 - Customer/subscription records.
 - Webhook signature verification.
-- Plan feature flags.
 - Usage counters.
+- Storage overage metering.
 - Grace period and failed payment states.
 - Tenant suspension without deleting data.
 
@@ -65,4 +66,3 @@ Billing integration requirements:
 - Add tests proving one tenant cannot see another tenant.
 - Add R2 abstraction behind the existing upload/attachment functions.
 - Add Cloudflare deployment docs for DNS, WAF, R2, Email Routing, and Turnstile.
-

@@ -25,16 +25,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'password' => $_POST['password'] ?? '',
                 'status' => $_POST['status'] ?? 'trialing',
                 'subscription_status' => $_POST['subscription_status'] ?? 'trialing',
-                'plan' => $_POST['plan'] ?? 'starter',
-                'max_users' => (int) ($_POST['max_users'] ?? 10),
-                'max_agents' => (int) ($_POST['max_agents'] ?? 3),
+                'plan' => billing_plan_code(),
             ]);
             $success = 'Workspace created.';
         } elseif ($action === 'update_tenant') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
             $status = (string) ($_POST['status'] ?? 'active');
             $subscription_status = (string) ($_POST['subscription_status'] ?? 'manual');
-            $plan = trim((string) ($_POST['plan'] ?? 'starter'));
             $allowed_statuses = ['active', 'trialing', 'past_due', 'suspended', 'canceled'];
             if ($tenant_id <= 0 || !in_array($status, $allowed_statuses, true)) {
                 throw new InvalidArgumentException('Invalid workspace update.');
@@ -42,9 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             db_update('tenants', [
                 'status' => $status,
                 'subscription_status' => $subscription_status,
-                'plan' => $plan !== '' ? $plan : 'starter',
-                'max_users' => max(1, (int) ($_POST['max_users'] ?? 10)),
-                'max_agents' => max(0, (int) ($_POST['max_agents'] ?? 3)),
+                'plan' => billing_plan_code(),
                 'suspended_at' => $status === 'suspended' ? date('Y-m-d H:i:s') : null,
             ], 'id = ?', [$tenant_id]);
             $success = 'Workspace updated.';
@@ -96,7 +91,7 @@ require_once BASE_PATH . '/includes/header.php';
     <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
         <div>
             <h1 class="text-2xl font-bold" style="color: var(--text-primary);">Platform</h1>
-            <p class="text-sm mt-1" style="color: var(--text-muted);">Manage SaaS workspaces, owners, plans, limits, and subscription state.</p>
+            <p class="text-sm mt-1" style="color: var(--text-muted);">Manage SaaS workspaces, owners, storage usage, and subscription state.</p>
         </div>
         <a href="<?php echo url('signup'); ?>" class="btn btn-secondary self-start md:self-auto" style="width: auto;">Public signup</a>
     </div>
@@ -124,16 +119,12 @@ require_once BASE_PATH . '/includes/header.php';
                 </div>
                 <input class="form-input w-full" type="email" name="admin_email" placeholder="Owner email" required>
                 <input class="form-input w-full" type="password" name="password" placeholder="Temporary password" minlength="12" required>
-                <div class="grid grid-cols-2 gap-2">
-                    <input class="form-input w-full" name="plan" value="starter" placeholder="Plan">
-                    <select class="form-select w-full" name="status">
-                        <option value="trialing">trialing</option>
-                        <option value="active">active</option>
-                    </select>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <input class="form-input w-full" type="number" name="max_users" value="10" min="1">
-                    <input class="form-input w-full" type="number" name="max_agents" value="3" min="0">
+                <select class="form-select w-full" name="status">
+                    <option value="trialing">trialing</option>
+                    <option value="active">active</option>
+                </select>
+                <div class="rounded-lg border px-3 py-2 text-sm" style="border-color: var(--border-light); color: var(--text-muted);">
+                    <?php echo e(billing_plan_name()); ?>: unlimited users, clients, agents, and tickets. <?php echo e(format_file_size(billing_included_storage_bytes())); ?> storage included.
                 </div>
                 <button class="btn btn-primary w-full" type="submit">Create FoxDesk</button>
             </form>
@@ -148,12 +139,13 @@ require_once BASE_PATH . '/includes/header.php';
                         <th>Owner</th>
                         <th>Usage</th>
                         <th>Billing</th>
-                        <th>Limits</th>
+                        <th>Status</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($tenants as $tenant): ?>
+                    <?php $usage = billing_tenant_usage((int) $tenant['id']); ?>
                     <tr>
                         <td>
                             <strong><?php echo e($tenant['name']); ?></strong>
@@ -164,24 +156,27 @@ require_once BASE_PATH . '/includes/header.php';
                             <div class="text-xs" style="color: var(--text-muted);"><?php echo e($tenant['owner_email'] ?? ''); ?></div>
                         </td>
                         <td class="text-sm">
-                            <?php echo (int) $tenant['user_count']; ?> users<br>
-                            <span style="color: var(--text-muted);"><?php echo (int) $tenant['ticket_count']; ?> tickets</span>
+                            <?php echo (int) $usage['users']; ?> users<br>
+                            <?php echo (int) $usage['agents']; ?> agents<br>
+                            <span style="color: var(--text-muted);"><?php echo (int) $usage['clients']; ?> clients, <?php echo (int) $usage['tickets']; ?> tickets</span><br>
+                            <span style="color: var(--text-muted);"><?php echo e(format_file_size($usage['storage_bytes'])); ?> storage</span>
                         </td>
                         <td>
                             <form method="post" class="flex flex-col gap-2 min-w-[170px]">
                                 <?php echo csrf_field(); ?>
                                 <input type="hidden" name="platform_action" value="update_tenant">
                                 <input type="hidden" name="tenant_id" value="<?php echo (int) $tenant['id']; ?>">
-                                <input class="platform-control" name="plan" value="<?php echo e($tenant['plan']); ?>">
+                                <div class="text-sm font-semibold"><?php echo e(billing_plan_name()); ?></div>
+                                <div class="text-xs" style="color: var(--text-muted);"><?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/mo + <?php echo e(billing_format_money(billing_storage_overage_price_cents())); ?>/extra GB</div>
                                 <input class="platform-control" name="subscription_status" value="<?php echo e($tenant['subscription_status'] ?? 'manual'); ?>">
                                 <?php if (!empty($tenant['stripe_customer_id'])): ?>
                                     <span class="text-xs" style="color: var(--text-muted);"><?php echo e($tenant['stripe_customer_id']); ?></span>
                                 <?php endif; ?>
                         </td>
                         <td>
-                                <div class="flex gap-2">
-                                    <input class="platform-control w-20" type="number" name="max_users" value="<?php echo (int) ($tenant['max_users'] ?? 10); ?>" min="1">
-                                    <input class="platform-control w-20" type="number" name="max_agents" value="<?php echo (int) ($tenant['max_agents'] ?? 3); ?>" min="0">
+                                <div class="text-sm">
+                                    <strong><?php echo (int) $usage['extra_storage_gb']; ?> extra GB</strong><br>
+                                    <span style="color: var(--text-muted);"><?php echo e(billing_format_money($usage['storage_overage_cents'])); ?> est. overage</span>
                                 </div>
                                 <select class="platform-control mt-2 w-full" name="status">
                                     <?php foreach (['active', 'trialing', 'past_due', 'suspended', 'canceled'] as $status): ?>
@@ -194,7 +189,7 @@ require_once BASE_PATH . '/includes/header.php';
                             </form>
                             <form method="post" action="<?php echo url('billing', ['action' => 'checkout', 'tenant_id' => (int) $tenant['id']]); ?>" class="mt-2">
                                 <?php echo csrf_field(); ?>
-                                <input type="hidden" name="plan" value="<?php echo e($tenant['plan'] ?: 'starter'); ?>">
+                                <input type="hidden" name="plan" value="<?php echo e(billing_plan_code()); ?>">
                                 <button class="btn btn-ghost btn-sm w-full" type="submit">Checkout</button>
                             </form>
                             <form method="post" action="<?php echo url('billing', ['action' => 'portal', 'tenant_id' => (int) $tenant['id']]); ?>" class="mt-2">

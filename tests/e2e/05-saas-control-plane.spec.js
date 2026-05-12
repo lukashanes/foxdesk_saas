@@ -13,6 +13,26 @@ function tenantIdByOwnerEmail(email) {
   return Number(lines[1] || 0);
 }
 
+function seedStorageUsage(ownerEmail, fileSizeBytes) {
+  const ticketHash = `stor${Date.now()}`.slice(0, 16);
+  dbQuery(`
+    INSERT INTO tickets (tenant_id, hash, title, description, user_id, status_id, created_at, updated_at)
+    SELECT u.tenant_id, ${sqlString(ticketHash)}, 'Storage usage seed', 'E2E storage usage seed', u.id,
+      (SELECT id FROM statuses ORDER BY is_default DESC, id ASC LIMIT 1), NOW(), NOW()
+    FROM users u
+    WHERE u.email = ${sqlString(ownerEmail)}
+    LIMIT 1;
+  `);
+  dbQuery(`
+    INSERT INTO attachments (tenant_id, ticket_id, filename, original_name, mime_type, file_size, uploaded_by, created_at)
+    SELECT t.tenant_id, t.id, ${sqlString(`${ticketHash}.bin`)}, 'storage.bin', 'application/octet-stream', ${Number(fileSizeBytes)},
+      t.user_id, NOW()
+    FROM tickets t
+    WHERE t.hash = ${sqlString(ticketHash)}
+    LIMIT 1;
+  `);
+}
+
 function stripeSignature(payload, secret = 'whsec_test') {
   const timestamp = Math.floor(Date.now() / 1000);
   const signature = crypto
@@ -67,6 +87,7 @@ test('public signup creates an isolated FoxDesk workspace and platform admin can
   await expect(platformPage.locator('body')).toContainText('Platform');
   await expect(platformPage.locator('body')).toContainText(workspaceName);
   await expect(platformPage.locator('body')).toContainText(ownerEmail);
+  await expect(platformPage.locator('body')).toContainText('FoxDesk Cloud');
   await platformContext.close();
 });
 
@@ -153,4 +174,26 @@ test('blocked tenant admins are redirected to billing instead of app pages', asy
   await expect(page.locator('body')).toContainText('Workspace access is restricted');
   await expect(page.locator('body')).toContainText('Billing');
   await ownerContext.close();
+});
+
+test('single cloud plan shows unlimited usage and storage overage', async ({ browser }) => {
+  const stamp = Date.now();
+  const ownerEmail = `usage.${stamp}@example.test`;
+
+  const { context, page } = await createWorkspaceViaUi(browser, {
+    workspaceName: `Usage Workspace ${stamp}`,
+    ownerEmail,
+    firstName: 'Usage',
+    lastName: 'Owner'
+  });
+
+  seedStorageUsage(ownerEmail, 3 * 1073741824);
+
+  await page.goto('/index.php?page=billing');
+  await expect(page.locator('body')).toContainText('FoxDesk Cloud');
+  await expect(page.locator('body')).toContainText('Unlimited users, clients, agents, and tickets');
+  await expect(page.locator('body')).toContainText('3.00 GB / 1.00 GB');
+  await expect(page.locator('body')).toContainText('2 GB');
+  await expect(page.locator('body')).toContainText('EUR 1.58');
+  await context.close();
 });

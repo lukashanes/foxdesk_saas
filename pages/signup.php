@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'password' => $password,
                     'status' => 'trialing',
                     'subscription_status' => 'trialing',
-                    'plan' => 'starter',
+                    'plan' => billing_plan_code(),
                 ]);
 
                 if (login($values['admin_email'], $password)) {

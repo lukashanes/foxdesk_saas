@@ -33,7 +33,7 @@ if ($action === 'checkout' || $action === 'portal') {
 
     try {
         if ($action === 'checkout') {
-            $plan = (string) ($_POST['plan'] ?? ($tenant['plan'] ?? 'starter'));
+            $plan = (string) ($_POST['plan'] ?? billing_plan_code());
             $url = billing_create_checkout_session((int) $tenant['id'], $plan);
         } else {
             $url = billing_create_portal_session((int) $tenant['id']);
@@ -50,6 +50,10 @@ if ($action === 'checkout' || $action === 'portal') {
 
 $page_title = 'Billing';
 $page = 'billing';
+$usage = billing_tenant_usage((int) $tenant['id']);
+$storage_percent = $usage['included_storage_bytes'] > 0
+    ? min(100, (int) round(($usage['storage_bytes'] / $usage['included_storage_bytes']) * 100))
+    : 0;
 require_once BASE_PATH . '/includes/header.php';
 ?>
 
@@ -59,11 +63,45 @@ require_once BASE_PATH . '/includes/header.php';
         <p class="text-sm mb-6" style="color: var(--text-muted);">Manage subscription and access for <?php echo e($tenant['name']); ?>.</p>
 
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div><dt class="text-xs uppercase" style="color: var(--text-muted);">Plan</dt><dd class="font-semibold"><?php echo e($tenant['plan']); ?></dd></div>
+            <div><dt class="text-xs uppercase" style="color: var(--text-muted);">Plan</dt><dd class="font-semibold"><?php echo e(billing_plan_name()); ?></dd></div>
             <div><dt class="text-xs uppercase" style="color: var(--text-muted);">Workspace status</dt><dd class="font-semibold"><?php echo e($tenant['status']); ?></dd></div>
             <div><dt class="text-xs uppercase" style="color: var(--text-muted);">Subscription</dt><dd class="font-semibold"><?php echo e($tenant['subscription_status'] ?? 'manual'); ?></dd></div>
             <div><dt class="text-xs uppercase" style="color: var(--text-muted);">Billing email</dt><dd class="font-semibold"><?php echo e($tenant['billing_email'] ?? ''); ?></dd></div>
         </dl>
+
+        <div class="rounded-xl border p-4 mb-6" style="border-color: var(--border-light); background: var(--surface-secondary);">
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                <div>
+                    <h2 class="font-semibold"><?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/month</h2>
+                    <p class="text-sm" style="color: var(--text-muted);">Unlimited users, clients, agents, and tickets. <?php echo e(format_file_size($usage['included_storage_bytes'])); ?> storage included.</p>
+                </div>
+                <div class="text-sm sm:text-right">
+                    <strong><?php echo e(billing_format_money(billing_storage_overage_price_cents())); ?>/extra GB</strong>
+                    <div style="color: var(--text-muted);">metered monthly</div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="flex items-center justify-between text-sm mb-1">
+                    <span>Storage used</span>
+                    <span><?php echo e(format_file_size($usage['storage_bytes'])); ?> / <?php echo e(format_file_size($usage['included_storage_bytes'])); ?></span>
+                </div>
+                <div class="h-2 rounded-full overflow-hidden" style="background: var(--border-light);">
+                    <div class="h-full" style="width: <?php echo $storage_percent; ?>%; background: var(--primary);"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                <div><span style="color: var(--text-muted);">Users</span><strong class="block"><?php echo (int) $usage['users']; ?></strong></div>
+                <div><span style="color: var(--text-muted);">Clients</span><strong class="block"><?php echo (int) $usage['clients']; ?></strong></div>
+                <div><span style="color: var(--text-muted);">Agents</span><strong class="block"><?php echo (int) $usage['agents']; ?></strong></div>
+                <div><span style="color: var(--text-muted);">Extra storage</span><strong class="block"><?php echo (int) $usage['extra_storage_gb']; ?> GB</strong></div>
+            </div>
+
+            <?php if ($usage['extra_storage_gb'] > 0): ?>
+                <div class="alert alert-info mt-4 mb-0">Estimated storage overage this month: <?php echo e(billing_format_money($usage['storage_overage_cents'])); ?>.</div>
+            <?php endif; ?>
+        </div>
 
         <?php if (!billing_enabled()): ?>
             <div class="alert alert-info mb-5">Billing is prepared but not enabled. Configure Stripe keys and set BILLING_ENABLED=true.</div>
@@ -72,7 +110,7 @@ require_once BASE_PATH . '/includes/header.php';
         <div class="flex flex-col sm:flex-row gap-3">
             <form method="post" action="<?php echo url('billing', ['action' => 'checkout', 'tenant_id' => (int) $tenant['id']]); ?>">
                 <?php echo csrf_field(); ?>
-                <input type="hidden" name="plan" value="<?php echo e($tenant['plan'] ?: 'starter'); ?>">
+                <input type="hidden" name="plan" value="<?php echo e(billing_plan_code()); ?>">
                 <button class="btn btn-primary" type="submit">Start subscription</button>
             </form>
             <form method="post" action="<?php echo url('billing', ['action' => 'portal', 'tenant_id' => (int) $tenant['id']]); ?>">

@@ -16,20 +16,34 @@ Set these values in `config.local.php` or in the container environment:
 define('BILLING_ENABLED', true);
 define('STRIPE_SECRET_KEY', 'sk_test_...');
 define('STRIPE_WEBHOOK_SECRET', 'whsec_...');
-define('STRIPE_PRICE_STARTER', 'price_...');
-define('STRIPE_PRICE_PRO', 'price_...');
+define('STRIPE_PRICE_CLOUD_BASE', 'price_...');
+define('STRIPE_PRICE_STORAGE_OVERAGE', 'price_...');
+define('BILLING_CURRENCY', 'EUR');
+define('BILLING_CLOUD_BASE_PRICE_CENTS', 1900);
+define('BILLING_STORAGE_OVERAGE_PRICE_CENTS', 79);
+define('BILLING_INCLUDED_STORAGE_BYTES', 1073741824);
 ```
 
 When `BILLING_ENABLED` is `false`, the billing UI remains visible but Checkout and Portal actions return a clear configuration error.
 
 ## Stripe products
 
-Create recurring Prices in Stripe for each public plan:
+Create two recurring Prices in Stripe for the single public plan:
 
-- `starter` -> `STRIPE_PRICE_STARTER`
-- `pro` -> `STRIPE_PRICE_PRO`
+- FoxDesk Cloud base subscription -> `STRIPE_PRICE_CLOUD_BASE`
+- Metered extra storage per GB -> `STRIPE_PRICE_STORAGE_OVERAGE`
 
-FoxDesk stores the selected plan on the `tenants.plan` field. Checkout uses that plan to select the matching Stripe Price.
+FoxDesk stores `cloud` on the `tenants.plan` field. Checkout adds the base subscription and, when configured, the metered storage price.
+
+Default commercial model:
+
+- unlimited users
+- unlimited clients
+- unlimited agents
+- unlimited tickets
+- 1 GB storage included
+- EUR 19.00/month base price
+- EUR 0.79/extra GB/month storage overage
 
 ## Webhook
 
@@ -53,6 +67,7 @@ The endpoint verifies the `Stripe-Signature` header with `STRIPE_WEBHOOK_SECRET`
 - Platform admins can open Checkout or Customer Portal for any workspace from `Platform`.
 - Workspace admins can open their own billing page from the user menu.
 - Stripe subscription changes update `tenants.stripe_customer_id`, `tenants.stripe_subscription_id`, `tenants.subscription_status`, and `tenants.status`.
+- Billing and Platform show storage usage, included storage, billable extra GB, and estimated monthly overage.
 - Tenants with `status` set to `suspended` or `canceled` are redirected to Billing instead of normal app pages.
 
 ## Test coverage
@@ -63,6 +78,7 @@ The E2E suite verifies:
 - platform admins can see created workspaces
 - Stripe webhook rejects invalid signatures
 - signed subscription webhooks update tenant billing state
+- storage usage and the single-plan billing UI render on Platform and Billing
 - canceled tenant admins are redirected to the Billing page
 
 Run locally:

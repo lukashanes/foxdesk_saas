@@ -24,14 +24,106 @@ function billing_webhook_secret(): string
     return trim((string) billing_env_or_constant('STRIPE_WEBHOOK_SECRET', ''));
 }
 
-function billing_plan_price_id(string $plan): string
+function billing_currency(): string
 {
-    $plan = strtolower(trim($plan));
-    if ($plan === 'pro') {
-        return trim((string) billing_env_or_constant('STRIPE_PRICE_PRO', ''));
+    return strtoupper(trim((string) billing_env_or_constant('BILLING_CURRENCY', 'EUR')));
+}
+
+function billing_cloud_base_price_cents(): int
+{
+    return max(0, (int) billing_env_or_constant('BILLING_CLOUD_BASE_PRICE_CENTS', 1900));
+}
+
+function billing_storage_overage_price_cents(): int
+{
+    return max(0, (int) billing_env_or_constant('BILLING_STORAGE_OVERAGE_PRICE_CENTS', 79));
+}
+
+function billing_included_storage_bytes(): int
+{
+    return max(0, (int) billing_env_or_constant('BILLING_INCLUDED_STORAGE_BYTES', 1073741824));
+}
+
+function billing_plan_code(): string
+{
+    return 'cloud';
+}
+
+function billing_plan_name(): string
+{
+    return 'FoxDesk Cloud';
+}
+
+function billing_format_money(int $cents): string
+{
+    $amount = number_format($cents / 100, 2);
+    return billing_currency() === 'CZK' ? $amount . ' Kc' : 'EUR ' . $amount;
+}
+
+function billing_plan_price_id(string $plan = 'cloud'): string
+{
+    return trim((string) billing_env_or_constant('STRIPE_PRICE_CLOUD_BASE', ''));
+}
+
+function billing_storage_overage_price_id(): string
+{
+    return trim((string) billing_env_or_constant('STRIPE_PRICE_STORAGE_OVERAGE', ''));
+}
+
+function billing_tenant_usage(int $tenant_id): array
+{
+    ensure_tenant_baseline();
+
+    $user_count = 0;
+    $agent_count = 0;
+    $client_count = 0;
+    $ticket_count = 0;
+    $storage_bytes = 0;
+
+    if (table_exists('users')) {
+        $users = db_fetch_one(
+            "SELECT
+                COUNT(*) AS users,
+                SUM(role IN ('admin', 'agent')) AS agents
+             FROM users
+             WHERE tenant_id = ? AND deleted_at IS NULL",
+            [$tenant_id]
+        );
+        $user_count = (int) ($users['users'] ?? 0);
+        $agent_count = (int) ($users['agents'] ?? 0);
     }
 
-    return trim((string) billing_env_or_constant('STRIPE_PRICE_STARTER', ''));
+    if (table_exists('organizations')) {
+        $clients = db_fetch_one("SELECT COUNT(*) AS c FROM organizations WHERE tenant_id = ? AND is_active = 1", [$tenant_id]);
+        $client_count = (int) ($clients['c'] ?? 0);
+    }
+
+    if (table_exists('tickets')) {
+        $tickets = db_fetch_one("SELECT COUNT(*) AS c FROM tickets WHERE tenant_id = ?", [$tenant_id]);
+        $ticket_count = (int) ($tickets['c'] ?? 0);
+    }
+
+    if (table_exists('attachments')) {
+        $attachments = db_fetch_one("SELECT COALESCE(SUM(file_size), 0) AS bytes FROM attachments WHERE tenant_id = ?", [$tenant_id]);
+        $storage_bytes = (int) ($attachments['bytes'] ?? 0);
+    }
+
+    $included_bytes = billing_included_storage_bytes();
+    $extra_bytes = max(0, $storage_bytes - $included_bytes);
+    $extra_gb = $extra_bytes > 0 ? (int) ceil($extra_bytes / 1073741824) : 0;
+    $overage_cents = $extra_gb * billing_storage_overage_price_cents();
+
+    return [
+        'users' => $user_count,
+        'agents' => $agent_count,
+        'clients' => $client_count,
+        'tickets' => $ticket_count,
+        'storage_bytes' => $storage_bytes,
+        'included_storage_bytes' => $included_bytes,
+        'extra_storage_bytes' => $extra_bytes,
+        'extra_storage_gb' => $extra_gb,
+        'storage_overage_cents' => $overage_cents,
+    ];
 }
 
 function billing_stripe_request(string $method, string $path, array $params = []): array
@@ -119,7 +211,7 @@ function billing_create_or_get_customer(array $tenant): string
     return $customer_id;
 }
 
-function billing_create_checkout_session(int $tenant_id, string $plan = 'starter'): string
+function billing_create_checkout_session(int $tenant_id, string $plan = 'cloud'): string
 {
     if (!billing_enabled()) {
         throw new RuntimeException('Billing is not enabled.');
@@ -132,11 +224,11 @@ function billing_create_checkout_session(int $tenant_id, string $plan = 'starter
 
     $price_id = billing_plan_price_id($plan);
     if ($price_id === '') {
-        throw new RuntimeException('Stripe price id for this plan is not configured.');
+        throw new RuntimeException('Stripe base price id is not configured.');
     }
 
     $customer_id = billing_create_or_get_customer($tenant);
-    $session = billing_stripe_request('POST', 'checkout/sessions', [
+    $params = [
         'mode' => 'subscription',
         'customer' => $customer_id,
         'line_items[0][price]' => $price_id,
@@ -145,7 +237,15 @@ function billing_create_checkout_session(int $tenant_id, string $plan = 'starter
         'cancel_url' => (string) billing_env_or_constant('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=platform&billing=cancelled'),
         'metadata[tenant_id]' => (string) $tenant_id,
         'subscription_data[metadata][tenant_id]' => (string) $tenant_id,
-    ]);
+        'subscription_data[metadata][plan]' => billing_plan_code(),
+    ];
+
+    $storage_price_id = billing_storage_overage_price_id();
+    if ($storage_price_id !== '') {
+        $params['line_items[1][price]'] = $storage_price_id;
+    }
+
+    $session = billing_stripe_request('POST', 'checkout/sessions', $params);
 
     $url = (string) ($session['url'] ?? '');
     if ($url === '') {

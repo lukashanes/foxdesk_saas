@@ -71,7 +71,7 @@ function ensure_tenant_baseline(): void
                 name VARCHAR(255) NOT NULL,
                 slug VARCHAR(120) NOT NULL UNIQUE,
                 primary_domain VARCHAR(255) NULL,
-                plan VARCHAR(50) NOT NULL DEFAULT 'starter',
+                plan VARCHAR(50) NOT NULL DEFAULT 'cloud',
                 status ENUM('active', 'trialing', 'past_due', 'suspended', 'canceled') NOT NULL DEFAULT 'active',
                 trial_ends_at DATETIME NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -96,8 +96,8 @@ function ensure_tenant_baseline(): void
             'stripe_customer_id' => "ALTER TABLE tenants ADD COLUMN stripe_customer_id VARCHAR(255) NULL AFTER billing_email",
             'stripe_subscription_id' => "ALTER TABLE tenants ADD COLUMN stripe_subscription_id VARCHAR(255) NULL AFTER stripe_customer_id",
             'subscription_status' => "ALTER TABLE tenants ADD COLUMN subscription_status VARCHAR(50) NOT NULL DEFAULT 'manual' AFTER stripe_subscription_id",
-            'max_users' => "ALTER TABLE tenants ADD COLUMN max_users INT NOT NULL DEFAULT 10 AFTER subscription_status",
-            'max_agents' => "ALTER TABLE tenants ADD COLUMN max_agents INT NOT NULL DEFAULT 3 AFTER max_users",
+            'max_users' => "ALTER TABLE tenants ADD COLUMN max_users INT NOT NULL DEFAULT 1000000 AFTER subscription_status",
+            'max_agents' => "ALTER TABLE tenants ADD COLUMN max_agents INT NOT NULL DEFAULT 1000000 AFTER max_users",
             'suspended_at' => "ALTER TABLE tenants ADD COLUMN suspended_at DATETIME NULL AFTER trial_ends_at",
         ];
         foreach ($tenant_columns as $column => $sql) {
@@ -105,6 +105,8 @@ function ensure_tenant_baseline(): void
                 db_query($sql);
             }
         }
+
+        db_query("UPDATE tenants SET plan = 'cloud' WHERE plan IN ('', 'starter', 'pro', 'business') OR plan IS NULL");
 
         if (table_exists('users') && !column_exists('users', 'is_platform_admin')) {
             db_query("ALTER TABLE users ADD COLUMN is_platform_admin TINYINT(1) NOT NULL DEFAULT 0 AFTER role");
@@ -275,11 +277,11 @@ function create_tenant_workspace(array $data): array
             'name' => $workspace_name,
             'slug' => $slug,
             'status' => $data['status'] ?? 'trialing',
-            'plan' => $data['plan'] ?? 'starter',
+            'plan' => $data['plan'] ?? 'cloud',
             'billing_email' => $data['billing_email'] ?? $admin_email,
             'subscription_status' => $data['subscription_status'] ?? 'trialing',
-            'max_users' => (int) ($data['max_users'] ?? 10),
-            'max_agents' => (int) ($data['max_agents'] ?? 3),
+            'max_users' => (int) ($data['max_users'] ?? 1000000),
+            'max_agents' => (int) ($data['max_agents'] ?? 1000000),
             'trial_ends_at' => $data['trial_ends_at'] ?? date('Y-m-d H:i:s', strtotime('+14 days')),
             'created_at' => date('Y-m-d H:i:s'),
         ]);
