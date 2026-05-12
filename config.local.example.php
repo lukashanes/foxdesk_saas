@@ -16,6 +16,14 @@ define('APP_URL', 'http://127.0.0.1:8090');
 define('APP_DEBUG', true);
 define('TRUST_PROXY', false);
 
+define('BILLING_ENABLED', false);
+define('STRIPE_SECRET_KEY', '');
+define('STRIPE_WEBHOOK_SECRET', 'whsec_test');
+define('STRIPE_PRICE_STARTER', '');
+define('STRIPE_PRICE_PRO', '');
+define('STRIPE_SUCCESS_URL', APP_URL . '/index.php?page=platform&billing=success');
+define('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=platform&billing=cancelled');
+
 define('IMAP_ENABLED', false);
 define('IMAP_HOST', '');
 define('IMAP_PORT', 993);
@@ -37,4 +45,3 @@ define('UPLOAD_DIR', 'uploads/');
 define('MAX_UPLOAD_SIZE', 10 * 1024 * 1024);
 
 date_default_timezone_set('Europe/Prague');
-

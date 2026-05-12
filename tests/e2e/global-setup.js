@@ -231,6 +231,8 @@ module.exports = async function globalSetup() {
     webContainer,
     '--network',
     network,
+    '-e',
+    'STRIPE_WEBHOOK_SECRET=whsec_test',
     '-p',
     `${port}:80`,
     '-v',

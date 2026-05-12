@@ -174,6 +174,9 @@ require_once BASE_PATH . '/includes/header.php';
                                 <input type="hidden" name="tenant_id" value="<?php echo (int) $tenant['id']; ?>">
                                 <input class="platform-control" name="plan" value="<?php echo e($tenant['plan']); ?>">
                                 <input class="platform-control" name="subscription_status" value="<?php echo e($tenant['subscription_status'] ?? 'manual'); ?>">
+                                <?php if (!empty($tenant['stripe_customer_id'])): ?>
+                                    <span class="text-xs" style="color: var(--text-muted);"><?php echo e($tenant['stripe_customer_id']); ?></span>
+                                <?php endif; ?>
                         </td>
                         <td>
                                 <div class="flex gap-2">
@@ -188,6 +191,15 @@ require_once BASE_PATH . '/includes/header.php';
                         </td>
                         <td>
                                 <button class="btn btn-secondary btn-sm" type="submit">Save</button>
+                            </form>
+                            <form method="post" action="<?php echo url('billing', ['action' => 'checkout', 'tenant_id' => (int) $tenant['id']]); ?>" class="mt-2">
+                                <?php echo csrf_field(); ?>
+                                <input type="hidden" name="plan" value="<?php echo e($tenant['plan'] ?: 'starter'); ?>">
+                                <button class="btn btn-ghost btn-sm w-full" type="submit">Checkout</button>
+                            </form>
+                            <form method="post" action="<?php echo url('billing', ['action' => 'portal', 'tenant_id' => (int) $tenant['id']]); ?>" class="mt-2">
+                                <?php echo csrf_field(); ?>
+                                <button class="btn btn-ghost btn-sm w-full" type="submit">Portal</button>
                             </form>
                         </td>
                     </tr>

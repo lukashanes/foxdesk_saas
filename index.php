@@ -108,7 +108,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 // Pages that don't require login
-$public_pages = ['login', 'logout', 'signup', 'forgot-password', 'reset-password', 'ticket-share', 'report-share', 'report-public', 'api', 'health', 'cron'];
+$public_pages = ['login', 'logout', 'signup', 'forgot-password', 'reset-password', 'ticket-share', 'report-share', 'report-public', 'stripe-webhook', 'api', 'health', 'cron'];
 
 // Check authentication
 if (!in_array($page, $public_pages)) {
@@ -239,6 +239,17 @@ if (is_logged_in() && function_exists('page_views_table_exists')) {
     } catch (Throwable $e) { /* silent */ }
 }
 
+// Billing access guard: a suspended/canceled workspace can only reach billing/profile/logout.
+if (is_logged_in() && !in_array($page, ['billing', 'profile', 'logout', 'stripe-webhook', 'health', 'cron'], true)) {
+    $tenant = function_exists('billing_current_tenant') ? billing_current_tenant() : null;
+    $blocked_status = (string) ($tenant['status'] ?? '');
+    if ($tenant && in_array($blocked_status, ['suspended', 'canceled'], true) && !is_platform_admin()) {
+        flash(t('Workspace access is restricted. Please update billing to continue.'), 'error');
+        header('Location: index.php?page=billing');
+        exit;
+    }
+}
+
 // Log request to debug_log if available
 if (function_exists('debug_log')) {
     $log_post = $_POST;
@@ -261,6 +272,10 @@ if (function_exists('debug_log')) {
 switch ($page) {
     case 'login':
         require_once BASE_PATH . '/pages/login.php';
+        break;
+
+    case 'stripe-webhook':
+        require_once BASE_PATH . '/pages/stripe-webhook.php';
         break;
 
     case 'signup':
@@ -287,6 +302,10 @@ switch ($page) {
 
     case 'platform':
         require_once BASE_PATH . '/pages/platform.php';
+        break;
+
+    case 'billing':
+        require_once BASE_PATH . '/pages/billing.php';
         break;
 
     case 'tickets':

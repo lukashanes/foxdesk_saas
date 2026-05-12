@@ -421,6 +421,12 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                     <span>Platform</span>
                 </a>
                 <?php endif; ?>
+                <a href="<?php echo url('billing'); ?>" role="menuitem"
+                    class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors sidebar-hover"
+                    style="color: var(--text-secondary);">
+                    <?php echo get_icon('credit-card', 'w-4 h-4'); ?>
+                    <span>Billing</span>
+                </a>
                 <a href="<?php echo url('admin', ['section' => 'users']); ?>" role="menuitem"
                     class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors sidebar-hover"
                     style="color: var(--text-secondary);">

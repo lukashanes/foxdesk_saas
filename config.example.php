@@ -18,6 +18,15 @@ define('APP_URL', 'https://your-domain.tld');
 // define('APP_DEBUG', false); // Set true to enable debug mode
 // define('TRUST_PROXY', false); // Set true only when FoxDesk is behind your trusted reverse proxy.
 
+// SaaS billing with Stripe Billing + Checkout.
+define('BILLING_ENABLED', false);
+define('STRIPE_SECRET_KEY', '');
+define('STRIPE_WEBHOOK_SECRET', '');
+define('STRIPE_PRICE_STARTER', '');
+define('STRIPE_PRICE_PRO', '');
+define('STRIPE_SUCCESS_URL', APP_URL . '/index.php?page=platform&billing=success');
+define('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=platform&billing=cancelled');
+
 // Incoming email ingest (IMAP)
 define('IMAP_ENABLED', false);
 define('IMAP_HOST', '');

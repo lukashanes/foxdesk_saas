@@ -1,6 +1,47 @@
+const crypto = require('crypto');
 const { test, expect } = require('@playwright/test');
-const { login } = require('./helpers');
+const { dbQuery, login } = require('./helpers');
 const { baseURL } = require('./env');
+
+function sqlString(value) {
+  return `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "''")}'`;
+}
+
+function tenantIdByOwnerEmail(email) {
+  const output = dbQuery(`SELECT tenant_id FROM users WHERE email = ${sqlString(email)} LIMIT 1;`);
+  const lines = output.trim().split(/\r?\n/).filter(Boolean);
+  return Number(lines[1] || 0);
+}
+
+function stripeSignature(payload, secret = 'whsec_test') {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signature = crypto
+    .createHmac('sha256', secret)
+    .update(`${timestamp}.${payload}`)
+    .digest('hex');
+  return `t=${timestamp},v1=${signature}`;
+}
+
+async function createWorkspaceViaUi(browser, {
+  workspaceName,
+  ownerEmail,
+  ownerPassword = 'OwnerPass123!',
+  firstName = 'Owner',
+  lastName = 'SaaS'
+}) {
+  const context = await browser.newContext({ baseURL });
+  const page = await context.newPage();
+  await page.goto('/index.php?page=signup');
+  await page.locator('input[name="workspace_name"]').fill(workspaceName);
+  await page.locator('input[name="admin_first_name"]').fill(firstName);
+  await page.locator('input[name="admin_last_name"]').fill(lastName);
+  await page.locator('input[name="admin_email"]').fill(ownerEmail);
+  await page.locator('input[name="password"]').fill(ownerPassword);
+  await page.locator('input[name="password_confirm"]').fill(ownerPassword);
+  await page.locator('button[type="submit"]').click();
+  await page.waitForURL(/page=dashboard|dashboard/);
+  return { context, page };
+}
 
 test('public signup creates an isolated FoxDesk workspace and platform admin can manage it', async ({ browser }) => {
   const stamp = Date.now();
@@ -8,18 +49,11 @@ test('public signup creates an isolated FoxDesk workspace and platform admin can
   const ownerEmail = `owner.${stamp}@example.test`;
   const ownerPassword = 'OwnerPass123!';
 
-  const signupContext = await browser.newContext({ baseURL });
-  const signupPage = await signupContext.newPage();
-  await signupPage.goto('/index.php?page=signup');
-  await expect(signupPage.locator('body')).toContainText('Create workspace');
-  await signupPage.locator('input[name="workspace_name"]').fill(workspaceName);
-  await signupPage.locator('input[name="admin_first_name"]').fill('Owner');
-  await signupPage.locator('input[name="admin_last_name"]').fill('SaaS');
-  await signupPage.locator('input[name="admin_email"]').fill(ownerEmail);
-  await signupPage.locator('input[name="password"]').fill(ownerPassword);
-  await signupPage.locator('input[name="password_confirm"]').fill(ownerPassword);
-  await signupPage.locator('button[type="submit"]').click();
-  await signupPage.waitForURL(/page=dashboard|dashboard/);
+  const { context: signupContext, page: signupPage } = await createWorkspaceViaUi(browser, {
+    workspaceName,
+    ownerEmail,
+    ownerPassword
+  });
   await expect(signupPage.locator('body')).toContainText('Dashboard');
 
   await signupPage.goto('/index.php?page=platform');
@@ -34,4 +68,89 @@ test('public signup creates an isolated FoxDesk workspace and platform admin can
   await expect(platformPage.locator('body')).toContainText(workspaceName);
   await expect(platformPage.locator('body')).toContainText(ownerEmail);
   await platformContext.close();
+});
+
+test('Stripe webhook updates tenant billing state and rejects invalid signatures', async ({ browser, request }) => {
+  const stamp = Date.now();
+  const ownerEmail = `billing.${stamp}@example.test`;
+  const workspaceName = `Billing Workspace ${stamp}`;
+
+  const { context } = await createWorkspaceViaUi(browser, {
+    workspaceName,
+    ownerEmail,
+    firstName: 'Billing',
+    lastName: 'Owner'
+  });
+  await context.close();
+
+  const tenantId = tenantIdByOwnerEmail(ownerEmail);
+  expect(tenantId).toBeGreaterThan(0);
+
+  const event = {
+    id: `evt_${stamp}`,
+    type: 'customer.subscription.updated',
+    data: {
+      object: {
+        id: `sub_${stamp}`,
+        customer: `cus_${stamp}`,
+        status: 'active',
+        trial_end: null,
+        metadata: { tenant_id: String(tenantId) }
+      }
+    }
+  };
+  const payload = JSON.stringify(event);
+
+  const invalid = await request.post('/index.php?page=stripe-webhook', {
+    data: payload,
+    headers: {
+      'Content-Type': 'application/json',
+      'Stripe-Signature': 't=1,v1=bad'
+    }
+  });
+  expect(invalid.status()).toBe(400);
+
+  const response = await request.post('/index.php?page=stripe-webhook', {
+    data: payload,
+    headers: {
+      'Content-Type': 'application/json',
+      'Stripe-Signature': stripeSignature(payload)
+    }
+  });
+  expect(response.status()).toBe(200);
+  await expect(response).toBeOK();
+
+  const output = dbQuery(`
+    SELECT status, subscription_status, stripe_customer_id, stripe_subscription_id
+    FROM tenants
+    WHERE id = ${tenantId}
+    LIMIT 1;
+  `);
+  expect(output).toContain('active\tactive');
+  expect(output).toContain(`cus_${stamp}`);
+  expect(output).toContain(`sub_${stamp}`);
+});
+
+test('blocked tenant admins are redirected to billing instead of app pages', async ({ browser }) => {
+  const stamp = Date.now();
+  const ownerEmail = `blocked.${stamp}@example.test`;
+  const ownerPassword = 'OwnerPass123!';
+
+  const { context: ownerContext, page } = await createWorkspaceViaUi(browser, {
+    workspaceName: `Blocked Workspace ${stamp}`,
+    ownerEmail,
+    ownerPassword,
+    firstName: 'Blocked',
+    lastName: 'Owner'
+  });
+
+  const tenantId = tenantIdByOwnerEmail(ownerEmail);
+  expect(tenantId).toBeGreaterThan(0);
+  dbQuery(`UPDATE tenants SET status = 'canceled', subscription_status = 'canceled' WHERE id = ${tenantId};`);
+
+  await page.goto('/index.php?page=tickets');
+  await expect(page).toHaveURL(/page=billing/);
+  await expect(page.locator('body')).toContainText('Workspace access is restricted');
+  await expect(page.locator('body')).toContainText('Billing');
+  await ownerContext.close();
 });

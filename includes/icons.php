@@ -44,6 +44,7 @@ function get_icon_path($name)
         'flag' => '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line>',
         'list-alt' => '<path d="M9 11.2h5.6m-5.6 2.4h5.6m-5.6-4.8h5.6 M5 16h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>', // List icon
         'chart-bar' => '<line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line>',
+        'credit-card' => '<rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line><line x1="6" y1="15" x2="10" y2="15"></line>',
         'sync-alt' => '<path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>', // Refresh CW
         'archive' => '<polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line>',
         'magic' => '<path d="M18 14.5L9 24l-7-7L14.5 9"></path><line x1="2" y1="2" x2="2" y2="2"></line><line x1="20" y1="20" x2="20" y2="20"></line><line x1="4.5" y1="4.5" x2="4.5" y2="4.5"></line><line x1="19.5" y1="5.5" x2="19.5" y2="5.5"></line>',
@@ -142,4 +143,3 @@ function get_icon($name, $classes = '')
     $path = get_icon_path($name);
     return '<svg xmlns="http://www.w3.org/2000/svg" class="' . $classes . '" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' . $path . '</svg>';
 }
-
