@@ -7,15 +7,16 @@
 - Multi-tenant baseline exists: tenants, workspace signup, tenant-aware users, tenant isolation checks, and platform admin console.
 - E2E baseline is active and currently covers core app flows, security regressions, permissions, SaaS signup, billing webhook handling, and blocked tenant access.
 - Stripe billing foundation is prepared: Checkout, Customer Portal, signed webhooks, tenant subscription state, and billing documentation.
+- Metered storage usage reporting is prepared with a dry-run mode and idempotent local report rows.
 
 ## Immediate Next Steps
 
-1. Create real Stripe test products and recurring prices for FoxDesk Cloud base subscription and metered extra storage.
+1. Create real Stripe test products, recurring prices, and storage meter for FoxDesk Cloud.
 2. Add production-style environment handling for secrets on Hetzner: app config, database credentials, Stripe keys, webhook secret, mail credentials, and backup credentials.
-3. Add Stripe usage reporting for metered storage:
-   - calculate billable extra GB
-   - report usage to Stripe on a schedule
-   - make reports idempotent per billing period
+3. Validate Stripe usage reporting end to end:
+   - connect test storage meter
+   - run dry-run and live test report
+   - verify meter summary and upcoming invoice
 4. Add billing lifecycle rules:
    - trial grace period
    - `past_due` grace period

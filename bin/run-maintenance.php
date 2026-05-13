@@ -26,6 +26,7 @@ if (!file_exists(BASE_PATH . '/config.php')) {
 
 require_once BASE_PATH . '/config.php';
 require_once BASE_PATH . '/includes/database.php';
+require_once BASE_PATH . '/includes/tenant-functions.php';
 require_once BASE_PATH . '/includes/functions.php';
 require_once BASE_PATH . '/includes/settings-functions.php';
 require_once BASE_PATH . '/includes/email-ingest-functions.php';
@@ -65,6 +66,7 @@ $result = [
     'recurring_processed' => 0,
     'email_ingest' => null,
     'update_check' => null,
+    'billing_usage' => null,
     'errors' => [],
 ];
 
@@ -125,6 +127,23 @@ try {
     $result['update_check'] = ['status' => 'error', 'error' => $e->getMessage()];
 }
 
+// --- Stripe metered storage usage ---
+try {
+    if (billing_enabled()) {
+        $result['billing_usage'] = billing_report_storage_usage_all(false);
+        if (empty($result['billing_usage']['ok'])) {
+            $result['ok'] = false;
+            $result['errors'][] = 'billing_usage: one or more usage reports failed';
+        }
+    } else {
+        $result['billing_usage'] = ['status' => 'disabled'];
+    }
+} catch (Throwable $e) {
+    $result['ok'] = false;
+    $result['errors'][] = 'billing_usage: ' . $e->getMessage();
+    $result['billing_usage'] = ['status' => 'error', 'error' => $e->getMessage()];
+}
+
 if ($json) {
     echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . PHP_EOL;
     exit($result['ok'] ? 0 : 2);
@@ -141,6 +160,12 @@ if (is_array($result['update_check'])) {
     $uc_status = $result['update_check']['status'] ?? 'unknown';
     $uc_version = $result['update_check']['version'] ?? '';
     echo '[maintenance] update_check=' . $uc_status . ($uc_version ? ' version=' . $uc_version : '') . PHP_EOL;
+}
+if (is_array($result['billing_usage'])) {
+    echo '[maintenance] billing_usage=' . ($result['billing_usage']['status'] ?? 'completed')
+        . ' reported=' . (int) ($result['billing_usage']['reported'] ?? 0)
+        . ' skipped=' . (int) ($result['billing_usage']['skipped'] ?? 0)
+        . ' failed=' . (int) ($result['billing_usage']['failed'] ?? 0) . PHP_EOL;
 }
 
 if (!$result['ok']) {
@@ -159,5 +184,5 @@ cli_scheduler_log('scheduler', 'info', 'Maintenance run completed', [
     'recurring_processed' => (int) $result['recurring_processed'],
     'email_ingest' => $result['email_ingest'],
     'update_check' => $result['update_check'],
+    'billing_usage' => $result['billing_usage'],
 ]);
-

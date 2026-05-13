@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const { test, expect } = require('@playwright/test');
-const { dbQuery, login } = require('./helpers');
-const { baseURL } = require('./env');
+const { dbQuery, dockerExec, login } = require('./helpers');
+const { baseURL, webContainer } = require('./env');
 
 function sqlString(value) {
   return `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "''")}'`;
@@ -188,6 +188,8 @@ test('single cloud plan shows unlimited usage and storage overage', async ({ bro
   });
 
   seedStorageUsage(ownerEmail, 3 * 1073741824);
+  const tenantId = tenantIdByOwnerEmail(ownerEmail);
+  dbQuery(`UPDATE tenants SET stripe_customer_id = 'cus_usage_${stamp}' WHERE id = ${tenantId};`);
 
   await page.goto('/index.php?page=billing');
   await expect(page.locator('body')).toContainText('FoxDesk Cloud');
@@ -195,5 +197,24 @@ test('single cloud plan shows unlimited usage and storage overage', async ({ bro
   await expect(page.locator('body')).toContainText('3.00 GB / 1.00 GB');
   await expect(page.locator('body')).toContainText('2 GB');
   await expect(page.locator('body')).toContainText('EUR 1.58');
+
+  const report = JSON.parse(dockerExec(webContainer, ['php', 'bin/report-billing-usage.php', '--dry-run', '--json']));
+  expect(report.ok).toBe(true);
+  expect(report.dry_run).toBeGreaterThanOrEqual(1);
+  expect(report.tenants).toEqual(expect.arrayContaining([
+    expect.objectContaining({
+      tenant_id: tenantId,
+      status: 'dry_run',
+      quantity: 2
+    })
+  ]));
+
+  const usageReport = dbQuery(`
+    SELECT quantity, status
+    FROM billing_usage_reports
+    WHERE tenant_id = ${tenantId}
+    LIMIT 1;
+  `);
+  expect(usageReport).toContain('2\tdry_run');
   await context.close();
 });

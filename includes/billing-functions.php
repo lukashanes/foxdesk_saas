@@ -70,6 +70,43 @@ function billing_storage_overage_price_id(): string
     return trim((string) billing_env_or_constant('STRIPE_PRICE_STORAGE_OVERAGE', ''));
 }
 
+function billing_storage_meter_event_name(): string
+{
+    return trim((string) billing_env_or_constant('STRIPE_STORAGE_METER_EVENT_NAME', 'foxdesk_storage_extra_gb'));
+}
+
+function billing_usage_period_key(?int $timestamp = null): string
+{
+    return date('Y-m-d', $timestamp ?: time());
+}
+
+function billing_ensure_usage_reports_table(): void
+{
+    if (!function_exists('table_exists') || table_exists('billing_usage_reports')) {
+        return;
+    }
+
+    db_query("
+        CREATE TABLE IF NOT EXISTS billing_usage_reports (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            tenant_id INT NOT NULL,
+            stripe_customer_id VARCHAR(255) NOT NULL,
+            event_name VARCHAR(120) NOT NULL,
+            period_key VARCHAR(20) NOT NULL,
+            quantity INT NOT NULL DEFAULT 0,
+            idempotency_key VARCHAR(255) NOT NULL,
+            status ENUM('pending', 'reported', 'dry_run', 'failed', 'skipped') NOT NULL DEFAULT 'pending',
+            error_message TEXT NULL,
+            reported_at DATETIME NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_billing_usage_idempotency (idempotency_key),
+            INDEX idx_billing_usage_tenant_period (tenant_id, period_key),
+            INDEX idx_billing_usage_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+}
+
 function billing_tenant_usage(int $tenant_id): array
 {
     ensure_tenant_baseline();
@@ -126,7 +163,7 @@ function billing_tenant_usage(int $tenant_id): array
     ];
 }
 
-function billing_stripe_request(string $method, string $path, array $params = []): array
+function billing_stripe_request(string $method, string $path, array $params = [], array $extra_headers = []): array
 {
     $secret = trim((string) billing_env_or_constant('STRIPE_SECRET_KEY', ''));
     if ($secret === '') {
@@ -143,10 +180,10 @@ function billing_stripe_request(string $method, string $path, array $params = []
     $options = [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_CUSTOMREQUEST => $method,
-        CURLOPT_HTTPHEADER => [
+        CURLOPT_HTTPHEADER => array_merge([
             'Authorization: Bearer ' . $secret,
             'Stripe-Version: 2026-02-25.clover',
-        ],
+        ], $extra_headers),
         CURLOPT_TIMEOUT => 20,
     ];
 
@@ -175,6 +212,163 @@ function billing_stripe_request(string $method, string $path, array $params = []
     }
 
     return $decoded;
+}
+
+function billing_record_meter_event(string $event_name, string $stripe_customer_id, int $value, string $identifier, ?int $timestamp = null): array
+{
+    if ($event_name === '') {
+        throw new RuntimeException('Stripe storage meter event name is not configured.');
+    }
+    if ($stripe_customer_id === '') {
+        throw new RuntimeException('Stripe customer id is missing.');
+    }
+
+    $params = [
+        'event_name' => $event_name,
+        'payload[value]' => (string) max(0, $value),
+        'payload[stripe_customer_id]' => $stripe_customer_id,
+        'identifier' => $identifier,
+    ];
+    if ($timestamp !== null) {
+        $params['timestamp'] = (string) $timestamp;
+    }
+
+    return billing_stripe_request('POST', 'billing/meter_events', $params, [
+        'Idempotency-Key: ' . $identifier,
+    ]);
+}
+
+function billing_report_storage_usage_for_tenant(int $tenant_id, ?string $period_key = null, bool $dry_run = false): array
+{
+    billing_ensure_usage_reports_table();
+
+    $tenant = billing_get_tenant($tenant_id);
+    if (!$tenant) {
+        return ['tenant_id' => $tenant_id, 'status' => 'skipped', 'reason' => 'tenant_not_found'];
+    }
+
+    $stripe_customer_id = trim((string) ($tenant['stripe_customer_id'] ?? ''));
+    if ($stripe_customer_id === '') {
+        return ['tenant_id' => $tenant_id, 'status' => 'skipped', 'reason' => 'missing_stripe_customer'];
+    }
+
+    $event_name = billing_storage_meter_event_name();
+    $period_key = $period_key ?: billing_usage_period_key();
+    $usage = billing_tenant_usage($tenant_id);
+    $quantity = (int) $usage['extra_storage_gb'];
+    $identifier = 'foxdesk-storage-' . $tenant_id . '-' . $period_key;
+
+    $existing = db_fetch_one(
+        "SELECT * FROM billing_usage_reports WHERE idempotency_key = ? LIMIT 1",
+        [$identifier]
+    );
+    if ($existing && in_array((string) $existing['status'], ['reported', 'dry_run'], true)) {
+        return [
+            'tenant_id' => $tenant_id,
+            'status' => 'skipped',
+            'reason' => 'already_reported',
+            'quantity' => (int) $existing['quantity'],
+            'period_key' => $period_key,
+        ];
+    }
+
+    if (!$existing) {
+        db_insert('billing_usage_reports', [
+            'tenant_id' => $tenant_id,
+            'stripe_customer_id' => $stripe_customer_id,
+            'event_name' => $event_name,
+            'period_key' => $period_key,
+            'quantity' => $quantity,
+            'idempotency_key' => $identifier,
+            'status' => 'pending',
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+    } else {
+        db_update('billing_usage_reports', [
+            'stripe_customer_id' => $stripe_customer_id,
+            'event_name' => $event_name,
+            'quantity' => $quantity,
+            'status' => 'pending',
+            'error_message' => null,
+        ], 'id = ?', [(int) $existing['id']]);
+    }
+
+    if ($dry_run) {
+        db_update('billing_usage_reports', [
+            'status' => 'dry_run',
+            'reported_at' => date('Y-m-d H:i:s'),
+            'error_message' => null,
+        ], 'idempotency_key = ?', [$identifier]);
+        return [
+            'tenant_id' => $tenant_id,
+            'status' => 'dry_run',
+            'quantity' => $quantity,
+            'period_key' => $period_key,
+        ];
+    }
+
+    try {
+        billing_record_meter_event($event_name, $stripe_customer_id, $quantity, $identifier, time());
+        db_update('billing_usage_reports', [
+            'status' => 'reported',
+            'reported_at' => date('Y-m-d H:i:s'),
+            'error_message' => null,
+        ], 'idempotency_key = ?', [$identifier]);
+
+        return [
+            'tenant_id' => $tenant_id,
+            'status' => 'reported',
+            'quantity' => $quantity,
+            'period_key' => $period_key,
+        ];
+    } catch (Throwable $e) {
+        db_update('billing_usage_reports', [
+            'status' => 'failed',
+            'error_message' => $e->getMessage(),
+        ], 'idempotency_key = ?', [$identifier]);
+
+        return [
+            'tenant_id' => $tenant_id,
+            'status' => 'failed',
+            'quantity' => $quantity,
+            'period_key' => $period_key,
+            'error' => $e->getMessage(),
+        ];
+    }
+}
+
+function billing_report_storage_usage_all(bool $dry_run = false): array
+{
+    billing_ensure_usage_reports_table();
+    $summary = [
+        'ok' => true,
+        'reported' => 0,
+        'dry_run' => 0,
+        'skipped' => 0,
+        'failed' => 0,
+        'tenants' => [],
+    ];
+
+    $tenants = db_fetch_all("
+        SELECT id
+        FROM tenants
+        WHERE status IN ('active', 'trialing', 'past_due')
+        ORDER BY id ASC
+    ");
+
+    foreach ($tenants as $row) {
+        $result = billing_report_storage_usage_for_tenant((int) $row['id'], null, $dry_run);
+        $status = (string) ($result['status'] ?? 'skipped');
+        if (array_key_exists($status, $summary)) {
+            $summary[$status]++;
+        }
+        if ($status === 'failed') {
+            $summary['ok'] = false;
+        }
+        $summary['tenants'][] = $result;
+    }
+
+    return $summary;
 }
 
 function billing_get_tenant(int $tenant_id): ?array

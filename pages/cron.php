@@ -108,7 +108,26 @@ if ($now - $last_reports >= 21600) {
 }
 
 // -----------------------------------------------------------------
-// 5. Maintenance — notification cleanup, update check (every 24 hours)
+// 5. Metered billing usage (every 24 hours)
+// -----------------------------------------------------------------
+$last_billing_usage = (int) get_setting('pseudo_cron_last_billing_usage', '0');
+if ($now - $last_billing_usage >= 86400) {
+    save_setting('pseudo_cron_last_billing_usage', (string) $now);
+    try {
+        if (function_exists('billing_enabled') && billing_enabled()) {
+            $billing_result = billing_report_storage_usage_all(false);
+            if (empty($billing_result['ok'])) {
+                $errors[] = 'billing_usage: one or more usage reports failed';
+            }
+        }
+    } catch (Throwable $e) {
+        $errors[] = 'billing_usage: ' . $e->getMessage();
+        error_log('[pseudo-cron] billing usage error: ' . $e->getMessage());
+    }
+}
+
+// -----------------------------------------------------------------
+// 6. Maintenance — notification cleanup, update check (every 24 hours)
 // -----------------------------------------------------------------
 $last_maintenance = (int) get_setting('pseudo_cron_last_maintenance', '0');
 if ($now - $last_maintenance >= 86400) {

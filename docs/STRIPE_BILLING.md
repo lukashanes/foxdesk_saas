@@ -18,6 +18,7 @@ define('STRIPE_SECRET_KEY', 'sk_test_...');
 define('STRIPE_WEBHOOK_SECRET', 'whsec_...');
 define('STRIPE_PRICE_CLOUD_BASE', 'price_...');
 define('STRIPE_PRICE_STORAGE_OVERAGE', 'price_...');
+define('STRIPE_STORAGE_METER_EVENT_NAME', 'foxdesk_storage_extra_gb');
 define('BILLING_CURRENCY', 'EUR');
 define('BILLING_CLOUD_BASE_PRICE_CENTS', 1900);
 define('BILLING_STORAGE_OVERAGE_PRICE_CENTS', 79);
@@ -32,6 +33,8 @@ Create two recurring Prices in Stripe for the single public plan:
 
 - FoxDesk Cloud base subscription -> `STRIPE_PRICE_CLOUD_BASE`
 - Metered extra storage per GB -> `STRIPE_PRICE_STORAGE_OVERAGE`
+
+Create a Stripe meter with event name matching `STRIPE_STORAGE_METER_EVENT_NAME`. Configure it to aggregate the latest reported value for the billing period. FoxDesk reports the current extra started GB as a whole-number meter event.
 
 FoxDesk stores `cloud` on the `tenants.plan` field. Checkout adds the base subscription and, when configured, the metered storage price.
 
@@ -68,7 +71,30 @@ The endpoint verifies the `Stripe-Signature` header with `STRIPE_WEBHOOK_SECRET`
 - Workspace admins can open their own billing page from the user menu.
 - Stripe subscription changes update `tenants.stripe_customer_id`, `tenants.stripe_subscription_id`, `tenants.subscription_status`, and `tenants.status`.
 - Billing and Platform show storage usage, included storage, billable extra GB, and estimated monthly overage.
+- `bin/report-billing-usage.php` reports daily storage meter events to Stripe for tenants with a Stripe customer id.
 - Tenants with `status` set to `suspended` or `canceled` are redirected to Billing instead of normal app pages.
+
+## Usage reporting
+
+Run manually:
+
+```bash
+php bin/report-billing-usage.php --json
+```
+
+Run without calling Stripe:
+
+```bash
+php bin/report-billing-usage.php --dry-run --json
+```
+
+The maintenance runner also calls usage reporting:
+
+```bash
+php bin/run-maintenance.php
+```
+
+Reporting is idempotent per tenant and day. Each row is stored in `billing_usage_reports` with a deterministic idempotency key.
 
 ## Test coverage
 
@@ -79,6 +105,7 @@ The E2E suite verifies:
 - Stripe webhook rejects invalid signatures
 - signed subscription webhooks update tenant billing state
 - storage usage and the single-plan billing UI render on Platform and Billing
+- dry-run metered usage reporting creates an idempotent local usage report
 - canceled tenant admins are redirected to the Billing page
 
 Run locally:
