@@ -29,6 +29,13 @@ define('BILLING_INCLUDED_STORAGE_BYTES', 1073741824);
 define('STRIPE_SUCCESS_URL', APP_URL . '/index.php?page=platform&billing=success');
 define('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=platform&billing=cancelled');
 
+define('MAIL_PROVIDER', 'php_mail');
+define('CLOUDFLARE_ACCOUNT_ID', '');
+define('CLOUDFLARE_EMAIL_API_TOKEN', '');
+define('CLOUDFLARE_EMAIL_FROM', 'noreply@foxdesk.net');
+define('CLOUDFLARE_EMAIL_FROM_NAME', 'FoxDesk Local');
+define('CLOUDFLARE_EMAIL_REPLY_TO', 'support@foxdesk.net');
+
 define('IMAP_ENABLED', false);
 define('IMAP_HOST', '');
 define('IMAP_PORT', 993);

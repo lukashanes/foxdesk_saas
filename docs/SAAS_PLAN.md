@@ -11,7 +11,7 @@ Initial production architecture:
 - Cloudflare WAF, SSL, rate limiting, and Turnstile for edge security.
 - Cloudflare R2 for attachments, generated exports, and backups.
 - Cloudflare Email Routing for inbound email-to-ticket flows.
-- Cloudflare Email Sending or a dedicated SMTP provider for outbound email.
+- Cloudflare Email Service for outbound transactional email.
 - Stripe or Paddle for subscriptions and billing.
 
 Cloudflare-only is a later option. It would require a larger rewrite from PHP/MariaDB to a Workers/D1/R2/Queues architecture.

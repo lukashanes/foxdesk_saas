@@ -20,7 +20,7 @@ This is the recommended first deployment path for FoxDesk SaaS work. It keeps th
 - Turnstile for public forms and signup.
 - R2 for attachment and backup storage.
 - Email Routing for inbound email processing.
-- Email Sending or SMTP integration for outbound notifications.
+- Cloudflare Email Service integration for outbound notifications.
 - Optional Workers for inbound email webhooks, lightweight API glue, and async helpers.
 
 ## Deployment Sequence
@@ -54,4 +54,3 @@ This is the recommended first deployment path for FoxDesk SaaS work. It keeps th
 - Do not split every service prematurely.
 - Do not make tenant isolation optional.
 - Do not store customer attachments only on local disk for a SaaS launch.
-

@@ -1137,6 +1137,22 @@ include BASE_PATH . '/includes/components/page-header.php';
         <div class="space-y-3">
             <form method="post">
                 <?php echo csrf_field(); ?>
+                <?php if (defined('MAIL_PROVIDER') && MAIL_PROVIDER === 'cloudflare'): ?>
+                <div class="card card-body mb-2">
+                    <h3 class="font-semibold mb-2" style="color: var(--text-primary);">Cloudflare Email Service</h3>
+                    <p class="text-sm mb-3" style="color: var(--text-muted);">Outbound email is configured from server config and uses Cloudflare Email Service.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <span style="color: var(--text-muted);">From</span>
+                            <strong class="block"><?php echo e(defined('CLOUDFLARE_EMAIL_FROM') ? CLOUDFLARE_EMAIL_FROM : ''); ?></strong>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-muted);">Reply-To</span>
+                            <strong class="block"><?php echo e(defined('CLOUDFLARE_EMAIL_REPLY_TO') ? CLOUDFLARE_EMAIL_REPLY_TO : ''); ?></strong>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <div class="card card-body mb-2">
                     <h3 class="font-semibold mb-4" style="color: var(--text-primary);"><?php echo e(t('SMTP settings')); ?>
                     </h3>

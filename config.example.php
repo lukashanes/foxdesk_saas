@@ -32,6 +32,14 @@ define('BILLING_INCLUDED_STORAGE_BYTES', 1073741824);
 define('STRIPE_SUCCESS_URL', APP_URL . '/index.php?page=platform&billing=success');
 define('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=platform&billing=cancelled');
 
+// Outbound email. Use cloudflare for Cloudflare Email Service, smtp for SMTP, or php_mail for legacy PHP mail().
+define('MAIL_PROVIDER', 'cloudflare');
+define('CLOUDFLARE_ACCOUNT_ID', '');
+define('CLOUDFLARE_EMAIL_API_TOKEN', '');
+define('CLOUDFLARE_EMAIL_FROM', 'noreply@foxdesk.net');
+define('CLOUDFLARE_EMAIL_FROM_NAME', 'FoxDesk');
+define('CLOUDFLARE_EMAIL_REPLY_TO', 'support@foxdesk.net');
+
 // Incoming email ingest (IMAP)
 define('IMAP_ENABLED', false);
 define('IMAP_HOST', '');

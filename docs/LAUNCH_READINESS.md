@@ -33,7 +33,7 @@ FoxDesk SaaS can run locally as a hosted multi-tenant PHP/MariaDB app, but it is
    - Add webhook alerting for failed processing.
 
 4. Email
-   - Decide outbound provider.
+   - Use Cloudflare Email Service for outbound transactional email.
    - Configure sender domain, SPF, DKIM, DMARC.
    - Configure inbound email routing for ticket creation.
    - Add production bounce/failed-send logging.

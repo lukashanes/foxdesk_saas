@@ -2,8 +2,23 @@
 /**
  * Mailer Functions
  * 
- * Simple mailer for notifications with SMTP and PHP mail() fallback
+ * Simple mailer for notifications with Cloudflare Email Service, SMTP, and PHP mail() fallback.
  */
+
+function mailer_env_or_constant(string $name, $default = '')
+{
+    if (defined($name)) {
+        return constant($name);
+    }
+
+    $value = getenv($name);
+    return $value !== false ? $value : $default;
+}
+
+function mailer_provider(): string
+{
+    return strtolower(trim((string) mailer_env_or_constant('MAIL_PROVIDER', 'smtp')));
+}
 
 /**
  * Get base URL for the application
@@ -78,13 +93,38 @@ function send_email($to, $subject, $body, $is_html = false, $force_delivery = fa
         }
     }
 
-    $from_email = $settings['smtp_from_email'] ?? '';
-    $from_name = $settings['smtp_from_name'] ?? (defined('APP_NAME') ? APP_NAME : 'FoxDesk');
+    $provider = mailer_provider();
+    $from_email = $provider === 'cloudflare'
+        ? trim((string) mailer_env_or_constant('CLOUDFLARE_EMAIL_FROM', ''))
+        : ($settings['smtp_from_email'] ?? '');
+    $from_name = $provider === 'cloudflare'
+        ? trim((string) mailer_env_or_constant('CLOUDFLARE_EMAIL_FROM_NAME', defined('APP_NAME') ? APP_NAME : 'FoxDesk'))
+        : ($settings['smtp_from_name'] ?? (defined('APP_NAME') ? APP_NAME : 'FoxDesk'));
 
     // If no from email, use admin email
     if (empty($from_email)) {
         $admin = db_fetch_one("SELECT email FROM users WHERE role = 'admin' LIMIT 1");
         $from_email = $admin['email'] ?? 'noreply@' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+    }
+
+    if ($provider === 'cloudflare') {
+        $result = send_cloudflare_email($to, $subject, $body, $is_html, [
+            'account_id' => trim((string) mailer_env_or_constant('CLOUDFLARE_ACCOUNT_ID', '')),
+            'api_token' => trim((string) mailer_env_or_constant('CLOUDFLARE_EMAIL_API_TOKEN', '')),
+            'from_email' => $from_email,
+            'from_name' => $from_name,
+            'reply_to' => trim((string) mailer_env_or_constant('CLOUDFLARE_EMAIL_REPLY_TO', $from_email)),
+        ]);
+
+        if ($result) {
+            error_log("Email sent via Cloudflare Email Service to: $to");
+            return true;
+        }
+        error_log("Cloudflare Email Service failed for: $to");
+
+        if ((string) mailer_env_or_constant('MAIL_FALLBACK_ENABLED', '0') !== '1') {
+            return false;
+        }
     }
 
     $smtp_host = $settings['smtp_host'] ?? '';
@@ -111,6 +151,75 @@ function send_email($to, $subject, $body, $is_html = false, $force_delivery = fa
 
     // Fallback to PHP mail()
     return send_php_mail($to, $subject, $body, $is_html, $from_email, $from_name);
+}
+
+/**
+ * Send email via Cloudflare Email Service REST API.
+ */
+function send_cloudflare_email($to, $subject, $body, $is_html, array $config)
+{
+    $account_id = trim((string) ($config['account_id'] ?? ''));
+    $api_token = trim((string) ($config['api_token'] ?? ''));
+    $from_email = trim((string) ($config['from_email'] ?? ''));
+    $from_name = trim((string) ($config['from_name'] ?? ''));
+    $reply_to = trim((string) ($config['reply_to'] ?? ''));
+
+    if ($account_id === '' || $api_token === '' || $from_email === '') {
+        error_log('Cloudflare Email Service is not configured.');
+        return false;
+    }
+    if (!function_exists('curl_init')) {
+        error_log('PHP cURL extension is required for Cloudflare Email Service.');
+        return false;
+    }
+
+    $payload = [
+        'to' => $to,
+        'from' => $from_name !== ''
+            ? ['address' => $from_email, 'name' => $from_name]
+            : $from_email,
+        'subject' => $subject,
+        'text' => $is_html ? email_comment_to_plain_text($body) : (string) $body,
+    ];
+    if ($is_html) {
+        $payload['html'] = (string) $body;
+    }
+    if ($reply_to !== '') {
+        $payload['reply_to'] = $reply_to;
+    }
+
+    $ch = curl_init('https://api.cloudflare.com/client/v4/accounts/' . rawurlencode($account_id) . '/email/sending/send');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . $api_token,
+            'Content-Type: application/json',
+        ],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_TIMEOUT => 20,
+    ]);
+
+    $response = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false) {
+        error_log('Cloudflare Email Service request failed: ' . $error);
+        return false;
+    }
+
+    $decoded = json_decode((string) $response, true);
+    if ($status < 200 || $status >= 300 || !is_array($decoded) || empty($decoded['success'])) {
+        $message = is_array($decoded) && !empty($decoded['errors'])
+            ? json_encode($decoded['errors'], JSON_UNESCAPED_UNICODE)
+            : ('HTTP ' . $status . ': ' . substr((string) $response, 0, 300));
+        error_log('Cloudflare Email Service failed: ' . $message);
+        return false;
+    }
+
+    return true;
 }
 
 /**
