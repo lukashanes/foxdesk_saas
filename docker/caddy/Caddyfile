@@ -1,0 +1,16 @@
+{
+    email support@foxdesk.net
+}
+
+{$APP_HOST} {
+    encode zstd gzip
+
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy strict-origin-when-cross-origin
+        -Server
+    }
+
+    reverse_proxy app:80
+}

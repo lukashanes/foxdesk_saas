@@ -4,6 +4,12 @@ playwright-report
 test-results
 tests/e2e/.auth
 config.php
+.env
+.env.*
+.env.production
+deploy/hetzner/.env.prod
+deploy/hetzner/config.php
+deploy/hetzner/backups
 uploads
 storage
 backups

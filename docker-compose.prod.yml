@@ -1,0 +1,86 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "${FOXDESK_PUBLIC_HTTP_PORT:-80}:80"
+      - "${FOXDESK_PUBLIC_HTTPS_PORT:-443}:443"
+    environment:
+      APP_HOST: "${APP_HOST:-app.foxdesk.net}"
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - foxdesk_caddy_data:/data
+      - foxdesk_caddy_config:/config
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/prod/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ${FOXDESK_ENV_FILE:-.env.production}
+    environment:
+      DB_HOST: db
+      FOXDESK_SESSION_DIR: storage/sessions
+    volumes:
+      - ./config.php:/var/www/html/config.php:ro
+      - foxdesk_uploads:/var/www/html/uploads
+      - foxdesk_storage:/var/www/html/storage
+      - foxdesk_backups:/var/www/html/backups
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/index.php?page=health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  cron:
+    build:
+      context: .
+      dockerfile: docker/prod/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ${FOXDESK_ENV_FILE:-.env.production}
+    environment:
+      DB_HOST: db
+      FOXDESK_SESSION_DIR: storage/sessions
+    volumes:
+      - ./config.php:/var/www/html/config.php:ro
+      - foxdesk_uploads:/var/www/html/uploads
+      - foxdesk_storage:/var/www/html/storage
+      - foxdesk_backups:/var/www/html/backups
+    command: >
+      sh -lc "while true; do php bin/run-maintenance.php || true; sleep 300; done"
+
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    env_file:
+      - ${FOXDESK_ENV_FILE:-.env.production}
+    environment:
+      MARIADB_ROOT_PASSWORD: "${DB_ROOT_PASS}"
+      MARIADB_DATABASE: "${DB_NAME}"
+      MARIADB_USER: "${DB_USER}"
+      MARIADB_PASSWORD: "${DB_PASS}"
+    volumes:
+      - foxdesk_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -uroot -p$${MARIADB_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  foxdesk_db:
+  foxdesk_uploads:
+  foxdesk_storage:
+  foxdesk_backups:
+  foxdesk_caddy_data:
+  foxdesk_caddy_config:

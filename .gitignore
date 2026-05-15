@@ -4,3 +4,7 @@ test-results/
 tests/e2e/.auth/
 .DS_Store
 config.php
+.env.production
+deploy/hetzner/.env.prod
+deploy/hetzner/config.php
+deploy/hetzner/backups/
