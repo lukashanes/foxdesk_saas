@@ -113,6 +113,22 @@ function ensure_tenant_baseline(): void
             db_query("ALTER TABLE users ADD INDEX idx_platform_admin (is_platform_admin)");
         }
 
+        if (table_exists('attachments')) {
+            $attachment_columns = [
+                'storage_driver' => "ALTER TABLE attachments ADD COLUMN storage_driver VARCHAR(20) NOT NULL DEFAULT 'local' AFTER file_size",
+                'storage_bucket' => "ALTER TABLE attachments ADD COLUMN storage_bucket VARCHAR(255) NULL AFTER storage_driver",
+                'storage_key' => "ALTER TABLE attachments ADD COLUMN storage_key VARCHAR(700) NULL AFTER storage_bucket",
+            ];
+            foreach ($attachment_columns as $column => $sql) {
+                if (!column_exists('attachments', $column)) {
+                    db_query($sql);
+                }
+            }
+            if (!db_fetch_one("SHOW INDEX FROM attachments WHERE Key_name = 'idx_storage_key'")) {
+                db_query("CREATE INDEX idx_storage_key ON attachments (storage_key(191))");
+            }
+        }
+
         foreach (tenant_owned_tables() as $table) {
             if (!table_exists($table) || column_exists($table, 'tenant_id')) {
                 continue;

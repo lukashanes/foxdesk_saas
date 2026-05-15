@@ -203,11 +203,32 @@ function upload_file($file, $allowed_types = null, $max_size = null) {
         throw new Exception(t('Failed to save the file.'));
     }
 
+    $relative_path = trim($upload_dir, '/\\') . '/' . $filename;
+    $storage = function_exists('storage_store_file')
+        ? storage_store_file($filepath, $relative_path, $mime_type)
+        : ['driver' => 'local', 'key' => $relative_path, 'bucket' => ''];
+
     return [
         'filename' => $filename,
         'original_name' => $file['name'],
         'mime_type' => $mime_type,
-        'file_size' => $file['size']
+        'file_size' => $file['size'],
+        'storage_driver' => $storage['driver'] ?? 'local',
+        'storage_bucket' => $storage['bucket'] ?? '',
+        'storage_key' => $storage['key'] ?? $relative_path,
+    ];
+}
+
+function attachment_storage_fields(array $result): array
+{
+    if (!function_exists('column_exists') || !column_exists('attachments', 'storage_driver')) {
+        return [];
+    }
+
+    return [
+        'storage_driver' => $result['storage_driver'] ?? 'local',
+        'storage_bucket' => $result['storage_bucket'] ?? '',
+        'storage_key' => $result['storage_key'] ?? '',
     ];
 }
 
@@ -246,6 +267,22 @@ function find_attachment_by_relative_path($relative_path)
     $relative_path = ltrim(str_replace('\\', '/', trim((string) $relative_path)), '/');
     if ($relative_path === '') {
         return null;
+    }
+
+    if (function_exists('column_exists') && column_exists('attachments', 'storage_key')) {
+        $params = [$relative_path];
+        $sql = "SELECT a.*, c.is_internal AS comment_is_internal
+             FROM attachments a
+             LEFT JOIN comments c ON c.id = a.comment_id
+             WHERE a.storage_key = ?";
+        if (function_exists('tenant_sql_filter')) {
+            $sql .= tenant_sql_filter('attachments', 'a', $params);
+        }
+        $sql .= " LIMIT 1";
+        $r2_attachment = db_fetch_one($sql, $params);
+        if ($r2_attachment) {
+            return $r2_attachment;
+        }
     }
 
     if ($has_ticket_message_attachments === null) {
@@ -350,6 +387,11 @@ function attachment_share_token_can_access($attachment, $share_token)
  * Resolve attachment storage path relative to BASE_PATH.
  */
 function attachment_storage_relative_path($attachment) {
+    $storage_key = trim((string)($attachment['storage_key'] ?? ''));
+    if (($attachment['storage_driver'] ?? '') === 'r2' && $storage_key !== '') {
+        return ltrim(str_replace('\\', '/', $storage_key), '/');
+    }
+
     $storage_path = trim((string)($attachment['storage_path'] ?? ''));
     if ($storage_path !== '') {
         return ltrim(str_replace('\\', '/', $storage_path), '/');

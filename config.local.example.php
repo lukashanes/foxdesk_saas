@@ -53,6 +53,12 @@ define('IMAP_STORAGE_BASE', 'storage/tickets');
 define('IMAP_MARK_SEEN_ON_SKIP', true);
 define('IMAP_ALLOW_UNKNOWN_SENDERS', false);
 
+define('STORAGE_DRIVER', 'local');
+define('R2_BUCKET', '');
+define('R2_ENDPOINT', '');
+define('R2_ACCESS_KEY_ID', '');
+define('R2_SECRET_ACCESS_KEY', '');
+
 define('UPLOAD_DIR', 'uploads/');
 define('MAX_UPLOAD_SIZE', 10 * 1024 * 1024);
 

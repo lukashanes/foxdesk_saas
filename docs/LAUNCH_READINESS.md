@@ -23,9 +23,9 @@ FoxDesk SaaS can run locally as a hosted multi-tenant PHP/MariaDB app, but it is
    - Move secrets out of code into server environment or protected local config.
 
 2. Storage
-   - Add Cloudflare R2 storage adapter.
-   - Keep local disk only for development.
-   - Migrate attachments/backups to tenant-prefixed object keys.
+   - Cloudflare R2 storage adapter is prepared for new attachments.
+   - Create production R2 bucket and credentials.
+   - Migrate future backups to R2.
    - Add restore test from R2 backup.
 
 3. Billing go-live

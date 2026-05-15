@@ -68,6 +68,12 @@ define('IMAP_STORAGE_BASE', foxdesk_env('IMAP_STORAGE_BASE', 'storage/tickets'))
 define('IMAP_MARK_SEEN_ON_SKIP', foxdesk_env_bool('IMAP_MARK_SEEN_ON_SKIP', true));
 define('IMAP_ALLOW_UNKNOWN_SENDERS', foxdesk_env_bool('IMAP_ALLOW_UNKNOWN_SENDERS', false));
 
+define('STORAGE_DRIVER', foxdesk_env('STORAGE_DRIVER', 'local'));
+define('R2_BUCKET', foxdesk_env('R2_BUCKET'));
+define('R2_ENDPOINT', foxdesk_env('R2_ENDPOINT'));
+define('R2_ACCESS_KEY_ID', foxdesk_env('R2_ACCESS_KEY_ID'));
+define('R2_SECRET_ACCESS_KEY', foxdesk_env('R2_SECRET_ACCESS_KEY'));
+
 define('UPLOAD_DIR', foxdesk_env('UPLOAD_DIR', 'uploads/'));
 define('MAX_UPLOAD_SIZE', (int) foxdesk_env('MAX_UPLOAD_SIZE', 10 * 1024 * 1024));
 

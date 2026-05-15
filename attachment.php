@@ -94,6 +94,35 @@ if (!$authorized) {
     exit;
 }
 
+if (($attachment['storage_driver'] ?? '') === 'r2' && function_exists('storage_read_object')) {
+    try {
+        $body = storage_read_object($attachment);
+        if ($body === null) {
+            http_response_code(404);
+            exit;
+        }
+
+        $mime = trim((string) ($attachment['mime_type'] ?? ''));
+        if ($mime === '') {
+            $mime = 'application/octet-stream';
+        }
+        $basename = basename((string) ($attachment['original_name'] ?? $attachment['filename'] ?? 'attachment'));
+        $disposition = str_starts_with($mime, 'image/') ? 'inline' : 'attachment';
+
+        header('Content-Type: ' . $mime);
+        header('Content-Length: ' . strlen($body));
+        header('Content-Disposition: ' . $disposition . '; filename="' . str_replace('"', '', $basename) . '"');
+        header('Cache-Control: private, max-age=3600');
+        header('X-Content-Type-Options: nosniff');
+        echo $body;
+        exit;
+    } catch (Throwable $e) {
+        error_log('R2 attachment read failed: ' . $e->getMessage());
+        http_response_code(502);
+        exit;
+    }
+}
+
 $allowed_roots = [
     trim((defined('UPLOAD_DIR') ? UPLOAD_DIR : 'uploads/'), '/\\'),
     'storage/tickets',

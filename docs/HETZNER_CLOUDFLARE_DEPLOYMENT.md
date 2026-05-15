@@ -34,7 +34,7 @@ This is the recommended first deployment path for FoxDesk SaaS work. It keeps th
 ## Deployment Sequence
 
 1. Provision Hetzner VPS with Ubuntu.
-2. Point `app.foxdesk.net` DNS A record to the Hetzner IPv4 address in Cloudflare.
+2. Point `app.foxdesk.net` DNS A record to `46.224.66.79` in Cloudflare.
 3. Keep the DNS record proxied.
 4. Run `deploy/hetzner/bootstrap.sh` on the server.
 5. Clone this repository into `/opt/foxdesk_saas`.

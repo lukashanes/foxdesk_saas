@@ -236,6 +236,9 @@ CREATE TABLE IF NOT EXISTS attachments (
     original_name VARCHAR(255) NOT NULL,
     mime_type VARCHAR(100),
     file_size BIGINT,
+    storage_driver VARCHAR(20) NOT NULL DEFAULT 'local',
+    storage_bucket VARCHAR(255) NULL,
+    storage_key VARCHAR(700) NULL,
     uploaded_by INT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
@@ -244,7 +247,8 @@ CREATE TABLE IF NOT EXISTS attachments (
     INDEX idx_tenant_id (tenant_id),
     INDEX idx_ticket (ticket_id),
     INDEX idx_comment (comment_id),
-    INDEX idx_uploaded_by (uploaded_by)
+    INDEX idx_uploaded_by (uploaded_by),
+    INDEX idx_storage_key (storage_key(191))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Ticket shares table (public links)

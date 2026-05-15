@@ -226,7 +226,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $result = upload_file($file);
 
                         // Save attachment record
-                        db_insert('attachments', [
+                        db_insert('attachments', array_merge([
                             'ticket_id' => $ticket_id,
                             'filename' => $result['filename'],
                             'original_name' => $result['original_name'],
@@ -234,7 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'file_size' => $result['file_size'],
                             'uploaded_by' => $user['id'],
                             'created_at' => date('Y-m-d H:i:s')
-                        ]);
+                        ], attachment_storage_fields($result)));
                     } catch (Exception $e) {
                         $upload_errors[] = $files['name'][$i] . ': ' . $e->getMessage();
                     }

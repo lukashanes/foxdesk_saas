@@ -430,7 +430,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     $result = upload_file($file);
 
-                    db_insert('attachments', [
+                    db_insert('attachments', array_merge([
                         'ticket_id' => $ticket_id,
                         'comment_id' => $comment_id,
                         'filename' => $result['filename'],
@@ -439,7 +439,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'file_size' => $result['file_size'],
                         'uploaded_by' => $user['id'],
                         'created_at' => date('Y-m-d H:i:s')
-                    ]);
+                    ], attachment_storage_fields($result)));
 
                     $uploaded_attachments[] = $result;
                 } catch (Exception $e) {

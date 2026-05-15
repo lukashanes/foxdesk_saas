@@ -1645,7 +1645,13 @@ function email_ingest_store_attachment($ticket_id, $ticket_message_id, $comment_
         throw new RuntimeException('Unable to write attachment file: ' . $filename);
     }
 
-    $attachment_id = (int) db_insert('attachments', [
+    $ticket_row = db_fetch_one("SELECT tenant_id FROM tickets WHERE id = ? LIMIT 1", [(int) $ticket_id]);
+    $tenant_id = (int) ($ticket_row['tenant_id'] ?? (function_exists('current_tenant_id') ? current_tenant_id() : 1));
+    $storage = function_exists('storage_store_file')
+        ? storage_store_file($absolute_path, $relative_path, $mime, $tenant_id)
+        : ['driver' => 'local', 'key' => $relative_path, 'bucket' => ''];
+
+    $attachment_id = (int) db_insert('attachments', array_merge([
         'ticket_id' => (int) $ticket_id,
         'comment_id' => $comment_id,
         'filename' => $stored_name,
@@ -1654,7 +1660,11 @@ function email_ingest_store_attachment($ticket_id, $ticket_message_id, $comment_
         'file_size' => $size,
         'uploaded_by' => (int) $uploaded_by,
         'created_at' => date('Y-m-d H:i:s'),
-    ]);
+    ], function_exists('attachment_storage_fields') ? attachment_storage_fields([
+        'storage_driver' => $storage['driver'] ?? 'local',
+        'storage_bucket' => $storage['bucket'] ?? '',
+        'storage_key' => $storage['key'] ?? $relative_path,
+    ]) : []));
 
     db_insert('ticket_message_attachments', [
         'ticket_message_id' => (int) $ticket_message_id,
@@ -1784,5 +1794,4 @@ function email_ingest_try_move($imap, $uid, $cfg, $folder)
     imap_setflag_full($imap, (string) $uid, '\\Seen', ST_UID);
     return false;
 }
-
 
