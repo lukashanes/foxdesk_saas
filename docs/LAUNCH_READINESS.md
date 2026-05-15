@@ -10,14 +10,16 @@ FoxDesk SaaS can run locally as a hosted multi-tenant PHP/MariaDB app, but it is
 - Public workspace signup works.
 - Platform admin can see and manage workspaces.
 - Stripe Checkout, Customer Portal, signed webhooks, and storage usage reporting are scaffolded.
+- Cloudflare Email Service works through the FoxDesk mailer.
 - One-plan pricing model is implemented: FoxDesk Cloud with 1 GB included and metered extra storage.
+- Production Docker stack is prepared for `app.foxdesk.net` on Hetzner behind Cloudflare.
 
 ## Blocking Before Public Launch
 
 1. Production environment
    - Provision Hetzner server.
    - Configure Cloudflare DNS/proxy/TLS.
-   - Install PHP, MariaDB, web server, cron, backups, and deploy user.
+   - Run the prepared Docker bootstrap/deploy scripts.
    - Move secrets out of code into server environment or protected local config.
 
 2. Storage
