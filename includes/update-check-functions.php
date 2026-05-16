@@ -2,9 +2,12 @@
 /**
  * Remote Update Check Functions
  *
- * Checks for new versions via:
+ * Checks for new self-hosted FoxDesk versions via:
  *   1. foxdesk.org/api/version-check (primary — custom server)
  *   2. GitHub Releases API (fallback — always available)
+ *
+ * Managed/SaaS deployments must not offer in-app ZIP updates to customer
+ * workspaces. They are upgraded by the deployment pipeline instead.
  *
  * When a newer version is found, the admin sees a notification banner
  * in the header and a detailed card on Settings → System with changelog
@@ -32,10 +35,58 @@ if (!defined('UPDATE_MAX_DOWNLOAD_SIZE')) {
 }
 
 /**
+ * Return the deployment edition. Defaults to self-hosted unless the runtime
+ * explicitly marks the app as managed/SaaS.
+ */
+function foxdesk_app_edition(): string
+{
+    $edition = getenv('FOXDESK_EDITION');
+    if ($edition === false || trim((string) $edition) === '') {
+        $edition = getenv('FOXDESK_APP_EDITION');
+    }
+    if (($edition === false || trim((string) $edition) === '') && defined('FOXDESK_EDITION')) {
+        $edition = FOXDESK_EDITION;
+    }
+
+    $edition = strtolower(trim((string) $edition));
+    return $edition !== '' ? $edition : 'self-hosted';
+}
+
+/**
+ * Return the update channel. "managed" disables the app-level updater because
+ * releases are deployed by the SaaS operator, not installed by tenant admins.
+ */
+function foxdesk_update_channel(): string
+{
+    $channel = getenv('FOXDESK_UPDATE_CHANNEL');
+    if (($channel === false || trim((string) $channel) === '') && defined('FOXDESK_UPDATE_CHANNEL')) {
+        $channel = FOXDESK_UPDATE_CHANNEL;
+    }
+
+    $channel = strtolower(trim((string) $channel));
+    if ($channel !== '') {
+        return $channel;
+    }
+
+    return in_array(foxdesk_app_edition(), ['saas', 'cloud', 'managed'], true)
+        ? 'managed'
+        : 'self-hosted';
+}
+
+function is_managed_update_channel(): bool
+{
+    return in_array(foxdesk_update_channel(), ['managed', 'saas', 'cloud', 'disabled'], true);
+}
+
+/**
  * Check whether automatic update checking is enabled.
  */
 function is_update_check_enabled(): bool
 {
+    if (is_managed_update_channel()) {
+        return false;
+    }
+
     return (bool) get_setting('update_check_enabled', '1');
 }
 
@@ -47,6 +98,10 @@ function is_update_check_enabled(): bool
  */
 function check_for_updates(bool $force = false)
 {
+    if (is_managed_update_channel()) {
+        return false;
+    }
+
     // Return cached result if recent enough (unless forced)
     if (!$force) {
         $last_run = get_setting('update_check_last_run', '');

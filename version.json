@@ -1,8 +1,11 @@
 {
-    "version": "0.3.117",
+    "version": "0.3.118",
     "date": "2026-05-16",
     "min_php": "8.1",
     "changelog": [
+        "Separated SaaS managed deployments from the self-hosted public update channel",
+        "Disabled in-app ZIP update controls when FoxDesk runs as a managed SaaS deployment",
+        "Added explicit FOXDESK_EDITION and FOXDESK_UPDATE_CHANNEL defaults for production SaaS containers",
         "Redesigned the SaaS operator console as a standalone control plane for workspaces, billing state, migrations, and tenant lifecycle",
         "Removed internal unit economics and margin copy from public/operator screens",
         "Improved platform admin responsive layout with mobile-safe workspace cards and search",

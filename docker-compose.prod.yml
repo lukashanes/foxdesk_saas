@@ -29,6 +29,8 @@ services:
     environment:
       DB_HOST: db
       FOXDESK_SESSION_DIR: storage/sessions
+      FOXDESK_EDITION: "${FOXDESK_EDITION:-saas}"
+      FOXDESK_UPDATE_CHANNEL: "${FOXDESK_UPDATE_CHANNEL:-managed}"
     volumes:
       - ./config.php:/var/www/html/config.php:ro
       - foxdesk_uploads:/var/www/html/uploads
@@ -53,6 +55,8 @@ services:
     environment:
       DB_HOST: db
       FOXDESK_SESSION_DIR: storage/sessions
+      FOXDESK_EDITION: "${FOXDESK_EDITION:-saas}"
+      FOXDESK_UPDATE_CHANNEL: "${FOXDESK_UPDATE_CHANNEL:-managed}"
     volumes:
       - ./config.php:/var/www/html/config.php:ro
       - foxdesk_uploads:/var/www/html/uploads

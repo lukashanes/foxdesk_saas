@@ -26,6 +26,18 @@ $settings_audit = function ($event_type, $context = [], $level = 'info') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf_token();
 
+    $managed_update_action = isset($_POST['check_updates_now'])
+        || isset($_POST['save_update_check_settings'])
+        || isset($_POST['install_remote_update'])
+        || isset($_POST['upload_update'])
+        || isset($_POST['apply_update'])
+        || isset($_POST['cancel_update']);
+
+    if ($managed_update_action && function_exists('is_managed_update_channel') && is_managed_update_channel()) {
+        flash(t('This deployment is updated by the platform operator, not through in-app ZIP updates.'), 'info');
+        redirect('admin', ['section' => 'settings', 'tab' => 'system']);
+    }
+
     // Save 2FA security settings
     if (isset($_POST['save_2fa_settings'])) {
         save_setting('2fa_required_user', !empty($_POST['2fa_required_user']) ? '1' : '0');
@@ -2026,7 +2038,8 @@ include BASE_PATH . '/includes/components/page-header.php';
         $mysql_version = db_fetch_one("SELECT VERSION() as v")['v'] ?? '-';
         $user_count = db_fetch_one("SELECT COUNT(*) as c FROM users")['c'] ?? 0;
         $ticket_count = db_fetch_one("SELECT COUNT(*) as c FROM tickets")['c'] ?? 0;
-        $remote_update = get_cached_update_info();
+        $managed_update_channel = function_exists('is_managed_update_channel') && is_managed_update_channel();
+        $remote_update = $managed_update_channel ? false : get_cached_update_info();
         $last_check = get_last_update_check_time();
         $pending_update = $_SESSION['pending_update'] ?? null;
         $backups = get_backups();
@@ -2105,14 +2118,19 @@ include BASE_PATH . '/includes/components/page-header.php';
                     <div class="admin-panel-header">
                         <div>
                             <h3><?php echo e(t('Updates')); ?></h3>
-                            <p><?php echo e($last_check ? t('Last checked') . ': ' . $last_check : t('Not checked yet')); ?></p>
+                            <p><?php echo e($managed_update_channel ? t('Managed by deployment pipeline') : ($last_check ? t('Last checked') . ': ' . $last_check : t('Not checked yet'))); ?></p>
                         </div>
                         <span class="admin-status <?php echo $remote_update ? 'is-info' : 'is-success'; ?>">
-                            <?php echo e($remote_update ? t('Available') : t('Current')); ?>
+                            <?php echo e($managed_update_channel ? t('Managed') : ($remote_update ? t('Available') : t('Current'))); ?>
                         </span>
                     </div>
 
-                    <?php if ($remote_update): ?>
+                    <?php if ($managed_update_channel): ?>
+                        <div class="admin-callout">
+                            <strong><?php echo e(t('Managed SaaS deployment')); ?></strong>
+                            <span><?php echo e(t('Updates for this hosted workspace are deployed centrally by the FoxDesk platform operator. Self-hosted ZIP updates stay on the public FoxDesk release channel.')); ?></span>
+                        </div>
+                    <?php elseif ($remote_update): ?>
                         <div class="admin-callout">
                             <strong>FoxDesk <?php echo e($remote_update['version']); ?></strong>
                             <?php if (!empty($remote_update['released_at'])): ?>
@@ -2130,17 +2148,18 @@ include BASE_PATH . '/includes/components/page-header.php';
                         </div>
                     <?php endif; ?>
 
-                    <form method="post" class="admin-toggle-row">
-                        <?php echo csrf_field(); ?>
-                        <label>
-                            <input type="checkbox" name="update_check_enabled" value="1" <?php echo is_update_check_enabled() ? 'checked' : ''; ?> onchange="this.form.submit();">
-                            <span><?php echo e(t('Automatically check for updates')); ?></span>
-                        </label>
-                        <input type="hidden" name="save_update_check_settings" value="1">
-                    </form>
+                    <?php if (!$managed_update_channel): ?>
+                        <form method="post" class="admin-toggle-row">
+                            <?php echo csrf_field(); ?>
+                            <label>
+                                <input type="checkbox" name="update_check_enabled" value="1" <?php echo is_update_check_enabled() ? 'checked' : ''; ?> onchange="this.form.submit();">
+                                <span><?php echo e(t('Automatically check for updates')); ?></span>
+                            </label>
+                            <input type="hidden" name="save_update_check_settings" value="1">
+                        </form>
 
-                    <details class="admin-disclosure">
-                        <summary><?php echo e(t('Upload update package')); ?></summary>
+                        <details class="admin-disclosure">
+                            <summary><?php echo e(t('Upload update package')); ?></summary>
                         <?php if ($pending_update): ?>
                             <div class="admin-callout">
                                 <strong><?php echo e(t('Update ready to install')); ?> v<?php echo e($pending_update['version']); ?></strong>
@@ -2175,7 +2194,8 @@ include BASE_PATH . '/includes/components/page-header.php';
                                 </div>
                             </form>
                         <?php endif; ?>
-                    </details>
+                        </details>
+                    <?php endif; ?>
                 </section>
 
                 <section class="admin-panel">
