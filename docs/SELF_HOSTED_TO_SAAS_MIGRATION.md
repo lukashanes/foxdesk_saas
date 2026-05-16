@@ -4,7 +4,7 @@ This migration path moves an existing self-hosted FoxDesk into a new SaaS tenant
 
 ## Source self-hosted app
 
-1. Update the self-hosted FoxDesk to a version that contains the Cloud migration page.
+1. Update the self-hosted FoxDesk to public version `0.3.115` or newer.
 2. Log in as an admin.
 3. Open:
 
@@ -35,7 +35,7 @@ API tokens are imported as inactive so customers can rotate them after migration
 3. Use **Import self-hosted FoxDesk**.
 4. Upload the ZIP package.
 5. Choose the new workspace name and billing state.
-6. Verify the imported workspace in **Customer FoxDesks**.
+6. Verify the imported workspace in **Workspace catalog**.
 
 ## What the importer does
 
