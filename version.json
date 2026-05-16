@@ -1,5 +1,5 @@
 {
-    "version": "0.3.115",
+    "version": "0.3.116",
     "date": "2026-05-16",
     "min_php": "8.1",
     "changelog": [
@@ -8,6 +8,8 @@
         "Added self-hosted to SaaS migration export packages for admins",
         "Added SaaS migration import that creates a tenant workspace, remaps data IDs, imports attachments, and records migration history",
         "Added deployment and migration documentation for Hetzner, Cloudflare, and self-hosted cutover",
+        "Added production nginx/Caddy proxy support for app.foxdesk.net and foxdesk.net launch routing",
+        "Fixed internal HTTPS redirect handling behind the Hetzner nginx reverse proxy",
         "Updated the default extra storage overage price to EUR 1.90 per GB",
         "Updated Playwright and smoke tests for the SaaS control plane login flow"
     ],
