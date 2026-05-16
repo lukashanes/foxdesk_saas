@@ -1,9 +1,23 @@
 # FoxDesk
 
-Open-source helpdesk and ticketing system built with PHP, Tailwind CSS, and Alpine.js.
+Hosted FoxDesk SaaS workspace and platform control plane built from the
+open-source PHP helpdesk.
 
 **Website:** [foxdesk.org](https://foxdesk.org)
-**Current Version:** `0.3.114` (`2026-05-10`)
+
+## Release channels
+
+This repository is the **SaaS/managed deployment** repository. It is not the
+public self-hosted updater channel for the free PHP app.
+
+- Public self-hosted PHP releases live in `lukashanes/foxdesk`.
+- SaaS deployments from this repository use `FOXDESK_UPDATE_CHANNEL=managed`.
+- Hosted customer workspaces are updated centrally by deployment, not by tenant
+  admins installing public ZIP packages.
+- The self-hosted to SaaS transfer starts from a public PHP update that adds a
+  migration export page, then the SaaS platform admin imports that package.
+
+See [docs/RELEASE_CHANNELS.md](docs/RELEASE_CHANNELS.md).
 
 ---
 
