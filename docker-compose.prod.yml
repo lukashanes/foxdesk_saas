@@ -9,6 +9,8 @@ services:
       - "${FOXDESK_PUBLIC_HTTPS_PORT:-443}:443"
     environment:
       APP_HOST: "${APP_HOST:-app.foxdesk.net}"
+      APP_MARKETING_HOST: "${APP_MARKETING_HOST:-foxdesk.net}"
+      APP_FALLBACK_HOST: "${APP_FALLBACK_HOST:-46.224.66.79}"
     volumes:
       - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - foxdesk_caddy_data:/data

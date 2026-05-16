@@ -2,7 +2,7 @@
     email support@foxdesk.net
 }
 
-{$APP_HOST} {
+(foxdesk_proxy) {
     encode zstd gzip
 
     header {
@@ -13,4 +13,16 @@
     }
 
     reverse_proxy app:80
+}
+
+{$APP_HOST} {
+    import foxdesk_proxy
+}
+
+{$APP_MARKETING_HOST} {
+    import foxdesk_proxy
+}
+
+http://{$APP_FALLBACK_HOST} {
+    import foxdesk_proxy
 }
