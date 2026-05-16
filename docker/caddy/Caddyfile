@@ -15,11 +15,11 @@
     reverse_proxy app:80
 }
 
-{$APP_HOST} {
+http://{$APP_HOST} {
     import foxdesk_proxy
 }
 
-{$APP_MARKETING_HOST} {
+http://{$APP_MARKETING_HOST} {
     import foxdesk_proxy
 }
 
