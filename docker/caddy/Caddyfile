@@ -12,7 +12,10 @@
         -Server
     }
 
-    reverse_proxy app:80
+    reverse_proxy app:80 {
+        header_up X-Forwarded-Proto {http.request.header.X-Forwarded-Proto}
+        header_up X-Forwarded-Host {host}
+    }
 }
 
 http://{$APP_HOST} {
