@@ -36,7 +36,7 @@ function billing_cloud_base_price_cents(): int
 
 function billing_storage_overage_price_cents(): int
 {
-    return max(0, (int) billing_env_or_constant('BILLING_STORAGE_OVERAGE_PRICE_CENTS', 79));
+    return max(0, (int) billing_env_or_constant('BILLING_STORAGE_OVERAGE_PRICE_CENTS', 190));
 }
 
 function billing_included_storage_bytes(): int

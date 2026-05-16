@@ -18,6 +18,7 @@ if (empty($_SESSION['2fa_pending']) && !empty($_COOKIE['foxdesk_remember']) && v
 
 $settings = get_settings();
 $app_name = $settings['app_name'] ?? (defined('APP_NAME') ? APP_NAME : 'FoxDesk');
+$login_brand_name = foxdesk_is_app_host() ? 'FoxDesk Cloud' : $app_name;
 
 $error = '';
 $info_message = '';
@@ -174,7 +175,8 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                     set_remember_token($_SESSION['user_id']);
                 }
                 rate_limit_clear($rate_key);
-                header('Location: index.php?page=dashboard');
+                $redirect_page = is_platform_admin(current_user()) ? 'platform' : 'dashboard';
+                header('Location: index.php?page=' . $redirect_page);
                 exit;
             }
         } else {
@@ -191,7 +193,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo e(t('Sign in')); ?> - <?php echo e($app_name); ?></title>
+    <title><?php echo e(t('Sign in')); ?> - <?php echo e($login_brand_name); ?></title>
     <link href="tailwind.min.css" rel="stylesheet">
     <link href="theme.css" rel="stylesheet">
     <script>
@@ -277,17 +279,19 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
         <div class="relative z-10 text-center text-white p-12 max-w-lg">
             <?php $app_logo = get_setting('app_logo', ''); ?>
             <?php if ($app_logo): ?>
-                <img src="<?php echo e(upload_url($app_logo)); ?>" alt="<?php echo e($app_name); ?>"
+                <img src="<?php echo e(upload_url($app_logo)); ?>" alt="<?php echo e($login_brand_name); ?>"
                     class="w-24 h-24 rounded-full object-cover mx-auto mb-8 shadow-2xl ring-4 ring-white/10">
             <?php else: ?>
                 <div
                     class="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl bg-[#3c50e0] ring-4 ring-white/10">
-                    <span class="text-white text-4xl font-bold"><?php echo strtoupper(substr($app_name, 0, 1)); ?></span>
+                    <span class="text-white text-4xl font-bold">F</span>
                 </div>
             <?php endif; ?>
-            <h1 class="text-4xl font-bold mb-4"><?php echo e(t('Welcome to {app}', ['app' => $app_name])); ?></h1>
+            <h1 class="text-4xl font-bold mb-4"><?php echo e(t('Welcome to {app}', ['app' => $login_brand_name])); ?></h1>
             <p class="text-slate-300 text-lg">
-                <?php echo e($settings['login_welcome_text'] ?? t('Manage your tickets, track time, and support your customers with our corporate enterprise helpdesk.')); ?>
+                <?php echo foxdesk_is_app_host()
+                    ? e('Sign in to your hosted FoxDesk workspace.')
+                    : e($settings['login_welcome_text'] ?? t('Manage your tickets, track time, and support your customers with our corporate enterprise helpdesk.')); ?>
             </p>
         </div>
     </div>
@@ -384,7 +388,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                 <div class="text-left mb-8">
                     <h2 class="text-3xl font-bold mb-2" style="color: var(--text-primary);"><?php echo e(t('Sign in')); ?>
                     </h2>
-                    <p style="color: var(--text-muted);"><?php echo e(t('Sign in to your account')); ?></p>
+                    <p style="color: var(--text-muted);"><?php echo e(foxdesk_is_app_host() ? 'Use the account from your FoxDesk workspace.' : t('Sign in to your account')); ?></p>
                 </div>
 
                 <?php if ($error): ?>
@@ -448,7 +452,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
 
                 <div class="text-center text-sm mt-5" style="color: var(--text-muted);">
                     Need a new FoxDesk?
-                    <a href="<?php echo url('signup'); ?>" class="font-medium" style="color: var(--primary);">Create workspace</a>
+                    <a href="<?php echo url('cloud'); ?>#pricing" class="font-medium" style="color: var(--primary);">View Cloud plan</a>
                 </div>
 
                 <form method="get" class="flex flex-col items-center justify-center gap-2 mt-8">
@@ -472,7 +476,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
             <?php endif; ?>
 
             <p class="text-center text-xs mt-8" style="color: var(--text-muted);">
-                &copy; <?php echo date('Y'); ?> <?php echo e($app_name); ?>
+                &copy; <?php echo date('Y'); ?> <?php echo e($login_brand_name); ?>
             </p>
         </div>
     </div>

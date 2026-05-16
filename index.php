@@ -15,7 +15,7 @@ define('REMEMBER_ME_DURATION', 30 * 86400); // 30 days
 
 require_once BASE_PATH . '/includes/session-bootstrap.php';
 
-define('APP_VERSION', '0.3.114');
+define('APP_VERSION', '0.3.115');
 
 // Check if installed
 if (!file_exists(BASE_PATH . '/config.php')) {
@@ -103,12 +103,19 @@ require_once BASE_PATH . '/includes/functions.php';
 require_once BASE_PATH . '/includes/auth.php';
 send_security_headers();
 
+function foxdesk_is_app_host(): bool
+{
+    $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    $host = preg_replace('/:\d+$/', '', $host);
+    return in_array($host, ['app.foxdesk.org', 'app.foxdesk.net'], true);
+}
+
 // Get current page
-$page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
+$page = isset($_GET['page']) ? $_GET['page'] : (foxdesk_is_app_host() ? 'login' : 'cloud');
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 // Pages that don't require login
-$public_pages = ['login', 'logout', 'signup', 'forgot-password', 'reset-password', 'ticket-share', 'report-share', 'report-public', 'stripe-webhook', 'api', 'health', 'cron'];
+$public_pages = ['cloud', 'login', 'logout', 'signup', 'forgot-password', 'reset-password', 'ticket-share', 'report-share', 'report-public', 'stripe-webhook', 'api', 'health', 'cron'];
 
 // Check authentication
 if (!in_array($page, $public_pages)) {
@@ -274,6 +281,10 @@ switch ($page) {
         require_once BASE_PATH . '/pages/login.php';
         break;
 
+    case 'cloud':
+        require_once BASE_PATH . '/pages/cloud.php';
+        break;
+
     case 'stripe-webhook':
         require_once BASE_PATH . '/pages/stripe-webhook.php';
         break;
@@ -381,6 +392,9 @@ switch ($page) {
                 break;
             case 'activity':
                 require_once BASE_PATH . '/pages/admin/activity.php';
+                break;
+            case 'migration-export':
+                require_once BASE_PATH . '/pages/admin/migration-export.php';
                 break;
             default:
                 require_once BASE_PATH . '/pages/admin/statuses.php';

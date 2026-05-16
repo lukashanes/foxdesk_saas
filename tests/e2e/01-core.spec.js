@@ -7,7 +7,8 @@ const { baseURL } = require('./env');
 
 test('admin can log in and see dashboard', async ({ page }) => {
   await login(page);
-  await expect(page).toHaveURL(/page=dashboard|dashboard/);
+  await expect(page).toHaveURL(/page=dashboard|dashboard|page=platform/);
+  await page.goto('/index.php?page=dashboard');
   await expect(page.locator('body')).toContainText('Dashboard');
 });
 
@@ -45,6 +46,7 @@ test('logout and login flow works', async ({ browser }) => {
   await page.goto('/index.php?page=logout');
   await expect(page).toHaveURL(/page=login/);
   await login(page);
+  await page.goto('/index.php?page=dashboard');
   await expect(page.locator('body')).toContainText('Dashboard');
   await context.close();
 });

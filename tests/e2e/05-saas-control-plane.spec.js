@@ -84,7 +84,7 @@ test('public signup creates an isolated FoxDesk workspace and platform admin can
   const platformPage = await platformContext.newPage();
   await login(platformPage);
   await platformPage.goto('/index.php?page=platform');
-  await expect(platformPage.locator('body')).toContainText('Platform');
+  await expect(platformPage.locator('body')).toContainText('Customer FoxDesks');
   await expect(platformPage.locator('body')).toContainText(workspaceName);
   await expect(platformPage.locator('body')).toContainText(ownerEmail);
   await expect(platformPage.locator('body')).toContainText('FoxDesk Cloud');
@@ -196,7 +196,7 @@ test('single cloud plan shows unlimited usage and storage overage', async ({ bro
   await expect(page.locator('body')).toContainText('Unlimited users, clients, agents, and tickets');
   await expect(page.locator('body')).toContainText('3.00 GB / 1.00 GB');
   await expect(page.locator('body')).toContainText('2 GB');
-  await expect(page.locator('body')).toContainText('EUR 1.58');
+  await expect(page.locator('body')).toContainText('EUR 3.80');
 
   const report = JSON.parse(dockerExec(webContainer, ['php', 'bin/report-billing-usage.php', '--dry-run', '--json']));
   expect(report.ok).toBe(true);

@@ -25,7 +25,7 @@ CLOUDFLARE_EMAIL_FROM_NAME=FoxDesk
 CLOUDFLARE_EMAIL_REPLY_TO=support@foxdesk.net
 BILLING_CURRENCY=EUR
 BILLING_CLOUD_BASE_PRICE_CENTS=1900
-BILLING_STORAGE_OVERAGE_PRICE_CENTS=79
+BILLING_STORAGE_OVERAGE_PRICE_CENTS=190
 BILLING_INCLUDED_STORAGE_BYTES=1073741824
 STRIPE_STORAGE_METER_EVENT_NAME=foxdesk_storage_extra_gb
 STORAGE_DRIVER=r2
@@ -85,7 +85,7 @@ Where:
 2. Developers -> API keys: copy live secret key.
 3. Product catalog: create `FoxDesk Cloud`.
 4. Add recurring base price: EUR 19/month.
-5. Add recurring metered storage price: EUR 0.79 per extra GB/month.
+5. Add recurring metered storage price: EUR 1.90 per extra GB/month.
 6. Developers -> Webhooks: endpoint `https://app.foxdesk.net/index.php?page=stripe-webhook`.
 7. Copy webhook signing secret.
 

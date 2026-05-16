@@ -43,7 +43,7 @@ async function login(page) {
   await emailInput.fill(admin.email);
   await page.locator('input[name="password"]').fill(admin.password);
   await page.locator('button[type="submit"]').click();
-  await page.waitForURL(/page=dashboard|dashboard/);
+  await page.waitForURL(/page=dashboard|dashboard|page=platform/);
 }
 
 async function getCsrf(page) {

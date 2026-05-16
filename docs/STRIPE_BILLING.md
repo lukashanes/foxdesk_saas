@@ -21,7 +21,7 @@ define('STRIPE_PRICE_STORAGE_OVERAGE', 'price_...');
 define('STRIPE_STORAGE_METER_EVENT_NAME', 'foxdesk_storage_extra_gb');
 define('BILLING_CURRENCY', 'EUR');
 define('BILLING_CLOUD_BASE_PRICE_CENTS', 1900);
-define('BILLING_STORAGE_OVERAGE_PRICE_CENTS', 79);
+define('BILLING_STORAGE_OVERAGE_PRICE_CENTS', 190);
 define('BILLING_INCLUDED_STORAGE_BYTES', 1073741824);
 ```
 
@@ -46,7 +46,7 @@ Default commercial model:
 - unlimited tickets
 - 1 GB storage included
 - EUR 19.00/month base price
-- EUR 0.79/extra GB/month storage overage
+- EUR 1.90/extra GB/month storage overage
 
 ## Webhook
 
