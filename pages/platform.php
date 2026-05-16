@@ -1,11 +1,15 @@
 <?php
 /**
- * Platform control plane for the SaaS operator.
+ * FoxDesk Cloud operator console.
+ *
+ * This surface is intentionally separate from the customer helpdesk admin. It is
+ * the SaaS control plane for the platform operator: tenants, lifecycle, billing
+ * state, migrations, and operational health.
  */
 
 require_platform_admin();
 
-$page_title = 'FoxDesk Cloud';
+$page_title = 'FoxDesk Cloud Console';
 $page = 'platform';
 $user = current_user();
 $error = '';
@@ -47,14 +51,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($action === 'update_tenant') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
             $status = (string) ($_POST['status'] ?? 'active');
-            $subscription_status = (string) ($_POST['subscription_status'] ?? 'manual');
+            $subscription_status = trim((string) ($_POST['subscription_status'] ?? 'manual'));
             $allowed_statuses = ['active', 'trialing', 'past_due', 'suspended', 'canceled'];
             if ($tenant_id <= 0 || !in_array($status, $allowed_statuses, true)) {
                 throw new InvalidArgumentException('Invalid workspace update.');
             }
             db_update('tenants', [
                 'status' => $status,
-                'subscription_status' => $subscription_status,
+                'subscription_status' => $subscription_status !== '' ? $subscription_status : 'manual',
                 'plan' => billing_plan_code(),
                 'suspended_at' => $status === 'suspended' ? date('Y-m-d H:i:s') : null,
             ], 'id = ?', [$tenant_id]);
@@ -69,7 +73,9 @@ $summary = db_fetch_one("
     SELECT
       COUNT(*) AS tenants,
       SUM(status IN ('active','trialing')) AS active_tenants,
-      SUM(subscription_status IN ('active','trialing')) AS paying_or_trialing,
+      SUM(status = 'past_due') AS past_due_tenants,
+      SUM(status IN ('suspended','canceled')) AS blocked_tenants,
+      SUM(subscription_status IN ('active','trialing')) AS billing_ok,
       (SELECT COUNT(*) FROM users WHERE deleted_at IS NULL) AS users
     FROM tenants
 ");
@@ -81,7 +87,8 @@ $tenants = db_fetch_all("
       u.first_name AS owner_first_name,
       u.last_name AS owner_last_name,
       (SELECT COUNT(*) FROM users ux WHERE ux.tenant_id = t.id AND ux.deleted_at IS NULL) AS user_count,
-      (SELECT COUNT(*) FROM tickets tx WHERE tx.tenant_id = t.id) AS ticket_count
+      (SELECT COUNT(*) FROM tickets tx WHERE tx.tenant_id = t.id) AS ticket_count,
+      (SELECT MAX(created_at) FROM tickets tx WHERE tx.tenant_id = t.id) AS last_ticket_at
     FROM tenants t
     LEFT JOIN users u ON u.id = t.owner_user_id
     ORDER BY t.created_at DESC, t.id DESC
@@ -91,12 +98,31 @@ $total_storage_bytes = 0;
 $total_extra_gb = 0;
 $estimated_storage_overage_cents = 0;
 $tenant_usage = [];
+$attention_items = [];
+
 foreach ($tenants as $tenant) {
-    $usage = billing_tenant_usage((int) $tenant['id']);
-    $tenant_usage[(int) $tenant['id']] = $usage;
+    $tenant_id = (int) $tenant['id'];
+    $usage = billing_tenant_usage($tenant_id);
+    $tenant_usage[$tenant_id] = $usage;
     $total_storage_bytes += (int) $usage['storage_bytes'];
     $total_extra_gb += (int) $usage['extra_storage_gb'];
     $estimated_storage_overage_cents += (int) $usage['storage_overage_cents'];
+
+    if (in_array((string) $tenant['status'], ['past_due', 'suspended'], true)) {
+        $attention_items[] = [
+            'type' => 'Lifecycle',
+            'title' => (string) $tenant['name'],
+            'detail' => 'Workspace status is ' . (string) $tenant['status'],
+            'tone' => 'risk',
+        ];
+    } elseif ((int) $usage['extra_storage_gb'] > 0) {
+        $attention_items[] = [
+            'type' => 'Storage',
+            'title' => (string) $tenant['name'],
+            'detail' => (int) $usage['extra_storage_gb'] . ' extra GB this period',
+            'tone' => 'notice',
+        ];
+    }
 }
 
 migration_ensure_imports_table();
@@ -106,519 +132,998 @@ $migration_imports = db_fetch_all("
     LEFT JOIN tenants t ON t.id = mi.tenant_id
     LEFT JOIN users u ON u.id = mi.created_by
     ORDER BY mi.created_at DESC, mi.id DESC
-    LIMIT 5
+    LIMIT 8
 ");
 
-require_once BASE_PATH . '/includes/header.php';
+$operator_name = trim((string) (($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')));
+$operator_initial = strtoupper(substr($operator_name !== '' ? $operator_name : (string) ($user['email'] ?? 'F'), 0, 1));
+$active_tenants = (int) ($summary['active_tenants'] ?? 0);
+$tenant_count = (int) ($summary['tenants'] ?? 0);
+$health_label = ((int) ($summary['past_due_tenants'] ?? 0) + (int) ($summary['blocked_tenants'] ?? 0)) > 0 ? 'Needs review' : 'Stable';
+$health_class = $health_label === 'Stable' ? 'good' : 'warn';
 ?>
 
-<style>
-    .saas-wrap {
-        max-width: 1500px;
-        margin: 0 auto;
-        padding: 24px;
-    }
-    .saas-hero {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 360px;
-        gap: 18px;
-        align-items: stretch;
-        margin-bottom: 18px;
-    }
-    .saas-panel {
-        background: var(--surface-primary);
-        border: 1px solid var(--border-light);
-        border-radius: 8px;
-        box-shadow: var(--shadow-sm);
-    }
-    .saas-title {
-        padding: 24px;
-    }
-    .saas-title h1 {
-        margin: 0;
-        color: var(--text-primary);
-        font-size: 2.25rem;
-        line-height: 1.12;
-        font-weight: 800;
-        letter-spacing: 0;
-    }
-    .saas-title p {
-        max-width: 760px;
-        margin: 10px 0 0;
-        color: var(--text-muted);
-        font-size: .98rem;
-        line-height: 1.6;
-    }
-    .saas-plan {
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        gap: 16px;
-    }
-    .saas-plan-label,
-    .saas-muted {
-        color: var(--text-muted);
-    }
-    .saas-plan strong {
-        display: block;
-        margin-top: 4px;
-        color: var(--text-primary);
-        font-size: 1.8rem;
-        line-height: 1.1;
-    }
-    .saas-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 18px;
-    }
-    .saas-kpis {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 14px;
-        margin-bottom: 18px;
-    }
-    .saas-kpi {
-        padding: 16px;
-    }
-    .saas-kpi span {
-        display: block;
-        color: var(--text-muted);
-        font-size: .78rem;
-        font-weight: 650;
-    }
-    .saas-kpi strong {
-        display: block;
-        margin-top: 8px;
-        color: var(--text-primary);
-        font-size: 1.55rem;
-        line-height: 1.1;
-    }
-    .saas-layout {
-        display: grid;
-        grid-template-columns: 380px minmax(0, 1fr);
-        gap: 18px;
-        align-items: start;
-    }
-    .saas-form {
-        padding: 18px;
-    }
-    .saas-form h2,
-    .saas-table-head h2,
-    .saas-side h2 {
-        margin: 0;
-        color: var(--text-primary);
-        font-size: 1.05rem;
-        font-weight: 780;
-    }
-    .saas-form p,
-    .saas-table-head p,
-    .saas-side p {
-        margin: 4px 0 0;
-        color: var(--text-muted);
-        font-size: .84rem;
-        line-height: 1.5;
-    }
-    .saas-fields {
-        display: grid;
-        gap: 12px;
-        margin-top: 16px;
-    }
-    .saas-field label {
-        display: block;
-        margin-bottom: 6px;
-        color: var(--text-secondary);
-        font-size: .78rem;
-        font-weight: 700;
-    }
-    .saas-field-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-    }
-    .saas-table-head {
-        padding: 18px 18px 8px;
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-    }
-    .saas-table-wrap {
-        overflow-x: auto;
-    }
-    .saas-table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 900px;
-    }
-    .saas-table th,
-    .saas-table td {
-        padding: 14px 18px;
-        border-top: 1px solid var(--border-light);
-        text-align: left;
-        vertical-align: top;
-        font-size: .88rem;
-    }
-    .saas-table th {
-        color: var(--text-muted);
-        font-size: .72rem;
-        text-transform: uppercase;
-        letter-spacing: .04em;
-        font-weight: 760;
-    }
-    .saas-name {
-        color: var(--text-primary);
-        font-weight: 760;
-    }
-    .saas-sub {
-        margin-top: 3px;
-        color: var(--text-muted);
-        font-size: .78rem;
-    }
-    .saas-status {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        height: 26px;
-        border-radius: 999px;
-        padding: 0 10px;
-        font-size: .74rem;
-        font-weight: 760;
-        background: var(--surface-secondary);
-        color: var(--text-secondary);
-    }
-    .saas-status.active,
-    .saas-status.trialing {
-        background: var(--success-soft);
-        color: var(--success);
-    }
-    .saas-status.past_due {
-        background: var(--warning-soft);
-        color: var(--warning);
-    }
-    .saas-status.suspended,
-    .saas-status.canceled {
-        background: var(--danger-soft);
-        color: var(--danger);
-    }
-    .saas-usage {
-        display: grid;
-        gap: 7px;
-        min-width: 150px;
-    }
-    .saas-bar {
-        height: 7px;
-        border-radius: 999px;
-        background: var(--surface-tertiary);
-        overflow: hidden;
-    }
-    .saas-bar span {
-        display: block;
-        height: 100%;
-        border-radius: inherit;
-        background: var(--primary);
-    }
-    .saas-control {
-        width: 100%;
-        border: 1px solid var(--border-light);
-        border-radius: 8px;
-        padding: .5rem .65rem;
-        background: var(--surface-primary);
-        color: var(--text-primary);
-        font-size: .86rem;
-    }
-    .saas-inline-actions {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        min-width: 128px;
-    }
-    .saas-side {
-        display: grid;
-        gap: 14px;
-    }
-    .saas-side-card {
-        padding: 18px;
-    }
-    .saas-list {
-        display: grid;
-        gap: 12px;
-        margin-top: 14px;
-    }
-    .saas-list-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        padding-top: 12px;
-        border-top: 1px solid var(--border-light);
-        font-size: .88rem;
-    }
-    .saas-list-row:first-child {
-        border-top: 0;
-        padding-top: 0;
-    }
-    .saas-list-row span {
-        color: var(--text-muted);
-    }
-    .saas-list-row strong {
-        text-align: right;
-        color: var(--text-primary);
-    }
-    @media (max-width: 1200px) {
-        .saas-hero,
-        .saas-layout {
-            grid-template-columns: 1fr;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo e($page_title); ?></title>
+    <link href="tailwind.min.css" rel="stylesheet">
+    <link href="theme.css" rel="stylesheet">
+    <style>
+        :root {
+            --op-bg: #f6f7f9;
+            --op-ink: #111827;
+            --op-muted: #667085;
+            --op-soft: #eef1f5;
+            --op-line: rgba(17, 24, 39, .10);
+            --op-panel: rgba(255, 255, 255, .82);
+            --op-panel-solid: #ffffff;
+            --op-blue: #2563eb;
+            --op-green: #047857;
+            --op-amber: #b45309;
+            --op-red: #b42318;
+            --op-shadow: 0 18px 55px rgba(15, 23, 42, .08);
         }
-    }
-    @media (max-width: 900px) {
-        .saas-wrap {
+        [data-theme="dark"] {
+            --op-bg: #070b12;
+            --op-ink: #f8fafc;
+            --op-muted: #9ca3af;
+            --op-soft: rgba(255, 255, 255, .08);
+            --op-line: rgba(255, 255, 255, .12);
+            --op-panel: rgba(15, 23, 42, .78);
+            --op-panel-solid: #0f172a;
+            --op-shadow: 0 22px 70px rgba(0, 0, 0, .38);
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(37, 99, 235, .10), transparent 32rem),
+                linear-gradient(180deg, var(--op-bg), var(--op-bg));
+            color: var(--op-ink);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            letter-spacing: 0;
+            opacity: 1 !important;
+            animation: none !important;
+            overflow-x: hidden;
+        }
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+        .op-shell {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 272px minmax(0, 1fr);
+        }
+        .op-sidebar {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            padding: 22px 18px;
+            border-right: 1px solid var(--op-line);
+            background: rgba(255, 255, 255, .54);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+        [data-theme="dark"] .op-sidebar {
+            background: rgba(2, 6, 23, .64);
+        }
+        .op-brand {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            min-height: 42px;
+            font-weight: 820;
+            font-size: 17px;
+        }
+        .op-mark {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            color: #fff;
+            background: #111827;
+            box-shadow: 0 14px 32px rgba(17, 24, 39, .18);
+        }
+        [data-theme="dark"] .op-mark {
+            background: #f8fafc;
+            color: #020617;
+        }
+        .op-subtitle {
+            display: block;
+            color: var(--op-muted);
+            font-size: 12px;
+            font-weight: 620;
+            margin-top: 2px;
+        }
+        .op-nav {
+            margin-top: 28px;
+            display: grid;
+            gap: 4px;
+        }
+        .op-nav a {
+            min-height: 38px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 12px;
+            border-radius: 10px;
+            color: var(--op-muted);
+            font-size: 14px;
+            font-weight: 680;
+        }
+        .op-nav a:hover,
+        .op-nav a.active {
+            background: var(--op-soft);
+            color: var(--op-ink);
+        }
+        .op-nav svg {
+            width: 17px;
+            height: 17px;
+            stroke-width: 2;
+        }
+        .op-sidebar-bottom {
+            position: absolute;
+            left: 18px;
+            right: 18px;
+            bottom: 18px;
+            display: grid;
+            gap: 10px;
+        }
+        .op-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid var(--op-line);
+            border-radius: 14px;
+            background: var(--op-panel);
+        }
+        .op-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: var(--op-ink);
+            color: var(--op-bg);
+            font-weight: 800;
+        }
+        .op-user strong,
+        .op-user span {
+            display: block;
+            max-width: 168px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .op-user strong {
+            font-size: 13px;
+        }
+        .op-user span {
+            color: var(--op-muted);
+            font-size: 12px;
+        }
+        .op-main {
+            min-width: 0;
+            padding: 24px;
+        }
+        .op-topbar {
+            min-height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .op-topbar h1 {
+            margin: 0;
+            font-size: 28px;
+            line-height: 1.12;
+            font-weight: 820;
+            letter-spacing: 0;
+        }
+        .op-topbar p {
+            margin: 5px 0 0;
+            color: var(--op-muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .op-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .op-btn {
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 1px solid var(--op-line);
+            border-radius: 10px;
+            padding: 0 14px;
+            background: var(--op-panel-solid);
+            color: var(--op-ink);
+            font-size: 13px;
+            font-weight: 760;
+            cursor: pointer;
+        }
+        .op-btn.primary {
+            border-color: #111827;
+            background: #111827;
+            color: #fff;
+        }
+        [data-theme="dark"] .op-btn.primary {
+            border-color: #f8fafc;
+            background: #f8fafc;
+            color: #020617;
+        }
+        .op-btn.danger {
+            color: var(--op-red);
+        }
+        .op-card {
+            min-width: 0;
+            border: 1px solid var(--op-line);
+            border-radius: 18px;
+            background: var(--op-panel);
+            box-shadow: var(--op-shadow);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+        .op-alert {
+            margin-bottom: 16px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--op-line);
+            font-size: 14px;
+            font-weight: 680;
+        }
+        .op-alert.error {
+            color: var(--op-red);
+            background: rgba(254, 226, 226, .72);
+        }
+        .op-alert.success {
+            color: var(--op-green);
+            background: rgba(220, 252, 231, .72);
+        }
+        .op-hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr);
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+        .op-command {
+            padding: 24px;
+        }
+        .op-command h2 {
+            margin: 0;
+            max-width: 760px;
+            font-size: 42px;
+            line-height: 1.03;
+            font-weight: 850;
+            letter-spacing: 0;
+        }
+        .op-command p {
+            margin: 14px 0 0;
+            max-width: 700px;
+            color: var(--op-muted);
+            font-size: 15px;
+            line-height: 1.65;
+        }
+        .op-health {
+            padding: 20px;
+            display: grid;
+            align-content: space-between;
+            gap: 18px;
+        }
+        .op-health-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .op-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--op-green);
+            box-shadow: 0 0 0 6px rgba(4, 120, 87, .12);
+        }
+        .op-status-dot.warn {
+            background: var(--op-amber);
+            box-shadow: 0 0 0 6px rgba(180, 83, 9, .14);
+        }
+        .op-health strong {
+            display: block;
+            margin-top: 9px;
+            font-size: 30px;
+            line-height: 1;
+        }
+        .op-health span,
+        .op-label {
+            color: var(--op-muted);
+            font-size: 12px;
+            font-weight: 760;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        .op-kpis {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+        .op-kpi {
             padding: 16px;
+            min-height: 116px;
         }
-        .saas-kpis {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+        .op-kpi strong {
+            display: block;
+            margin-top: 13px;
+            font-size: 30px;
+            line-height: 1;
         }
-        .saas-title h1 {
-            font-size: 1.85rem;
+        .op-kpi small {
+            display: block;
+            margin-top: 9px;
+            color: var(--op-muted);
+            font-size: 12px;
+            line-height: 1.45;
         }
-    }
-    @media (max-width: 640px) {
-        .saas-kpis,
-        .saas-field-row {
-            grid-template-columns: 1fr;
+        .op-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 360px;
+            gap: 18px;
+            align-items: start;
         }
-    }
-</style>
-
-<div class="saas-wrap">
-    <?php if ($error): ?><div class="alert alert-error mb-4"><?php echo e($error); ?></div><?php endif; ?>
-    <?php if ($success): ?><div class="alert alert-success mb-4"><?php echo e($success); ?></div><?php endif; ?>
-
-    <section class="saas-hero">
-        <div class="saas-panel saas-title">
-            <h1>FoxDesk Cloud</h1>
-            <p>Modern SaaS control plane for creating customer FoxDesks, monitoring usage, managing billing state, and keeping every customer helpdesk isolated.</p>
-            <div class="saas-actions">
-                <a href="<?php echo e(url('signup')); ?>" class="btn btn-primary" style="width:auto;">Public signup</a>
-                <a href="<?php echo e(url('dashboard')); ?>" class="btn btn-secondary" style="width:auto;">Open current FoxDesk</a>
+        .op-section-head {
+            min-height: 72px;
+            padding: 18px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            border-bottom: 1px solid var(--op-line);
+        }
+        .op-section-head h2 {
+            margin: 0;
+            font-size: 17px;
+            line-height: 1.2;
+            font-weight: 820;
+        }
+        .op-section-head p {
+            margin: 5px 0 0;
+            color: var(--op-muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .op-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .op-search {
+            width: 250px;
+            height: 38px;
+            border: 1px solid var(--op-line);
+            border-radius: 10px;
+            background: var(--op-panel-solid);
+            color: var(--op-ink);
+            padding: 0 12px;
+            font-size: 13px;
+            outline: none;
+        }
+        .op-table-wrap {
+            max-width: 100%;
+            overflow-x: auto;
+            overscroll-behavior-x: contain;
+        }
+        .op-table {
+            width: 100%;
+            min-width: 980px;
+            border-collapse: collapse;
+        }
+        .op-table th,
+        .op-table td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--op-line);
+            text-align: left;
+            vertical-align: top;
+            font-size: 13px;
+        }
+        .op-table tr:last-child td {
+            border-bottom: 0;
+        }
+        .op-table th {
+            color: var(--op-muted);
+            font-size: 11px;
+            font-weight: 820;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            background: rgba(255, 255, 255, .34);
+        }
+        [data-theme="dark"] .op-table th {
+            background: rgba(255, 255, 255, .035);
+        }
+        .op-name {
+            color: var(--op-ink);
+            font-size: 14px;
+            font-weight: 820;
+        }
+        .op-sub {
+            margin-top: 4px;
+            color: var(--op-muted);
+            font-size: 12px;
+            line-height: 1.45;
+        }
+        .op-pill {
+            min-height: 26px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            padding: 0 10px;
+            background: var(--op-soft);
+            color: var(--op-muted);
+            font-size: 12px;
+            font-weight: 800;
+        }
+        .op-pill.active,
+        .op-pill.trialing,
+        .op-pill.good {
+            background: rgba(220, 252, 231, .74);
+            color: var(--op-green);
+        }
+        .op-pill.past_due,
+        .op-pill.notice {
+            background: rgba(254, 243, 199, .78);
+            color: var(--op-amber);
+        }
+        .op-pill.suspended,
+        .op-pill.canceled,
+        .op-pill.risk {
+            background: rgba(254, 226, 226, .76);
+            color: var(--op-red);
+        }
+        .op-meter {
+            display: grid;
+            gap: 7px;
+            min-width: 160px;
+        }
+        .op-bar {
+            height: 7px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: var(--op-soft);
+        }
+        .op-bar span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: #111827;
+        }
+        [data-theme="dark"] .op-bar span {
+            background: #f8fafc;
+        }
+        .op-inline-form {
+            display: grid;
+            grid-template-columns: minmax(128px, 1fr) minmax(132px, 1fr) auto;
+            gap: 8px;
+            min-width: 390px;
+        }
+        .op-input,
+        .op-select {
+            width: 100%;
+            height: 36px;
+            border: 1px solid var(--op-line);
+            border-radius: 9px;
+            background: var(--op-panel-solid);
+            color: var(--op-ink);
+            padding: 0 10px;
+            font-size: 13px;
+            outline: none;
+        }
+        .op-stack {
+            display: grid;
+            gap: 18px;
+        }
+        .op-panel-body {
+            padding: 18px;
+        }
+        .op-form {
+            display: grid;
+            gap: 12px;
+        }
+        .op-field label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--op-muted);
+            font-size: 12px;
+            font-weight: 760;
+        }
+        .op-field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .op-list {
+            display: grid;
+            gap: 12px;
+        }
+        .op-list-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 14px;
+            align-items: start;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--op-line);
+        }
+        .op-list-row:last-child {
+            border-bottom: 0;
+            padding-bottom: 0;
+        }
+        .op-empty {
+            color: var(--op-muted);
+            font-size: 13px;
+            line-height: 1.55;
+        }
+        .op-mobile-toggle {
+            display: none;
+        }
+        .op-hidden-row {
+            display: none;
+        }
+        @media (max-width: 1180px) {
+            .op-shell {
+                grid-template-columns: 1fr;
+            }
+            .op-sidebar {
+                position: relative;
+                height: auto;
+                display: none;
+            }
+            .op-sidebar.open {
+                display: block;
+            }
+            .op-sidebar-bottom {
+                position: static;
+                margin-top: 22px;
+            }
+            .op-mobile-toggle {
+                display: inline-flex;
+            }
+            .op-hero,
+            .op-grid {
+                grid-template-columns: 1fr;
+            }
+            .op-kpis {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+        @media (max-width: 720px) {
+            .op-main {
+                padding: 16px;
+            }
+            .op-topbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+            .op-command h2 {
+                font-size: 31px;
+            }
+            .op-kpis,
+            .op-field-row,
+            .op-inline-form {
+                grid-template-columns: 1fr;
+            }
+            .op-search {
+                width: 100%;
+            }
+            .op-section-head {
+                display: grid;
+            }
+            .op-table {
+                min-width: 0;
+            }
+            .op-table thead {
+                display: none;
+            }
+            .op-table,
+            .op-table tbody,
+            .op-table tr,
+            .op-table td {
+                display: block;
+                width: 100%;
+            }
+            .op-table tr {
+                padding: 14px 0;
+                border-bottom: 1px solid var(--op-line);
+            }
+            .op-table tr:last-child {
+                border-bottom: 0;
+            }
+            .op-table td {
+                border-bottom: 0;
+                padding: 9px 18px;
+            }
+            .op-table td::before {
+                content: attr(data-label);
+                display: block;
+                margin-bottom: 5px;
+                color: var(--op-muted);
+                font-size: 11px;
+                font-weight: 820;
+                text-transform: uppercase;
+                letter-spacing: .04em;
+            }
+            .op-inline-form {
+                min-width: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="op-shell">
+    <aside class="op-sidebar" id="platformSidebar">
+        <a class="op-brand" href="<?php echo e(url('platform')); ?>">
+            <span class="op-mark">F</span>
+            <span>FoxDesk Cloud<span class="op-subtitle">Operator console</span></span>
+        </a>
+        <nav class="op-nav" aria-label="Platform navigation">
+            <a href="#overview" class="active"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 13h7V4H4v9Zm9 7h7V4h-7v16ZM4 20h7v-5H4v5Z"/></svg>Overview</a>
+            <a href="#workspaces"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Workspaces</a>
+            <a href="#workspaces"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 7h10v10H7zM4 4l3 3M20 4l-3 3M4 20l3-3M20 20l-3-3"/></svg>Lifecycle</a>
+            <a href="#migrations"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>Migrations</a>
+            <a href="#billing"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 7h16v10H4zM4 10h16M8 15h4"/></svg>Billing</a>
+            <a href="<?php echo e(url('dashboard')); ?>"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H5v13h13v-5M14 5h5v5M13 11l6-6"/></svg>Open helpdesk</a>
+        </nav>
+        <div class="op-sidebar-bottom">
+            <button type="button" class="op-btn" onclick="togglePlatformTheme()">Toggle theme</button>
+            <div class="op-user">
+                <span class="op-avatar"><?php echo e($operator_initial); ?></span>
+                <span>
+                    <strong><?php echo e($operator_name !== '' ? $operator_name : 'Platform admin'); ?></strong>
+                    <span><?php echo e($user['email'] ?? ''); ?></span>
+                </span>
             </div>
         </div>
-        <aside class="saas-panel saas-plan">
+    </aside>
+
+    <main class="op-main">
+        <header class="op-topbar">
             <div>
-                <div class="saas-plan-label text-sm">One scalable plan</div>
-                <strong><?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/mo</strong>
-                <p class="saas-muted text-sm mt-2 mb-0">Unlimited users, clients, agents, and tickets. <?php echo e(format_file_size(billing_included_storage_bytes())); ?> storage included.</p>
+                <h1>Platform console</h1>
+                <p>Operate hosted FoxDesk workspaces without mixing platform controls into customer helpdesk administration.</p>
             </div>
-            <div class="saas-list-row">
-                <span>Extra storage</span>
-                <strong><?php echo e(billing_format_money(billing_storage_overage_price_cents())); ?>/GB</strong>
+            <div class="op-actions">
+                <button type="button" class="op-btn op-mobile-toggle" onclick="togglePlatformSidebar()">Menu</button>
+                <a class="op-btn" href="<?php echo e(url('cloud')); ?>" target="_blank" rel="noopener">Public site</a>
+                <a class="op-btn" href="<?php echo e(url('signup')); ?>" target="_blank" rel="noopener">Signup</a>
+                <a class="op-btn primary" href="#create-workspace">New workspace</a>
             </div>
-        </aside>
-    </section>
+        </header>
 
-    <section class="saas-kpis">
-        <div class="saas-panel saas-kpi"><span>Workspaces</span><strong><?php echo (int) ($summary['tenants'] ?? 0); ?></strong></div>
-        <div class="saas-panel saas-kpi"><span>Active or trialing</span><strong><?php echo (int) ($summary['active_tenants'] ?? 0); ?></strong></div>
-        <div class="saas-panel saas-kpi"><span>Billing OK</span><strong><?php echo (int) ($summary['paying_or_trialing'] ?? 0); ?></strong></div>
-        <div class="saas-panel saas-kpi"><span>Storage used</span><strong><?php echo e(format_file_size($total_storage_bytes)); ?></strong></div>
-    </section>
+        <?php if ($error): ?><div class="op-alert error"><?php echo e($error); ?></div><?php endif; ?>
+        <?php if ($success): ?><div class="op-alert success"><?php echo e($success); ?></div><?php endif; ?>
 
-    <div class="saas-layout">
-        <div class="saas-side">
-            <section class="saas-panel saas-form">
-                <h2>Create FoxDesk</h2>
-                <p>Create an isolated workspace and first admin account.</p>
-                <form method="post" class="saas-fields">
-                    <?php echo csrf_field(); ?>
-                    <input type="hidden" name="platform_action" value="create_workspace">
-                    <div class="saas-field">
-                        <label>Workspace name</label>
-                        <input class="form-input w-full" name="workspace_name" placeholder="Acme Support" required>
-                    </div>
-                    <div class="saas-field-row">
-                        <div class="saas-field">
-                            <label>Owner first name</label>
-                            <input class="form-input w-full" name="admin_first_name" placeholder="Lukas" required>
-                        </div>
-                        <div class="saas-field">
-                            <label>Owner last name</label>
-                            <input class="form-input w-full" name="admin_last_name" placeholder="Hanes">
-                        </div>
-                    </div>
-                    <div class="saas-field">
-                        <label>Owner email</label>
-                        <input class="form-input w-full" type="email" name="admin_email" placeholder="owner@example.com" required>
-                    </div>
-                    <div class="saas-field">
-                        <label>Temporary password</label>
-                        <input class="form-input w-full" type="password" name="password" placeholder="At least 12 characters" minlength="12" required>
-                    </div>
-                    <div class="saas-field-row">
-                        <div class="saas-field">
-                            <label>Workspace status</label>
-                            <select class="form-select w-full" name="status">
-                                <option value="trialing">trialing</option>
-                                <option value="active">active</option>
-                            </select>
-                        </div>
-                        <div class="saas-field">
-                            <label>Billing status</label>
-                            <select class="form-select w-full" name="subscription_status">
-                                <option value="trialing">trialing</option>
-                                <option value="active">active</option>
-                                <option value="manual">manual</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button class="btn btn-primary w-full" type="submit">Create FoxDesk</button>
-                </form>
-            </section>
-
-            <section class="saas-panel saas-form">
-                <h2>Import self-hosted FoxDesk</h2>
-                <p>Upload a migration ZIP exported from an existing self-hosted installation.</p>
-                <form method="post" enctype="multipart/form-data" class="saas-fields">
-                    <?php echo csrf_field(); ?>
-                    <input type="hidden" name="platform_action" value="import_migration">
-                    <div class="saas-field">
-                        <label>Migration package</label>
-                        <input class="form-input w-full" type="file" name="migration_package" accept=".zip,application/zip" required>
-                    </div>
-                    <div class="saas-field">
-                        <label>New workspace name</label>
-                        <input class="form-input w-full" name="migration_workspace_name" placeholder="Imported FoxDesk" required>
-                    </div>
-                    <div class="saas-field">
-                        <label>Billing email override</label>
-                        <input class="form-input w-full" type="email" name="migration_billing_email" placeholder="billing@example.com">
-                    </div>
-                    <div class="saas-field-row">
-                        <div class="saas-field">
-                            <label>Workspace status</label>
-                            <select class="form-select w-full" name="migration_status">
-                                <option value="trialing">trialing</option>
-                                <option value="active">active</option>
-                            </select>
-                        </div>
-                        <div class="saas-field">
-                            <label>Billing status</label>
-                            <select class="form-select w-full" name="migration_subscription_status">
-                                <option value="manual">manual</option>
-                                <option value="trialing">trialing</option>
-                                <option value="active">active</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button class="btn btn-primary w-full" type="submit">Import migration</button>
-                </form>
-            </section>
-
-            <section class="saas-panel saas-side-card">
-                <h2>Usage economics</h2>
-                <p>Storage is the growth lever for margin and billing.</p>
-                <div class="saas-list">
-                    <div class="saas-list-row"><span>Total extra GB</span><strong><?php echo (int) $total_extra_gb; ?> GB</strong></div>
-                    <div class="saas-list-row"><span>Estimated overage</span><strong><?php echo e(billing_format_money($estimated_storage_overage_cents)); ?></strong></div>
-                    <div class="saas-list-row"><span>Target gross margin</span><strong>~10x</strong></div>
+        <section class="op-hero" id="overview">
+            <div class="op-card op-command">
+                <span class="op-label">Control plane</span>
+                <h2>Customers, billing state, migrations, and workspace health in one operator view.</h2>
+                <p>This console is for FoxDesk SaaS operations only. Customer-facing helpdesk settings stay inside each workspace; platform-level lifecycle, imports, and billing state stay here.</p>
+                <div class="op-actions mt-5 justify-start">
+                    <a class="op-btn primary" href="#workspaces">Review workspaces</a>
+                    <a class="op-btn" href="#migrations">Import self-hosted FoxDesk</a>
                 </div>
-            </section>
-
-            <section class="saas-panel saas-side-card">
-                <h2>Recent migrations</h2>
-                <p>Last self-hosted imports into the SaaS control plane.</p>
-                <div class="saas-list">
-                    <?php if (!$migration_imports): ?>
-                        <div class="saas-muted text-sm">No migrations imported yet.</div>
-                    <?php endif; ?>
-                    <?php foreach ($migration_imports as $import): ?>
-                        <div class="saas-list-row">
-                            <span>
-                                <?php echo e($import['tenant_name'] ?: 'Failed import'); ?>
-                                <br><small><?php echo e($import['created_at']); ?></small>
-                            </span>
-                            <strong><?php echo e($import['status']); ?></strong>
-                        </div>
-                    <?php endforeach; ?>
+            </div>
+            <aside class="op-card op-health">
+                <div class="op-health-top">
+                    <span class="op-label">Platform health</span>
+                    <span class="op-status-dot <?php echo $health_class === 'warn' ? 'warn' : ''; ?>"></span>
                 </div>
-            </section>
-        </div>
-
-        <section class="saas-panel">
-            <div class="saas-table-head">
                 <div>
-                    <h2>Customer FoxDesks</h2>
-                    <p>Manage tenant state, owner, billing and storage usage from one place.</p>
+                    <strong><?php echo e($health_label); ?></strong>
+                    <p class="op-sub"><?php echo $active_tenants; ?> of <?php echo $tenant_count; ?> workspaces are active or trialing.</p>
                 </div>
-            </div>
-            <div class="saas-table-wrap">
-                <table class="saas-table">
-                    <thead>
-                        <tr>
-                            <th>Workspace</th>
-                            <th>Owner</th>
-                            <th>Usage</th>
-                            <th>Billing</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($tenants as $tenant): ?>
-                            <?php
-                                $usage = $tenant_usage[(int) $tenant['id']];
-                                $included = max(1, (int) $usage['included_storage_bytes']);
-                                $storage_percent = min(100, (int) round(((int) $usage['storage_bytes'] / $included) * 100));
-                                $status_class = preg_replace('/[^a-z_]/', '', (string) ($tenant['status'] ?? ''));
-                            ?>
-                            <tr>
-                                <td>
-                                    <div class="saas-name"><?php echo e($tenant['name']); ?></div>
-                                    <div class="saas-sub">/<?php echo e($tenant['slug']); ?></div>
-                                </td>
-                                <td>
-                                    <div class="saas-name"><?php echo e(trim(($tenant['owner_first_name'] ?? '') . ' ' . ($tenant['owner_last_name'] ?? '')) ?: 'No owner'); ?></div>
-                                    <div class="saas-sub"><?php echo e($tenant['owner_email'] ?? ''); ?></div>
-                                </td>
-                                <td>
-                                    <div class="saas-usage">
-                                        <div class="saas-sub"><?php echo e(format_file_size((int) $usage['storage_bytes'])); ?> / <?php echo e(format_file_size($included)); ?></div>
-                                        <div class="saas-bar"><span style="width: <?php echo $storage_percent; ?>%;"></span></div>
-                                        <div class="saas-sub"><?php echo (int) $usage['users']; ?> users, <?php echo (int) $usage['clients']; ?> clients, <?php echo (int) $usage['tickets']; ?> tickets</div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="saas-name"><?php echo e(billing_plan_name()); ?></div>
-                                    <div class="saas-sub"><?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/mo + <?php echo e(billing_format_money(billing_storage_overage_price_cents())); ?>/GB</div>
-                                    <div class="saas-sub"><?php echo (int) $usage['extra_storage_gb']; ?> extra GB, <?php echo e(billing_format_money($usage['storage_overage_cents'])); ?></div>
-                                </td>
-                                <td>
-                                    <form method="post" class="grid gap-2 min-w-[150px]">
-                                        <?php echo csrf_field(); ?>
-                                        <input type="hidden" name="platform_action" value="update_tenant">
-                                        <input type="hidden" name="tenant_id" value="<?php echo (int) $tenant['id']; ?>">
-                                        <span class="saas-status <?php echo e($status_class); ?>"><?php echo e($tenant['status']); ?></span>
-                                        <select class="saas-control" name="status">
-                                            <?php foreach (['active', 'trialing', 'past_due', 'suspended', 'canceled'] as $status): ?>
-                                                <option value="<?php echo $status; ?>" <?php echo ($tenant['status'] ?? '') === $status ? 'selected' : ''; ?>><?php echo $status; ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <input class="saas-control" name="subscription_status" value="<?php echo e($tenant['subscription_status'] ?? 'manual'); ?>">
-                                </td>
-                                <td>
-                                        <div class="saas-inline-actions">
-                                            <button class="btn btn-secondary btn-sm" type="submit">Save</button>
-                                            <button class="btn btn-ghost btn-sm" formaction="<?php echo url('billing', ['action' => 'checkout', 'tenant_id' => (int) $tenant['id']]); ?>" formmethod="post" name="plan" value="<?php echo e(billing_plan_code()); ?>" type="submit">Checkout</button>
-                                            <button class="btn btn-ghost btn-sm" formaction="<?php echo url('billing', ['action' => 'portal', 'tenant_id' => (int) $tenant['id']]); ?>" formmethod="post" type="submit">Portal</button>
-                                        </div>
-                                    </form>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+                <div class="op-list">
+                    <div class="op-list-row"><span class="op-sub">Past due</span><strong><?php echo (int) ($summary['past_due_tenants'] ?? 0); ?></strong></div>
+                    <div class="op-list-row"><span class="op-sub">Blocked</span><strong><?php echo (int) ($summary['blocked_tenants'] ?? 0); ?></strong></div>
+                </div>
+            </aside>
         </section>
-    </div>
+
+        <section class="op-kpis">
+            <div class="op-card op-kpi"><span class="op-label">Workspaces</span><strong><?php echo $tenant_count; ?></strong><small>Total customer FoxDesks in the platform database.</small></div>
+            <div class="op-card op-kpi"><span class="op-label">Active or trial</span><strong><?php echo $active_tenants; ?></strong><small>Workspaces that should currently have app access.</small></div>
+            <div class="op-card op-kpi"><span class="op-label">Storage used</span><strong><?php echo e(format_file_size($total_storage_bytes)); ?></strong><small><?php echo (int) $total_extra_gb; ?> extra GB across all workspaces.</small></div>
+            <div class="op-card op-kpi"><span class="op-label">Estimated billing</span><strong><?php echo e(billing_format_money($estimated_storage_overage_cents)); ?></strong><small>Storage overage estimate for the current period.</small></div>
+        </section>
+
+        <div class="op-grid">
+            <section class="op-card" id="workspaces">
+                <div class="op-section-head">
+                    <div>
+                        <h2>Workspace catalog</h2>
+                        <p>Search tenants, review owners, inspect usage, and update lifecycle state.</p>
+                    </div>
+                    <div class="op-toolbar">
+                        <input class="op-search" id="workspaceSearch" type="search" placeholder="Search workspace or owner" oninput="filterWorkspaces()">
+                    </div>
+                </div>
+                <div class="op-table-wrap">
+                    <table class="op-table" id="workspaceTable">
+                        <thead>
+                            <tr>
+                                <th>Workspace</th>
+                                <th>Owner</th>
+                                <th>Usage</th>
+                                <th>Billing</th>
+                                <th>Lifecycle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($tenants as $tenant): ?>
+                                <?php
+                                    $tenant_id = (int) $tenant['id'];
+                                    $usage = $tenant_usage[$tenant_id];
+                                    $included = max(1, (int) $usage['included_storage_bytes']);
+                                    $storage_percent = min(100, (int) round(((int) $usage['storage_bytes'] / $included) * 100));
+                                    $status_class = preg_replace('/[^a-z_]/', '', (string) ($tenant['status'] ?? ''));
+                                    $owner_name = trim((string) (($tenant['owner_first_name'] ?? '') . ' ' . ($tenant['owner_last_name'] ?? '')));
+                                    $search_text = strtolower((string) ($tenant['name'] . ' ' . $tenant['slug'] . ' ' . $owner_name . ' ' . ($tenant['owner_email'] ?? '')));
+                                ?>
+                                <tr data-workspace-row data-search="<?php echo e($search_text); ?>">
+                                    <td data-label="Workspace">
+                                        <div class="op-name"><?php echo e($tenant['name']); ?></div>
+                                        <div class="op-sub">/<?php echo e($tenant['slug']); ?> · ID <?php echo $tenant_id; ?></div>
+                                        <div class="op-sub">Created <?php echo e(substr((string) $tenant['created_at'], 0, 10)); ?></div>
+                                    </td>
+                                    <td data-label="Owner">
+                                        <div class="op-name"><?php echo e($owner_name !== '' ? $owner_name : 'No owner'); ?></div>
+                                        <div class="op-sub"><?php echo e($tenant['owner_email'] ?? ''); ?></div>
+                                        <div class="op-sub"><?php echo (int) $usage['users']; ?> users · <?php echo (int) $usage['clients']; ?> clients</div>
+                                    </td>
+                                    <td data-label="Usage">
+                                        <div class="op-meter">
+                                            <div class="op-sub"><?php echo e(format_file_size((int) $usage['storage_bytes'])); ?> / <?php echo e(format_file_size($included)); ?></div>
+                                            <div class="op-bar"><span style="width: <?php echo $storage_percent; ?>%;"></span></div>
+                                            <div class="op-sub"><?php echo (int) $usage['tickets']; ?> tickets · latest <?php echo e($tenant['last_ticket_at'] ? substr((string) $tenant['last_ticket_at'], 0, 10) : 'none'); ?></div>
+                                        </div>
+                                    </td>
+                                    <td data-label="Billing">
+                                        <div class="op-name"><?php echo e(billing_plan_name()); ?></div>
+                                        <div class="op-sub"><?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/mo base</div>
+                                        <div class="op-sub"><?php echo (int) $usage['extra_storage_gb']; ?> extra GB · <?php echo e(billing_format_money($usage['storage_overage_cents'])); ?></div>
+                                    </td>
+                                    <td data-label="Lifecycle">
+                                        <form method="post" class="op-inline-form">
+                                            <?php echo csrf_field(); ?>
+                                            <input type="hidden" name="platform_action" value="update_tenant">
+                                            <input type="hidden" name="tenant_id" value="<?php echo $tenant_id; ?>">
+                                            <select class="op-select" name="status" aria-label="Workspace status">
+                                                <?php foreach (['active', 'trialing', 'past_due', 'suspended', 'canceled'] as $status): ?>
+                                                    <option value="<?php echo $status; ?>" <?php echo ($tenant['status'] ?? '') === $status ? 'selected' : ''; ?>><?php echo $status; ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <input class="op-input" name="subscription_status" value="<?php echo e($tenant['subscription_status'] ?? 'manual'); ?>" aria-label="Billing status">
+                                            <button class="op-btn" type="submit">Save</button>
+                                        </form>
+                                        <div class="op-actions mt-2 justify-start">
+                                            <span class="op-pill <?php echo e($status_class); ?>"><?php echo e($tenant['status']); ?></span>
+                                            <a class="op-pill" href="<?php echo e(url('billing', ['tenant_id' => $tenant_id])); ?>">Billing detail</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <aside class="op-stack">
+                <section class="op-card" id="create-workspace">
+                    <div class="op-section-head">
+                        <div>
+                            <h2>Create workspace</h2>
+                            <p>Provision a customer FoxDesk and first admin.</p>
+                        </div>
+                    </div>
+                    <div class="op-panel-body">
+                        <form method="post" class="op-form">
+                            <?php echo csrf_field(); ?>
+                            <input type="hidden" name="platform_action" value="create_workspace">
+                            <div class="op-field">
+                                <label>Workspace name</label>
+                                <input class="op-input" name="workspace_name" placeholder="Acme Support" required>
+                            </div>
+                            <div class="op-field-row">
+                                <div class="op-field">
+                                    <label>Owner first name</label>
+                                    <input class="op-input" name="admin_first_name" placeholder="Lukas" required>
+                                </div>
+                                <div class="op-field">
+                                    <label>Owner last name</label>
+                                    <input class="op-input" name="admin_last_name" placeholder="Hanes">
+                                </div>
+                            </div>
+                            <div class="op-field">
+                                <label>Owner email</label>
+                                <input class="op-input" type="email" name="admin_email" placeholder="owner@example.com" required>
+                            </div>
+                            <div class="op-field">
+                                <label>Temporary password</label>
+                                <input class="op-input" type="password" name="password" placeholder="At least 12 characters" minlength="12" required>
+                            </div>
+                            <div class="op-field-row">
+                                <div class="op-field">
+                                    <label>Workspace status</label>
+                                    <select class="op-select" name="status">
+                                        <option value="trialing">trialing</option>
+                                        <option value="active">active</option>
+                                    </select>
+                                </div>
+                                <div class="op-field">
+                                    <label>Billing status</label>
+                                    <select class="op-select" name="subscription_status">
+                                        <option value="trialing">trialing</option>
+                                        <option value="active">active</option>
+                                        <option value="manual">manual</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button class="op-btn primary" type="submit">Create workspace</button>
+                        </form>
+                    </div>
+                </section>
+
+                <section class="op-card" id="migrations">
+                    <div class="op-section-head">
+                        <div>
+                            <h2>Migration import</h2>
+                            <p>Bring an existing self-hosted FoxDesk into Cloud.</p>
+                        </div>
+                    </div>
+                    <div class="op-panel-body">
+                        <form method="post" enctype="multipart/form-data" class="op-form">
+                            <?php echo csrf_field(); ?>
+                            <input type="hidden" name="platform_action" value="import_migration">
+                            <div class="op-field">
+                                <label>Migration ZIP</label>
+                                <input class="op-input" type="file" name="migration_package" accept=".zip,application/zip" required>
+                            </div>
+                            <div class="op-field">
+                                <label>New workspace name</label>
+                                <input class="op-input" name="migration_workspace_name" placeholder="Imported FoxDesk" required>
+                            </div>
+                            <div class="op-field">
+                                <label>Billing email override</label>
+                                <input class="op-input" type="email" name="migration_billing_email" placeholder="billing@example.com">
+                            </div>
+                            <div class="op-field-row">
+                                <div class="op-field">
+                                    <label>Workspace status</label>
+                                    <select class="op-select" name="migration_status">
+                                        <option value="trialing">trialing</option>
+                                        <option value="active">active</option>
+                                    </select>
+                                </div>
+                                <div class="op-field">
+                                    <label>Billing status</label>
+                                    <select class="op-select" name="migration_subscription_status">
+                                        <option value="manual">manual</option>
+                                        <option value="trialing">trialing</option>
+                                        <option value="active">active</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button class="op-btn primary" type="submit">Import migration</button>
+                        </form>
+                    </div>
+                </section>
+
+                <section class="op-card" id="billing">
+                    <div class="op-section-head">
+                        <div>
+                            <h2>Plan and billing state</h2>
+                            <p>Customer-facing plan configuration, not margin math.</p>
+                        </div>
+                    </div>
+                    <div class="op-panel-body op-list">
+                        <div class="op-list-row"><span><span class="op-label">Cloud plan</span><div class="op-sub">Base subscription</div></span><strong><?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/mo</strong></div>
+                        <div class="op-list-row"><span><span class="op-label">Included storage</span><div class="op-sub">Per workspace</div></span><strong><?php echo e(format_file_size(billing_included_storage_bytes())); ?></strong></div>
+                        <div class="op-list-row"><span><span class="op-label">Extra storage</span><div class="op-sub">Metered customer usage</div></span><strong><?php echo e(billing_format_money(billing_storage_overage_price_cents())); ?>/GB</strong></div>
+                    </div>
+                </section>
+
+                <section class="op-card">
+                    <div class="op-section-head">
+                        <div>
+                            <h2>Needs attention</h2>
+                            <p>Lifecycle or usage items that should be reviewed.</p>
+                        </div>
+                    </div>
+                    <div class="op-panel-body op-list">
+                        <?php if (!$attention_items): ?>
+                            <div class="op-empty">No workspace currently needs operator attention.</div>
+                        <?php endif; ?>
+                        <?php foreach (array_slice($attention_items, 0, 6) as $item): ?>
+                            <div class="op-list-row">
+                                <span>
+                                    <span class="op-label"><?php echo e($item['type']); ?></span>
+                                    <div class="op-name"><?php echo e($item['title']); ?></div>
+                                    <div class="op-sub"><?php echo e($item['detail']); ?></div>
+                                </span>
+                                <span class="op-pill <?php echo e($item['tone']); ?>"><?php echo e($item['tone']); ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </section>
+
+                <section class="op-card">
+                    <div class="op-section-head">
+                        <div>
+                            <h2>Recent imports</h2>
+                            <p>Latest self-hosted migration packages.</p>
+                        </div>
+                    </div>
+                    <div class="op-panel-body op-list">
+                        <?php if (!$migration_imports): ?>
+                            <div class="op-empty">No migrations imported yet.</div>
+                        <?php endif; ?>
+                        <?php foreach ($migration_imports as $import): ?>
+                            <div class="op-list-row">
+                                <span>
+                                    <span class="op-label"><?php echo e($import['status']); ?></span>
+                                    <div class="op-name"><?php echo e($import['tenant_name'] ?: 'Import without tenant'); ?></div>
+                                    <div class="op-sub"><?php echo e($import['created_at']); ?> · <?php echo e($import['created_by_email'] ?: 'system'); ?></div>
+                                </span>
+                                <span class="op-pill <?php echo e($import['status'] === 'completed' ? 'good' : 'notice'); ?>"><?php echo e($import['imported_tickets']); ?> tickets</span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </section>
+            </aside>
+        </div>
+    </main>
 </div>
 
-<?php require_once BASE_PATH . '/includes/footer.php'; ?>
+<script>
+    (function () {
+        var saved = localStorage.getItem('foxdesk-platform-theme') || localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', saved);
+    })();
+
+    function togglePlatformTheme() {
+        var current = document.documentElement.getAttribute('data-theme') || 'light';
+        var next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('foxdesk-platform-theme', next);
+    }
+
+    function togglePlatformSidebar() {
+        var sidebar = document.getElementById('platformSidebar');
+        if (sidebar) sidebar.classList.toggle('open');
+    }
+
+    function filterWorkspaces() {
+        var input = document.getElementById('workspaceSearch');
+        var query = (input ? input.value : '').trim().toLowerCase();
+        document.querySelectorAll('[data-workspace-row]').forEach(function (row) {
+            var text = row.getAttribute('data-search') || '';
+            row.classList.toggle('op-hidden-row', query !== '' && text.indexOf(query) === -1);
+        });
+    }
+</script>
+</body>
+</html>

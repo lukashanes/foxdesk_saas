@@ -1,8 +1,12 @@
 {
-    "version": "0.3.116",
+    "version": "0.3.117",
     "date": "2026-05-16",
     "min_php": "8.1",
     "changelog": [
+        "Redesigned the SaaS operator console as a standalone control plane for workspaces, billing state, migrations, and tenant lifecycle",
+        "Removed internal unit economics and margin copy from public/operator screens",
+        "Improved platform admin responsive layout with mobile-safe workspace cards and search",
+        "Aligned FoxDesk Cloud public copy with the app.foxdesk.net launch domain",
         "Added the public FoxDesk Cloud SaaS website with light and dark product previews",
         "Added a SaaS platform dashboard for creating workspaces, tracking usage, billing state, storage overage, and recent migrations",
         "Added self-hosted to SaaS migration export packages for admins",

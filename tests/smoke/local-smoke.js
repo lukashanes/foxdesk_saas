@@ -30,7 +30,7 @@ async function expectText(page, text) {
   await page.locator('input[name="password"]').fill(password);
   await page.locator('button[type="submit"]').click();
   await page.waitForURL(/page=platform|page=dashboard|dashboard/);
-  await expectText(page, page.url().includes('page=platform') ? 'Customer FoxDesks' : 'Dashboard');
+  await expectText(page, page.url().includes('page=platform') ? 'Workspace catalog' : 'Dashboard');
 
   const attachmentPath = path.join(os.tmpdir(), 'foxdesk-local-smoke.txt');
   fs.writeFileSync(attachmentPath, 'hello from local smoke\n');

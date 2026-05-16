@@ -2,7 +2,7 @@
 /**
  * Public FoxDesk Cloud website.
  *
- * This is the public foxdesk.org-facing surface. Operational/customer data is
+ * This is the public FoxDesk Cloud surface. Operational/customer data is
  * intentionally kept out of this page; it belongs behind platform admin login.
  */
 
@@ -1212,7 +1212,7 @@ $included_storage = billing_included_storage_bytes() === 1073741824
                 <div class="fd-product-frame">
                     <div class="fd-product-toolbar">
                         <div class="fd-window-dots"><span></span><span></span><span></span></div>
-                        <div class="fd-product-url">app.foxdesk.org / dashboard</div>
+                        <div class="fd-product-url">app.foxdesk.net / dashboard</div>
                     </div>
                     <img class="fd-light-img" src="assets/public/dashboard-light.webp" alt="FoxDesk dashboard preview">
                     <img class="fd-dark-img" src="assets/public/dashboard-dark.webp" alt="FoxDesk dashboard preview in dark mode">
@@ -1322,7 +1322,7 @@ $included_storage = billing_included_storage_bytes() === 1073741824
                     <ul class="fd-list">
                         <li><span class="fd-check">✓</span><span>Unlimited users, agents, clients, organizations, and tickets</span></li>
                         <li><span class="fd-check">✓</span><span><?php echo e($included_storage); ?> file storage included</span></li>
-                        <li><span class="fd-check">✓</span><span>Hosted FoxDesk app on app.foxdesk.org</span></li>
+                        <li><span class="fd-check">✓</span><span>Hosted FoxDesk app on app.foxdesk.net</span></li>
                         <li><span class="fd-check">✓</span><span>Managed email sending and attachment storage</span></li>
                         <li><span class="fd-check">✓</span><span>Updates and production deployment prepared for managed hosting</span></li>
                     </ul>
@@ -1378,7 +1378,7 @@ $included_storage = billing_included_storage_bytes() === 1073741824
                 <img src="assets/public/logo.webp" alt="" width="28" height="28" class="rounded-lg">
                 <strong class="text-gray-900">FoxDesk</strong>
             </div>
-            <div>Open-source FoxDesk remains available at <a href="https://foxdesk.org" class="text-[#2563eb]" target="_blank" rel="noopener">foxdesk.org</a>. Cloud hosting will run at <strong>app.foxdesk.org</strong>.</div>
+            <div>Open-source FoxDesk remains available at <a href="https://foxdesk.org" class="text-[#2563eb]" target="_blank" rel="noopener">foxdesk.org</a>. FoxDesk Cloud runs at <strong>app.foxdesk.net</strong>.</div>
         </div>
     </footer>
     <script>

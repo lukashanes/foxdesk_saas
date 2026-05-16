@@ -84,7 +84,7 @@ test('public signup creates an isolated FoxDesk workspace and platform admin can
   const platformPage = await platformContext.newPage();
   await login(platformPage);
   await platformPage.goto('/index.php?page=platform');
-  await expect(platformPage.locator('body')).toContainText('Customer FoxDesks');
+  await expect(platformPage.locator('body')).toContainText('Workspace catalog');
   await expect(platformPage.locator('body')).toContainText(workspaceName);
   await expect(platformPage.locator('body')).toContainText(ownerEmail);
   await expect(platformPage.locator('body')).toContainText('FoxDesk Cloud');
