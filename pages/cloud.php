@@ -1182,6 +1182,7 @@ $included_storage = billing_included_storage_bytes() === 1073741824
                 <a href="#features">Features</a>
                 <a href="#pricing">Pricing</a>
                 <a href="#migration">Migration</a>
+                <a href="<?php echo e(url('legal', ['type' => 'privacy'])); ?>">Privacy</a>
                 <a href="https://foxdesk.org" target="_blank" rel="noopener">Open-source</a>
             </nav>
             <div class="flex items-center gap-3">
@@ -1379,6 +1380,12 @@ $included_storage = billing_included_storage_bytes() === 1073741824
                 <strong class="text-gray-900">FoxDesk</strong>
             </div>
             <div>Open-source FoxDesk remains available at <a href="https://foxdesk.org" class="text-[#2563eb]" target="_blank" rel="noopener">foxdesk.org</a>. FoxDesk Cloud runs at <strong>app.foxdesk.net</strong>.</div>
+            <div class="flex items-center gap-4 flex-wrap text-sm">
+                <a href="<?php echo e(url('legal', ['type' => 'privacy'])); ?>">Privacy</a>
+                <a href="<?php echo e(url('legal', ['type' => 'terms'])); ?>">Terms</a>
+                <a href="<?php echo e(url('legal', ['type' => 'dpa'])); ?>">DPA</a>
+                <a href="<?php echo e(url('legal', ['type' => 'security'])); ?>">Security</a>
+            </div>
         </div>
     </footer>
     <script>

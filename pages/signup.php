@@ -121,6 +121,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input class="signup-input" type="password" name="password_confirm" minlength="12" required>
                     </div>
                     <button type="submit" class="btn btn-primary w-full py-2.5">Create FoxDesk</button>
+                    <p class="text-xs leading-5" style="color: var(--text-muted);">
+                        By creating a workspace you agree to the
+                        <a href="<?php echo e(url('legal', ['type' => 'terms'])); ?>" target="_blank" rel="noopener" style="color: var(--primary);">Terms</a>
+                        and
+                        <a href="<?php echo e(url('legal', ['type' => 'privacy'])); ?>" target="_blank" rel="noopener" style="color: var(--primary);">Privacy Policy</a>.
+                    </p>
                 </form>
 
                 <p class="text-center text-sm mt-6" style="color: var(--text-muted);">

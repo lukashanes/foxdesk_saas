@@ -164,7 +164,7 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             --op-green: #047857;
             --op-amber: #b45309;
             --op-red: #b42318;
-            --op-shadow: 0 18px 55px rgba(15, 23, 42, .08);
+            --op-shadow: 0 12px 32px rgba(15, 23, 42, .06);
         }
         [data-theme="dark"] {
             --op-bg: #070b12;
@@ -174,7 +174,7 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             --op-line: rgba(255, 255, 255, .12);
             --op-panel: rgba(15, 23, 42, .78);
             --op-panel-solid: #0f172a;
-            --op-shadow: 0 22px 70px rgba(0, 0, 0, .38);
+            --op-shadow: 0 16px 44px rgba(0, 0, 0, .30);
         }
         * {
             box-sizing: border-box;
@@ -199,13 +199,13 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         .op-shell {
             min-height: 100vh;
             display: grid;
-            grid-template-columns: 272px minmax(0, 1fr);
+            grid-template-columns: 228px minmax(0, 1fr);
         }
         .op-sidebar {
             position: sticky;
             top: 0;
             height: 100vh;
-            padding: 22px 18px;
+            padding: 14px 12px;
             border-right: 1px solid var(--op-line);
             background: rgba(255, 255, 255, .54);
             backdrop-filter: blur(24px);
@@ -217,15 +217,15 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         .op-brand {
             display: flex;
             align-items: center;
-            gap: 11px;
-            min-height: 42px;
+            gap: 9px;
+            min-height: 34px;
             font-weight: 820;
-            font-size: 17px;
+            font-size: 15px;
         }
         .op-mark {
-            width: 38px;
-            height: 38px;
-            border-radius: 12px;
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
             display: grid;
             place-items: center;
             color: #fff;
@@ -239,24 +239,24 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         .op-subtitle {
             display: block;
             color: var(--op-muted);
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 620;
             margin-top: 2px;
         }
         .op-nav {
-            margin-top: 28px;
+            margin-top: 18px;
             display: grid;
             gap: 4px;
         }
         .op-nav a {
-            min-height: 38px;
+            min-height: 34px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 0 12px;
-            border-radius: 10px;
+            gap: 9px;
+            padding: 0 10px;
+            border-radius: 9px;
             color: var(--op-muted);
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 680;
         }
         .op-nav a:hover,
@@ -265,30 +265,30 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             color: var(--op-ink);
         }
         .op-nav svg {
-            width: 17px;
-            height: 17px;
+            width: 15px;
+            height: 15px;
             stroke-width: 2;
         }
         .op-sidebar-bottom {
             position: absolute;
-            left: 18px;
-            right: 18px;
-            bottom: 18px;
+            left: 12px;
+            right: 12px;
+            bottom: 12px;
             display: grid;
-            gap: 10px;
+            gap: 8px;
         }
         .op-user {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px;
+            gap: 8px;
+            padding: 8px;
             border: 1px solid var(--op-line);
-            border-radius: 14px;
+            border-radius: 12px;
             background: var(--op-panel);
         }
         .op-avatar {
-            width: 34px;
-            height: 34px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             display: grid;
             place-items: center;
@@ -299,62 +299,62 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         .op-user strong,
         .op-user span {
             display: block;
-            max-width: 168px;
+            max-width: 138px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
         .op-user strong {
-            font-size: 13px;
+            font-size: 12px;
         }
         .op-user span {
             color: var(--op-muted);
-            font-size: 12px;
+            font-size: 11px;
         }
         .op-main {
             min-width: 0;
-            padding: 24px;
+            padding: 14px;
         }
         .op-topbar {
-            min-height: 54px;
+            min-height: 40px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 16px;
-            margin-bottom: 24px;
+            gap: 12px;
+            margin-bottom: 12px;
         }
         .op-topbar h1 {
             margin: 0;
-            font-size: 28px;
+            font-size: 20px;
             line-height: 1.12;
             font-weight: 820;
             letter-spacing: 0;
         }
         .op-topbar p {
-            margin: 5px 0 0;
+            margin: 3px 0 0;
             color: var(--op-muted);
-            font-size: 14px;
-            line-height: 1.5;
+            font-size: 12px;
+            line-height: 1.35;
         }
         .op-actions {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
             justify-content: flex-end;
         }
         .op-btn {
-            height: 38px;
+            height: 32px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 7px;
             border: 1px solid var(--op-line);
-            border-radius: 10px;
-            padding: 0 14px;
+            border-radius: 9px;
+            padding: 0 11px;
             background: var(--op-panel-solid);
             color: var(--op-ink);
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 760;
             cursor: pointer;
         }
@@ -374,18 +374,18 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         .op-card {
             min-width: 0;
             border: 1px solid var(--op-line);
-            border-radius: 18px;
+            border-radius: 12px;
             background: var(--op-panel);
             box-shadow: var(--op-shadow);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
         }
         .op-alert {
-            margin-bottom: 16px;
-            padding: 12px 14px;
-            border-radius: 12px;
+            margin-bottom: 10px;
+            padding: 9px 11px;
+            border-radius: 10px;
             border: 1px solid var(--op-line);
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 680;
         }
         .op-alert.error {
@@ -396,45 +396,39 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             color: var(--op-green);
             background: rgba(220, 252, 231, .72);
         }
-        .op-hero {
+        .op-overview {
             display: grid;
-            grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr);
-            gap: 18px;
-            margin-bottom: 18px;
+            grid-template-columns: 1.4fr repeat(5, minmax(132px, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
         }
-        .op-command {
-            padding: 24px;
+        .op-compact-card {
+            padding: 12px;
+            min-height: 86px;
         }
-        .op-command h2 {
-            margin: 0;
-            max-width: 760px;
-            font-size: 42px;
-            line-height: 1.03;
-            font-weight: 850;
-            letter-spacing: 0;
-        }
-        .op-command p {
-            margin: 14px 0 0;
-            max-width: 700px;
-            color: var(--op-muted);
-            font-size: 15px;
-            line-height: 1.65;
-        }
-        .op-health {
-            padding: 20px;
+        .op-compact-card.primary {
             display: grid;
-            align-content: space-between;
-            gap: 18px;
+            gap: 7px;
         }
-        .op-health-top {
+        .op-compact-card strong {
+            display: block;
+            margin-top: 7px;
+            font-size: 22px;
+            line-height: 1;
+        }
+        .op-compact-card .op-actions {
+            justify-content: flex-start;
+            margin-top: 2px;
+        }
+        .op-compact-title {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 16px;
+            gap: 10px;
         }
         .op-status-dot {
-            width: 10px;
-            height: 10px;
+            width: 9px;
+            height: 9px;
             border-radius: 50%;
             background: var(--op-green);
             box-shadow: 0 0 0 6px rgba(4, 120, 87, .12);
@@ -443,85 +437,55 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             background: var(--op-amber);
             box-shadow: 0 0 0 6px rgba(180, 83, 9, .14);
         }
-        .op-health strong {
-            display: block;
-            margin-top: 9px;
-            font-size: 30px;
-            line-height: 1;
-        }
-        .op-health span,
         .op-label {
             color: var(--op-muted);
-            font-size: 12px;
+            font-size: 10px;
             font-weight: 760;
             text-transform: uppercase;
             letter-spacing: .04em;
         }
-        .op-kpis {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 14px;
-            margin-bottom: 18px;
-        }
-        .op-kpi {
-            padding: 16px;
-            min-height: 116px;
-        }
-        .op-kpi strong {
-            display: block;
-            margin-top: 13px;
-            font-size: 30px;
-            line-height: 1;
-        }
-        .op-kpi small {
-            display: block;
-            margin-top: 9px;
-            color: var(--op-muted);
-            font-size: 12px;
-            line-height: 1.45;
-        }
         .op-grid {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 360px;
-            gap: 18px;
+            grid-template-columns: minmax(0, 1fr) 312px;
+            gap: 12px;
             align-items: start;
         }
         .op-section-head {
-            min-height: 72px;
-            padding: 18px;
+            min-height: 52px;
+            padding: 12px;
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            gap: 16px;
+            gap: 12px;
             border-bottom: 1px solid var(--op-line);
         }
         .op-section-head h2 {
             margin: 0;
-            font-size: 17px;
+            font-size: 14px;
             line-height: 1.2;
             font-weight: 820;
         }
         .op-section-head p {
-            margin: 5px 0 0;
+            margin: 3px 0 0;
             color: var(--op-muted);
-            font-size: 13px;
-            line-height: 1.5;
+            font-size: 12px;
+            line-height: 1.35;
         }
         .op-toolbar {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
         }
         .op-search {
-            width: 250px;
-            height: 38px;
+            width: 220px;
+            height: 32px;
             border: 1px solid var(--op-line);
-            border-radius: 10px;
+            border-radius: 9px;
             background: var(--op-panel-solid);
             color: var(--op-ink);
             padding: 0 12px;
-            font-size: 13px;
+            font-size: 12px;
             outline: none;
         }
         .op-table-wrap {
@@ -531,23 +495,23 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         }
         .op-table {
             width: 100%;
-            min-width: 980px;
+            min-width: 780px;
             border-collapse: collapse;
         }
         .op-table th,
         .op-table td {
-            padding: 14px 18px;
+            padding: 9px 12px;
             border-bottom: 1px solid var(--op-line);
             text-align: left;
             vertical-align: top;
-            font-size: 13px;
+            font-size: 12px;
         }
         .op-table tr:last-child td {
             border-bottom: 0;
         }
         .op-table th {
             color: var(--op-muted);
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 820;
             text-transform: uppercase;
             letter-spacing: .04em;
@@ -558,25 +522,25 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         }
         .op-name {
             color: var(--op-ink);
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 820;
         }
         .op-sub {
-            margin-top: 4px;
+            margin-top: 2px;
             color: var(--op-muted);
-            font-size: 12px;
-            line-height: 1.45;
+            font-size: 11px;
+            line-height: 1.35;
         }
         .op-pill {
-            min-height: 26px;
+            min-height: 22px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             border-radius: 999px;
-            padding: 0 10px;
+            padding: 0 8px;
             background: var(--op-soft);
             color: var(--op-muted);
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 800;
         }
         .op-pill.active,
@@ -598,11 +562,11 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         }
         .op-meter {
             display: grid;
-            gap: 7px;
-            min-width: 160px;
+            gap: 5px;
+            min-width: 140px;
         }
         .op-bar {
-            height: 7px;
+            height: 6px;
             border-radius: 999px;
             overflow: hidden;
             background: var(--op-soft);
@@ -618,55 +582,55 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         }
         .op-inline-form {
             display: grid;
-            grid-template-columns: minmax(128px, 1fr) minmax(132px, 1fr) auto;
-            gap: 8px;
-            min-width: 390px;
+            grid-template-columns: minmax(92px, 1fr) minmax(96px, 1fr) 54px;
+            gap: 6px;
+            min-width: 260px;
         }
         .op-input,
         .op-select {
             width: 100%;
-            height: 36px;
+            height: 32px;
             border: 1px solid var(--op-line);
-            border-radius: 9px;
+            border-radius: 8px;
             background: var(--op-panel-solid);
             color: var(--op-ink);
-            padding: 0 10px;
-            font-size: 13px;
+            padding: 0 9px;
+            font-size: 12px;
             outline: none;
         }
         .op-stack {
             display: grid;
-            gap: 18px;
+            gap: 12px;
         }
         .op-panel-body {
-            padding: 18px;
+            padding: 12px;
         }
         .op-form {
             display: grid;
-            gap: 12px;
+            gap: 9px;
         }
         .op-field label {
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             color: var(--op-muted);
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 760;
         }
         .op-field-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 8px;
         }
         .op-list {
             display: grid;
-            gap: 12px;
+            gap: 9px;
         }
         .op-list-row {
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto;
-            gap: 14px;
+            gap: 10px;
             align-items: start;
-            padding-bottom: 12px;
+            padding-bottom: 9px;
             border-bottom: 1px solid var(--op-line);
         }
         .op-list-row:last-child {
@@ -675,7 +639,7 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         }
         .op-empty {
             color: var(--op-muted);
-            font-size: 13px;
+            font-size: 12px;
             line-height: 1.55;
         }
         .op-mobile-toggle {
@@ -703,26 +667,19 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             .op-mobile-toggle {
                 display: inline-flex;
             }
-            .op-hero,
+            .op-overview,
             .op-grid {
                 grid-template-columns: 1fr;
-            }
-            .op-kpis {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
         @media (max-width: 720px) {
             .op-main {
-                padding: 16px;
+                padding: 12px;
             }
             .op-topbar {
                 align-items: flex-start;
                 flex-direction: column;
             }
-            .op-command h2 {
-                font-size: 31px;
-            }
-            .op-kpis,
             .op-field-row,
             .op-inline-form {
                 grid-template-columns: 1fr;
@@ -817,37 +774,24 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         <?php if ($error): ?><div class="op-alert error"><?php echo e($error); ?></div><?php endif; ?>
         <?php if ($success): ?><div class="op-alert success"><?php echo e($success); ?></div><?php endif; ?>
 
-        <section class="op-hero" id="overview">
-            <div class="op-card op-command">
-                <span class="op-label">Control plane</span>
-                <h2>Customers, billing state, migrations, and workspace health in one operator view.</h2>
-                <p>This console is for FoxDesk SaaS operations only. Customer-facing helpdesk settings stay inside each workspace; platform-level lifecycle, imports, and billing state stay here.</p>
-                <div class="op-actions mt-5 justify-start">
-                    <a class="op-btn primary" href="#workspaces">Review workspaces</a>
-                    <a class="op-btn" href="#migrations">Import self-hosted FoxDesk</a>
-                </div>
-            </div>
-            <aside class="op-card op-health">
-                <div class="op-health-top">
-                    <span class="op-label">Platform health</span>
+        <section class="op-overview" id="overview">
+            <div class="op-card op-compact-card primary">
+                <div class="op-compact-title">
+                    <span class="op-label">Health</span>
                     <span class="op-status-dot <?php echo $health_class === 'warn' ? 'warn' : ''; ?>"></span>
                 </div>
-                <div>
-                    <strong><?php echo e($health_label); ?></strong>
-                    <p class="op-sub"><?php echo $active_tenants; ?> of <?php echo $tenant_count; ?> workspaces are active or trialing.</p>
+                <strong><?php echo e($health_label); ?></strong>
+                <div class="op-sub"><?php echo $active_tenants; ?> / <?php echo $tenant_count; ?> active or trialing. Past due <?php echo (int) ($summary['past_due_tenants'] ?? 0); ?>, blocked <?php echo (int) ($summary['blocked_tenants'] ?? 0); ?>.</div>
+                <div class="op-actions">
+                    <a class="op-btn primary" href="#workspaces">Workspaces</a>
+                    <a class="op-btn" href="#migrations">Import</a>
                 </div>
-                <div class="op-list">
-                    <div class="op-list-row"><span class="op-sub">Past due</span><strong><?php echo (int) ($summary['past_due_tenants'] ?? 0); ?></strong></div>
-                    <div class="op-list-row"><span class="op-sub">Blocked</span><strong><?php echo (int) ($summary['blocked_tenants'] ?? 0); ?></strong></div>
-                </div>
-            </aside>
-        </section>
-
-        <section class="op-kpis">
-            <div class="op-card op-kpi"><span class="op-label">Workspaces</span><strong><?php echo $tenant_count; ?></strong><small>Total customer FoxDesks in the platform database.</small></div>
-            <div class="op-card op-kpi"><span class="op-label">Active or trial</span><strong><?php echo $active_tenants; ?></strong><small>Workspaces that should currently have app access.</small></div>
-            <div class="op-card op-kpi"><span class="op-label">Storage used</span><strong><?php echo e(format_file_size($total_storage_bytes)); ?></strong><small><?php echo (int) $total_extra_gb; ?> extra GB across all workspaces.</small></div>
-            <div class="op-card op-kpi"><span class="op-label">Estimated billing</span><strong><?php echo e(billing_format_money($estimated_storage_overage_cents)); ?></strong><small>Storage overage estimate for the current period.</small></div>
+            </div>
+            <div class="op-card op-compact-card"><span class="op-label">Workspaces</span><strong><?php echo $tenant_count; ?></strong><div class="op-sub">Total tenants</div></div>
+            <div class="op-card op-compact-card"><span class="op-label">Active/trial</span><strong><?php echo $active_tenants; ?></strong><div class="op-sub">With app access</div></div>
+            <div class="op-card op-compact-card"><span class="op-label">Users</span><strong><?php echo (int) ($summary['users'] ?? 0); ?></strong><div class="op-sub">Across all workspaces</div></div>
+            <div class="op-card op-compact-card"><span class="op-label">Storage</span><strong><?php echo e(format_file_size($total_storage_bytes)); ?></strong><div class="op-sub"><?php echo (int) $total_extra_gb; ?> extra GB</div></div>
+            <div class="op-card op-compact-card"><span class="op-label">Overage</span><strong><?php echo e(billing_format_money($estimated_storage_overage_cents)); ?></strong><div class="op-sub">Current period estimate</div></div>
         </section>
 
         <div class="op-grid">

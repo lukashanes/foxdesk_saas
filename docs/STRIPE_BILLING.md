@@ -2,6 +2,8 @@
 
 FoxDesk SaaS has a prepared billing layer for Stripe Checkout, Stripe Customer Portal, and signed Stripe webhooks.
 
+Use Stripe Billing with recurring Prices and Checkout Sessions. Do not build a custom renewal loop with one-off PaymentIntents.
+
 ## Local configuration
 
 Copy the local template and keep real secrets out of git:
@@ -47,6 +49,12 @@ Default commercial model:
 - 1 GB storage included
 - EUR 19.00/month base price
 - EUR 1.90/extra GB/month storage overage
+
+Launch offer:
+
+- Keep the live recurring Price at the real EUR 19/month plan value.
+- Use a Stripe coupon or promotion code for the temporary EUR 9.90 launch price through May 31, 2026.
+- Do not create permanent product copy that exposes internal margin or infrastructure cost.
 
 ## Webhook
 

@@ -15,7 +15,7 @@ define('REMEMBER_ME_DURATION', 30 * 86400); // 30 days
 
 require_once BASE_PATH . '/includes/session-bootstrap.php';
 
-define('APP_VERSION', '0.3.118');
+define('APP_VERSION', '0.3.119');
 
 // Check if installed
 if (!file_exists(BASE_PATH . '/config.php')) {
@@ -115,7 +115,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : (foxdesk_is_app_host() ? 'login' 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 // Pages that don't require login
-$public_pages = ['cloud', 'login', 'logout', 'signup', 'forgot-password', 'reset-password', 'ticket-share', 'report-share', 'report-public', 'stripe-webhook', 'api', 'health', 'cron'];
+$public_pages = ['cloud', 'legal', 'login', 'logout', 'signup', 'forgot-password', 'reset-password', 'ticket-share', 'report-share', 'report-public', 'stripe-webhook', 'api', 'health', 'cron'];
 
 // Check authentication
 if (!in_array($page, $public_pages)) {
@@ -283,6 +283,10 @@ switch ($page) {
 
     case 'cloud':
         require_once BASE_PATH . '/pages/cloud.php';
+        break;
+
+    case 'legal':
+        require_once BASE_PATH . '/pages/legal.php';
         break;
 
     case 'stripe-webhook':
