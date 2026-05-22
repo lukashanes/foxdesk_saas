@@ -1,8 +1,10 @@
 {
-    "version": "0.3.118",
-    "date": "2026-05-16",
+    "version": "0.3.122",
+    "date": "2026-05-22",
     "min_php": "8.1",
     "changelog": [
+        "Incoming HTML emails now keep readable paragraphs, line breaks, lists, and table spacing when creating tickets or comments",
+        "Email ingest now prefers the better formatted HTML-derived body when plain text is collapsed into one line",
         "Separated SaaS managed deployments from the self-hosted public update channel",
         "Disabled in-app ZIP update controls when FoxDesk runs as a managed SaaS deployment",
         "Added explicit FOXDESK_EDITION and FOXDESK_UPDATE_CHANNEL defaults for production SaaS containers",
