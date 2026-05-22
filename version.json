@@ -1,8 +1,9 @@
 {
-    "version": "0.3.122",
+    "version": "0.3.123",
     "date": "2026-05-22",
     "min_php": "8.1",
     "changelog": [
+        "Production and local Docker images now include the PHP IMAP extension required for incoming email ingest",
         "Incoming HTML emails now keep readable paragraphs, line breaks, lists, and table spacing when creating tickets or comments",
         "Email ingest now prefers the better formatted HTML-derived body when plain text is collapsed into one line",
         "Separated SaaS managed deployments from the self-hosted public update channel",
