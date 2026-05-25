@@ -130,17 +130,33 @@ Required PHP extensions: `pdo_mysql`, `mbstring`, `json`, `openssl`, `zip`
 
 ---
 
-## Quick Start
+## Local SaaS Start
 
-1. Upload files to your web server
-2. Create a MySQL database
-3. Copy `config.example.php` to `config.php` and edit credentials
-4. Open `https://your-domain.tld/install.php`
-5. Follow the installer (database setup + admin account)
-6. Delete `install.php`
-7. Log in and start using FoxDesk
+```bash
+npm ci
+npm run local:install
+npm run local:seed
+npm run local:smoke
+```
 
-See [INSTALL.md](INSTALL.md) for detailed instructions including shared hosting, VPS, Nginx, cron jobs, and email setup.
+Local URLs:
+
+- App: `http://127.0.0.1:8090`
+- Mailpit: `http://127.0.0.1:8025`
+
+See [docs/LOCAL_DEPLOYMENT.md](docs/LOCAL_DEPLOYMENT.md) for the full local flow.
+
+## Production Start
+
+Production is Docker-based and intended for `app.foxdesk.net` behind Cloudflare:
+
+```bash
+cp .env.production.example .env.production
+cp config.production.example.php config.php
+deploy/hetzner/deploy.sh
+```
+
+See [docs/HETZNER_CLOUDFLARE_DEPLOYMENT.md](docs/HETZNER_CLOUDFLARE_DEPLOYMENT.md) and [docs/LAUNCH_READINESS.md](docs/LAUNCH_READINESS.md).
 
 ---
 

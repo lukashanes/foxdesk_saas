@@ -342,23 +342,7 @@ function get_report_time_entries($template) {
     ];
 
     if (!empty($template['tags']) && $has_ticket_tags) {
-        $raw_tags = is_array($template['tags']) ? $template['tags'] : preg_split('/\s*,\s*/', trim((string) $template['tags']));
-        $tags = [];
-        $seen = [];
-        foreach ((array) $raw_tags as $raw_tag) {
-            $tag = trim((string) $raw_tag);
-            $tag = ltrim($tag, '#');
-            $tag = preg_replace('/\s+/', ' ', $tag);
-            if ($tag === '') {
-                continue;
-            }
-            $key = function_exists('mb_strtolower') ? mb_strtolower($tag, 'UTF-8') : strtolower($tag);
-            if (isset($seen[$key])) {
-                continue;
-            }
-            $seen[$key] = true;
-            $tags[] = $tag;
-        }
+        $tags = function_exists('normalize_ticket_tags') ? normalize_ticket_tags($template['tags'], true) : [];
 
         if (!empty($tags)) {
             $conditions = [];

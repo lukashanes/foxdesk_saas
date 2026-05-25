@@ -828,6 +828,7 @@ include BASE_PATH . '/includes/components/page-header.php';
     }
 </style>
 
+<script src="assets/js/upload-preview.js?v=<?php echo APP_VERSION; ?>"></script>
 <script>
     const ICONS = {
         'times': '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>',
@@ -856,174 +857,21 @@ include BASE_PATH . '/includes/components/page-header.php';
         document.getElementById(inputId).value = value;
     }
 
-    // File upload handling
-    const fileInput = document.getElementById('file-input');
-    const filePreview = document.getElementById('file-preview');
-    const fileUploadErrors = document.getElementById('file-upload-errors');
-    const removeFileLabel = '<?php echo e(t('Remove')); ?>';
-    const uploadLimitConfig = {
-        single: <?php echo json_encode((int) get_max_upload_size()); ?>,
-        total: <?php echo json_encode((int) get_request_upload_limit()); ?>,
-        singleTemplate: <?php echo json_encode(t('File "{name}" exceeds the maximum allowed size of {size}.')); ?>,
-        totalTemplate: <?php echo json_encode(t('Selected attachments exceed the server request limit of {size}.')); ?>
-    };
-
-    function showUploadLimitMessage(message) {
-        if (!message) return;
-        if (window.showAppToast) {
-            window.showAppToast(message, 'error');
-        } else {
-            alert(message);
-        }
-    }
-
-    function renderUploadErrors(messages) {
-        if (!fileUploadErrors) return;
-
-        const uniqueMessages = Array.from(new Set((messages || []).filter(Boolean)));
-        if (uniqueMessages.length === 0) {
-            fileUploadErrors.innerHTML = '';
-            fileUploadErrors.classList.add('hidden');
-            return;
-        }
-
-        fileUploadErrors.innerHTML = uniqueMessages.map(function (message) {
-            return '<div>' + message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
-        }).join('');
-        fileUploadErrors.classList.remove('hidden');
-    }
-
-    function fillUploadTemplate(template, replacements) {
-        let output = String(template || '');
-        Object.keys(replacements || {}).forEach(function (key) {
-            output = output.split('{' + key + '}').join(replacements[key]);
-        });
-        return output;
-    }
-
-    function enforceUploadLimits() {
-        if (!fileInput || typeof DataTransfer === 'undefined') return { changed: false, hadErrors: false };
-
-        const originalCount = fileInput.files.length;
-        const dt = new DataTransfer();
-        let totalSize = 0;
-        let hadErrors = false;
-        let totalErrorShown = false;
-        const messages = [];
-
-        for (let i = 0; i < fileInput.files.length; i++) {
-            const file = fileInput.files[i];
-
-            if (uploadLimitConfig.single > 0 && file.size > uploadLimitConfig.single) {
-                hadErrors = true;
-                const message = fillUploadTemplate(uploadLimitConfig.singleTemplate, {
-                    name: file.name,
-                    size: formatFileSize(uploadLimitConfig.single)
-                });
-                messages.push(message);
-                showUploadLimitMessage(message);
-                continue;
-            }
-
-            if (uploadLimitConfig.total > 0 && totalSize + file.size > uploadLimitConfig.total) {
-                hadErrors = true;
-                if (!totalErrorShown) {
-                    const message = fillUploadTemplate(uploadLimitConfig.totalTemplate, {
-                        size: formatFileSize(uploadLimitConfig.total)
-                    });
-                    messages.push(message);
-                    showUploadLimitMessage(message);
-                    totalErrorShown = true;
-                }
-                continue;
-            }
-
-            totalSize += file.size;
-            dt.items.add(file);
-        }
-
-        if (originalCount !== dt.files.length) {
-            fileInput.files = dt.files;
-            return { changed: true, hadErrors: hadErrors, messages: messages };
-        }
-
-        return { changed: false, hadErrors: hadErrors, messages: messages };
-    }
-
-    function updatePreview() {
-        const validation = enforceUploadLimits();
-        renderUploadErrors(validation.messages);
-        filePreview.innerHTML = '';
-        if (fileInput.files.length === 0) {
-            filePreview.classList.add('hidden');
-            return;
-        }
-        filePreview.classList.remove('hidden');
-        for (let i = 0; i < fileInput.files.length; i++) {
-            const file = fileInput.files[i];
-            const div = document.createElement('div');
-            div.className = 'flex items-center justify-between rounded px-2 py-1.5 text-xs';
-            div.style.background = 'var(--surface-secondary)';
-            var row = document.createElement('div');
-            row.className = 'flex items-center gap-2 min-w-0';
-            row.innerHTML = getIcon(getFileIcon(file.type), 'flex-shrink-0 w-3.5 h-3.5');
-            var nameSpan = document.createElement('span');
-            nameSpan.className = 'truncate';
-            nameSpan.style.color = 'var(--text-secondary)';
-            nameSpan.textContent = file.name;
-            row.appendChild(nameSpan);
-            var sizeSpan = document.createElement('span');
-            sizeSpan.className = 'flex-shrink-0';
-            sizeSpan.style.color = 'var(--text-muted)';
-            sizeSpan.textContent = formatFileSize(file.size);
-            row.appendChild(sizeSpan);
-            div.appendChild(row);
-            var removeBtn = document.createElement('button');
-            removeBtn.type = 'button';
-            removeBtn.className = 'text-red-400 hover:text-red-500 ml-2';
-            removeBtn.title = removeFileLabel;
-            removeBtn.innerHTML = getIcon('times', 'w-3.5 h-3.5');
-            (function(idx) { removeBtn.onclick = function() { removeFile(idx); }; })(i);
-            div.appendChild(removeBtn);
-            filePreview.appendChild(div);
-        }
-    }
-
-    function removeFile(index) {
-        const dt = new DataTransfer();
-        for (let i = 0; i < fileInput.files.length; i++) {
-            if (i !== index) dt.items.add(fileInput.files[i]);
-        }
-        fileInput.files = dt.files;
-        updatePreview();
-    }
-
-    function formatFileSize(bytes) {
-        if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
-        if (bytes >= 1024) return (bytes / 1024).toFixed(0) + ' KB';
-        return bytes + ' B';
-    }
-
-    function getFileIcon(mimeType) {
-        if (mimeType.startsWith('image/')) return 'file-image';
-        if (mimeType === 'application/pdf') return 'file-pdf';
-        if (mimeType.includes('word')) return 'file-word';
-        if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'file-excel';
-        if (mimeType.includes('zip') || mimeType.includes('rar')) return 'file-archive';
-        return 'file';
-    }
-
     const initTicketUploadZones = function () {
-        if (window.initFileDropzone) {
-            window.initFileDropzone({
-                zoneId: 'upload-zone',
-                inputId: 'file-input',
-                onFilesChanged: updatePreview
-            });
-        } else if (fileInput) {
-            fileInput.addEventListener('change', updatePreview);
-        }
-
+        window.FoxDeskUploadPreview && window.FoxDeskUploadPreview.init({
+            zoneId: 'upload-zone',
+            inputId: 'file-input',
+            previewId: 'file-preview',
+            errorsId: 'file-upload-errors',
+            removeLabel: <?php echo json_encode(t('Remove')); ?>,
+            sizeDecimals: 1,
+            limit: {
+                single: <?php echo json_encode((int) get_max_upload_size()); ?>,
+                total: <?php echo json_encode((int) get_request_upload_limit()); ?>,
+                singleTemplate: <?php echo json_encode(t('File "{name}" exceeds the maximum allowed size of {size}.')); ?>,
+                totalTemplate: <?php echo json_encode(t('Selected attachments exceed the server request limit of {size}.')); ?>
+            }
+        });
     };
 
     if (document.readyState === 'loading') {

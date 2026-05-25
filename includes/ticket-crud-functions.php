@@ -134,15 +134,19 @@ function ticket_hash_column_exists() {
 }
 
 /**
- * Normalize tag list to a stable, comma-separated string.
+ * Normalize tag list to a stable list or comma-separated string.
  */
-function normalize_ticket_tags($value) {
-    $raw = (string) $value;
-    if ($raw === '') {
-        return '';
+function normalize_ticket_tags($value, $as_array = false) {
+    if (is_array($value)) {
+        $parts = $value;
+    } else {
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return $as_array ? [] : '';
+        }
+        $parts = preg_split('/[,;\n\r]+/', $raw);
     }
 
-    $parts = preg_split('/[,;\n\r]+/', $raw);
     $seen = [];
     $clean = [];
     foreach ((array) $parts as $part) {
@@ -164,6 +168,10 @@ function normalize_ticket_tags($value) {
         }
         $seen[$key] = true;
         $clean[] = $tag;
+    }
+
+    if ($as_array) {
+        return $clean;
     }
 
     return implode(', ', $clean);

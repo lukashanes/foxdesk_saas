@@ -22,6 +22,47 @@ function reorder_items($table, $order_array) {
     return true;
 }
 
+function admin_crud_slug_from_name(string $name, string $separator = '_'): string
+{
+    $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', $separator, $name));
+    return trim($slug, $separator);
+}
+
+function admin_crud_unique_slug(string $table, string $name, string $separator = '_'): string
+{
+    validate_sql_identifier($table);
+    $slug = admin_crud_slug_from_name($name, $separator);
+    $existing = db_fetch_one("SELECT id FROM {$table} WHERE slug = ?", [$slug]);
+
+    return $existing ? $slug . $separator . time() : $slug;
+}
+
+function admin_crud_next_sort_order(string $table): int
+{
+    validate_sql_identifier($table);
+    $max = db_fetch_one("SELECT MAX(sort_order) as max_order FROM {$table}");
+
+    return (int) (($max['max_order'] ?? 0) + 1);
+}
+
+function admin_crud_clear_default(string $table): void
+{
+    validate_sql_identifier($table);
+    db_query("UPDATE {$table} SET is_default = 0");
+}
+
+function admin_crud_delete_if_unused(string $table, int $id, string $usage_sql, array $usage_params): bool
+{
+    validate_sql_identifier($table);
+    $usage = db_fetch_one($usage_sql, $usage_params);
+    if ($usage && (int) ($usage['count'] ?? $usage['c'] ?? 0) > 0) {
+        return false;
+    }
+
+    db_delete($table, 'id = ?', [$id]);
+    return true;
+}
+
 /**
  * Move an item up in sort order
  */
@@ -114,5 +155,4 @@ function get_json_input() {
     $input = json_decode(file_get_contents('php://input'), true);
     return is_array($input) ? $input : [];
 }
-
 

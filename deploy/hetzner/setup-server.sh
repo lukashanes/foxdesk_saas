@@ -25,6 +25,6 @@ ufw allow 80/tcp
 ufw allow 443/tcp
 ufw --force enable
 
-mkdir -p /opt/foxdesk
+mkdir -p /opt/foxdesk_saas
 
-echo "Server base setup complete. Next: clone the repo into /opt/foxdesk and configure deploy/hetzner/.env.prod + config.php."
+echo "Server base setup complete. Next: clone the repo into /opt/foxdesk_saas, copy .env.production.example to .env.production, copy config.production.example.php to config.php, then run deploy/hetzner/deploy.sh."

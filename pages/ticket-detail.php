@@ -2049,6 +2049,7 @@ require_once BASE_PATH . '/includes/header.php';
         </div>
 <?php endif; ?>
 
+<script src="assets/js/upload-preview.js?v=<?php echo APP_VERSION; ?>"></script>
 <script>
     const ICONS = {
         'times': '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>',
@@ -2117,148 +2118,29 @@ require_once BASE_PATH . '/includes/header.php';
         });
     }
 
-    // Drag & Drop for comment attachments
-    const commentFileInput = document.getElementById('comment-file-input');
-    const commentFilePreview = document.getElementById('comment-file-preview');
-    const removeFileLabel = '<?php echo e(t('Remove')); ?>';
-    const commentUploadLimitConfig = {
-        single: <?php echo json_encode((int) get_max_upload_size()); ?>,
-        total: <?php echo json_encode((int) get_request_upload_limit()); ?>,
-        singleTemplate: <?php echo json_encode(t('File "{name}" exceeds the maximum allowed size of {size}.')); ?>,
-        totalTemplate: <?php echo json_encode(t('Selected attachments exceed the server request limit of {size}.')); ?>
-    };
-
-    function showCommentUploadLimitMessage(message) {
-        if (!message) return;
-        if (window.showAppToast) {
-            window.showAppToast(message, 'error');
-        } else {
-            alert(message);
-        }
-    }
-
-    function fillCommentUploadTemplate(template, replacements) {
-        var output = String(template || '');
-        Object.keys(replacements || {}).forEach(function (key) {
-            output = output.split('{' + key + '}').join(replacements[key]);
-        });
-        return output;
-    }
-
-    function enforceCommentUploadLimits() {
-        if (!commentFileInput || typeof DataTransfer === 'undefined') {
-            return { changed: false, hadErrors: false };
-        }
-
-        var originalCount = commentFileInput.files.length;
-        var dt = new DataTransfer();
-        var totalSize = 0;
-        var hadErrors = false;
-        var totalErrorShown = false;
-
-        for (var i = 0; i < commentFileInput.files.length; i++) {
-            var file = commentFileInput.files[i];
-
-            if (commentUploadLimitConfig.single > 0 && file.size > commentUploadLimitConfig.single) {
-                hadErrors = true;
-                showCommentUploadLimitMessage(fillCommentUploadTemplate(commentUploadLimitConfig.singleTemplate, {
-                    name: file.name,
-                    size: formatFileSize(commentUploadLimitConfig.single)
-                }));
-                continue;
-            }
-
-            if (commentUploadLimitConfig.total > 0 && totalSize + file.size > commentUploadLimitConfig.total) {
-                hadErrors = true;
-                if (!totalErrorShown) {
-                    showCommentUploadLimitMessage(fillCommentUploadTemplate(commentUploadLimitConfig.totalTemplate, {
-                        size: formatFileSize(commentUploadLimitConfig.total)
-                    }));
-                    totalErrorShown = true;
-                }
-                continue;
-            }
-
-            totalSize += file.size;
-            dt.items.add(file);
-        }
-
-        if (originalCount !== dt.files.length) {
-            commentFileInput.files = dt.files;
-            return { changed: true, hadErrors: hadErrors };
-        }
-
-        return { changed: false, hadErrors: hadErrors };
-    }
-
-    function updateCommentPreview() {
-        enforceCommentUploadLimits();
-        commentFilePreview.innerHTML = '';
-
-        if (commentFileInput.files.length === 0) {
-            commentFilePreview.classList.add('hidden');
-            return;
-        }
-
-        commentFilePreview.classList.remove('hidden');
-
-        for (let i = 0; i < commentFileInput.files.length; i++) {
-            const file = commentFileInput.files[i];
-            const size = formatFileSize(file.size);
-
-            const div = document.createElement('div');
-            div.className = 'flex items-center justify-between rounded-lg px-4 py-2';
-            div.style.background = 'var(--surface-secondary)';
-            div.innerHTML = `
-            <div class="flex items-center space-x-3 min-w-0">
-                ${getIcon(getFileIcon(file.type), 'td-text-muted flex-shrink-0 w-4 h-4')}
-                <span class="text-sm truncate" style="color: var(--text-secondary)">${file.name}</span>
-                <span class="text-xs flex-shrink-0" style="color: var(--text-muted)">${size}</span>
-            </div>
-            <button type="button" onclick="removeCommentFile(${i})" class="text-red-400 hover:text-red-500 ml-2 flex-shrink-0" aria-label="${removeFileLabel}" title="${removeFileLabel}">
-                ${getIcon('times', 'w-4 h-4')}
-            </button>
-        `;
-            commentFilePreview.appendChild(div);
-        }
-    }
-
-    function removeCommentFile(index) {
-        const dt = new DataTransfer();
-        for (let i = 0; i < commentFileInput.files.length; i++) {
-            if (i !== index) {
-                dt.items.add(commentFileInput.files[i]);
-            }
-        }
-        commentFileInput.files = dt.files;
-        updateCommentPreview();
-    }
-
-    function formatFileSize(bytes) {
-        if (bytes >= 1048576) return (bytes / 1048576).toFixed(2) + ' MB';
-        if (bytes >= 1024) return (bytes / 1024).toFixed(2) + ' KB';
-        return bytes + ' B';
-    }
-
-    function getFileIcon(mimeType) {
-        if (mimeType.startsWith('image/')) return 'file-image';
-        if (mimeType === 'application/pdf') return 'file-pdf';
-        if (mimeType.includes('word')) return 'file-word';
-        if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'file-excel';
-        if (mimeType.includes('zip') || mimeType.includes('rar')) return 'file-archive';
-        return 'file';
-    }
+    let commentUploadPreview = null;
 
     const initTicketDetailDropzones = function () {
-        if (window.initFileDropzone && commentFileInput) {
-            window.initFileDropzone({
-                zoneId: 'comment-upload-zone',
-                inputId: 'comment-file-input',
-                onFilesChanged: updateCommentPreview
-            });
-        } else if (commentFileInput) {
-            commentFileInput.addEventListener('change', updateCommentPreview);
-        }
+        commentUploadPreview = window.FoxDeskUploadPreview && window.FoxDeskUploadPreview.init({
+            zoneId: 'comment-upload-zone',
+            inputId: 'comment-file-input',
+            previewId: 'comment-file-preview',
+            removeLabel: <?php echo json_encode(t('Remove')); ?>,
+            sizeDecimals: 2,
+            rowClass: 'flex items-center justify-between rounded-lg px-4 py-2',
+            metaClass: 'flex items-center space-x-3 min-w-0',
+            iconClass: 'td-text-muted flex-shrink-0 w-4 h-4',
+            nameClass: 'text-sm truncate',
+            sizeClass: 'text-xs flex-shrink-0',
+            removeButtonClass: 'text-red-400 hover:text-red-500 ml-2 flex-shrink-0',
+            removeIconClass: 'w-4 h-4',
+            limit: {
+                single: <?php echo json_encode((int) get_max_upload_size()); ?>,
+                total: <?php echo json_encode((int) get_request_upload_limit()); ?>,
+                singleTemplate: <?php echo json_encode(t('File "{name}" exceeds the maximum allowed size of {size}.')); ?>,
+                totalTemplate: <?php echo json_encode(t('Selected attachments exceed the server request limit of {size}.')); ?>
+            }
+        });
     };
 
     if (document.readyState === 'loading') {
@@ -3496,7 +3378,10 @@ require_once BASE_PATH . '/includes/header.php';
     const commentForm = document.getElementById('comment-form');
     if (commentForm) {
         commentForm.addEventListener('submit', function (e) {
-            const uploadValidation = enforceCommentUploadLimits();
+            const commentFileInput = document.getElementById('comment-file-input');
+            const uploadValidation = commentUploadPreview
+                ? commentUploadPreview.enforceLimits()
+                : { hadErrors: false };
             if (uploadValidation.hadErrors && commentFileInput && commentFileInput.files.length === 0) {
                 e.preventDefault();
                 return;

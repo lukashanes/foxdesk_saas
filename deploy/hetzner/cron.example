@@ -5,7 +5,7 @@ SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # App maintenance: recurring tasks, email ingest, cleanup, update checks, Stripe storage usage.
-*/15 * * * * cd /opt/foxdesk/deploy/hetzner && docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T app php bin/run-maintenance.php --json >> /var/log/foxdesk-maintenance.log 2>&1
+*/15 * * * * cd /opt/foxdesk_saas && docker compose --env-file .env.production -f docker-compose.prod.yml exec -T app php bin/run-maintenance.php --json >> /var/log/foxdesk-maintenance.log 2>&1
 
 # Database backup. This is local retention only; R2 upload/restore-test is still required before public launch.
-15 2 * * * cd /opt/foxdesk/deploy/hetzner && ./backup-db.sh >> /var/log/foxdesk-backup.log 2>&1
+15 2 * * * cd /opt/foxdesk_saas/deploy/hetzner && ./backup-db.sh >> /var/log/foxdesk-backup.log 2>&1

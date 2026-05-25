@@ -91,6 +91,26 @@ function ensure_notifications_table(): void
     }
 }
 
+function notification_type_meta_map(): array
+{
+    return [
+        'new_ticket' => ['icon' => 'plus', 'color' => '#10b981'],
+        'new_comment' => ['icon' => 'comment', 'color' => '#3b82f6'],
+        'status_changed' => ['icon' => 'refresh-cw', 'color' => '#8b5cf6'],
+        'assigned_to_you' => ['icon' => 'user-plus', 'color' => '#f59e0b'],
+        'priority_changed' => ['icon' => 'exclamation-triangle', 'color' => '#ef4444'],
+        'ticket_updated' => ['icon' => 'edit', 'color' => '#6366f1'],
+        'due_date_reminder' => ['icon' => 'clock', 'color' => '#ef4444'],
+    ];
+}
+
+function notification_type_meta(string $type): array
+{
+    $map = notification_type_meta_map();
+
+    return $map[$type] ?? ['icon' => 'bell', 'color' => '#6b7280'];
+}
+
 // ── Create ───────────────────────────────────────────────────────────────────
 
 /**

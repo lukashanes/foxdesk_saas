@@ -861,10 +861,8 @@ function get_email_template_phrase($key, $lang = 'en')
 /**
  * Built-in default templates used as fallback when DB template for recipient language is missing.
  */
-function get_builtin_email_template($key, $lang = 'en')
+function get_builtin_email_templates()
 {
-    $lang = normalize_email_template_language($lang);
-
     $templates = [
         'status_change' => [
             'en' => [
@@ -981,6 +979,14 @@ function get_builtin_email_template($key, $lang = 'en')
             ]
         ]
     ];
+
+    return $templates;
+}
+
+function get_builtin_email_template($key, $lang = 'en')
+{
+    $lang = normalize_email_template_language($lang);
+    $templates = get_builtin_email_templates();
 
     if (empty($templates[$key])) {
         return null;

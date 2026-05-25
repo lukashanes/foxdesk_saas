@@ -187,38 +187,9 @@ $created_date_input = trim($_GET['created_date'] ?? '');
 $created_date_value = '';
 $due_date_filter = trim($_GET['due_date'] ?? '');
 $tags_supported = function_exists('ticket_tags_column_exists') && ticket_tags_column_exists();
-$normalize_tag_filters = static function ($value) {
-    $raw_tags = [];
-    if (is_array($value)) {
-        $raw_tags = $value;
-    } else {
-        $value = trim((string) $value);
-        if ($value !== '') {
-            $raw_tags = preg_split('/\s*,\s*/', $value);
-        }
-    }
-
-    $tags = [];
-    $seen = [];
-    foreach ((array) $raw_tags as $raw_tag) {
-        $tag = trim((string) $raw_tag);
-        $tag = ltrim($tag, '#');
-        $tag = preg_replace('/\s+/', ' ', $tag);
-        if ($tag === '') {
-            continue;
-        }
-        $key = function_exists('mb_strtolower') ? mb_strtolower($tag, 'UTF-8') : strtolower($tag);
-        if (isset($seen[$key])) {
-            continue;
-        }
-        $seen[$key] = true;
-        $tags[] = $tag;
-    }
-    return $tags;
-};
-$tag_filters = $normalize_tag_filters($_GET['tags'] ?? '');
+$tag_filters = normalize_ticket_tags($_GET['tags'] ?? '', true);
 if (empty($tag_filters)) {
-    $tag_filters = $normalize_tag_filters($_GET['tag'] ?? '');
+    $tag_filters = normalize_ticket_tags($_GET['tag'] ?? '', true);
 }
 $tag_filter_csv = implode(', ', $tag_filters);
 $assigned_to = isset($_GET['assigned_to']) ? (int) $_GET['assigned_to'] : null;

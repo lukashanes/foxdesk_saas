@@ -10,6 +10,7 @@ $settings = get_settings();
 // Include update functions
 require_once BASE_PATH . '/includes/update-functions.php';
 require_once BASE_PATH . '/includes/update-check-functions.php';
+require_once BASE_PATH . '/includes/admin-crud-helper.php';
 
 $settings_audit = function ($event_type, $context = [], $level = 'info') {
     $user_id = current_user()['id'] ?? null;
@@ -1781,122 +1782,7 @@ include BASE_PATH . '/includes/components/page-header.php';
         ];
 
         // Default template content for missing templates
-        $default_templates = [
-            'status_change' => [
-                'en' => [
-                    'subject' => 'Status changed for ticket #{ticket_id}: {ticket_title}',
-                    'body' => "Hello,\n\nThe status of your ticket \"{ticket_title}\" has changed.\n\nPrevious status: {old_status}\nNew status: {new_status}\n\nComment:\n{comment_text}\n\nTime spent: {time_spent}\n\nView ticket: {ticket_url}\n\nRegards,\n{app_name}"
-                ],
-                'cs' => [
-                    'subject' => 'Stav změněn u požadavku #{ticket_id}: {ticket_title}',
-                    'body' => "Dobrý den,\n\nStav vašeho požadavku \"{ticket_title}\" byl změněn.\n\nPředchozí stav: {old_status}\nNový stav: {new_status}\n\nKomentář:\n{comment_text}\n\nStrávený čas: {time_spent}\n\nZobrazit požadavek: {ticket_url}\n\nS pozdravem,\n{app_name}"
-                ]
-            ],
-            'new_comment' => [
-                'en' => [
-                    'subject' => 'New comment on ticket #{ticket_id}: {ticket_title}',
-                    'body' => "Hello,\n\nA new comment was added to your ticket \"{ticket_title}\".\n\nFrom: {commenter_name}\nTime spent: {time_spent}\nAttachments: {attachments}\n\n---\n{comment_text}\n---\n\nView comment: {comment_url}\n\nRegards,\n{app_name}"
-                ],
-                'cs' => [
-                    'subject' => 'Nový komentář u požadavku #{ticket_id}: {ticket_title}',
-                    'body' => "Dobrý den,\n\nK vašemu požadavku \"{ticket_title}\" byl přidán nový komentář.\n\nOd: {commenter_name}\nStrávený čas: {time_spent}\nPřílohy: {attachments}\n\n---\n{comment_text}\n---\n\nZobrazit komentář: {comment_url}\n\nS pozdravem,\n{app_name}"
-                ]
-            ],
-            'new_ticket' => [
-                'en' => [
-                    'subject' => 'New ticket #{ticket_id}: {ticket_title}',
-                    'body' => "Hello,\n\nA new ticket has been created.\n\nSubject: {ticket_title}\nType: {ticket_type}\nPriority: {priority}\nFrom: {user_name} ({user_email})\n\nView ticket: {ticket_url}\n\nRegards,\n{app_name}"
-                ],
-                'cs' => [
-                    'subject' => 'Nový požadavek #{ticket_id}: {ticket_title}',
-                    'body' => "Dobrý den,\n\nByl vytvořen nový požadavek.\n\nPředmět: {ticket_title}\nTyp: {ticket_type}\nPriorita: {priority}\nOd: {user_name} ({user_email})\n\nZobrazit požadavek: {ticket_url}\n\nS pozdravem,\n{app_name}"
-                ]
-            ],
-            'password_reset' => [
-                'en' => [
-                    'subject' => 'Password reset',
-                    'body' => "Hello,\n\nYou requested a password reset. Click the link below:\n{reset_link}\n\nThis link is valid for 1 hour.\n\nIf you did not request a password reset, please ignore this email.\n\nRegards,\n{app_name}"
-                ],
-                'cs' => [
-                    'subject' => 'Obnovení hesla',
-                    'body' => "Dobrý den,\n\nPožádali jste o obnovení hesla. Klikněte na odkaz níže:\n{reset_link}\n\nTento odkaz je platný 1 hodinu.\n\nPokud jste o obnovení hesla nežádali, ignorujte tento e-mail.\n\nS pozdravem,\n{app_name}"
-                ]
-            ],
-            'ticket_confirmation' => [
-                'en' => [
-                    'subject' => 'Ticket received #{ticket_code}: {ticket_title}',
-                    'body' => "Hello,\n\nYour ticket #{ticket_code} \"{ticket_title}\" was received successfully.\nWe will keep you updated on its progress.\n\nView ticket: {ticket_url}\n\nRegards,\n{app_name}"
-                ],
-                'cs' => [
-                    'subject' => 'Požadavek přijat #{ticket_code}: {ticket_title}',
-                    'body' => "Dobrý den,\n\nVáš požadavek #{ticket_code} \"{ticket_title}\" jsme úspěšně přijali.\nO jeho průběhu vás budeme informovat.\n\nZobrazit požadavek: {ticket_url}\n\nS pozdravem,\n{app_name}"
-                ]
-            ],
-            'ticket_assignment' => [
-                'en' => [
-                    'subject' => 'Ticket assigned #{ticket_code}: {ticket_title}',
-                    'body' => "Hello {agent_name},\n\nYou have been assigned a ticket to handle:\n\nTicket: #{ticket_code}\nSubject: {ticket_title}\nAssigned by: {assigner_name}\n\nView ticket: {ticket_url}\n\nRegards,\n{app_name}"
-                ],
-                'cs' => [
-                    'subject' => 'Přiřazen požadavek #{ticket_code}: {ticket_title}',
-                    'body' => "Dobrý den {agent_name},\n\nByl vám přiřazen požadavek k řešení:\n\nPožadavek: #{ticket_code}\nPředmět: {ticket_title}\nPřiřadil: {assigner_name}\n\nZobrazit požadavek: {ticket_url}\n\nS pozdravem,\n{app_name}"
-                ]
-            ],
-            'recurring_task_assignment' => [
-                'en' => [
-                    'subject' => 'New recurring task assigned: {ticket_title}',
-                    'body' => "Hello {recipient_name},\n\nA recurring task generated a new ticket for you.\n\nTicket: #{ticket_code}\nTitle: {ticket_title}\nDescription: {ticket_description}\nDue date: {due_date}\n\nView ticket: {ticket_url}\n\nRegards,\n{app_name}"
-                ],
-                'cs' => [
-                    'subject' => 'Přiřazen nový opakující se úkol: {ticket_title}',
-                    'body' => "Dobrý den {recipient_name},\n\nOpakující se úkol pro vás vytvořil nový požadavek.\n\nPožadavek: #{ticket_code}\nNázev: {ticket_title}\nPopis: {ticket_description}\nTermín: {due_date}\n\nZobrazit požadavek: {ticket_url}\n\nS pozdravem,\n{app_name}"
-                ]
-            ],
-            'long_timer_alert' => [
-                'en' => [
-                    'subject' => 'Timer Running Too Long - Ticket #{ticket_code}',
-                    'body' => "Dear {user_name},\n\nYour time tracker has been running for {elapsed_time} on ticket \"{ticket_title}\".\n\nStarted at: {started_at}\nTicket: #{ticket_code} - {ticket_title}\n\nPlease check if you forgot to stop the timer.\n\nView ticket: {ticket_url}\n\nSincerely,\n\nThe {app_name} Team"
-                ],
-                'cs' => [
-                    'subject' => 'Časovač běží příliš dlouho - Požadavek #{ticket_code}',
-                    'body' => "Dobrý den,\n\nVáš časovač běží již {elapsed_time} na požadavku \"{ticket_title}\".\n\nSpuštěn v: {started_at}\nPožadavek: #{ticket_code} - {ticket_title}\n\nProsím zkontrolujte, zda jste nezapomněli zastavit časovač.\n\nZobrazit požadavek: {ticket_url}\n\nS pozdravem,\n\nTým {app_name}"
-                ],
-                'de' => [
-                    'subject' => 'Timer läuft zu lange - Ticket #{ticket_code}',
-                    'body' => "Guten Tag,\n\nIhr Zeiterfassungs-Timer läuft bereits {elapsed_time} für das Ticket \"{ticket_title}\".\n\nGestartet um: {started_at}\nTicket: #{ticket_code} - {ticket_title}\n\nBitte überprüfen Sie, ob Sie vergessen haben, den Timer zu stoppen.\n\nTicket anzeigen: {ticket_url}\n\nMit freundlichen Grüßen,\n\nIhr {app_name} Team"
-                ],
-                'it' => [
-                    'subject' => 'Timer in esecuzione troppo a lungo - Ticket #{ticket_code}',
-                    'body' => "Buongiorno,\n\nIl suo timer sta girando da {elapsed_time} sul ticket \"{ticket_title}\".\n\nAvviato alle: {started_at}\nTicket: #{ticket_code} - {ticket_title}\n\nPer favore verifichi se ha dimenticato di fermare il timer.\n\nVisualizza ticket: {ticket_url}\n\nCordiali saluti,\n\nIl team {app_name}"
-                ],
-                'es' => [
-                    'subject' => 'Temporizador funcionando demasiado tiempo - Ticket #{ticket_code}',
-                    'body' => "Estimado/a {user_name},\n\nSu temporizador ha estado funcionando durante {elapsed_time} en el ticket \"{ticket_title}\".\n\nIniciado a las: {started_at}\nTicket: #{ticket_code} - {ticket_title}\n\nPor favor, compruebe si olvidó detener el temporizador.\n\nVer ticket: {ticket_url}\n\nAtentamente,\n\nEl equipo de {app_name}"
-                ]
-            ],
-            'welcome_email' => [
-                'en' => [
-                    'subject' => 'Welcome to {app_name}',
-                    'body' => "Hello {name},\n\nYour account has been created.\n\nEmail: {email}\nPassword: {password}\n\nLogin: {login_url}\n\nAfter signing in, you can change your password in your profile settings.\n\nRegards,\n{app_name}"
-                ],
-                'cs' => [
-                    'subject' => 'Vítejte v {app_name}',
-                    'body' => "Dobrý den {name},\n\nVáš účet byl vytvořen.\n\nEmail: {email}\nHeslo: {password}\n\nPřihlášení: {login_url}\n\nPo přihlášení si můžete změnit heslo v nastavení profilu.\n\nS pozdravem,\n{app_name}"
-                ],
-                'de' => [
-                    'subject' => 'Willkommen bei {app_name}',
-                    'body' => "Hallo {name},\n\nIhr Konto wurde erstellt.\n\nE-Mail: {email}\nPasswort: {password}\n\nAnmeldung: {login_url}\n\nNach der Anmeldung können Sie Ihr Passwort in Ihren Profileinstellungen ändern.\n\nMit freundlichen Grüßen,\n{app_name}"
-                ],
-                'it' => [
-                    'subject' => 'Benvenuto in {app_name}',
-                    'body' => "Ciao {name},\n\nIl tuo account è stato creato.\n\nEmail: {email}\nPassword: {password}\n\nAccesso: {login_url}\n\nDopo aver effettuato l'accesso, puoi modificare la password nelle impostazioni del profilo.\n\nCordiali saluti,\n{app_name}"
-                ],
-                'es' => [
-                    'subject' => 'Bienvenido a {app_name}',
-                    'body' => "Hola {name},\n\nSu cuenta ha sido creada.\n\nCorreo electrónico: {email}\nContraseña: {password}\n\nIniciar sesión: {login_url}\n\nDespués de iniciar sesión, puede cambiar su contraseña en la configuración de su perfil.\n\nSaludos,\n{app_name}"
-                ]
-            ]
-        ];
+        $default_templates = get_builtin_email_templates();
 
         // Ensure all known templates are listed even if not in DB for this language yet
         // Merge DB templates with default structure

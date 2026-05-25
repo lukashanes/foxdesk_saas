@@ -61,18 +61,9 @@ function render_notif_card(array $notif, int $group_count = 1): void
     $n_initials = mb_strtoupper(mb_substr($notif['actor_first_name'] ?? '?', 0, 1));
     $avatar_bg = 'hsl(' . abs(crc32($n_actor_name)) % 360 . ', 55%, 60%)';
 
-    // Type icon + color
-    $type_icon = 'bell';
-    $type_color = '#6b7280';
-    switch ($notif['type']) {
-        case 'new_ticket':       $type_icon = 'plus';                  $type_color = '#10b981'; break;
-        case 'new_comment':      $type_icon = 'comment';               $type_color = '#3b82f6'; break;
-        case 'status_changed':   $type_icon = 'refresh-cw';            $type_color = '#8b5cf6'; break;
-        case 'assigned_to_you':  $type_icon = 'user-plus';             $type_color = '#f59e0b'; break;
-        case 'priority_changed': $type_icon = 'exclamation-triangle';  $type_color = '#ef4444'; break;
-        case 'ticket_updated':   $type_icon = 'edit';                  $type_color = '#6366f1'; break;
-        case 'due_date_reminder': $type_icon = 'clock';                $type_color = '#ef4444'; break;
-    }
+    $type_meta = notification_type_meta((string) $notif['type']);
+    $type_icon = $type_meta['icon'];
+    $type_color = $type_meta['color'];
     ?>
     <div class="notif-card <?php echo $n_is_read ? '' : 'unread'; ?>"
          id="notif-item-<?php echo (int)$notif['id']; ?>"
@@ -157,17 +148,9 @@ function render_child_card(array $notif): void
         if ($n_comment_id) $n_href .= '#comment-' . $n_comment_id;
     }
 
-    $type_icon = 'bell';
-    $type_color = '#6b7280';
-    switch ($notif['type']) {
-        case 'new_ticket':       $type_icon = 'plus';                  $type_color = '#10b981'; break;
-        case 'new_comment':      $type_icon = 'comment';               $type_color = '#3b82f6'; break;
-        case 'status_changed':   $type_icon = 'refresh-cw';            $type_color = '#8b5cf6'; break;
-        case 'assigned_to_you':  $type_icon = 'user-plus';             $type_color = '#f59e0b'; break;
-        case 'priority_changed': $type_icon = 'exclamation-triangle';  $type_color = '#ef4444'; break;
-        case 'ticket_updated':   $type_icon = 'edit';                  $type_color = '#6366f1'; break;
-        case 'due_date_reminder': $type_icon = 'clock';                $type_color = '#ef4444'; break;
-    }
+    $type_meta = notification_type_meta((string) $notif['type']);
+    $type_icon = $type_meta['icon'];
+    $type_color = $type_meta['color'];
     ?>
     <a href="<?php echo $n_href; ?>" class="notif-child-card <?php echo $n_is_read ? '' : 'unread'; ?>"
        id="notif-item-<?php echo (int)$notif['id']; ?>" data-id="<?php echo (int)$notif['id']; ?>">
@@ -643,6 +626,8 @@ function render_child_card(array $notif): void
 </div>
 
 <script>
+    const NOTIFICATION_TYPE_META = <?php echo json_encode(notification_type_meta_map(), JSON_UNESCAPED_SLASHES); ?>;
+
 (function() {
     var _offset = 0;
     var _filter = <?php echo json_encode($filter); ?>;
@@ -840,16 +825,7 @@ function render_child_card(array $notif): void
     }
 
     function typeInfo(type) {
-        switch(type) {
-            case 'new_ticket':       return { icon: 'plus',                 color: '#10b981' };
-            case 'new_comment':      return { icon: 'comment',              color: '#3b82f6' };
-            case 'status_changed':   return { icon: 'refresh-cw',           color: '#8b5cf6' };
-            case 'assigned_to_you':  return { icon: 'user-plus',            color: '#f59e0b' };
-            case 'priority_changed': return { icon: 'exclamation-triangle', color: '#ef4444' };
-            case 'ticket_updated':   return { icon: 'edit',                 color: '#6366f1' };
-            case 'due_date_reminder': return { icon: 'clock',               color: '#ef4444' };
-            default:                 return { icon: 'bell',                 color: '#6b7280' };
-        }
+        return NOTIFICATION_TYPE_META[type] || { icon: 'bell', color: '#6b7280' };
     }
 
     function getGroupLabel(groupKey) {

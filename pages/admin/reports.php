@@ -33,27 +33,7 @@ $range_end = $range_data['end'];
 $selected_orgs = array_map('intval', (array) ($_GET['organizations'] ?? []));
 $selected_agents = array_map('intval', (array) ($_GET['agents'] ?? []));
 $tags_supported = function_exists('ticket_tags_column_exists') && ticket_tags_column_exists();
-$normalize_tag_filters = static function ($value) {
-    $raw_tags = is_array($value) ? $value : preg_split('/\s*,\s*/', trim((string) $value));
-    $tags = [];
-    $seen = [];
-    foreach ((array) $raw_tags as $raw_tag) {
-        $tag = trim((string) $raw_tag);
-        $tag = ltrim($tag, '#');
-        $tag = preg_replace('/\s+/', ' ', $tag);
-        if ($tag === '') {
-            continue;
-        }
-        $key = function_exists('mb_strtolower') ? mb_strtolower($tag, 'UTF-8') : strtolower($tag);
-        if (isset($seen[$key])) {
-            continue;
-        }
-        $seen[$key] = true;
-        $tags[] = $tag;
-    }
-    return $tags;
-};
-$selected_tags = $normalize_tag_filters($_GET['tags'] ?? '');
+$selected_tags = normalize_ticket_tags($_GET['tags'] ?? '', true);
 $selected_tags_csv = implode(', ', $selected_tags);
 
 // Determine if we should show amounts

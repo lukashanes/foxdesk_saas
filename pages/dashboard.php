@@ -1298,17 +1298,9 @@ require_once BASE_PATH . '/includes/header.php';
                                 $n_initials = mb_strtoupper(mb_substr($notif['actor_first_name'] ?? '?', 0, 1));
                                 $avatar_bg = 'hsl(' . abs(crc32($n_actor_name)) % 360 . ', 55%, 60%)';
 
-                                $type_icon = 'bell';
-                                $type_color = '#6b7280';
-                                switch ($notif['type']) {
-                                    case 'new_ticket':       $type_icon = 'plus';                 $type_color = '#10b981'; break;
-                                    case 'new_comment':      $type_icon = 'comment';              $type_color = '#3b82f6'; break;
-                                    case 'status_changed':   $type_icon = 'refresh-cw';           $type_color = '#8b5cf6'; break;
-                                    case 'assigned_to_you':  $type_icon = 'user-plus';            $type_color = '#f59e0b'; break;
-                                    case 'priority_changed': $type_icon = 'exclamation-triangle';  $type_color = '#ef4444'; break;
-                                    case 'ticket_updated':  $type_icon = 'edit';                  $type_color = '#6366f1'; break;
-                                    case 'due_date_reminder': $type_icon = 'clock';               $type_color = '#ef4444'; break;
-                                }
+                                $type_meta = notification_type_meta((string) $notif['type']);
+                                $type_icon = $type_meta['icon'];
+                                $type_color = $type_meta['color'];
                             ?>
                                 <?php if ($group_count > 1): ?>
                                 <!-- Ticket group: primary + collapsed children -->

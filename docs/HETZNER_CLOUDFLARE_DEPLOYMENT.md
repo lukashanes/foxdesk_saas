@@ -4,9 +4,9 @@ This is the recommended first deployment path for FoxDesk SaaS work. It keeps th
 
 ## Target Hostnames
 
-- `foxdesk.org` stays the public brand/marketing website.
+- `foxdesk.org` stays the public open-source/self-hosted website.
 - `app.foxdesk.net` is the production SaaS application.
-- `foxdesk.net` can redirect to `foxdesk.org` or remain reserved.
+- `foxdesk.net` is the public SaaS website or canonical redirect target.
 - `api.foxdesk.net`, `status.foxdesk.net`, and `support.foxdesk.net` are reserved for later.
 
 ## Hetzner Responsibilities
@@ -86,10 +86,11 @@ deploy/hetzner/backup-db.sh
 Suggested root crontab:
 
 ```cron
-15 2 * * * cd /opt/foxdesk_saas && deploy/hetzner/backup-db.sh >> /var/log/foxdesk-backup.log 2>&1
+*/15 * * * * cd /opt/foxdesk_saas && docker compose --env-file .env.production -f docker-compose.prod.yml exec -T app php bin/run-maintenance.php --json >> /var/log/foxdesk-maintenance.log 2>&1
+15 2 * * * cd /opt/foxdesk_saas/deploy/hetzner && ./backup-db.sh >> /var/log/foxdesk-backup.log 2>&1
 ```
 
-The Docker cron worker runs `php bin/run-maintenance.php` every five minutes.
+The Docker cron worker already runs `php bin/run-maintenance.php` every five minutes. The crontab maintenance line is a fallback if you intentionally disable the `cron` service.
 
 ## Cloudflare Services Mapping
 

@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
         $name = trim($_POST['name'] ?? '');
         $color = $_POST['color'] ?? '#3b82f6';
         $position = $_POST['position'] ?? 'end';
-        $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $name));
+        $slug = admin_crud_slug_from_name($name, '-');
 
         if (!empty($name)) {
             if ($position === 'start') {
@@ -27,12 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
                     $new_order = $after_status['sort_order'] + 1;
                     db_query("UPDATE statuses SET sort_order = sort_order + 1 WHERE sort_order > ?", [$after_status['sort_order']]);
                 } else {
-                    $max_order = db_fetch_one("SELECT MAX(sort_order) as max_order FROM statuses")['max_order'] ?? 0;
-                    $new_order = $max_order + 1;
+                    $new_order = admin_crud_next_sort_order('statuses');
                 }
             } else {
-                $max_order = db_fetch_one("SELECT MAX(sort_order) as max_order FROM statuses")['max_order'] ?? 0;
-                $new_order = $max_order + 1;
+                $new_order = admin_crud_next_sort_order('statuses');
             }
 
             db_insert('statuses', [
@@ -70,12 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
     // Delete status
     if (isset($_POST['delete_status'])) {
         $id = (int) $_POST['id'];
-        $count = db_fetch_one("SELECT COUNT(*) as count FROM tickets WHERE status_id = ?", [$id])['count'];
 
-        if ($count > 0) {
+        if (!admin_crud_delete_if_unused('statuses', $id, "SELECT COUNT(*) as count FROM tickets WHERE status_id = ?", [$id])) {
             flash(t('Cannot delete a status that is used by tickets.'), 'error');
         } else {
-            db_delete('statuses', 'id = ?', [$id]);
             flash(t('Status deleted.'), 'success');
         }
         redirect('admin', ['section' => 'settings', 'tab' => 'workflow']);
@@ -84,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
     // Set default
     if (isset($_POST['set_default'])) {
         $id = (int) $_POST['id'];
-        db_query("UPDATE statuses SET is_default = 0");
+        admin_crud_clear_default('statuses');
         db_update('statuses', ['is_default' => 1], 'id = ?', [$id]);
         flash(t('Default status set.'), 'success');
         redirect('admin', ['section' => 'settings', 'tab' => 'workflow']);

@@ -28,35 +28,10 @@ require_once BASE_PATH . '/config.php';
 require_once BASE_PATH . '/includes/database.php';
 require_once BASE_PATH . '/includes/tenant-functions.php';
 require_once BASE_PATH . '/includes/functions.php';
+require_once BASE_PATH . '/includes/cli-functions.php';
 require_once BASE_PATH . '/includes/settings-functions.php';
 require_once BASE_PATH . '/includes/email-ingest-functions.php';
 require_once BASE_PATH . '/includes/update-check-functions.php';
-
-function cli_scheduler_log($channel, $level, $message, $context = [])
-{
-    try {
-        $has_table = (bool) db_fetch_one("SHOW TABLES LIKE 'debug_log'");
-        if (!$has_table) {
-            return;
-        }
-
-        if (!is_string($context)) {
-            $context = json_encode($context, JSON_UNESCAPED_UNICODE);
-        }
-
-        db_insert('debug_log', [
-            'channel' => (string) $channel,
-            'level' => (string) $level,
-            'message' => (string) $message,
-            'context' => (string) ($context ?: ''),
-            'user_id' => null,
-            'ip_address' => 'cli',
-            'created_at' => date('Y-m-d H:i:s'),
-        ]);
-    } catch (Throwable $e) {
-        // Silent by design for CLI tasks.
-    }
-}
 
 $opts = getopt('', ['json']);
 $json = array_key_exists('json', $opts);

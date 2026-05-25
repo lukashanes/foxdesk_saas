@@ -21,17 +21,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
         if (empty($name)) {
             flash(t('Type name is required.'), 'error');
         } else {
-            $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', $name));
-            $slug = trim($slug, '_');
-
-            $existing = db_fetch_one("SELECT id FROM ticket_types WHERE slug = ?", [$slug]);
-            if ($existing) $slug .= '_' . time();
-
-            $max = db_fetch_one("SELECT MAX(sort_order) as max_order FROM ticket_types");
-            $sort_order = ($max['max_order'] ?? 0) + 1;
+            $slug = admin_crud_unique_slug('ticket_types', $name);
+            $sort_order = admin_crud_next_sort_order('ticket_types');
 
             if ($is_default) {
-                db_query("UPDATE ticket_types SET is_default = 0");
+                admin_crud_clear_default('ticket_types');
             }
 
             db_insert('ticket_types', [
@@ -61,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
             flash(t('Type name is required.'), 'error');
         } else {
             if ($is_default) {
-                db_query("UPDATE ticket_types SET is_default = 0");
+                admin_crud_clear_default('ticket_types');
             }
             db_update('ticket_types', [
                 'name' => $name, 'icon' => $icon, 'color' => $color, 'is_default' => $is_default, 'is_active' => $is_active
@@ -74,11 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
     // Delete type
     if (isset($_POST['delete_type'])) {
         $id = (int)$_POST['id'];
-        $tickets_count = db_fetch_one("SELECT COUNT(*) as c FROM tickets WHERE type = (SELECT slug FROM ticket_types WHERE id = ?)", [$id]);
-        if ($tickets_count && $tickets_count['c'] > 0) {
+        if (!admin_crud_delete_if_unused('ticket_types', $id, "SELECT COUNT(*) as c FROM tickets WHERE type = (SELECT slug FROM ticket_types WHERE id = ?)", [$id])) {
             flash(t('Cannot delete a type that is used by tickets.'), 'error');
         } else {
-            db_query("DELETE FROM ticket_types WHERE id = ?", [$id]);
             flash(t('Ticket type deleted.'), 'success');
         }
         redirect('admin', ['section' => 'settings', 'tab' => 'workflow']);
@@ -87,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
     // Handle Set Default
     if (isset($_POST['set_default'])) {
         $id = (int)$_POST['id'];
-        db_query("UPDATE ticket_types SET is_default = 0");
+        admin_crud_clear_default('ticket_types');
         db_update('ticket_types', ['is_default' => 1], 'id = ?', [$id]);
         flash(t('Default type set.'), 'success');
         redirect('admin', ['section' => 'settings', 'tab' => 'workflow']);
