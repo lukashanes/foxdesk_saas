@@ -2,7 +2,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { test, expect } = require('@playwright/test');
-const { login } = require('./helpers');
+const { dbQuery, login } = require('./helpers');
 const { baseURL } = require('./env');
 
 test('admin can log in and see dashboard', async ({ page }) => {
@@ -49,4 +49,21 @@ test('logout and login flow works', async ({ browser }) => {
   await page.goto('/index.php?page=dashboard');
   await expect(page.locator('body')).toContainText('Dashboard');
   await context.close();
+});
+
+test('page load triggers throttled pseudo-cron email fallback', async ({ page }) => {
+  dbQuery(`
+    INSERT INTO settings (setting_key, setting_value) VALUES
+      ('pseudo_cron_enabled', '1'),
+      ('pseudo_cron_last_email', '0'),
+      ('pseudo_cron_email_inline_lock', '0'),
+      ('imap_enabled', '0')
+    ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
+  `);
+
+  await page.goto('/index.php?page=login');
+
+  const output = dbQuery("SELECT setting_value FROM settings WHERE setting_key = 'pseudo_cron_last_email' LIMIT 1;");
+  const lastRun = Number(output.trim().split('\n').pop());
+  expect(lastRun).toBeGreaterThan(0);
 });

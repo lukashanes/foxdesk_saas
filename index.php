@@ -114,6 +114,13 @@ function foxdesk_is_app_host(): bool
 $page = isset($_GET['page']) ? $_GET['page'] : (foxdesk_is_app_host() ? 'login' : 'cloud');
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
+// Shared-hosting fallback scheduler: check early so public/login page loads can
+// also trigger IMAP ingest when no real cron is available.
+if (!in_array($page, ['cron', 'api', 'health', 'stripe-webhook'], true) && file_exists(BASE_PATH . '/includes/pseudo-cron.php')) {
+    require_once BASE_PATH . '/includes/pseudo-cron.php';
+    pseudo_cron_check();
+}
+
 // Pages that don't require login
 $public_pages = ['cloud', 'legal', 'login', 'logout', 'signup', 'forgot-password', 'reset-password', 'ticket-share', 'report-share', 'report-public', 'stripe-webhook', 'api', 'health', 'cron'];
 
