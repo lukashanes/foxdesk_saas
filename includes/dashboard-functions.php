@@ -10,13 +10,21 @@ function dashboard_ticket_scope_for_user(array $user, string $alias = 't'): arra
     $role = (string)($user['role'] ?? '');
     $user_id = (int)($user['id'] ?? 0);
     $has_ticket_access = function_exists('ticket_access_table_exists') && ticket_access_table_exists();
+    $with_tenant = static function (string $where, array $params) use ($alias): array {
+        if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('tickets')) {
+            $params[] = function_exists('current_tenant_id') ? current_tenant_id() : (int) ($_SESSION['tenant_id'] ?? 0);
+            $where = "({$where}) AND {$alias}.tenant_id = ?";
+        }
+
+        return [$where, $params];
+    };
 
     if ($user_id <= 0) {
         return ['0 = 1', []];
     }
 
     if ($role === 'admin') {
-        return ['1 = 1', []];
+        return $with_tenant('1 = 1', []);
     }
 
     $own_or_shared = static function () use ($alias, $has_ticket_access, $user_id): array {
@@ -38,7 +46,7 @@ function dashboard_ticket_scope_for_user(array $user, string $alias = 't'): arra
 
     if ($role === 'agent') {
         if ($scope === 'all') {
-            return ['1 = 1', []];
+            return $with_tenant('1 = 1', []);
         }
 
         if ($scope === 'organization' && function_exists('get_user_organization_ids')) {
@@ -47,25 +55,25 @@ function dashboard_ticket_scope_for_user(array $user, string $alias = 't'): arra
                 $placeholders = implode(',', array_fill(0, count($org_ids), '?'));
                 $params = array_map('intval', $org_ids);
                 if ($has_ticket_access) {
-                    return [
+                    return $with_tenant(
                         "({$alias}.organization_id IN ({$placeholders}) OR {$alias}.user_id = ? OR {$alias}.assignee_id = ? OR EXISTS (SELECT 1 FROM ticket_access ta WHERE ta.ticket_id = {$alias}.id AND ta.user_id = ?))",
-                        array_merge($params, [$user_id, $user_id, $user_id]),
-                    ];
+                        array_merge($params, [$user_id, $user_id, $user_id])
+                    );
                 }
 
-                return [
+                return $with_tenant(
                     "({$alias}.organization_id IN ({$placeholders}) OR {$alias}.user_id = ? OR {$alias}.assignee_id = ?)",
-                    array_merge($params, [$user_id, $user_id]),
-                ];
+                    array_merge($params, [$user_id, $user_id])
+                );
             }
         }
 
-        return $own_or_shared();
+        return $with_tenant(...$own_or_shared());
     }
 
     if ($role === 'user') {
         if ($scope === 'all') {
-            return ['1 = 1', []];
+            return $with_tenant('1 = 1', []);
         }
 
         if ($scope === 'organization' && function_exists('get_user_organization_ids')) {
@@ -74,23 +82,34 @@ function dashboard_ticket_scope_for_user(array $user, string $alias = 't'): arra
                 $placeholders = implode(',', array_fill(0, count($org_ids), '?'));
                 $params = array_map('intval', $org_ids);
                 if ($has_ticket_access) {
-                    return [
+                    return $with_tenant(
                         "({$alias}.organization_id IN ({$placeholders}) OR {$alias}.user_id = ? OR {$alias}.assignee_id = ? OR EXISTS (SELECT 1 FROM ticket_access ta WHERE ta.ticket_id = {$alias}.id AND ta.user_id = ?))",
-                        array_merge($params, [$user_id, $user_id, $user_id]),
-                    ];
+                        array_merge($params, [$user_id, $user_id, $user_id])
+                    );
                 }
 
-                return [
+                return $with_tenant(
                     "({$alias}.organization_id IN ({$placeholders}) OR {$alias}.user_id = ? OR {$alias}.assignee_id = ?)",
-                    array_merge($params, [$user_id, $user_id]),
-                ];
+                    array_merge($params, [$user_id, $user_id])
+                );
             }
         }
 
-        return $own_or_shared();
+        return $with_tenant(...$own_or_shared());
     }
 
     return ['0 = 1', []];
+}
+
+function dashboard_tenant_filter(string $table, string $alias, array &$params): string
+{
+    if (!function_exists('tenant_scoped_table_has_column') || !tenant_scoped_table_has_column($table)) {
+        return '';
+    }
+
+    $prefix = $alias !== '' ? $alias . '.' : '';
+    $params[] = function_exists('current_tenant_id') ? current_tenant_id() : (int) ($_SESSION['tenant_id'] ?? 0);
+    return " AND {$prefix}tenant_id = ?";
 }
 
 function get_dashboard_data($user, $tags = [])
@@ -244,6 +263,8 @@ function get_dashboard_data($user, $tags = [])
 
     if (function_exists('ticket_time_table_exists') && ticket_time_table_exists() && $is_staff) {
         $dur = function_exists('sql_timer_duration_minutes') ? sql_timer_duration_minutes() : 'duration_minutes';
+        $my_time_params = [$week_start, $week_end, $month_start, $month_end, $user['id']];
+        $my_time_tenant_filter = dashboard_tenant_filter('ticket_time_entries', '', $my_time_params);
         $my_time = db_fetch_one("
             SELECT
                 SUM(CASE WHEN DATE(started_at) = CURDATE() THEN ({$dur}) ELSE 0 END) as today,
@@ -251,7 +272,8 @@ function get_dashboard_data($user, $tags = [])
                 SUM(CASE WHEN started_at >= ? AND started_at <= ? THEN ({$dur}) ELSE 0 END) as month
             FROM ticket_time_entries
             WHERE user_id = ?
-        ", [$week_start, $week_end, $month_start, $month_end, $user['id']]);
+            {$my_time_tenant_filter}
+        ", $my_time_params);
 
         $my_time_today = (int) ($my_time['today'] ?? 0);
         $my_time_week = (int) ($my_time['week'] ?? 0);
@@ -259,6 +281,9 @@ function get_dashboard_data($user, $tags = [])
 
         if ($is_admin) {
             $dur_tte = function_exists('sql_timer_duration_minutes') ? sql_timer_duration_minutes('tte.') : 'tte.duration_minutes';
+            $team_time_params = [$week_start, $week_end, $month_start, $month_end];
+            $team_time_tenant_filter = dashboard_tenant_filter('ticket_time_entries', 'tte', $team_time_params);
+            $team_user_tenant_filter = dashboard_tenant_filter('users', 'u', $team_time_params);
             $team_time = db_fetch_one("
                 SELECT
                     SUM(CASE WHEN DATE(tte.started_at) = CURDATE() THEN ({$dur_tte}) ELSE 0 END) as today,
@@ -267,13 +292,18 @@ function get_dashboard_data($user, $tags = [])
                 FROM ticket_time_entries tte
                 JOIN users u ON u.id = tte.user_id
                 WHERE u.role IN ('agent', 'admin')
-            ", [$week_start, $week_end, $month_start, $month_end]);
+                {$team_time_tenant_filter}
+                {$team_user_tenant_filter}
+            ", $team_time_params);
 
             $team_time_today = (int) ($team_time['today'] ?? 0);
             $team_time_week = (int) ($team_time['week'] ?? 0);
             $team_time_month = (int) ($team_time['month'] ?? 0);
 
             // Per-member breakdown
+            $team_members_params = [$week_start, $week_end, $month_start, $month_end];
+            $team_members_time_tenant_filter = dashboard_tenant_filter('ticket_time_entries', 'tte', $team_members_params);
+            $team_members_user_tenant_filter = dashboard_tenant_filter('users', 'u', $team_members_params);
             $team_members_time = db_fetch_all("
                 SELECT
                     u.id, u.first_name, u.last_name, u.role, u.avatar,
@@ -281,12 +311,13 @@ function get_dashboard_data($user, $tags = [])
                     COALESCE(SUM(CASE WHEN tte.started_at >= ? AND tte.started_at <= ? THEN ({$dur_tte}) ELSE 0 END), 0) as week_mins,
                     COALESCE(SUM(CASE WHEN tte.started_at >= ? AND tte.started_at <= ? THEN ({$dur_tte}) ELSE 0 END), 0) as month_mins
                 FROM users u
-                LEFT JOIN ticket_time_entries tte ON tte.user_id = u.id
+                LEFT JOIN ticket_time_entries tte ON tte.user_id = u.id {$team_members_time_tenant_filter}
                 WHERE u.role IN ('agent', 'admin') AND u.is_active = 1
                   AND (u.deleted_at IS NULL)
+                  {$team_members_user_tenant_filter}
                 GROUP BY u.id
                 ORDER BY month_mins DESC
-            ", [$week_start, $week_end, $month_start, $month_end]);
+            ", $team_members_params);
         }
     }
 

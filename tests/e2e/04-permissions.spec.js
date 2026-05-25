@@ -251,6 +251,9 @@ test('default tenant admin cannot search tickets from another tenant', async ({ 
   const fixture = seedTenantIsolationFixture();
   await login(page);
 
+  await page.goto('/index.php?page=dashboard');
+  await expect(page.locator('body')).not.toContainText('Tenant B Confidential Ticket');
+
   const titleSearch = await page.request.get('/index.php?page=api&action=search-tickets&q=Tenant%20B%20Confidential');
   expect(titleSearch.status()).toBe(200);
   expect(await titleSearch.json()).toMatchObject({ success: true, tickets: [] });
