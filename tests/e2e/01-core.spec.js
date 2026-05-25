@@ -5,6 +5,17 @@ const { test, expect } = require('@playwright/test');
 const { dbQuery, login } = require('./helpers');
 const { baseURL } = require('./env');
 
+function sqlString(value) {
+  return `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "''")}'`;
+}
+
+function rowObject(output) {
+  const lines = output.trim().split('\n');
+  const headers = lines[0].split('\t');
+  const values = lines[1].split('\t');
+  return Object.fromEntries(headers.map((header, index) => [header, values[index]]));
+}
+
 test('admin can log in and see dashboard', async ({ page }) => {
   await login(page);
   await expect(page).toHaveURL(/page=dashboard|dashboard|page=platform/);
@@ -66,4 +77,52 @@ test('page load triggers throttled pseudo-cron email fallback', async ({ page })
   const output = dbQuery("SELECT setting_value FROM settings WHERE setting_key = 'pseudo_cron_last_email' LIMIT 1;");
   const lastRun = Number(output.trim().split('\n').pop());
   expect(lastRun).toBeGreaterThan(0);
+});
+
+test('new ticket does not carry over previous company or assignee selection', async ({ page }) => {
+  const stamp = Date.now();
+  const orgName = `E2E Carryover Org ${stamp}`;
+  const agentEmail = `carryover.agent.${stamp}@example.test`;
+  const tenant = rowObject(dbQuery("SELECT id FROM tenants WHERE slug = 'default' LIMIT 1"));
+  const tenantId = Number(tenant.id);
+
+  dbQuery(`
+    INSERT INTO organizations (tenant_id, name, is_active, created_at)
+    VALUES (${tenantId}, ${sqlString(orgName)}, 1, NOW());
+  `);
+  dbQuery(`
+    INSERT INTO users (tenant_id, email, password, first_name, last_name, role, is_active, created_at)
+    VALUES (
+      ${tenantId},
+      ${sqlString(agentEmail)},
+      '$2y$10$abcdefghijklmnopqrstuuF0I9oWV6x3p4GmD0Yj6Hf8wd2Kx0D5u',
+      'Carryover',
+      'Agent',
+      'agent',
+      1,
+      NOW()
+    );
+  `);
+
+  const ids = rowObject(dbQuery(`
+    SELECT
+      (SELECT id FROM organizations WHERE name = ${sqlString(orgName)} LIMIT 1) AS org_id,
+      (SELECT id FROM users WHERE email = ${sqlString(agentEmail)} LIMIT 1) AS agent_id
+  `));
+
+  await login(page);
+  await page.goto('/index.php?page=new-ticket');
+  await page.locator('input[name="title"]').fill(`Carryover source ${stamp}`);
+  await page.locator('#description-input').evaluate(input => {
+    input.value = '<p>First ticket with company and assignee.</p>';
+  });
+  await page.locator('select[name="organization_id"]').selectOption(String(ids.org_id));
+  await page.locator('details').first().evaluate(details => { details.open = true; });
+  await page.locator('select[name="assignee_id"]').selectOption(String(ids.agent_id));
+  await page.locator('button[type="submit"]').click();
+  await page.waitForURL(/page=ticket&id=\d+/);
+
+  await page.goto('/index.php?page=new-ticket');
+  await expect(page.locator('select[name="organization_id"]')).toHaveValue('');
+  await expect(page.locator('select[name="assignee_id"]')).toHaveValue('');
 });
