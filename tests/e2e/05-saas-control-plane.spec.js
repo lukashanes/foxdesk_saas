@@ -152,6 +152,114 @@ test('Stripe webhook updates tenant billing state and rejects invalid signatures
   expect(output).toContain(`sub_${stamp}`);
 });
 
+test('Stripe checkout and invoice webhooks keep tenant lifecycle in sync', async ({ browser, request }) => {
+  const stamp = Date.now();
+  const ownerEmail = `invoice.${stamp}@example.test`;
+  const workspaceName = `Invoice Workspace ${stamp}`;
+
+  const { context } = await createWorkspaceViaUi(browser, {
+    workspaceName,
+    ownerEmail,
+    firstName: 'Invoice',
+    lastName: 'Owner'
+  });
+  await context.close();
+
+  const tenantId = tenantIdByOwnerEmail(ownerEmail);
+  expect(tenantId).toBeGreaterThan(0);
+
+  const checkoutEvent = {
+    id: `evt_checkout_${stamp}`,
+    type: 'checkout.session.completed',
+    data: {
+      object: {
+        id: `cs_${stamp}`,
+        customer: `cus_checkout_${stamp}`,
+        subscription: `sub_checkout_${stamp}`,
+        client_reference_id: String(tenantId),
+        metadata: {}
+      }
+    }
+  };
+  const checkoutPayload = JSON.stringify(checkoutEvent);
+  const checkoutResponse = await request.post('/index.php?page=stripe-webhook', {
+    data: checkoutPayload,
+    headers: {
+      'Content-Type': 'application/json',
+      'Stripe-Signature': stripeSignature(checkoutPayload)
+    }
+  });
+  expect(checkoutResponse.status()).toBe(200);
+
+  let output = dbQuery(`
+    SELECT status, subscription_status, stripe_customer_id, stripe_subscription_id
+    FROM tenants
+    WHERE id = ${tenantId}
+    LIMIT 1;
+  `);
+  expect(output).toContain('active\tactive');
+  expect(output).toContain(`cus_checkout_${stamp}`);
+  expect(output).toContain(`sub_checkout_${stamp}`);
+
+  const failedInvoice = {
+    id: `evt_invoice_failed_${stamp}`,
+    type: 'invoice.payment_failed',
+    data: {
+      object: {
+        id: `in_failed_${stamp}`,
+        customer: `cus_checkout_${stamp}`,
+        subscription: `sub_checkout_${stamp}`
+      }
+    }
+  };
+  const failedPayload = JSON.stringify(failedInvoice);
+  const failedResponse = await request.post('/index.php?page=stripe-webhook', {
+    data: failedPayload,
+    headers: {
+      'Content-Type': 'application/json',
+      'Stripe-Signature': stripeSignature(failedPayload)
+    }
+  });
+  expect(failedResponse.status()).toBe(200);
+
+  output = dbQuery(`
+    SELECT status, subscription_status
+    FROM tenants
+    WHERE id = ${tenantId}
+    LIMIT 1;
+  `);
+  expect(output).toContain('past_due\tpast_due');
+
+  const paidInvoice = {
+    id: `evt_invoice_paid_${stamp}`,
+    type: 'invoice.paid',
+    data: {
+      object: {
+        id: `in_paid_${stamp}`,
+        customer: `cus_checkout_${stamp}`,
+        subscription: `sub_checkout_${stamp}`
+      }
+    }
+  };
+  const paidPayload = JSON.stringify(paidInvoice);
+  const paidResponse = await request.post('/index.php?page=stripe-webhook', {
+    data: paidPayload,
+    headers: {
+      'Content-Type': 'application/json',
+      'Stripe-Signature': stripeSignature(paidPayload)
+    }
+  });
+  expect(paidResponse.status()).toBe(200);
+
+  output = dbQuery(`
+    SELECT status, subscription_status
+    FROM tenants
+    WHERE id = ${tenantId}
+    LIMIT 1;
+  `);
+  expect(output).toContain('active\tactive');
+});
+
 test('blocked tenant admins are redirected to billing instead of app pages', async ({ browser }) => {
   const stamp = Date.now();
   const ownerEmail = `blocked.${stamp}@example.test`;

@@ -75,6 +75,17 @@ function billing_storage_meter_event_name(): string
     return trim((string) billing_env_or_constant('STRIPE_STORAGE_METER_EVENT_NAME', 'foxdesk_storage_extra_gb'));
 }
 
+function billing_append_query(string $url, array $params): string
+{
+    $params = array_filter($params, static fn($value) => $value !== null && $value !== '');
+    if (!$params) {
+        return $url;
+    }
+
+    $separator = str_contains($url, '?') ? '&' : '?';
+    return $url . $separator . http_build_query($params);
+}
+
 function billing_usage_period_key(?int $timestamp = null): string
 {
     return date('Y-m-d', $timestamp ?: time());
@@ -386,6 +397,16 @@ function billing_create_or_get_customer(array $tenant): string
 {
     $existing = trim((string) ($tenant['stripe_customer_id'] ?? ''));
     if ($existing !== '') {
+        $updates = [
+            'name' => $tenant['name'] ?? ('Tenant #' . (int) $tenant['id']),
+            'metadata[tenant_id]' => (string) (int) $tenant['id'],
+            'metadata[tenant_slug]' => (string) ($tenant['slug'] ?? ''),
+        ];
+        $billing_email = trim((string) ($tenant['billing_email'] ?? ''));
+        if ($billing_email !== '') {
+            $updates['email'] = $billing_email;
+        }
+        billing_stripe_request('POST', 'customers/' . rawurlencode($existing), $updates);
         return $existing;
     }
 
@@ -422,15 +443,30 @@ function billing_create_checkout_session(int $tenant_id, string $plan = 'cloud')
     }
 
     $customer_id = billing_create_or_get_customer($tenant);
+    $success_url = (string) billing_env_or_constant('STRIPE_SUCCESS_URL', APP_URL . '/index.php?page=platform&billing=success');
+    $cancel_url = (string) billing_env_or_constant('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=platform&billing=cancelled');
+    $success_url = billing_append_query($success_url, [
+        'tenant_id' => (string) $tenant_id,
+        'session_id' => '{CHECKOUT_SESSION_ID}',
+    ]);
+    $cancel_url = billing_append_query($cancel_url, ['tenant_id' => (string) $tenant_id]);
+
     $params = [
         'mode' => 'subscription',
         'customer' => $customer_id,
+        'client_reference_id' => (string) $tenant_id,
         'line_items[0][price]' => $price_id,
         'line_items[0][quantity]' => '1',
-        'success_url' => (string) billing_env_or_constant('STRIPE_SUCCESS_URL', APP_URL . '/index.php?page=platform&billing=success'),
-        'cancel_url' => (string) billing_env_or_constant('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=platform&billing=cancelled'),
+        'success_url' => $success_url,
+        'cancel_url' => $cancel_url,
+        'allow_promotion_codes' => 'true',
+        'customer_update[name]' => 'auto',
+        'customer_update[address]' => 'auto',
         'metadata[tenant_id]' => (string) $tenant_id,
+        'metadata[tenant_slug]' => (string) ($tenant['slug'] ?? ''),
+        'metadata[plan]' => billing_plan_code(),
         'subscription_data[metadata][tenant_id]' => (string) $tenant_id,
+        'subscription_data[metadata][tenant_slug]' => (string) ($tenant['slug'] ?? ''),
         'subscription_data[metadata][plan]' => billing_plan_code(),
     ];
 
@@ -465,9 +501,15 @@ function billing_create_portal_session(int $tenant_id): string
         $customer_id = billing_create_or_get_customer($tenant);
     }
 
+    $user = function_exists('current_user') ? current_user() : null;
+    $return_url = is_array($user) && is_platform_admin($user)
+        ? APP_URL . '/index.php?page=platform'
+        : APP_URL . '/index.php?page=billing';
+    $return_url = billing_append_query($return_url, ['tenant_id' => (string) $tenant_id]);
+
     $session = billing_stripe_request('POST', 'billing_portal/sessions', [
         'customer' => $customer_id,
-        'return_url' => APP_URL . '/index.php?page=platform',
+        'return_url' => $return_url,
     ]);
 
     $url = (string) ($session['url'] ?? '');
@@ -530,14 +572,38 @@ function billing_tenant_status_from_subscription(string $subscription_status): s
     };
 }
 
+function billing_find_tenant_id_for_stripe_object(array $object): ?int
+{
+    $tenant_id = (int) ($object['metadata']['tenant_id'] ?? 0);
+    if ($tenant_id > 0) {
+        return $tenant_id;
+    }
+
+    $subscription_id = (string) ($object['subscription'] ?? $object['id'] ?? '');
+    if ($subscription_id !== '') {
+        $tenant = db_fetch_one("SELECT id FROM tenants WHERE stripe_subscription_id = ? LIMIT 1", [$subscription_id]);
+        $tenant_id = (int) ($tenant['id'] ?? 0);
+        if ($tenant_id > 0) {
+            return $tenant_id;
+        }
+    }
+
+    $customer_id = (string) ($object['customer'] ?? '');
+    if ($customer_id !== '') {
+        $tenant = db_fetch_one("SELECT id FROM tenants WHERE stripe_customer_id = ? LIMIT 1", [$customer_id]);
+        $tenant_id = (int) ($tenant['id'] ?? 0);
+        if ($tenant_id > 0) {
+            return $tenant_id;
+        }
+    }
+
+    return null;
+}
+
 function billing_apply_subscription_update(array $subscription): ?int
 {
-    $tenant_id = (int) ($subscription['metadata']['tenant_id'] ?? 0);
-    if ($tenant_id <= 0 && !empty($subscription['customer'])) {
-        $tenant = db_fetch_one("SELECT id FROM tenants WHERE stripe_customer_id = ? LIMIT 1", [(string) $subscription['customer']]);
-        $tenant_id = (int) ($tenant['id'] ?? 0);
-    }
-    if ($tenant_id <= 0) {
+    $tenant_id = billing_find_tenant_id_for_stripe_object($subscription);
+    if (!$tenant_id) {
         return null;
     }
 
@@ -564,6 +630,33 @@ function billing_apply_subscription_update(array $subscription): ?int
     return $tenant_id;
 }
 
+function billing_apply_invoice_payment_state(array $invoice, bool $paid): ?int
+{
+    $tenant_id = billing_find_tenant_id_for_stripe_object($invoice);
+    if (!$tenant_id) {
+        return null;
+    }
+
+    $updates = [
+        'subscription_status' => $paid ? 'active' : 'past_due',
+        'status' => $paid ? 'active' : 'past_due',
+        'suspended_at' => null,
+    ];
+
+    if (!$paid) {
+        $updates['suspended_at'] = date('Y-m-d H:i:s');
+    }
+    if (!empty($invoice['customer'])) {
+        $updates['stripe_customer_id'] = (string) $invoice['customer'];
+    }
+    if (!empty($invoice['subscription'])) {
+        $updates['stripe_subscription_id'] = (string) $invoice['subscription'];
+    }
+
+    db_update('tenants', $updates, 'id = ?', [$tenant_id]);
+    return $tenant_id;
+}
+
 function billing_handle_webhook_event(array $event): array
 {
     $type = (string) ($event['type'] ?? '');
@@ -578,7 +671,7 @@ function billing_handle_webhook_event(array $event): array
     }
 
     if ($type === 'checkout.session.completed' && !empty($object['subscription'])) {
-        $tenant_id = (int) ($object['metadata']['tenant_id'] ?? 0);
+        $tenant_id = (int) ($object['metadata']['tenant_id'] ?? $object['client_reference_id'] ?? 0);
         if ($tenant_id > 0) {
             db_update('tenants', [
                 'stripe_customer_id' => (string) ($object['customer'] ?? ''),
@@ -588,6 +681,16 @@ function billing_handle_webhook_event(array $event): array
             ], 'id = ?', [$tenant_id]);
             return ['handled' => true, 'tenant_id' => $tenant_id, 'type' => $type];
         }
+    }
+
+    if (in_array($type, ['invoice.paid', 'invoice.payment_succeeded'], true)) {
+        $tenant_id = billing_apply_invoice_payment_state($object, true);
+        return ['handled' => $tenant_id !== null, 'tenant_id' => $tenant_id, 'type' => $type];
+    }
+
+    if ($type === 'invoice.payment_failed') {
+        $tenant_id = billing_apply_invoice_payment_state($object, false);
+        return ['handled' => $tenant_id !== null, 'tenant_id' => $tenant_id, 'type' => $type];
     }
 
     return ['handled' => false, 'type' => $type];

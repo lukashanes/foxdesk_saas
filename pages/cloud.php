@@ -51,6 +51,7 @@ $included_storage = billing_included_storage_bytes() === 1073741824
         }
         body {
             margin: 0;
+            overflow-x: hidden;
             min-height: 100vh;
             font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             background: var(--fd-bg);
@@ -80,7 +81,7 @@ $included_storage = billing_included_storage_bytes() === 1073741824
             max-width: 1280px;
             height: 64px;
             margin: 0 auto;
-            padding: 0 24px;
+            padding: 0 clamp(20px, 4vw, 44px);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -149,7 +150,8 @@ $included_storage = billing_included_storage_bytes() === 1073741824
         .fd-section {
             max-width: 1280px;
             margin: 0 auto;
-            padding: 0 24px;
+            padding-left: clamp(20px, 4vw, 44px);
+            padding-right: clamp(20px, 4vw, 44px);
         }
         .fd-hero {
             display: grid;
@@ -185,9 +187,9 @@ $included_storage = billing_included_storage_bytes() === 1073741824
             max-width: 720px;
             margin: 0;
             color: #111827;
-            font-size: clamp(3.2rem, 6vw, 5.75rem);
+            font-size: clamp(3rem, 5.4vw, 5.35rem);
             line-height: 1.05;
-            letter-spacing: -0.045em;
+            letter-spacing: -0.03em;
             font-weight: 900;
         }
         .fd-hero h1 span {
@@ -540,7 +542,8 @@ $included_storage = billing_included_storage_bytes() === 1073741824
         .fd-footer-inner {
             max-width: 1280px;
             margin: 0 auto;
-            padding: 0 24px;
+            padding-left: clamp(20px, 4vw, 44px);
+            padding-right: clamp(20px, 4vw, 44px);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -814,9 +817,9 @@ $included_storage = billing_included_storage_bytes() === 1073741824
             padding-top: 58px;
         }
         .fd-hero h1 {
-            max-width: 760px;
-            font-size: clamp(3.25rem, 5.7vw, 5.55rem);
-            letter-spacing: -0.058em;
+            max-width: 820px;
+            font-size: clamp(3rem, 5.15vw, 5.25rem);
+            letter-spacing: -0.032em;
         }
         .fd-hero p {
             color: #5f6b7c;
@@ -918,6 +921,33 @@ $included_storage = billing_included_storage_bytes() === 1073741824
         @media (max-width: 920px) {
             .fd-hero {
                 padding-top: 36px;
+                padding-bottom: 64px;
+            }
+            .fd-hero h1 {
+                max-width: 12ch;
+                font-size: clamp(3.4rem, 9.2vw, 5.1rem);
+                line-height: 1.02;
+                letter-spacing: -0.03em;
+            }
+            .fd-hero p {
+                max-width: 720px;
+                font-size: clamp(1.1rem, 3.1vw, 1.45rem);
+            }
+        }
+
+        @media (min-width: 921px) and (max-width: 1280px) {
+            .fd-hero {
+                grid-template-columns: minmax(0, 1fr);
+                gap: 38px;
+            }
+            .fd-hero h1 {
+                max-width: 13ch;
+                font-size: clamp(4.2rem, 7.2vw, 5.35rem);
+                line-height: 1.03;
+            }
+            .fd-hero p,
+            .fd-hero-proof {
+                max-width: 860px;
             }
         }
 
@@ -1301,13 +1331,13 @@ $included_storage = billing_included_storage_bytes() === 1073741824
         <section class="fd-section fd-band" id="pricing">
             <div class="fd-heading">
                 <h2>One simple Cloud plan.</h2>
-                <p>Online checkout opens soon. Until then the public page shows the launch offer and a direct contact path instead of a fake purchase flow.</p>
+                <p>Create a workspace, start the Cloud subscription with Stripe Checkout, and manage billing from your FoxDesk account.</p>
             </div>
             <div class="fd-pricing">
                 <div class="fd-price-card">
                     <div class="fd-price-top">
                         <div>
-                            <span class="fd-soon">Checkout opens soon</span>
+                            <span class="fd-soon">Stripe checkout ready</span>
                             <h3 class="mt-5">FoxDesk Cloud</h3>
                             <div class="fd-offer-strip mt-4">
                                 <span>50% launch discount</span>
@@ -1327,8 +1357,8 @@ $included_storage = billing_included_storage_bytes() === 1073741824
                         <li><span class="fd-check">✓</span><span>Managed email sending and attachment storage</span></li>
                         <li><span class="fd-check">✓</span><span>Updates and production deployment prepared for managed hosting</span></li>
                     </ul>
-                    <a href="mailto:hanes.lukas@gmail.com?subject=FoxDesk%20Cloud%20interest" class="fd-btn primary w-full">Contact before launch</a>
-                    <p class="mt-4 text-sm text-gray-500">Online checkout will replace this contact button once billing is ready.</p>
+                    <a href="<?php echo e(url('signup')); ?>" class="fd-btn primary w-full">Create workspace</a>
+                    <p class="mt-4 text-sm text-gray-500">Subscription checkout opens after signup so the workspace and billing customer stay linked.</p>
                 </div>
                 <div class="fd-preview-stack">
                     <img class="fd-light-img" src="assets/public/dashboard-light.webp" alt="FoxDesk dashboard">

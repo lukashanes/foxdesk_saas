@@ -143,6 +143,7 @@ function storage_r2_request(string $method, string $object_key, ?string $body = 
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_CUSTOMREQUEST => $method,
         CURLOPT_HTTPHEADER => $headers,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
         CURLOPT_TIMEOUT => 60,
     ];
     if ($body !== null) {

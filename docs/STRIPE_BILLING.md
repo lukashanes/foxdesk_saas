@@ -70,6 +70,8 @@ Required events:
 - `customer.subscription.created`
 - `customer.subscription.updated`
 - `customer.subscription.deleted`
+- `invoice.paid`
+- `invoice.payment_failed`
 
 The endpoint verifies the `Stripe-Signature` header with `STRIPE_WEBHOOK_SECRET`. Invalid or stale signatures are rejected before any database update.
 
@@ -78,6 +80,7 @@ The endpoint verifies the `Stripe-Signature` header with `STRIPE_WEBHOOK_SECRET`
 - Platform admins can open Checkout or Customer Portal for any workspace from `Platform`.
 - Workspace admins can open their own billing page from the user menu.
 - Stripe subscription changes update `tenants.stripe_customer_id`, `tenants.stripe_subscription_id`, `tenants.subscription_status`, and `tenants.status`.
+- Paid invoices reactivate the workspace. Failed invoices mark the workspace `past_due` so operators can follow up while Stripe dunning runs.
 - Billing and Platform show storage usage, included storage, billable extra GB, and estimated monthly overage.
 - `bin/report-billing-usage.php` reports daily storage meter events to Stripe for tenants with a Stripe customer id.
 - Tenants with `status` set to `suspended` or `canceled` are redirected to Billing instead of normal app pages.
