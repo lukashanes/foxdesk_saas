@@ -1201,6 +1201,9 @@ return [
     'Time entry' => 'Time entry',
     'No time entries in the last 30 days.' => 'No time entries in the last 30 days.',
     'Agent was not found or is not available in this workspace.' => 'Agent was not found or is not available in this workspace.',
+    'PHP IMAP extension is not loaded.' => 'PHP IMAP extension is not loaded.',
+    'Incoming email processing cannot run until the php-imap extension is installed and PHP is restarted.' => 'Incoming email processing cannot run until the php-imap extension is installed and PHP is restarted.',
+    'On shared hosting, ask your provider to enable the PHP IMAP extension for this domain.' => 'On shared hosting, ask your provider to enable the PHP IMAP extension for this domain.',
 
     // Link preview cards
     'Google Drive file' => 'Google Drive file',

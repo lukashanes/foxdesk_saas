@@ -1201,6 +1201,9 @@ return [
     'Time entry' => 'Záznam času',
     'No time entries in the last 30 days.' => 'Za posledních 30 dní nejsou žádné záznamy času.',
     'Agent was not found or is not available in this workspace.' => 'Agent nebyl nalezen nebo není dostupný v tomto workspace.',
+    'PHP IMAP extension is not loaded.' => 'PHP rozšíření IMAP není načtené.',
+    'Incoming email processing cannot run until the php-imap extension is installed and PHP is restarted.' => 'Zpracování příchozí pošty nemůže běžet, dokud není nainstalované rozšíření php-imap a restartované PHP.',
+    'On shared hosting, ask your provider to enable the PHP IMAP extension for this domain.' => 'Na sdíleném hostingu požádejte poskytovatele o zapnutí PHP rozšíření IMAP pro tuto doménu.',
 
     // Link preview cards
     'Google Drive file' => 'Soubor Google Drive',
