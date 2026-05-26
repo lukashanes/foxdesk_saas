@@ -153,6 +153,7 @@ Production is Docker-based and intended for `app.foxdesk.net` behind Cloudflare:
 ```bash
 cp .env.production.example .env.production
 cp config.production.example.php config.php
+deploy/hetzner/preflight.sh
 deploy/hetzner/deploy.sh
 ```
 

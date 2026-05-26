@@ -13,6 +13,8 @@ if [[ ! -f config.php ]]; then
   exit 1
 fi
 
+deploy/hetzner/preflight.sh
+
 docker compose --env-file .env.production -f docker-compose.prod.yml build
 docker compose --env-file .env.production -f docker-compose.prod.yml up -d
 

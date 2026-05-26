@@ -41,11 +41,12 @@ This is the recommended first deployment path for FoxDesk SaaS work. It keeps th
 6. Copy `.env.production.example` to `.env.production`.
 7. Fill production secrets in `.env.production`.
 8. Copy `config.production.example.php` to `config.php`.
-9. Run `deploy/hetzner/deploy.sh`.
-10. Visit `https://app.foxdesk.net/install.php` for first install or run existing migration flow.
-11. Enable Cloudflare WAF/rate limiting rules.
-12. Configure backups and restore test.
-13. Add monitoring and uptime checks.
+9. Run `deploy/hetzner/preflight.sh`.
+10. Run `deploy/hetzner/deploy.sh`.
+11. Visit `https://app.foxdesk.net/install.php` for first install or run existing migration flow.
+12. Enable Cloudflare WAF/rate limiting rules.
+13. Configure backups and restore test.
+14. Add monitoring and uptime checks.
 
 ## Production Files
 
@@ -74,6 +75,7 @@ cd foxdesk_saas
 sudo cp .env.production.example .env.production
 sudo cp config.production.example.php config.php
 sudo nano .env.production
+sudo deploy/hetzner/preflight.sh
 sudo deploy/hetzner/deploy.sh
 ```
 
