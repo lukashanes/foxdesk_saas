@@ -19,7 +19,7 @@ stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 out="${backup_dir}/foxdesk-db-${stamp}.sql.gz"
 
 docker compose --env-file .env.production -f docker-compose.prod.yml exec -T db \
-  mariadb-dump -uroot -p"${DB_ROOT_PASS}" --single-transaction --routines --triggers "${DB_NAME}" \
+  mariadb-dump -u"${DB_USER}" -p"${DB_PASS}" --single-transaction --routines --triggers "${DB_NAME}" \
   | gzip -9 > "${out}"
 
 find "${backup_dir}" -type f -name 'foxdesk-db-*.sql.gz' -mtime +14 -delete
