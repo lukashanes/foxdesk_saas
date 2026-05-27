@@ -10,7 +10,7 @@ RUN apt-get update \
         unzip \
     && docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
     && docker-php-ext-install pdo_mysql mysqli zip imap \
-    && a2enmod rewrite headers remoteip \
+    && a2enmod rewrite headers remoteip expires \
     && rm -rf /var/lib/apt/lists/*
 
 COPY docker/prod/php.ini /usr/local/etc/php/conf.d/foxdesk-prod.ini
