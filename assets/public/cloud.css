@@ -1224,3 +1224,68 @@
                 display: none;
             }
         }
+
+        /* Pricing cleanup: keep the offer calm and screenshots undistorted. */
+        .fd-pricing {
+            grid-template-columns: minmax(360px, .78fr) minmax(0, 1.22fr);
+            align-items: stretch;
+        }
+        .fd-price-card {
+            justify-content: center;
+            border-radius: 20px;
+            padding: 32px;
+        }
+        .fd-price-card::before {
+            opacity: .35;
+        }
+        .fd-price-top {
+            display: block;
+            margin-bottom: 18px;
+        }
+        .fd-plan-title {
+            margin-top: 0 !important;
+            font-size: clamp(2rem, 3vw, 2.85rem) !important;
+            letter-spacing: -0.04em;
+        }
+        .fd-offer-line {
+            max-width: 34rem;
+            margin: 12px 0 0;
+            color: #52627a;
+            font-size: 15px;
+            line-height: 1.55;
+        }
+        .fd-soon,
+        .fd-offer-strip,
+        .fd-discount-chip {
+            display: none !important;
+        }
+        .fd-price {
+            margin: 20px 0 22px;
+            padding-bottom: 22px;
+        }
+        .fd-preview-stack {
+            gap: 18px;
+        }
+        .fd-preview-stack img {
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+            object-fit: contain;
+            padding: 0;
+            border: 0;
+            border-radius: 10px;
+            background: transparent;
+            box-shadow: 0 22px 70px rgba(0, 0, 0, .22);
+        }
+        [data-theme="dark"] .fd-offer-line {
+            color: #a8b6cc;
+        }
+        [data-theme="dark"] .fd-preview-stack img {
+            box-shadow: 0 24px 78px rgba(0, 0, 0, .42);
+        }
+        @media (max-width: 920px) {
+            .fd-pricing {
+                grid-template-columns: 1fr;
+            }
+        }

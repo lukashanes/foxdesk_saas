@@ -7,7 +7,6 @@
  */
 
 $page_title = 'FoxDesk Cloud';
-$cloud_regular_price = billing_format_money(billing_cloud_base_price_cents() * 2);
 $cloud_launch_price = billing_currency() === 'CZK' ? '249 Kc' : 'EUR 9.90';
 $cloud_launch_until = 'May 31, 2026';
 $included_storage = billing_included_storage_bytes() === 1073741824
@@ -181,20 +180,15 @@ if (!headers_sent()) {
         <section class="fd-section fd-band" id="pricing">
             <div class="fd-heading">
                 <h2>One simple Cloud plan.</h2>
-                <p>Create a workspace, start the Cloud subscription with Stripe Checkout, and manage billing from your FoxDesk account.</p>
+                <p>Create a workspace, start the Cloud subscription, and manage billing from your FoxDesk account.</p>
             </div>
             <div class="fd-pricing">
                 <div class="fd-price-card">
                     <div class="fd-price-top">
                         <div>
-                            <span class="fd-soon">Stripe checkout ready</span>
                             <h3 class="fd-plan-title">FoxDesk Cloud</h3>
-                            <div class="fd-offer-strip fd-plan-offer">
-                                <span>50% launch discount</span>
-                                <s>Regular <?php echo e($cloud_regular_price); ?>/month</s>
-                            </div>
+                            <p class="fd-offer-line">Launch price available until <?php echo e($cloud_launch_until); ?>.</p>
                         </div>
-                        <div class="fd-discount-chip">Valid until <?php echo e($cloud_launch_until); ?></div>
                     </div>
                     <div class="fd-price">
                         <strong><?php echo e($cloud_launch_price); ?></strong>
@@ -208,7 +202,6 @@ if (!headers_sent()) {
                         <li><span class="fd-check">✓</span><span>Updates and production deployment prepared for managed hosting</span></li>
                     </ul>
                     <a href="<?php echo e(url('signup')); ?>" class="fd-btn primary fd-full-width">Create workspace</a>
-                    <p class="fd-price-detail">Subscription checkout opens after signup so the workspace and billing customer stay linked.</p>
                 </div>
                 <div class="fd-preview-stack">
                     <img class="fd-light-img" src="assets/public/dashboard-light.webp" alt="FoxDesk dashboard" width="1200" height="675" loading="lazy" decoding="async">
