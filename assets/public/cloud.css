@@ -13,6 +13,11 @@
             --fd-line: #e5e7eb;
             --fd-bg: #f9fafb;
         }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
         html {
             scroll-behavior: smooth;
         }
@@ -31,8 +36,8 @@
         .fd-glow-top {
             position: fixed;
             inset: -240px auto auto 50%;
-            width: 740px;
-            height: 740px;
+            width: min(740px, 100vw);
+            height: min(740px, 100vw);
             transform: translateX(-50%);
             background: radial-gradient(circle, rgba(37, 99, 235, .14), transparent 62%);
             pointer-events: none;
