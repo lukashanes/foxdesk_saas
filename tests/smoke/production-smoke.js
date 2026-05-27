@@ -32,7 +32,6 @@ async function assertOk(url, expectedText) {
   await assertOk(`${publicUrl}/index.php?page=legal&type=privacy`, 'Privacy Policy');
   await assertOk(`${publicUrl}/index.php?page=legal&type=terms`, 'Terms of Service');
   await assertOk(`${publicUrl}/index.php?page=legal&type=refunds`, 'Refund and Cancellation Policy');
-  await assertOk(`${publicUrl}/index.php?page=legal&type=subprocessors`, 'Subprocessors');
   await assertOk(`${publicUrl}/index.php?page=legal&type=security`, 'Security');
 
   console.log(`Production smoke OK: ${baseUrl} / ${publicUrl}`);

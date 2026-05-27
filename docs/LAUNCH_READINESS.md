@@ -15,8 +15,8 @@ FoxDesk SaaS is deployable as a private/beta hosted service, but paid public lau
   - `/index.php?page=legal&type=terms`
   - `/index.php?page=legal&type=dpa`
   - `/index.php?page=legal&type=refunds`
-  - `/index.php?page=legal&type=subprocessors`
   - `/index.php?page=legal&type=security`
+- Subprocessors are available to logged-in customers or on request; they are not linked from the public marketing footer.
 
 ## Must Be Done Before Paid Public Launch
 
@@ -34,7 +34,7 @@ FoxDesk SaaS is deployable as a private/beta hosted service, but paid public lau
 - Review and finalize Privacy Policy, Terms, DPA, and Security page with legal counsel.
 - Add company/operator identity and jurisdiction.
 - Review refund/cancellation wording for monthly subscriptions.
-- Review the public subprocessor list covering Hetzner, Cloudflare, Stripe, and email infrastructure.
+- Review the customer-facing subprocessor list covering Hetzner, Cloudflare, Stripe, and email infrastructure.
 - Add Cookie Policy only if analytics or non-essential cookies are introduced.
 - Legal links are present in the public footer and signup flow.
 

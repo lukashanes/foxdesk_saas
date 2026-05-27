@@ -2,80 +2,113 @@
 $type = strtolower((string) ($_GET['type'] ?? 'privacy'));
 $updated = 'May 27, 2026';
 
+$operator = [
+    'name' => 'Aenze s.r.o.',
+    'company_id' => '28534395',
+    'vat_id' => 'CZ28534395',
+    'address' => 'Moskevska 1842, 272 04 Kladno, Czech Republic',
+    'support' => 'support@foxdesk.net',
+    'billing' => 'billing@foxdesk.net',
+];
+
+$is_logged_in = function_exists('is_logged_in') && is_logged_in();
+
 $documents = [
     'privacy' => [
         'title' => 'Privacy Policy',
-        'intro' => 'This page explains what FoxDesk Cloud collects, why it is needed, and how customer data is handled.',
+        'intro' => 'This Privacy Policy explains how ' . $operator['name'] . ' processes personal data in connection with FoxDesk Cloud.',
         'sections' => [
-            ['Data we process', 'Account details, workspace content, tickets, comments, attachments, billing records, email delivery metadata, security logs, and operational diagnostics needed to run FoxDesk Cloud.'],
-            ['Purpose', 'We use data to provide the helpdesk service, authenticate users, deliver notifications, process billing, secure the platform, provide support, and improve reliability.'],
-            ['Customer content', 'Workspace owners control their customer, ticket, report, and attachment content. FoxDesk Cloud does not sell customer content or use it for advertising.'],
-            ['Retention', 'Workspace data is retained while the subscription or trial is active. Backups and logs may be retained for a limited operational period for recovery, security, and accounting.'],
-            ['Subprocessors', 'FoxDesk Cloud uses subprocessors listed on the Subprocessors page for hosting, storage, email delivery, billing, security, and operational services.'],
-            ['Contact', 'Privacy requests can be sent to support@foxdesk.net.'],
+            ['Controller and operator', $operator['name'] . ', Company ID ' . $operator['company_id'] . ', VAT ID ' . $operator['vat_id'] . ', registered office ' . $operator['address'] . ', operates FoxDesk Cloud. For account, billing, website, and service administration data, Aenze s.r.o. acts as the controller. For customer workspace content entered by customers, Aenze s.r.o. generally acts as processor on behalf of the workspace owner.'],
+            ['Data we process', 'We process account identifiers, names, email addresses, authentication and security data, workspace configuration, customer and organization records, tickets, comments, attachments, time logs, reports, notification metadata, billing identifiers, invoices, payment status, audit records, technical logs, and support communications.'],
+            ['Why we process data', 'We process data to provide and secure FoxDesk Cloud, authenticate users, deliver support workflows, send service notifications, maintain backups, process subscriptions and invoices, prevent abuse, comply with legal obligations, and communicate with customers about the service.'],
+            ['Legal bases', 'Depending on the context, processing is based on performance of a contract, legitimate interests in operating and securing the service, compliance with legal obligations, consent where required, and the customer instructions documented in the Data Processing Addendum for workspace content.'],
+            ['Customer workspace content', 'Workspace owners decide what personal data is placed into tickets, clients, attachments, reports, and comments. Customers must ensure they have a lawful basis for the data they submit and must configure user access appropriately. Aenze s.r.o. does not sell workspace content or use it for advertising.'],
+            ['Sharing and providers', 'We share data only where needed to operate the service, including hosting, storage, email delivery, security, billing, and support. Payment data is handled by Stripe; FoxDesk Cloud stores Stripe customer and subscription identifiers but not raw card numbers.'],
+            ['Retention', 'Workspace data is retained while an account, trial, or subscription is active. After termination, data may be retained for a limited period for export, recovery, security, tax, accounting, dispute handling, and backup integrity. Operational logs are kept only as long as reasonably needed.'],
+            ['International transfers', 'Where a provider processes data outside the EEA, we rely on appropriate safeguards such as EU Standard Contractual Clauses, adequacy decisions, or equivalent contractual and technical protections where applicable.'],
+            ['Your rights', 'Where GDPR applies, individuals may request access, correction, deletion, restriction, portability, or objection. Some requests relating to workspace content must be handled by the customer as controller. Requests can be sent to ' . $operator['support'] . '.'],
+            ['Security', 'We use access controls, tenant separation, TLS, password hashing, CSRF protection, role-based permissions, audit/security logging, backup controls, and operational monitoring. No online service can guarantee absolute security, but we maintain reasonable technical and organizational measures.'],
         ],
     ],
     'terms' => [
         'title' => 'Terms of Service',
-        'intro' => 'These terms define the basic rules for using FoxDesk Cloud.',
+        'intro' => 'These Terms govern access to and use of FoxDesk Cloud.',
         'sections' => [
-            ['Service', 'FoxDesk Cloud provides hosted helpdesk workspaces with users, clients, tickets, reports, attachments, email notifications, and managed operations.'],
-            ['Accounts', 'Workspace owners are responsible for invited users, accurate billing information, secure credentials, and lawful use of their workspace.'],
-            ['Acceptable use', 'The service must not be used for illegal content, malware, spam, abuse, infringement, credential harvesting, or activity that harms the platform or other customers.'],
-            ['Billing', 'Paid subscriptions renew monthly unless canceled. The customer is responsible for base subscription fees, metered storage overage, taxes, and failed payment recovery handled through Stripe.'],
-            ['Refunds and cancellation', 'Monthly subscriptions can be canceled before the next renewal period. Refund handling is described in the Refund and Cancellation Policy.'],
-            ['Availability', 'FoxDesk Cloud is operated with reasonable care, backups, monitoring, and maintenance windows. A formal SLA can be published separately when support commitments are finalized.'],
-            ['Termination', 'Accounts may be suspended for non-payment, abuse, security risk, or breach of these terms. Customers should be able to export their data where technically possible.'],
+            ['Service provider', 'FoxDesk Cloud is provided by ' . $operator['name'] . ', Company ID ' . $operator['company_id'] . ', VAT ID ' . $operator['vat_id'] . ', registered office ' . $operator['address'] . '.'],
+            ['The service', 'FoxDesk Cloud provides hosted helpdesk workspaces with users, clients, organizations, tickets, attachments, time tracking, reports, notifications, billing administration, and managed operational components. The open-source/self-hosted FoxDesk edition remains separate from the paid hosted service.'],
+            ['Accounts and authority', 'A person creating or administering a workspace confirms that they are authorized to bind the relevant organization. Workspace owners are responsible for user invitations, role assignments, account security, billing details, and all activity under their workspace.'],
+            ['Acceptable use', 'The service must not be used for illegal activity, malware, spam, harassment, infringement, credential harvesting, unauthorized scanning, excessive automated traffic, or activity that disrupts FoxDesk Cloud, its providers, or other customers.'],
+            ['Customer data', 'Customers keep ownership of their workspace data. Customers grant Aenze s.r.o. the limited right to host, store, transmit, back up, and process the data only as needed to provide and support the service. Customers are responsible for ensuring that submitted data is lawful and appropriate for a helpdesk system.'],
+            ['Billing', 'Subscriptions are billed monthly through Stripe. Fees may include a base subscription, metered storage overage, applicable taxes, and payment recovery charges where permitted. Failed payments may result in restricted access, suspension, or cancellation.'],
+            ['Cancellation', 'A workspace owner may cancel future renewals before the next billing period. Unless stated otherwise, cancellation stops future charges but does not automatically refund the current paid period. Refund handling is described in the Refund and Cancellation Policy.'],
+            ['Availability and changes', 'We aim to operate FoxDesk Cloud with reasonable care, backups, monitoring, and maintenance practices. We may update, improve, or modify features where needed for reliability, security, compliance, or product development.'],
+            ['Suspension and termination', 'Access may be suspended or terminated for non-payment, abuse, legal risk, security risk, breach of these Terms, or operation that threatens the platform. Where reasonably possible, customers will be given an opportunity to export data before deletion.'],
+            ['Liability', 'To the maximum extent permitted by law, FoxDesk Cloud is provided without guarantees of uninterrupted or error-free operation. Aenze s.r.o. is not liable for indirect loss, lost profit, lost business, or damage caused by customer configuration, third-party services, or unlawful customer content.'],
+            ['Governing law', 'These Terms are governed by the laws of the Czech Republic, unless mandatory consumer or data protection law requires otherwise. Business disputes should first be attempted to be resolved in good faith.'],
         ],
     ],
     'dpa' => [
         'title' => 'Data Processing Addendum',
-        'intro' => 'This draft describes the processor relationship for customer workspace data. It should be finalized with legal review.',
+        'intro' => 'This Data Processing Addendum describes how Aenze s.r.o. processes customer workspace personal data for FoxDesk Cloud.',
         'sections' => [
-            ['Roles', 'The customer is the controller of workspace content and FoxDesk Cloud acts as processor for that content.'],
-            ['Processing scope', 'Processing is limited to hosting, storing, transmitting, securing, backing up, and supporting customer workspace data.'],
-            ['Security', 'FoxDesk Cloud should maintain access controls, TLS, password hashing, CSRF protection, backup controls, logging, and least-privilege operational access.'],
-            ['Subprocessors', 'Subprocessors must be documented and used only where needed to provide hosting, storage, email, billing, monitoring, or support.'],
-            ['Incidents', 'Confirmed personal data incidents should be investigated promptly and communicated to affected customers without undue delay.'],
-            ['Deletion and export', 'At termination, customer data should be exportable and deletable according to retention and backup limits.'],
+            ['Parties and roles', 'For customer workspace content, the customer is the controller and Aenze s.r.o. is the processor. If the customer processes data on behalf of another controller, the customer remains responsible for having the required authority to instruct Aenze s.r.o.'],
+            ['Subject matter', 'Processing covers the operation of a hosted FoxDesk workspace, including ticket management, customer records, attachments, time tracking, reporting, notifications, user administration, backups, security, and support.'],
+            ['Categories of data', 'Workspace data may include names, email addresses, organization details, ticket content, comments, uploaded files, communication metadata, internal notes, work logs, reports, user roles, technical identifiers, and audit/security logs.'],
+            ['Categories of data subjects', 'Data subjects may include customer employees, agents, client contacts, end users, support requesters, suppliers, contractors, and other people whose data is entered into the workspace by the customer or its users.'],
+            ['Customer instructions', 'Aenze s.r.o. processes workspace personal data only on documented customer instructions, including this DPA, the Terms, product settings, support requests, and lawful written instructions. Aenze s.r.o. will inform the customer if an instruction appears to violate applicable data protection law.'],
+            ['Confidentiality', 'Personnel with access to workspace data are required to keep such data confidential and may access it only where needed for operation, support, security, or legal compliance.'],
+            ['Security measures', 'Aenze s.r.o. maintains reasonable technical and organizational measures, including tenant-aware access controls, TLS, password hashing, CSRF protection, upload controls, backup controls, logging, restricted operational access, and separation of production secrets from source code.'],
+            ['Subprocessors', 'The customer gives general authorization for Aenze s.r.o. to use subprocessors necessary to provide FoxDesk Cloud. Aenze s.r.o. remains responsible for subprocessors under applicable data protection law and requires them to protect personal data through contractual or equivalent safeguards. The current list is available to logged-in customers or on request.'],
+            ['Assistance', 'Taking into account the nature of processing, Aenze s.r.o. will reasonably assist the customer with data subject requests, security obligations, incident handling, and data protection impact assessments where required and technically possible.'],
+            ['Personal data breach', 'Aenze s.r.o. will investigate confirmed security incidents involving customer workspace personal data and notify affected customers without undue delay after becoming aware of a personal data breach.'],
+            ['Return and deletion', 'On termination, customer data may be exportable where technically possible. Data will be deleted or anonymized after the retention period, subject to backups, legal obligations, accounting, security, dispute handling, and legitimate operational needs.'],
+            ['Audits', 'Aenze s.r.o. will provide reasonable information needed to demonstrate compliance with this DPA. Audits must be proportionate, protect other customers and platform security, and be agreed in advance.'],
         ],
     ],
     'refunds' => [
         'title' => 'Refund and Cancellation Policy',
-        'intro' => 'This page explains how monthly FoxDesk Cloud subscriptions can be canceled and when refunds may apply.',
+        'intro' => 'This policy explains how FoxDesk Cloud monthly subscription cancellation and refund requests are handled.',
         'sections' => [
-            ['Monthly subscriptions', 'FoxDesk Cloud is billed monthly through Stripe. A subscription remains active until the end of the paid billing period unless access is suspended for abuse, security risk, or non-payment.'],
-            ['Cancellation', 'Workspace owners can request cancellation before the next renewal. Cancellation stops future renewals, but the current paid period normally remains available.'],
-            ['Refund requests', 'Refund requests are reviewed case by case. Refunds may be considered for duplicate charges, accidental renewal reported promptly, or confirmed service failure that prevented normal use.'],
-            ['Storage overage', 'Metered storage overage is based on usage reported for the billing period. If usage data is incorrect, contact support so the invoice can be reviewed.'],
-            ['Contact', 'Billing questions and refund requests can be sent to billing@foxdesk.net or support@foxdesk.net.'],
+            ['Monthly billing', 'FoxDesk Cloud is billed monthly through Stripe. A subscription covers access to a hosted workspace for the current billing period and may include metered storage overage.'],
+            ['Cancellation', 'Workspace owners can request cancellation before the next renewal. Cancellation stops future renewals but normally does not end access immediately for the already paid period.'],
+            ['Refund eligibility', 'Refunds are not automatic. Aenze s.r.o. may approve a refund for duplicate charges, billing mistakes, accidental renewal reported promptly, or a confirmed service failure that materially prevented use of the paid service.'],
+            ['Non-refundable cases', 'Refunds are generally not provided for unused time after ordinary cancellation, customer misconfiguration, lack of usage, blocked access caused by breach of the Terms, or issues caused by third-party systems outside FoxDesk Cloud control.'],
+            ['Storage overage', 'Metered storage overage is based on recorded usage for the billing period. If a customer believes usage was measured incorrectly, Aenze s.r.o. will review the records and correct the invoice where appropriate.'],
+            ['How to request a refund', 'Send refund or billing requests to ' . $operator['billing'] . ' and include workspace name, billing email, invoice number, and a short explanation. We may request additional verification before changing billing records.'],
         ],
     ],
     'subprocessors' => [
         'title' => 'Subprocessors',
-        'intro' => 'FoxDesk Cloud uses the following subprocessors to provide hosting, storage, security, email delivery, billing, and operations.',
+        'intro' => 'This customer-facing list identifies core providers used to operate FoxDesk Cloud. It is not linked from the public marketing footer.',
         'sections' => [
-            ['Hetzner', 'Infrastructure hosting for the FoxDesk Cloud application, database, and related server workloads.'],
-            ['Cloudflare', 'DNS, TLS/proxy services, R2 object storage, email sending/routing, caching, and security controls.'],
-            ['Stripe', 'Subscription billing, Checkout, Customer Portal, invoices, payment processing, and billing-related customer records.'],
-            ['Email infrastructure', 'Transactional email metadata is processed as needed to deliver service messages, password resets, ticket notifications, and billing communication.'],
-            ['Changes', 'This list should be updated when a new production subprocessor is added or when a provider role materially changes.'],
+            ['Hetzner', 'Infrastructure hosting for application servers, databases, and related production workloads in the hosted FoxDesk Cloud environment.'],
+            ['Cloudflare', 'DNS, TLS/proxy services, security controls, caching, R2 object storage, and Cloudflare Email services used for transactional service delivery.'],
+            ['Stripe', 'Subscription billing, Checkout, Customer Portal, invoices, payment processing, customer billing records, and subscription status webhooks.'],
+            ['Email delivery infrastructure', 'Transactional email metadata may be processed to deliver password resets, account messages, ticket notifications, migration communication, and billing notices.'],
+            ['Changes', 'Aenze s.r.o. may update subprocessors when needed for security, reliability, compliance, or service delivery. Material changes should be communicated to affected customers or made available in the customer account area.'],
         ],
     ],
     'security' => [
         'title' => 'Security',
-        'intro' => 'A public security page gives customers confidence and tells them how to report issues.',
+        'intro' => 'This page summarizes the security practices used for FoxDesk Cloud.',
         'sections' => [
-            ['Application controls', 'FoxDesk Cloud uses authenticated sessions, CSRF tokens, role-aware permissions, optional 2FA support, upload restrictions, and tenant-aware data access.'],
-            ['Infrastructure', 'Production is planned for Hetzner behind Cloudflare with TLS, health checks, backups, R2 storage, and environment-managed secrets.'],
-            ['Billing security', 'Payments are processed by Stripe. FoxDesk Cloud stores Stripe customer and subscription identifiers, not raw card data.'],
-            ['Vulnerability reports', 'Report suspected vulnerabilities to support@foxdesk.net with steps to reproduce and impact. Please avoid accessing or modifying data that is not yours.'],
-            ['Responsible disclosure', 'We aim to acknowledge security reports, investigate impact, and deploy fixes before public detail is shared.'],
+            ['Application security', 'FoxDesk Cloud uses authenticated sessions, CSRF tokens, role-based permissions, tenant-aware data access, optional 2FA support, upload restrictions, security logs, and administrative controls for sensitive actions.'],
+            ['Infrastructure security', 'Production is operated behind Cloudflare with TLS and proxy controls. The application runs on managed server infrastructure with separate environment-managed secrets, health checks, backups, and monitored service containers.'],
+            ['Data separation', 'Customer workspaces are separated by tenant-aware database records and permission checks. Platform administration is separated from customer workspace administration.'],
+            ['Payments', 'Payments are processed by Stripe. FoxDesk Cloud stores billing status and Stripe identifiers, but does not store raw card numbers or card security codes.'],
+            ['Backups and recovery', 'Backups and storage controls are used to support recovery from operational failure. Backup access should be limited to authorized operational personnel and retained only as long as needed.'],
+            ['Responsible disclosure', 'Report suspected vulnerabilities to ' . $operator['support'] . ' with affected URL, steps to reproduce, expected impact, and any relevant screenshots or logs. Do not access, modify, delete, or disclose data that is not yours.'],
+            ['Limitations', 'Security is a shared responsibility. Customers must manage user access, remove users who no longer need access, use strong passwords and 2FA where available, and avoid uploading unnecessary sensitive data.'],
         ],
     ],
 ];
 
 if (!isset($documents[$type])) {
+    $type = 'privacy';
+}
+
+if ($type === 'subprocessors' && !$is_logged_in) {
+    http_response_code(404);
     $type = 'privacy';
 }
 
@@ -85,34 +118,43 @@ $nav = [
     'terms' => 'Terms',
     'dpa' => 'DPA',
     'refunds' => 'Refunds',
-    'subprocessors' => 'Subprocessors',
     'security' => 'Security',
 ];
+if ($is_logged_in) {
+    $nav['subprocessors'] = 'Subprocessors';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?php if ($type === 'subprocessors'): ?>
+        <meta name="robots" content="noindex,nofollow">
+    <?php endif; ?>
     <title><?php echo e($doc['title']); ?> - FoxDesk Cloud</title>
     <style>
-        :root { color-scheme: light; --ink:#111827; --muted:#667085; --line:#e5e7eb; --bg:#f7f8fb; --panel:#fff; }
+        :root { color-scheme: light; --ink:#111827; --muted:#667085; --line:#e5e7eb; --bg:#f7f8fb; --panel:#fff; --blue:#2557d6; }
+        * { box-sizing: border-box; }
         body { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
-        .legal-shell { max-width:980px; margin:0 auto; padding:28px 18px 48px; }
-        .legal-top { display:flex; justify-content:space-between; gap:16px; align-items:center; margin-bottom:22px; }
-        .legal-brand { font-weight:820; font-size:17px; }
-        .legal-nav { display:flex; gap:8px; flex-wrap:wrap; }
+        a { color:inherit; }
+        .legal-shell { max-width:1040px; margin:0 auto; padding:28px 18px 56px; }
+        .legal-top { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:22px; }
+        .legal-brand { font-weight:820; font-size:17px; text-decoration:none; }
+        .legal-nav { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
         .legal-nav a { border:1px solid var(--line); border-radius:999px; padding:7px 11px; color:var(--muted); text-decoration:none; font-size:13px; font-weight:700; background:var(--panel); }
         .legal-nav a.active { color:var(--ink); border-color:#111827; }
-        .legal-card { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:26px; box-shadow:0 16px 45px rgba(15,23,42,.06); }
-        h1 { margin:0; font-size:34px; line-height:1.05; letter-spacing:0; }
-        .intro { color:var(--muted); margin:12px 0 0; max-width:700px; line-height:1.6; }
-        .updated { margin-top:10px; color:var(--muted); font-size:13px; }
+        .legal-card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:30px; box-shadow:0 16px 45px rgba(15,23,42,.06); }
+        h1 { margin:0; font-size:36px; line-height:1.05; letter-spacing:0; }
+        .intro { color:var(--muted); margin:12px 0 0; max-width:760px; line-height:1.65; }
+        .updated { margin-top:12px; color:var(--muted); font-size:13px; }
         .section { border-top:1px solid var(--line); padding-top:18px; margin-top:18px; }
         h2 { margin:0 0 7px; font-size:17px; }
-        p { margin:0; color:var(--muted); line-height:1.65; }
+        p { margin:0; color:var(--muted); line-height:1.68; }
         .notice { margin-top:22px; font-size:13px; color:var(--muted); }
-        @media (max-width:640px) { .legal-top { align-items:flex-start; flex-direction:column; } .legal-card { padding:20px; } h1 { font-size:28px; } }
+        .contact { margin-top:22px; padding:14px 16px; border:1px solid #dbe4ff; border-radius:12px; background:#f7f9ff; color:#1f2f5f; font-size:14px; line-height:1.55; }
+        .contact a { color:var(--blue); font-weight:700; }
+        @media (max-width:640px) { .legal-top { flex-direction:column; } .legal-nav { justify-content:flex-start; } .legal-card { padding:20px; } h1 { font-size:29px; } }
     </style>
 </head>
 <body>
@@ -135,7 +177,12 @@ $nav = [
                     <p><?php echo e($section[1]); ?></p>
                 </section>
             <?php endforeach; ?>
-            <p class="notice">Review with counsel before relying on this page as final legal advice for paid public subscriptions.</p>
+            <div class="contact">
+                Operator: <?php echo e($operator['name']); ?>, Company ID <?php echo e($operator['company_id']); ?>, registered office <?php echo e($operator['address']); ?>.
+                Support: <a href="mailto:<?php echo e($operator['support']); ?>"><?php echo e($operator['support']); ?></a>.
+                Billing: <a href="mailto:<?php echo e($operator['billing']); ?>"><?php echo e($operator['billing']); ?></a>.
+            </div>
+            <p class="notice">This page is operational contract copy for FoxDesk Cloud and should still be reviewed by counsel before final paid public launch.</p>
         </article>
     </main>
 </body>
