@@ -84,6 +84,7 @@ The endpoint verifies the `Stripe-Signature` header with `STRIPE_WEBHOOK_SECRET`
 - When the trial expires before payment, FoxDesk marks the workspace `trial_expired` and locks normal app access. Workspace admins can still open Billing and activate through Stripe Checkout.
 - Maintenance (`php bin/run-maintenance.php`) and pseudo-cron both expire trials and send pending trial reminders.
 - Platform admins can open Checkout or Customer Portal for any workspace from `Platform`.
+- Customer Portal uses `STRIPE_PORTAL_CONFIGURATION_ID` when present; otherwise it falls back to the first active Stripe Portal configuration.
 - Platform admins can extend a trial, block a tenant, or manually reactivate a workspace from the workspace catalog.
 - Workspace admins can open their own billing page from the user menu.
 - Stripe subscription changes update `tenants.stripe_customer_id`, `tenants.stripe_subscription_id`, `tenants.subscription_status`, and `tenants.status`.

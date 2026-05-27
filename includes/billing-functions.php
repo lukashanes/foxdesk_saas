@@ -80,6 +80,11 @@ function billing_storage_meter_event_name(): string
     return trim((string) billing_env_or_constant('STRIPE_STORAGE_METER_EVENT_NAME', 'foxdesk_storage_extra_gb'));
 }
 
+function billing_portal_configuration_id(): string
+{
+    return trim((string) billing_env_or_constant('STRIPE_PORTAL_CONFIGURATION_ID', ''));
+}
+
 function billing_append_query(string $url, array $params): string
 {
     $params = array_filter($params, static fn($value) => $value !== null && $value !== '');
@@ -797,10 +802,24 @@ function billing_create_portal_session(int $tenant_id): string
         : APP_URL . '/index.php?page=billing';
     $return_url = billing_append_query($return_url, ['tenant_id' => (string) $tenant_id]);
 
-    $session = billing_stripe_request('POST', 'billing_portal/sessions', [
+    $params = [
         'customer' => $customer_id,
         'return_url' => $return_url,
-    ]);
+    ];
+
+    $configuration_id = billing_portal_configuration_id();
+    if ($configuration_id === '') {
+        $configurations = billing_stripe_request('GET', 'billing_portal/configurations', [
+            'active' => 'true',
+            'limit' => '1',
+        ]);
+        $configuration_id = (string) ($configurations['data'][0]['id'] ?? '');
+    }
+    if ($configuration_id !== '') {
+        $params['configuration'] = $configuration_id;
+    }
+
+    $session = billing_stripe_request('POST', 'billing_portal/sessions', $params);
 
     $url = (string) ($session['url'] ?? '');
     if ($url === '') {
