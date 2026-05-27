@@ -86,6 +86,41 @@ function billing_append_query(string $url, array $params): string
     return $url . $separator . http_build_query($params);
 }
 
+function billing_is_current_user_platform_admin(): bool
+{
+    if (!function_exists('current_user') || !function_exists('is_platform_admin')) {
+        return false;
+    }
+
+    $user = current_user();
+    return is_array($user) && is_platform_admin($user);
+}
+
+function billing_checkout_return_urls(int $tenant_id): array
+{
+    $is_platform_admin = billing_is_current_user_platform_admin();
+    $default_page = $is_platform_admin ? 'platform' : 'billing';
+    $success_url = APP_URL . '/index.php?page=' . $default_page;
+    $cancel_url = APP_URL . '/index.php?page=' . $default_page;
+
+    if ($is_platform_admin) {
+        $success_url = trim((string) billing_env_or_constant('STRIPE_SUCCESS_URL', $success_url)) ?: $success_url;
+        $cancel_url = trim((string) billing_env_or_constant('STRIPE_CANCEL_URL', $cancel_url)) ?: $cancel_url;
+    }
+
+    return [
+        'success' => billing_append_query($success_url, [
+            'tenant_id' => (string) $tenant_id,
+            'checkout' => 'success',
+            'session_id' => '{CHECKOUT_SESSION_ID}',
+        ]),
+        'cancel' => billing_append_query($cancel_url, [
+            'tenant_id' => (string) $tenant_id,
+            'checkout' => 'cancelled',
+        ]),
+    ];
+}
+
 function billing_usage_period_key(?int $timestamp = null): string
 {
     return date('Y-m-d', $timestamp ?: time());
@@ -443,13 +478,7 @@ function billing_create_checkout_session(int $tenant_id, string $plan = 'cloud')
     }
 
     $customer_id = billing_create_or_get_customer($tenant);
-    $success_url = (string) billing_env_or_constant('STRIPE_SUCCESS_URL', APP_URL . '/index.php?page=platform&billing=success');
-    $cancel_url = (string) billing_env_or_constant('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=platform&billing=cancelled');
-    $success_url = billing_append_query($success_url, [
-        'tenant_id' => (string) $tenant_id,
-        'session_id' => '{CHECKOUT_SESSION_ID}',
-    ]);
-    $cancel_url = billing_append_query($cancel_url, ['tenant_id' => (string) $tenant_id]);
+    $return_urls = billing_checkout_return_urls($tenant_id);
 
     $params = [
         'mode' => 'subscription',
@@ -457,8 +486,8 @@ function billing_create_checkout_session(int $tenant_id, string $plan = 'cloud')
         'client_reference_id' => (string) $tenant_id,
         'line_items[0][price]' => $price_id,
         'line_items[0][quantity]' => '1',
-        'success_url' => $success_url,
-        'cancel_url' => $cancel_url,
+        'success_url' => $return_urls['success'],
+        'cancel_url' => $return_urls['cancel'],
         'allow_promotion_codes' => 'true',
         'customer_update[name]' => 'auto',
         'customer_update[address]' => 'auto',

@@ -39,8 +39,8 @@ FoxDesk SaaS is deployable as a private/beta hosted service, but paid public lau
 ### 3. Stripe Go-Live
 
 - Create Stripe live product `FoxDesk Cloud`.
-- Create recurring base Price: EUR 19/month.
-- Create launch coupon or promotion for EUR 9.90 until May 31, 2026.
+- Create recurring base Price: EUR 9.90/month launch price through May 31, 2026.
+- After launch, create a new recurring base Price and switch `STRIPE_PRICE_CLOUD_BASE` if the public price changes.
 - Create recurring metered storage Price for extra GB. Current app default is EUR 1.90 per started extra GB/month.
 - Create Stripe meter event name: `foxdesk_storage_extra_gb`.
 - Configure webhook endpoint:
@@ -130,7 +130,7 @@ CLOUDFLARE_EMAIL_REPLY_TO=support@foxdesk.net
 
 ## Not Ready Until These Are True
 
-- Stripe live keys, prices, coupon, meter, and webhook are configured.
+- Stripe live keys, prices, storage meter, and webhook are configured.
 - Legal pages are approved and linked.
 - Cloudflare DNS/TLS is clean for the public and app domains.
 - R2 upload/download works in production.

@@ -51,6 +51,7 @@ if ($action === 'checkout' || $action === 'portal') {
 $page_title = 'Billing';
 $page = 'billing';
 $usage = billing_tenant_usage((int) $tenant['id']);
+$checkout_state = (string) ($_GET['checkout'] ?? $_GET['billing'] ?? '');
 $storage_percent = $usage['included_storage_bytes'] > 0
     ? min(100, (int) round(($usage['storage_bytes'] / $usage['included_storage_bytes']) * 100))
     : 0;
@@ -61,6 +62,14 @@ require_once BASE_PATH . '/includes/header.php';
     <div class="card card-body">
         <h1 class="text-2xl font-bold mb-2">Billing</h1>
         <p class="text-sm mb-6" style="color: var(--text-muted);">Manage subscription and access for <?php echo e($tenant['name']); ?>.</p>
+
+        <?php if ($checkout_state === 'success'): ?>
+            <div class="alert alert-success mb-5">Payment setup is complete. Stripe will confirm the subscription shortly.</div>
+        <?php elseif ($checkout_state === 'cancelled'): ?>
+            <div class="alert alert-warning mb-5">Checkout was cancelled. Your workspace is still available, but the subscription has not started.</div>
+        <?php elseif (isset($_GET['signup'])): ?>
+            <div class="alert alert-info mb-5">Workspace created. Start billing to keep it active after the launch/trial period.</div>
+        <?php endif; ?>
 
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div><dt class="text-xs uppercase" style="color: var(--text-muted);">Plan</dt><dd class="font-semibold"><?php echo e(billing_plan_name()); ?></dd></div>

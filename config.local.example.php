@@ -23,11 +23,11 @@ define('STRIPE_PRICE_CLOUD_BASE', '');
 define('STRIPE_PRICE_STORAGE_OVERAGE', '');
 define('STRIPE_STORAGE_METER_EVENT_NAME', 'foxdesk_storage_extra_gb');
 define('BILLING_CURRENCY', 'EUR');
-define('BILLING_CLOUD_BASE_PRICE_CENTS', 1900);
+define('BILLING_CLOUD_BASE_PRICE_CENTS', 990);
 define('BILLING_STORAGE_OVERAGE_PRICE_CENTS', 190);
 define('BILLING_INCLUDED_STORAGE_BYTES', 1073741824);
-define('STRIPE_SUCCESS_URL', APP_URL . '/index.php?page=platform&billing=success');
-define('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=platform&billing=cancelled');
+define('STRIPE_SUCCESS_URL', APP_URL . '/index.php?page=billing&checkout=success');
+define('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=billing&checkout=cancelled');
 
 define('MAIL_PROVIDER', 'php_mail');
 define('CLOUDFLARE_ACCOUNT_ID', '');

@@ -4,7 +4,7 @@
  */
 
 if (is_logged_in()) {
-    header('Location: index.php?page=dashboard');
+    header('Location: index.php?page=' . (is_platform_admin() ? 'platform' : 'dashboard'));
     exit;
 }
 
@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Passwords do not match.';
         } else {
             try {
-                create_tenant_workspace([
+                $workspace = create_tenant_workspace([
                     'workspace_name' => $values['workspace_name'],
                     'admin_email' => $values['admin_email'],
                     'admin_first_name' => $values['admin_first_name'],
@@ -40,6 +40,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
 
                 if (login($values['admin_email'], $password)) {
+                    if (billing_enabled()) {
+                        try {
+                            $checkout_url = billing_create_checkout_session((int) $workspace['tenant_id'], billing_plan_code());
+                            header('Location: ' . $checkout_url);
+                            exit;
+                        } catch (Throwable $billing_error) {
+                            flash('Workspace created. Billing checkout could not be started: ' . $billing_error->getMessage(), 'warning');
+                            header('Location: index.php?page=billing&signup=created');
+                            exit;
+                        }
+                    }
+
                     header('Location: index.php?page=dashboard');
                     exit;
                 }
