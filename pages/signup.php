@@ -39,6 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'plan' => billing_plan_code(),
                 ]);
 
+                if (function_exists('billing_send_trial_email_for_tenant')) {
+                    billing_send_trial_email_for_tenant((int) $workspace['tenant_id'], 'trial_started');
+                }
+
                 if (login($values['admin_email'], $password)) {
                     flash('Your 14-day FoxDesk trial is ready. No payment is needed until the trial ends.', 'success');
                     header('Location: index.php?page=dashboard&signup=trial');

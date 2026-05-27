@@ -64,6 +64,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'blocked_at' => in_array($status, ['trial_expired', 'blocked', 'canceled'], true) ? date('Y-m-d H:i:s') : null,
             ], 'id = ?', [$tenant_id]);
             $success = 'Workspace updated.';
+        } elseif ($action === 'extend_trial') {
+            $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
+            $days = max(1, min(90, (int) ($_POST['days'] ?? 7)));
+            if ($tenant_id <= 0) {
+                throw new InvalidArgumentException('Invalid workspace.');
+            }
+            db_query(
+                "UPDATE tenants
+                 SET status = 'trialing',
+                     subscription_status = 'trialing',
+                     trial_ends_at = DATE_ADD(GREATEST(COALESCE(trial_ends_at, NOW()), NOW()), INTERVAL {$days} DAY),
+                     suspended_at = NULL,
+                     blocked_at = NULL
+                 WHERE id = ?",
+                [$tenant_id]
+            );
+            $success = 'Trial extended by ' . $days . ' days.';
+        } elseif ($action === 'block_tenant') {
+            $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
+            if ($tenant_id <= 0) {
+                throw new InvalidArgumentException('Invalid workspace.');
+            }
+            db_update('tenants', [
+                'status' => 'blocked',
+                'subscription_status' => 'blocked',
+                'suspended_at' => date('Y-m-d H:i:s'),
+                'blocked_at' => date('Y-m-d H:i:s'),
+            ], 'id = ?', [$tenant_id]);
+            $success = 'Workspace blocked.';
+        } elseif ($action === 'reactivate_tenant') {
+            $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
+            if ($tenant_id <= 0) {
+                throw new InvalidArgumentException('Invalid workspace.');
+            }
+            db_update('tenants', [
+                'status' => 'active',
+                'subscription_status' => 'manual',
+                'suspended_at' => null,
+                'blocked_at' => null,
+            ], 'id = ?', [$tenant_id]);
+            $success = 'Workspace reactivated manually.';
         }
     } catch (Throwable $e) {
         $error = $e->getMessage();
@@ -109,7 +150,7 @@ foreach ($tenants as $tenant) {
     $total_extra_gb += (int) $usage['extra_storage_gb'];
     $estimated_storage_overage_cents += (int) $usage['storage_overage_cents'];
 
-    if (in_array((string) $tenant['status'], ['past_due', 'suspended'], true)) {
+    if (in_array((string) $tenant['status'], ['past_due', 'trial_expired', 'suspended', 'blocked', 'canceled'], true)) {
         $attention_items[] = [
             'type' => 'Lifecycle',
             'title' => (string) $tenant['name'],
@@ -364,6 +405,9 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             flex-wrap: wrap;
             justify-content: flex-end;
         }
+        .op-actions form {
+            margin: 0;
+        }
         .op-btn {
             height: 32px;
             display: inline-flex;
@@ -557,12 +601,14 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            border: 0;
             border-radius: 999px;
             padding: 0 8px;
             background: var(--op-soft);
             color: var(--op-muted);
             font-size: 11px;
             font-weight: 800;
+            cursor: pointer;
         }
         .op-pill.active,
         .op-pill.trialing,
@@ -576,7 +622,9 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             color: var(--op-amber);
         }
         .op-pill.suspended,
+        .op-pill.blocked,
         .op-pill.canceled,
+        .op-pill.trial_expired,
         .op-pill.risk {
             background: rgba(254, 226, 226, .76);
             color: var(--op-red);
@@ -896,6 +944,28 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                         <div class="op-actions mt-2 justify-start">
                                             <span class="op-pill <?php echo e($status_class); ?>"><?php echo e($tenant['status']); ?></span>
                                             <a class="op-pill" href="<?php echo e(url('billing', ['tenant_id' => $tenant_id])); ?>">Billing detail</a>
+                                            <form method="post">
+                                                <?php echo csrf_field(); ?>
+                                                <input type="hidden" name="platform_action" value="extend_trial">
+                                                <input type="hidden" name="tenant_id" value="<?php echo $tenant_id; ?>">
+                                                <input type="hidden" name="days" value="7">
+                                                <button class="op-pill" type="submit">+7d trial</button>
+                                            </form>
+                                            <?php if (($tenant['status'] ?? '') === 'blocked'): ?>
+                                                <form method="post">
+                                                    <?php echo csrf_field(); ?>
+                                                    <input type="hidden" name="platform_action" value="reactivate_tenant">
+                                                    <input type="hidden" name="tenant_id" value="<?php echo $tenant_id; ?>">
+                                                    <button class="op-pill good" type="submit">Reactivate</button>
+                                                </form>
+                                            <?php else: ?>
+                                                <form method="post">
+                                                    <?php echo csrf_field(); ?>
+                                                    <input type="hidden" name="platform_action" value="block_tenant">
+                                                    <input type="hidden" name="tenant_id" value="<?php echo $tenant_id; ?>">
+                                                    <button class="op-pill blocked" type="submit">Block</button>
+                                                </form>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>

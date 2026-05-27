@@ -132,10 +132,12 @@ require_once BASE_PATH . '/includes/header.php';
                 <input type="hidden" name="plan" value="<?php echo e(billing_plan_code()); ?>">
                 <button class="btn btn-primary" type="submit">Activate FoxDesk</button>
             </form>
-            <form method="post" action="<?php echo url('billing', ['action' => 'portal', 'tenant_id' => (int) $tenant['id']]); ?>">
-                <?php echo csrf_field(); ?>
-                <button class="btn btn-secondary" type="submit">Manage billing</button>
-            </form>
+            <?php if (!empty($tenant['stripe_customer_id'])): ?>
+                <form method="post" action="<?php echo url('billing', ['action' => 'portal', 'tenant_id' => (int) $tenant['id']]); ?>">
+                    <?php echo csrf_field(); ?>
+                    <button class="btn btn-secondary" type="submit">Manage billing</button>
+                </form>
+            <?php endif; ?>
             <?php if (is_platform_admin($user)): ?>
                 <a href="<?php echo url('platform'); ?>" class="btn btn-ghost">Back to platform</a>
             <?php endif; ?>

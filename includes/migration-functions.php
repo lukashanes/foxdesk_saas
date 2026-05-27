@@ -501,7 +501,7 @@ function migration_import_package(string $zip_path, array $options = []): array
             'subscription_status' => $options['subscription_status'] ?? 'manual',
             'max_users' => 1000000,
             'max_agents' => 1000000,
-            'trial_ends_at' => $options['trial_ends_at'] ?? date('Y-m-d H:i:s', strtotime('+14 days')),
+            'trial_ends_at' => $options['trial_ends_at'] ?? (function_exists('billing_trial_ends_at_for_new_workspace') ? billing_trial_ends_at_for_new_workspace() : date('Y-m-d H:i:s', strtotime('+14 days'))),
             'created_at' => date('Y-m-d H:i:s'),
         ]);
         $summary['tenant_id'] = $tenant_id;

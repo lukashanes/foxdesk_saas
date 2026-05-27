@@ -117,6 +117,9 @@ if ($now - $last_trial_expire >= 86400) {
         if (function_exists('billing_expire_trials')) {
             billing_expire_trials();
         }
+        if (function_exists('billing_send_trial_reminders')) {
+            billing_send_trial_reminders();
+        }
     } catch (Throwable $e) {
         $errors[] = 'trial_expire: ' . $e->getMessage();
         error_log('[pseudo-cron] trial expiration error: ' . $e->getMessage());

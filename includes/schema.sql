@@ -27,6 +27,20 @@ CREATE TABLE IF NOT EXISTS tenants (
     INDEX idx_domain (primary_domain)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS billing_trial_email_events (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NOT NULL,
+    event_type VARCHAR(50) NOT NULL,
+    recipient_email VARCHAR(255) NOT NULL,
+    status ENUM('sent', 'skipped', 'failed') NOT NULL DEFAULT 'sent',
+    error_message TEXT NULL,
+    sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_trial_email_event (tenant_id, event_type),
+    INDEX idx_trial_email_tenant (tenant_id),
+    INDEX idx_trial_email_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Organizations table
 CREATE TABLE IF NOT EXISTS organizations (
     id INT AUTO_INCREMENT PRIMARY KEY,

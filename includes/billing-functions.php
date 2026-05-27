@@ -485,6 +485,181 @@ function billing_expire_trials(?int $tenant_id = null): array
     return ['expired' => count($ids), 'tenant_ids' => $ids];
 }
 
+function billing_ensure_trial_email_events_table(): void
+{
+    if (!function_exists('table_exists') || table_exists('billing_trial_email_events')) {
+        return;
+    }
+
+    db_query("
+        CREATE TABLE IF NOT EXISTS billing_trial_email_events (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            tenant_id INT NOT NULL,
+            event_type VARCHAR(50) NOT NULL,
+            recipient_email VARCHAR(255) NOT NULL,
+            status ENUM('sent', 'skipped', 'failed') NOT NULL DEFAULT 'sent',
+            error_message TEXT NULL,
+            sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_trial_email_event (tenant_id, event_type),
+            INDEX idx_trial_email_tenant (tenant_id),
+            INDEX idx_trial_email_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+}
+
+function billing_trial_email_event_exists(int $tenant_id, string $event_type): bool
+{
+    billing_ensure_trial_email_events_table();
+    $row = db_fetch_one(
+        "SELECT id FROM billing_trial_email_events WHERE tenant_id = ? AND event_type = ? LIMIT 1",
+        [$tenant_id, $event_type]
+    );
+
+    return !empty($row);
+}
+
+function billing_trial_email_recipient(array $tenant): string
+{
+    $email = trim((string) ($tenant['billing_email'] ?? ''));
+    if ($email !== '') {
+        return $email;
+    }
+
+    $owner_id = (int) ($tenant['owner_user_id'] ?? 0);
+    if ($owner_id > 0 && function_exists('db_fetch_one')) {
+        $owner = db_fetch_one("SELECT email FROM users WHERE id = ? LIMIT 1", [$owner_id]);
+        $email = trim((string) ($owner['email'] ?? ''));
+    }
+
+    return $email;
+}
+
+function billing_trial_email_copy(array $tenant, string $event_type): array
+{
+    $workspace = (string) ($tenant['name'] ?? 'your FoxDesk workspace');
+    $days = billing_trial_days_remaining($tenant);
+    $billing_url = rtrim((string) APP_URL, '/') . '/index.php?page=billing';
+    $days_text = $days !== null ? (string) $days : '0';
+
+    return match ($event_type) {
+        'trial_started' => [
+            'subject' => 'Your FoxDesk trial is ready',
+            'body' => "Hi,\n\n{$workspace} is ready. Your " . billing_trial_days() . "-day trial is active and no card is required today.\n\nAdd billing before the trial ends to keep access:\n{$billing_url}\n\nFoxDesk",
+        ],
+        'trial_3_days_left' => [
+            'subject' => 'FoxDesk trial ends in 3 days',
+            'body' => "Hi,\n\n{$workspace} has {$days_text} days left in the trial.\n\nActivate FoxDesk here to keep access:\n{$billing_url}\n\nFoxDesk",
+        ],
+        'trial_1_day_left' => [
+            'subject' => 'FoxDesk trial ends tomorrow',
+            'body' => "Hi,\n\n{$workspace} has {$days_text} day left in the trial.\n\nActivate FoxDesk here to keep access:\n{$billing_url}\n\nFoxDesk",
+        ],
+        'trial_expired' => [
+            'subject' => 'FoxDesk trial has ended',
+            'body' => "Hi,\n\nThe trial for {$workspace} has ended. Admins can still open Billing and activate FoxDesk to restore access.\n\nActivate here:\n{$billing_url}\n\nFoxDesk",
+        ],
+        default => [
+            'subject' => 'FoxDesk trial update',
+            'body' => "Hi,\n\nThere is an update for {$workspace}.\n\n{$billing_url}\n\nFoxDesk",
+        ],
+    };
+}
+
+function billing_send_trial_email_for_tenant(int $tenant_id, string $event_type): bool
+{
+    $tenant = billing_get_tenant($tenant_id);
+    if (!$tenant || billing_trial_email_event_exists($tenant_id, $event_type)) {
+        return false;
+    }
+
+    $recipient = billing_trial_email_recipient($tenant);
+    if ($recipient === '' || !filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+        db_insert('billing_trial_email_events', [
+            'tenant_id' => $tenant_id,
+            'event_type' => $event_type,
+            'recipient_email' => $recipient,
+            'status' => 'skipped',
+            'error_message' => 'Missing valid billing email.',
+        ]);
+        return false;
+    }
+
+    $copy = billing_trial_email_copy($tenant, $event_type);
+
+    try {
+        if (!function_exists('send_email')) {
+            throw new RuntimeException('Mailer is not loaded.');
+        }
+
+        $sent = send_email($recipient, $copy['subject'], $copy['body'], false, true);
+        db_insert('billing_trial_email_events', [
+            'tenant_id' => $tenant_id,
+            'event_type' => $event_type,
+            'recipient_email' => $recipient,
+            'status' => $sent ? 'sent' : 'failed',
+            'error_message' => $sent ? null : 'send_email returned false.',
+        ]);
+
+        return (bool) $sent;
+    } catch (Throwable $e) {
+        db_insert('billing_trial_email_events', [
+            'tenant_id' => $tenant_id,
+            'event_type' => $event_type,
+            'recipient_email' => $recipient,
+            'status' => 'failed',
+            'error_message' => $e->getMessage(),
+        ]);
+        return false;
+    }
+}
+
+function billing_send_trial_reminders(): array
+{
+    ensure_tenant_baseline();
+    billing_ensure_trial_email_events_table();
+
+    $events = [
+        'trial_3_days_left' => "t.status = 'trialing' AND t.subscription_status = 'trialing' AND t.trial_ends_at IS NOT NULL AND t.trial_ends_at > NOW() AND t.trial_ends_at <= DATE_ADD(NOW(), INTERVAL 3 DAY)",
+        'trial_1_day_left' => "t.status = 'trialing' AND t.subscription_status = 'trialing' AND t.trial_ends_at IS NOT NULL AND t.trial_ends_at > NOW() AND t.trial_ends_at <= DATE_ADD(NOW(), INTERVAL 1 DAY)",
+        'trial_expired' => "t.status = 'trial_expired' AND t.subscription_status = 'trial_expired'",
+    ];
+
+    $result = ['sent' => 0, 'skipped' => 0, 'failed' => 0, 'events' => []];
+    foreach ($events as $event_type => $where) {
+        $tenants = db_fetch_all("
+            SELECT t.*
+            FROM tenants t
+            LEFT JOIN billing_trial_email_events e ON e.tenant_id = t.id AND e.event_type = ?
+            WHERE {$where} AND e.id IS NULL
+            ORDER BY t.trial_ends_at ASC, t.id ASC
+            LIMIT 100
+        ", [$event_type]);
+
+        foreach ($tenants as $tenant) {
+            $before = db_fetch_one(
+                "SELECT COUNT(*) AS c FROM billing_trial_email_events WHERE tenant_id = ? AND event_type = ?",
+                [(int) $tenant['id'], $event_type]
+            );
+            $sent = billing_send_trial_email_for_tenant((int) $tenant['id'], $event_type);
+            $after = db_fetch_one(
+                "SELECT status FROM billing_trial_email_events WHERE tenant_id = ? AND event_type = ? LIMIT 1",
+                [(int) $tenant['id'], $event_type]
+            );
+            $status = (string) ($after['status'] ?? ($sent ? 'sent' : 'skipped'));
+            $result[$status] = (int) ($result[$status] ?? 0) + 1;
+            $result['events'][] = [
+                'tenant_id' => (int) $tenant['id'],
+                'event_type' => $event_type,
+                'status' => $status,
+                'created' => ((int) ($before['c'] ?? 0)) === 0,
+            ];
+        }
+    }
+
+    return $result;
+}
+
 function billing_workspace_access_state(?array $tenant = null): array
 {
     $tenant = $tenant ?: billing_current_tenant();

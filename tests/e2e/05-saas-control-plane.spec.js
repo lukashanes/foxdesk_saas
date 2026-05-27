@@ -279,9 +279,82 @@ test('blocked tenant admins are redirected to billing instead of app pages', asy
 
   await page.goto('/index.php?page=tickets');
   await expect(page).toHaveURL(/page=billing/);
-  await expect(page.locator('body')).toContainText('Workspace access is restricted');
+  await expect(page.locator('body')).toContainText('This subscription has been canceled');
   await expect(page.locator('body')).toContainText('Billing');
   await ownerContext.close();
+});
+
+test('trial lifecycle emails, expiry, and operator extension work end to end', async ({ browser }) => {
+  const stamp = Date.now();
+  const ownerEmail = `trial.${stamp}@example.test`;
+  const ownerPassword = 'OwnerPass123!';
+  const workspaceName = `Trial Lifecycle ${stamp}`;
+
+  const { context: ownerContext, page } = await createWorkspaceViaUi(browser, {
+    workspaceName,
+    ownerEmail,
+    ownerPassword,
+    firstName: 'Trial',
+    lastName: 'Owner'
+  });
+
+  const tenantId = tenantIdByOwnerEmail(ownerEmail);
+  expect(tenantId).toBeGreaterThan(0);
+
+  let output = dbQuery(`
+    SELECT event_type, status
+    FROM billing_trial_email_events
+    WHERE tenant_id = ${tenantId} AND event_type = 'trial_started'
+    LIMIT 1;
+  `);
+  expect(output).toContain('trial_started');
+
+  dbQuery(`
+    UPDATE tenants
+    SET trial_ends_at = DATE_SUB(NOW(), INTERVAL 1 HOUR)
+    WHERE id = ${tenantId};
+  `);
+  const maintenance = JSON.parse(dockerExec(webContainer, ['php', 'bin/run-maintenance.php', '--json']));
+  expect(maintenance.trial_expiration.expired).toBeGreaterThanOrEqual(1);
+
+  output = dbQuery(`
+    SELECT status, subscription_status
+    FROM tenants
+    WHERE id = ${tenantId}
+    LIMIT 1;
+  `);
+  expect(output).toContain('trial_expired\ttrial_expired');
+
+  output = dbQuery(`
+    SELECT event_type
+    FROM billing_trial_email_events
+    WHERE tenant_id = ${tenantId} AND event_type = 'trial_expired'
+    LIMIT 1;
+  `);
+  expect(output).toContain('trial_expired');
+
+  await page.goto('/index.php?page=tickets');
+  await expect(page).toHaveURL(/page=billing/);
+  await expect(page.locator('body')).toContainText('trial has ended');
+  await ownerContext.close();
+
+  const platformContext = await browser.newContext({ baseURL });
+  const platformPage = await platformContext.newPage();
+  await login(platformPage);
+  await platformPage.goto('/index.php?page=platform');
+  const row = platformPage.locator('tr[data-workspace-row]').filter({ hasText: workspaceName });
+  await expect(row).toContainText('trial_expired');
+  await row.getByRole('button', { name: '+7d trial' }).click();
+  await expect(platformPage.locator('body')).toContainText('Trial extended by 7 days.');
+
+  output = dbQuery(`
+    SELECT status, subscription_status, trial_ends_at > NOW() AS future_trial
+    FROM tenants
+    WHERE id = ${tenantId}
+    LIMIT 1;
+  `);
+  expect(output).toContain('trialing\ttrialing\t1');
+  await platformContext.close();
 });
 
 test('single cloud plan shows unlimited usage and storage overage', async ({ browser }) => {

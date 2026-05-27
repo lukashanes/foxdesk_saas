@@ -106,10 +106,11 @@ try {
 // --- Stripe metered storage usage ---
 try {
     $result['trial_expiration'] = billing_expire_trials();
+    $result['trial_emails'] = billing_send_trial_reminders();
 } catch (Throwable $e) {
     $result['ok'] = false;
-    $result['errors'][] = 'trial_expiration: ' . $e->getMessage();
-    $result['trial_expiration'] = ['status' => 'error', 'error' => $e->getMessage()];
+    $result['errors'][] = 'trial_lifecycle: ' . $e->getMessage();
+    $result['trial_lifecycle'] = ['status' => 'error', 'error' => $e->getMessage()];
 }
 
 try {
