@@ -32,8 +32,8 @@ if (!headers_sent()) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo e($page_title); ?> - Managed helpdesk hosting</title>
-    <meta name="description" content="FoxDesk Cloud is managed hosting for FoxDesk. Unlimited users, clients, agents, and tickets with simple storage-based scaling.">
+    <title><?php echo e($page_title); ?> - Helpdesk & time tracking</title>
+    <meta name="description" content="FoxDesk is helpdesk and time tracking for support teams and AI agents. Unlimited users, clients, organizations, agents, and tickets.">
     <link rel="icon" type="image/png" href="assets/public/logo.png">
     <link rel="stylesheet" href="assets/public/cloud.css?v=<?php echo rawurlencode($cloud_css_version); ?>">
     <script>
@@ -66,7 +66,7 @@ if (!headers_sent()) {
             </nav>
             <div class="fd-header-actions">
                 <a href="<?php echo e(url('login')); ?>" class="fd-btn secondary">Client login</a>
-                <a href="#pricing" class="fd-btn primary">View plan</a>
+                <a href="#pricing" class="fd-btn primary">Try FoxDesk</a>
                 <button type="button" class="fd-theme-toggle" onclick="toggleCloudTheme()" aria-label="Toggle color mode">◐</button>
             </div>
         </div>
@@ -75,16 +75,16 @@ if (!headers_sent()) {
     <main class="fd-main">
         <section class="fd-section fd-hero" id="cloud">
             <div class="fd-hero-copy">
-                <h1>Run customer support from one managed FoxDesk.</h1>
-                <p>FoxDesk Cloud hosts your helpdesk, time tracking, clients, tickets, attachments, email delivery, and updates so your team can start working without managing PHP hosting.</p>
+                <h1>Helpdesk & time tracking</h1>
+                <p>Track support tickets and billable hours for your team and your AI agents. One app. No per-agent or per-client fees, ever.</p>
                 <div class="fd-hero-actions">
-                    <a href="#pricing" class="fd-btn primary">See Cloud plan</a>
+                    <a href="#pricing" class="fd-btn primary">Try FoxDesk</a>
                     <a href="<?php echo e(url('login')); ?>" class="fd-btn secondary">Sign in to app</a>
                 </div>
                 <div class="fd-hero-proof">
-                    <div class="fd-proof-item"><strong>Unlimited</strong><span>Users, clients, agents, and tickets</span></div>
-                    <div class="fd-proof-item"><strong><?php echo e($included_storage); ?></strong><span>Storage included at launch</span></div>
-                    <div class="fd-proof-item"><strong>Managed</strong><span>Updates, storage, email, and backups</span></div>
+                    <div class="fd-proof-item"><strong>Unlimited</strong><span>Users, agents, clients, organizations, and tickets</span></div>
+                    <div class="fd-proof-item"><strong>Time</strong><span>Billable hours tracked directly on tickets</span></div>
+                    <div class="fd-proof-item"><strong>AI ready</strong><span>Support workflows for people and AI agents</span></div>
                 </div>
             </div>
 
@@ -102,21 +102,21 @@ if (!headers_sent()) {
 
         <section class="fd-section fd-band" id="features">
             <div class="fd-heading">
-                <h2>Everything FoxDesk can do, managed for you.</h2>
-                <p>The SaaS version keeps the full FoxDesk feature set and removes the hosting work: app stack, email, storage, updates, backups, and monitoring.</p>
+                <h2>Support work in one place.</h2>
+                <p>Tickets, clients, time tracking, reports, and AI agent workflows without per-seat pricing.</p>
             </div>
             <div class="fd-grid">
                 <article class="fd-card">
-                    <h3>Ready workspace</h3>
-                    <p>Each customer gets their own FoxDesk workspace with isolated users, clients, tickets, reports, and files.</p>
+                    <h3>Tickets</h3>
+                    <p>Manage requests, assignments, comments, attachments, priorities, and client visibility.</p>
                 </article>
                 <article class="fd-card">
-                    <h3>Unlimited team</h3>
-                    <p>No per-agent pricing. Invite admins, agents, clients, and collaborators without fighting seat limits.</p>
+                    <h3>Time tracking</h3>
+                    <p>Track billable hours on tickets and turn work into clear client reports.</p>
                 </article>
                 <article class="fd-card">
-                    <h3>Managed operations</h3>
-                    <p>The hosted version is prepared for managed updates, email delivery, attachment storage, backups, and monitoring.</p>
+                    <h3>AI agents</h3>
+                    <p>Let AI agents create tickets, add updates, and log work beside your team.</p>
                 </article>
             </div>
         </section>
@@ -126,11 +126,11 @@ if (!headers_sent()) {
                 <div class="fd-feature-copy">
                     <div class="fd-feature-icon">T</div>
                     <h3>Ticket lifecycle management.</h3>
-                    <p>Run daily support from one workspace: ticket statuses, priorities, assignments, comments, attachments, client visibility, and shared public links.</p>
+                    <p>Run daily support from one workspace: statuses, priorities, assignments, comments, attachments, and client visibility.</p>
                     <ul class="fd-feature-list">
                         <li><span class="fd-check">✓</span><span><strong>Email piping:</strong> create and update tickets from support inboxes.</span></li>
                         <li><span class="fd-check">✓</span><span><strong>Granular notifications:</strong> keep teams and clients informed without noise.</span></li>
-                        <li><span class="fd-check">✓</span><span><strong>Attachments:</strong> store and download files without managing hosting disk space yourself.</span></li>
+                        <li><span class="fd-check">✓</span><span><strong>Attachments:</strong> keep files connected to the ticket history.</span></li>
                     </ul>
                 </div>
                 <div class="fd-feature-media">
@@ -158,24 +158,24 @@ if (!headers_sent()) {
 
             <div class="fd-heading">
                 <h2>Built for support teams, agencies, and automation.</h2>
-                <p>FoxDesk Cloud keeps the practical admin surface from the self-hosted edition and adds a managed SaaS operating layer.</p>
+                <p>Everything your team needs to support clients, track work, and automate the routine parts.</p>
             </div>
             <div class="fd-capability-grid">
-                <article class="fd-capability"><span>A</span><h4>AI Agent API</h4><p>Give AI agents or internal tools API access to create tickets, post updates, and log work.</p></article>
-                <article class="fd-capability"><span>✉</span><h4>Custom client emails</h4><p>Send branded support notifications from your FoxDesk workspace without configuring SMTP yourself.</p></article>
-                <article class="fd-capability"><span>O</span><h4>Organizations</h4><p>Group clients, tickets, time, reports, and permissions around real customer accounts.</p></article>
-                <article class="fd-capability"><span>🔒</span><h4>Security controls</h4><p>Admin permissions, 2FA support, CSRF protection, audit/security logs, and impersonation controls.</p></article>
-                <article class="fd-capability"><span>🌐</span><h4>Multilingual UI</h4><p>Use FoxDesk across languages with localized app labels and customer-facing text.</p></article>
-                <article class="fd-capability"><span>🔔</span><h4>Notifications</h4><p>Email, in-app, and push notification building blocks for ticket activity and reminders.</p></article>
-                <article class="fd-capability"><span>📎</span><h4>File storage</h4><p>Attachments are stored outside the app container so the workspace can grow safely.</p></article>
-                <article class="fd-capability"><span>⚙</span><h4>Admin settings</h4><p>Branding, ticket statuses, priorities, types, users, clients, reports, and recurring tasks.</p></article>
+                <article class="fd-capability"><span>A</span><h4>AI Agent API</h4><p>Create tickets, post updates, and log work from AI agents or internal tools.</p></article>
+                <article class="fd-capability"><span>✉</span><h4>Email tickets</h4><p>Turn support emails into tickets and keep replies in the thread.</p></article>
+                <article class="fd-capability"><span>O</span><h4>Organizations</h4><p>Group clients, tickets, time, reports, and permissions by account.</p></article>
+                <article class="fd-capability"><span>🔒</span><h4>Permissions</h4><p>Control admins, agents, client access, 2FA, and audit logs.</p></article>
+                <article class="fd-capability"><span>🌐</span><h4>Languages</h4><p>Use FoxDesk across localized app and customer-facing text.</p></article>
+                <article class="fd-capability"><span>🔔</span><h4>Notifications</h4><p>Keep teams and clients informed about ticket activity.</p></article>
+                <article class="fd-capability"><span>📎</span><h4>Files</h4><p>Attach files, keep history, and share what clients need.</p></article>
+                <article class="fd-capability"><span>⚙</span><h4>Admin settings</h4><p>Customize statuses, priorities, ticket types, users, clients, and reports.</p></article>
             </div>
         </section>
 
         <section class="fd-section fd-band" id="pricing">
             <div class="fd-heading">
-                <h2>One simple Cloud plan.</h2>
-                <p>Create a workspace, start the Cloud subscription, and manage billing from your FoxDesk account.</p>
+                <h2>One simple price.</h2>
+                <p>Unlimited users, agents, clients, organizations, and tickets. Storage scales when you need more.</p>
             </div>
             <div class="fd-pricing">
                 <div class="fd-price-card">
@@ -191,19 +191,18 @@ if (!headers_sent()) {
                     </div>
                     <ul class="fd-list">
                         <li><span class="fd-check">✓</span><span>Unlimited users, agents, clients, organizations, and tickets</span></li>
+                        <li><span class="fd-check">✓</span><span>Helpdesk and billable time tracking in one app</span></li>
+                        <li><span class="fd-check">✓</span><span>Support workflows for your team and AI agents</span></li>
                         <li><span class="fd-check">✓</span><span><?php echo e($included_storage); ?> file storage included</span></li>
-                        <li><span class="fd-check">✓</span><span>Hosted FoxDesk app on app.foxdesk.net</span></li>
-                        <li><span class="fd-check">✓</span><span>Managed email sending and attachment storage</span></li>
-                        <li><span class="fd-check">✓</span><span>Updates and production deployment prepared for managed hosting</span></li>
                     </ul>
-                    <a href="<?php echo e(url('signup')); ?>" class="fd-btn primary fd-full-width">Create workspace</a>
+                    <a href="<?php echo e(url('signup')); ?>" class="fd-btn primary fd-full-width">Try FoxDesk</a>
                 </div>
             </div>
         </section>
 
         <section class="fd-section fd-band fd-preview-section" id="preview">
             <div class="fd-heading">
-                <h2>See the managed workspace.</h2>
+                <h2>See FoxDesk in action.</h2>
                 <p>Preview the dashboard and ticket detail your team will use every day.</p>
             </div>
             <div class="fd-preview-stack">
@@ -218,7 +217,7 @@ if (!headers_sent()) {
             <div class="fd-migration">
                 <div>
                     <h2>Move your existing FoxDesk safely.</h2>
-                    <p>If you already run FoxDesk on Vas-Hosting or another PHP hosting, the clean migration path is backup first, restore second, then DNS switch only after testing.</p>
+                    <p>If you already run FoxDesk elsewhere, move it carefully: backup first, restore second, switch only after testing.</p>
                     <div class="fd-hero-actions">
                         <a href="<?php echo e(url('login')); ?>" class="fd-btn secondary">App login</a>
                         <a href="mailto:hanes.lukas@gmail.com?subject=FoxDesk%20migration" class="fd-btn primary">Plan migration</a>
@@ -231,7 +230,7 @@ if (!headers_sent()) {
                     </div>
                     <div class="fd-step">
                         <div class="fd-step-number">2</div>
-                        <div><strong>Restore on the new server</strong><span>Import DB, copy files to the managed stack, configure email delivery and attachment storage.</span></div>
+                        <div><strong>Restore in the new workspace</strong><span>Import data, copy files, and verify email, storage, users, and permissions.</span></div>
                     </div>
                     <div class="fd-step">
                         <div class="fd-step-number">3</div>
