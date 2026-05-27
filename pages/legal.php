@@ -1,6 +1,6 @@
 <?php
 $type = strtolower((string) ($_GET['type'] ?? 'privacy'));
-$updated = 'May 19, 2026';
+$updated = 'May 27, 2026';
 
 $documents = [
     'privacy' => [
@@ -11,18 +11,19 @@ $documents = [
             ['Purpose', 'We use data to provide the helpdesk service, authenticate users, deliver notifications, process billing, secure the platform, provide support, and improve reliability.'],
             ['Customer content', 'Workspace owners control their customer, ticket, report, and attachment content. FoxDesk Cloud does not sell customer content or use it for advertising.'],
             ['Retention', 'Workspace data is retained while the subscription or trial is active. Backups and logs may be retained for a limited operational period for recovery, security, and accounting.'],
-            ['Subprocessors', 'Production hosting may use Hetzner, Cloudflare, Stripe, and email delivery infrastructure. The public subprocessor list should be kept current before launch.'],
+            ['Subprocessors', 'FoxDesk Cloud uses subprocessors listed on the Subprocessors page for hosting, storage, email delivery, billing, security, and operational services.'],
             ['Contact', 'Privacy requests can be sent to support@foxdesk.net.'],
         ],
     ],
     'terms' => [
         'title' => 'Terms of Service',
-        'intro' => 'These terms define the basic rules for using FoxDesk Cloud. Final legal review is required before paid public launch.',
+        'intro' => 'These terms define the basic rules for using FoxDesk Cloud.',
         'sections' => [
             ['Service', 'FoxDesk Cloud provides hosted helpdesk workspaces with users, clients, tickets, reports, attachments, email notifications, and managed operations.'],
             ['Accounts', 'Workspace owners are responsible for invited users, accurate billing information, secure credentials, and lawful use of their workspace.'],
             ['Acceptable use', 'The service must not be used for illegal content, malware, spam, abuse, infringement, credential harvesting, or activity that harms the platform or other customers.'],
             ['Billing', 'Paid subscriptions renew monthly unless canceled. The customer is responsible for base subscription fees, metered storage overage, taxes, and failed payment recovery handled through Stripe.'],
+            ['Refunds and cancellation', 'Monthly subscriptions can be canceled before the next renewal period. Refund handling is described in the Refund and Cancellation Policy.'],
             ['Availability', 'FoxDesk Cloud is operated with reasonable care, backups, monitoring, and maintenance windows. A formal SLA can be published separately when support commitments are finalized.'],
             ['Termination', 'Accounts may be suspended for non-payment, abuse, security risk, or breach of these terms. Customers should be able to export their data where technically possible.'],
         ],
@@ -37,6 +38,28 @@ $documents = [
             ['Subprocessors', 'Subprocessors must be documented and used only where needed to provide hosting, storage, email, billing, monitoring, or support.'],
             ['Incidents', 'Confirmed personal data incidents should be investigated promptly and communicated to affected customers without undue delay.'],
             ['Deletion and export', 'At termination, customer data should be exportable and deletable according to retention and backup limits.'],
+        ],
+    ],
+    'refunds' => [
+        'title' => 'Refund and Cancellation Policy',
+        'intro' => 'This page explains how monthly FoxDesk Cloud subscriptions can be canceled and when refunds may apply.',
+        'sections' => [
+            ['Monthly subscriptions', 'FoxDesk Cloud is billed monthly through Stripe. A subscription remains active until the end of the paid billing period unless access is suspended for abuse, security risk, or non-payment.'],
+            ['Cancellation', 'Workspace owners can request cancellation before the next renewal. Cancellation stops future renewals, but the current paid period normally remains available.'],
+            ['Refund requests', 'Refund requests are reviewed case by case. Refunds may be considered for duplicate charges, accidental renewal reported promptly, or confirmed service failure that prevented normal use.'],
+            ['Storage overage', 'Metered storage overage is based on usage reported for the billing period. If usage data is incorrect, contact support so the invoice can be reviewed.'],
+            ['Contact', 'Billing questions and refund requests can be sent to billing@foxdesk.net or support@foxdesk.net.'],
+        ],
+    ],
+    'subprocessors' => [
+        'title' => 'Subprocessors',
+        'intro' => 'FoxDesk Cloud uses the following subprocessors to provide hosting, storage, security, email delivery, billing, and operations.',
+        'sections' => [
+            ['Hetzner', 'Infrastructure hosting for the FoxDesk Cloud application, database, and related server workloads.'],
+            ['Cloudflare', 'DNS, TLS/proxy services, R2 object storage, email sending/routing, caching, and security controls.'],
+            ['Stripe', 'Subscription billing, Checkout, Customer Portal, invoices, payment processing, and billing-related customer records.'],
+            ['Email infrastructure', 'Transactional email metadata is processed as needed to deliver service messages, password resets, ticket notifications, and billing communication.'],
+            ['Changes', 'This list should be updated when a new production subprocessor is added or when a provider role materially changes.'],
         ],
     ],
     'security' => [
@@ -61,6 +84,8 @@ $nav = [
     'privacy' => 'Privacy',
     'terms' => 'Terms',
     'dpa' => 'DPA',
+    'refunds' => 'Refunds',
+    'subprocessors' => 'Subprocessors',
     'security' => 'Security',
 ];
 ?>
@@ -70,7 +95,6 @@ $nav = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo e($doc['title']); ?> - FoxDesk Cloud</title>
-    <link href="tailwind.min.css" rel="stylesheet">
     <style>
         :root { color-scheme: light; --ink:#111827; --muted:#667085; --line:#e5e7eb; --bg:#f7f8fb; --panel:#fff; }
         body { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
@@ -111,7 +135,7 @@ $nav = [
                     <p><?php echo e($section[1]); ?></p>
                 </section>
             <?php endforeach; ?>
-            <p class="notice">Draft launch copy. Review with counsel before opening paid public subscriptions.</p>
+            <p class="notice">Review with counsel before relying on this page as final legal advice for paid public subscriptions.</p>
         </article>
     </main>
 </body>

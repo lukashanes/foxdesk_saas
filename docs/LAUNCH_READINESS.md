@@ -14,6 +14,8 @@ FoxDesk SaaS is deployable as a private/beta hosted service, but paid public lau
   - `/index.php?page=legal&type=privacy`
   - `/index.php?page=legal&type=terms`
   - `/index.php?page=legal&type=dpa`
+  - `/index.php?page=legal&type=refunds`
+  - `/index.php?page=legal&type=subprocessors`
   - `/index.php?page=legal&type=security`
 
 ## Must Be Done Before Paid Public Launch
@@ -30,11 +32,11 @@ FoxDesk SaaS is deployable as a private/beta hosted service, but paid public lau
 ### 2. Legal and Trust Pages
 
 - Review and finalize Privacy Policy, Terms, DPA, and Security page with legal counsel.
-- Add company/operator identity, billing contact, support contact, and jurisdiction.
-- Decide refund/cancellation wording for monthly subscriptions.
-- Add a public subprocessor list covering Hetzner, Cloudflare, Stripe, and email infrastructure.
+- Add company/operator identity and jurisdiction.
+- Review refund/cancellation wording for monthly subscriptions.
+- Review the public subprocessor list covering Hetzner, Cloudflare, Stripe, and email infrastructure.
 - Add Cookie Policy only if analytics or non-essential cookies are introduced.
-- Add links to legal pages in public footer and signup flow.
+- Legal links are present in the public footer and signup flow.
 
 ### 3. Stripe Go-Live
 
@@ -119,7 +121,7 @@ CLOUDFLARE_EMAIL_REPLY_TO=support@foxdesk.net
 
 1. Fix DNS for `foxdesk.net` public SaaS site.
 2. Deploy current SaaS build to `app.foxdesk.net`.
-3. Add production legal copy and footer links.
+3. Review production legal copy and operator identity.
 4. Configure Stripe in test mode and run the billing flow.
 5. Configure R2 and test attachment storage.
 6. Run full local E2E and production smoke checks.
@@ -136,3 +138,13 @@ CLOUDFLARE_EMAIL_REPLY_TO=support@foxdesk.net
 - R2 upload/download works in production.
 - Backups are restorable.
 - At least one full migration from self-hosted to SaaS has been verified end to end.
+
+## Verification Commands
+
+```bash
+npm run lint:php
+npm run e2e
+npm run prod:smoke
+```
+
+Use `PROD_BASE_URL` and `PROD_PUBLIC_URL` when checking a staging hostname instead of production.

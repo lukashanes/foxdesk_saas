@@ -138,6 +138,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <a href="<?php echo e(url('legal', ['type' => 'terms'])); ?>" target="_blank" rel="noopener" style="color: var(--primary);">Terms</a>
                         and
                         <a href="<?php echo e(url('legal', ['type' => 'privacy'])); ?>" target="_blank" rel="noopener" style="color: var(--primary);">Privacy Policy</a>.
+                        Billing is covered by the
+                        <a href="<?php echo e(url('legal', ['type' => 'refunds'])); ?>" target="_blank" rel="noopener" style="color: var(--primary);">Refund and Cancellation Policy</a>.
                     </p>
                 </form>
 

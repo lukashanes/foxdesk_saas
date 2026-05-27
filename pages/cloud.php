@@ -262,6 +262,8 @@ if (!headers_sent()) {
                 <a href="<?php echo e(url('legal', ['type' => 'privacy'])); ?>">Privacy</a>
                 <a href="<?php echo e(url('legal', ['type' => 'terms'])); ?>">Terms</a>
                 <a href="<?php echo e(url('legal', ['type' => 'dpa'])); ?>">DPA</a>
+                <a href="<?php echo e(url('legal', ['type' => 'refunds'])); ?>">Refunds</a>
+                <a href="<?php echo e(url('legal', ['type' => 'subprocessors'])); ?>">Subprocessors</a>
                 <a href="<?php echo e(url('legal', ['type' => 'security'])); ?>">Security</a>
             </div>
         </div>

@@ -13,7 +13,8 @@
     "local:logs": "docker compose -f docker-compose.local.yml logs -f",
     "local:reset": "node scripts/local/reset.js",
     "local:seed": "node scripts/local/seed.js",
-    "local:smoke": "node tests/smoke/local-smoke.js"
+    "local:smoke": "node tests/smoke/local-smoke.js",
+    "prod:smoke": "node tests/smoke/production-smoke.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0"
