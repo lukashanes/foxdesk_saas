@@ -97,11 +97,6 @@ if (!headers_sent()) {
                     <img class="fd-light-img" src="assets/public/dashboard-light.webp" alt="FoxDesk dashboard preview" width="1200" height="675" fetchpriority="high" decoding="async">
                     <img class="fd-dark-img" src="assets/public/dashboard-dark.webp" alt="FoxDesk dashboard preview in dark mode" width="1200" height="675" fetchpriority="high" decoding="async">
                 </div>
-                <div class="fd-floating-card">
-                    <span>Cloud workspace</span>
-                    <strong>Ready in minutes</strong>
-                    <p>Hosted app login, managed updates, reliable email delivery, and attachment storage.</p>
-                </div>
             </div>
         </section>
 
