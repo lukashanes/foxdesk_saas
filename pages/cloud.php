@@ -13,6 +13,8 @@ $cloud_launch_until = 'May 31, 2026';
 $included_storage = billing_included_storage_bytes() === 1073741824
     ? '1 GB'
     : preg_replace('/\.00\s+/', ' ', format_file_size(billing_included_storage_bytes()));
+$cloud_css_path = BASE_PATH . '/assets/public/cloud.css';
+$cloud_css_version = (string) APP_VERSION . '-' . (file_exists($cloud_css_path) ? (string) filemtime($cloud_css_path) : '0');
 
 if (!headers_sent()) {
     header(
@@ -34,7 +36,7 @@ if (!headers_sent()) {
     <title><?php echo e($page_title); ?> - Managed helpdesk hosting</title>
     <meta name="description" content="FoxDesk Cloud is managed hosting for FoxDesk. Unlimited users, clients, agents, and tickets with simple storage-based scaling.">
     <link rel="icon" type="image/png" href="assets/public/logo.png">
-    <link rel="stylesheet" href="assets/public/cloud.css?v=<?php echo rawurlencode((string) APP_VERSION); ?>">
+    <link rel="stylesheet" href="assets/public/cloud.css?v=<?php echo rawurlencode($cloud_css_version); ?>">
     <script>
         (function () {
             var saved = localStorage.getItem('foxdesk-cloud-theme');
