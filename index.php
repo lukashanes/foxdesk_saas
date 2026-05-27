@@ -110,6 +110,11 @@ function foxdesk_is_app_host(): bool
     return in_array($host, ['app.foxdesk.org', 'app.foxdesk.net'], true);
 }
 
+function foxdesk_authenticated_home_page(): string
+{
+    return (function_exists('is_platform_admin') && is_platform_admin()) ? 'platform' : 'dashboard';
+}
+
 // Get current page
 $page = isset($_GET['page']) ? $_GET['page'] : (foxdesk_is_app_host() ? 'login' : 'cloud');
 $action = isset($_GET['action']) ? $_GET['action'] : '';
@@ -176,6 +181,11 @@ if (!in_array($page, $public_pages)) {
         header('Location: index.php?page=login');
         exit;
     }
+}
+
+if ($page === 'dashboard' && foxdesk_is_app_host() && is_platform_admin()) {
+    header('Location: index.php?page=platform');
+    exit;
 }
 
 // Live 2FA enforcement: check on every page load whether user's role requires 2FA
