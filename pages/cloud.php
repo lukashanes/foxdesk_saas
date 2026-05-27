@@ -373,16 +373,16 @@ $included_storage = billing_included_storage_bytes() === 1073741824
         }
         .fd-pricing {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 1.05fr;
-            gap: 28px;
-            align-items: stretch;
+            grid-template-columns: minmax(360px, .82fr) minmax(0, 1.18fr);
+            gap: 22px;
+            align-items: start;
         }
         .fd-price-card {
             position: relative;
             border: 2px solid rgba(37, 99, 235, .22);
-            border-radius: 28px;
+            border-radius: 22px;
             background: #fff;
-            padding: 36px;
+            padding: 26px;
             box-shadow: 0 25px 60px rgba(37, 99, 235, .12);
         }
         .fd-price-card h3 {
@@ -394,12 +394,12 @@ $included_storage = billing_included_storage_bytes() === 1073741824
             display: flex;
             align-items: baseline;
             gap: 10px;
-            margin: 18px 0 24px;
-            padding-bottom: 24px;
+            margin: 14px 0 18px;
+            padding-bottom: 18px;
             border-bottom: 1px solid var(--fd-line);
         }
         .fd-price strong {
-            font-size: 56px;
+            font-size: 48px;
             line-height: 1;
             letter-spacing: -0.05em;
         }
@@ -425,8 +425,8 @@ $included_storage = billing_included_storage_bytes() === 1073741824
         }
         .fd-list {
             display: grid;
-            gap: 14px;
-            margin: 0 0 28px;
+            gap: 10px;
+            margin: 0 0 20px;
             padding: 0;
             list-style: none;
         }
@@ -463,13 +463,17 @@ $included_storage = billing_included_storage_bytes() === 1073741824
         }
         .fd-preview-stack {
             display: grid;
-            gap: 16px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            align-items: start;
         }
         .fd-preview-stack img {
             width: 100%;
-            border-radius: 18px;
+            border-radius: 0;
             border: 1px solid var(--fd-line);
-            box-shadow: 0 16px 40px rgba(17, 24, 39, .08);
+            background: #fff;
+            padding: 8px;
+            box-shadow: 0 14px 34px rgba(17, 24, 39, .08);
         }
         .fd-migration {
             display: grid;
@@ -556,6 +560,9 @@ $included_storage = billing_included_storage_bytes() === 1073741824
             .fd-grid,
             .fd-pricing,
             .fd-migration {
+                grid-template-columns: 1fr;
+            }
+            .fd-preview-stack {
                 grid-template-columns: 1fr;
             }
             .fd-main {
@@ -718,12 +725,18 @@ $included_storage = billing_included_storage_bytes() === 1073741824
         .fd-feature-list strong { color: #111827; }
         .fd-feature-media {
             border: 1px solid var(--fd-line);
-            border-radius: 24px;
-            overflow: hidden;
+            border-radius: 18px;
+            overflow: visible;
+            padding: 10px;
             background: #fff;
             box-shadow: 0 28px 70px rgba(17, 24, 39, .16);
         }
-        .fd-feature-media img { display: block; width: 100%; height: auto; }
+        .fd-feature-media img {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 0;
+        }
         .fd-capability-grid {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1091,15 +1104,15 @@ $included_storage = billing_included_storage_bytes() === 1073741824
             align-items: flex-start;
             justify-content: space-between;
             gap: 16px;
-            margin-bottom: 22px;
+            margin-bottom: 14px;
         }
         .fd-offer-strip {
             display: inline-flex;
             align-items: center;
             flex-wrap: wrap;
             gap: 8px;
-            padding: 9px 10px;
-            border-radius: 14px;
+            padding: 7px 9px;
+            border-radius: 12px;
             background: rgba(255,255,255,.58);
             border: 1px solid rgba(37,99,235,.14);
             box-shadow: inset 0 1px 0 rgba(255,255,255,.72);
@@ -1126,13 +1139,13 @@ $included_storage = billing_included_storage_bytes() === 1073741824
             flex: 0 0 auto;
             display: inline-flex;
             align-items: center;
-            min-height: 36px;
-            padding: 0 12px;
+            min-height: 32px;
+            padding: 0 10px;
             border-radius: 999px;
             background: rgba(37,99,235,.12);
             color: #1d4ed8;
             border: 1px solid rgba(37,99,235,.18);
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 900;
         }
         .fd-price {
@@ -1365,8 +1378,6 @@ $included_storage = billing_included_storage_bytes() === 1073741824
                     <img class="fd-dark-img" src="assets/public/dashboard-dark.webp" alt="FoxDesk dashboard in dark mode">
                     <img class="fd-light-img" src="assets/public/ticket-detail-light.webp" alt="FoxDesk ticket detail">
                     <img class="fd-dark-img" src="assets/public/ticket-detail-dark.webp" alt="FoxDesk ticket detail in dark mode">
-                    <img class="fd-light-img" src="assets/public/time-report-light.webp" alt="FoxDesk time report">
-                    <img class="fd-dark-img" src="assets/public/time-report-dark.webp" alt="FoxDesk time report in dark mode">
                 </div>
             </div>
         </section>
