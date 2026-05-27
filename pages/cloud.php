@@ -198,12 +198,19 @@ if (!headers_sent()) {
                     </ul>
                     <a href="<?php echo e(url('signup')); ?>" class="fd-btn primary fd-full-width">Create workspace</a>
                 </div>
-                <div class="fd-preview-stack">
-                    <img class="fd-light-img" src="assets/public/dashboard-light.webp" alt="FoxDesk dashboard" width="1200" height="675" loading="lazy" decoding="async">
-                    <img class="fd-dark-img" src="assets/public/dashboard-dark.webp" alt="FoxDesk dashboard in dark mode" width="1200" height="675" loading="lazy" decoding="async">
-                    <img class="fd-light-img" src="assets/public/ticket-detail-light.webp" alt="FoxDesk ticket detail" width="1200" height="675" loading="lazy" decoding="async">
-                    <img class="fd-dark-img" src="assets/public/ticket-detail-dark.webp" alt="FoxDesk ticket detail in dark mode" width="1200" height="675" loading="lazy" decoding="async">
-                </div>
+            </div>
+        </section>
+
+        <section class="fd-section fd-band fd-preview-section" id="preview">
+            <div class="fd-heading">
+                <h2>See the managed workspace.</h2>
+                <p>Preview the dashboard and ticket detail your team will use every day.</p>
+            </div>
+            <div class="fd-preview-stack">
+                <img class="fd-light-img" src="assets/public/dashboard-light.webp" alt="FoxDesk dashboard" width="1200" height="675" loading="lazy" decoding="async">
+                <img class="fd-dark-img" src="assets/public/dashboard-dark.webp" alt="FoxDesk dashboard in dark mode" width="1200" height="675" loading="lazy" decoding="async">
+                <img class="fd-light-img" src="assets/public/ticket-detail-light.webp" alt="FoxDesk ticket detail" width="1200" height="675" loading="lazy" decoding="async">
+                <img class="fd-dark-img" src="assets/public/ticket-detail-dark.webp" alt="FoxDesk ticket detail in dark mode" width="1200" height="675" loading="lazy" decoding="async">
             </div>
         </section>
 
