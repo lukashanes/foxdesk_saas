@@ -108,8 +108,21 @@ if ($now - $last_reports >= 21600) {
 }
 
 // -----------------------------------------------------------------
-// 5. Metered billing usage (every 24 hours)
+// 5. Trial expiration and metered billing usage (every 24 hours)
 // -----------------------------------------------------------------
+$last_trial_expire = (int) get_setting('pseudo_cron_last_trial_expire', '0');
+if ($now - $last_trial_expire >= 86400) {
+    save_setting('pseudo_cron_last_trial_expire', (string) $now);
+    try {
+        if (function_exists('billing_expire_trials')) {
+            billing_expire_trials();
+        }
+    } catch (Throwable $e) {
+        $errors[] = 'trial_expire: ' . $e->getMessage();
+        error_log('[pseudo-cron] trial expiration error: ' . $e->getMessage());
+    }
+}
+
 $last_billing_usage = (int) get_setting('pseudo_cron_last_billing_usage', '0');
 if ($now - $last_billing_usage >= 86400) {
     save_setting('pseudo_cron_last_billing_usage', (string) $now);

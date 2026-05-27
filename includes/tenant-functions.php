@@ -72,7 +72,7 @@ function ensure_tenant_baseline(): void
                 slug VARCHAR(120) NOT NULL UNIQUE,
                 primary_domain VARCHAR(255) NULL,
                 plan VARCHAR(50) NOT NULL DEFAULT 'cloud',
-                status ENUM('active', 'trialing', 'past_due', 'suspended', 'canceled') NOT NULL DEFAULT 'active',
+                status ENUM('active', 'trialing', 'past_due', 'trial_expired', 'suspended', 'blocked', 'canceled') NOT NULL DEFAULT 'active',
                 trial_ends_at DATETIME NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -99,11 +99,17 @@ function ensure_tenant_baseline(): void
             'max_users' => "ALTER TABLE tenants ADD COLUMN max_users INT NOT NULL DEFAULT 1000000 AFTER subscription_status",
             'max_agents' => "ALTER TABLE tenants ADD COLUMN max_agents INT NOT NULL DEFAULT 1000000 AFTER max_users",
             'suspended_at' => "ALTER TABLE tenants ADD COLUMN suspended_at DATETIME NULL AFTER trial_ends_at",
+            'blocked_at' => "ALTER TABLE tenants ADD COLUMN blocked_at DATETIME NULL AFTER suspended_at",
         ];
         foreach ($tenant_columns as $column => $sql) {
             if (!column_exists('tenants', $column)) {
                 db_query($sql);
             }
+        }
+        try {
+            db_query("ALTER TABLE tenants MODIFY COLUMN status ENUM('active', 'trialing', 'past_due', 'trial_expired', 'suspended', 'blocked', 'canceled') NOT NULL DEFAULT 'active'");
+        } catch (Throwable $e) {
+            error_log('FoxDesk tenant status enum migration skipped: ' . $e->getMessage());
         }
 
         db_query("UPDATE tenants SET plan = 'cloud' WHERE plan IN ('', 'starter', 'pro', 'business') OR plan IS NULL");
@@ -298,7 +304,7 @@ function create_tenant_workspace(array $data): array
             'subscription_status' => $data['subscription_status'] ?? 'trialing',
             'max_users' => (int) ($data['max_users'] ?? 1000000),
             'max_agents' => (int) ($data['max_agents'] ?? 1000000),
-            'trial_ends_at' => $data['trial_ends_at'] ?? date('Y-m-d H:i:s', strtotime('+14 days')),
+            'trial_ends_at' => $data['trial_ends_at'] ?? (function_exists('billing_trial_ends_at_for_new_workspace') ? billing_trial_ends_at_for_new_workspace() : date('Y-m-d H:i:s', strtotime('+14 days'))),
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 

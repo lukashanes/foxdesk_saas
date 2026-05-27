@@ -263,13 +263,15 @@ if (is_logged_in() && function_exists('page_views_table_exists')) {
     } catch (Throwable $e) { /* silent */ }
 }
 
-// Billing access guard: a suspended/canceled workspace can only reach billing/profile/logout.
+// Billing access guard: expired/unpaid workspaces can only reach billing/profile/logout.
 if (is_logged_in() && !in_array($page, ['billing', 'profile', 'logout', 'stripe-webhook', 'health', 'cron'], true)) {
     $tenant = function_exists('billing_current_tenant') ? billing_current_tenant() : null;
-    $blocked_status = (string) ($tenant['status'] ?? '');
-    if ($tenant && in_array($blocked_status, ['suspended', 'canceled'], true) && !is_platform_admin()) {
-        flash(t('Workspace access is restricted. Please update billing to continue.'), 'error');
-        header('Location: index.php?page=billing');
+    $access_state = function_exists('billing_workspace_access_state')
+        ? billing_workspace_access_state($tenant)
+        : ['allowed' => true, 'message' => ''];
+    if ($tenant && empty($access_state['allowed']) && !is_platform_admin()) {
+        flash($access_state['message'] ?: t('Workspace access is restricted. Please update billing to continue.'), 'error');
+        header('Location: index.php?page=' . (is_admin() ? 'billing' : 'logout'));
         exit;
     }
 }

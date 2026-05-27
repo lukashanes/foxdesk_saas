@@ -41,6 +41,7 @@ define('BILLING_CURRENCY', foxdesk_env('BILLING_CURRENCY', 'EUR'));
 define('BILLING_CLOUD_BASE_PRICE_CENTS', (int) foxdesk_env('BILLING_CLOUD_BASE_PRICE_CENTS', 990));
 define('BILLING_STORAGE_OVERAGE_PRICE_CENTS', (int) foxdesk_env('BILLING_STORAGE_OVERAGE_PRICE_CENTS', 190));
 define('BILLING_INCLUDED_STORAGE_BYTES', (int) foxdesk_env('BILLING_INCLUDED_STORAGE_BYTES', 1073741824));
+define('BILLING_TRIAL_DAYS', (int) foxdesk_env('BILLING_TRIAL_DAYS', 14));
 define('STRIPE_SUCCESS_URL', APP_URL . '/index.php?page=billing&checkout=success');
 define('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=billing&checkout=cancelled');
 

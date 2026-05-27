@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
             $status = (string) ($_POST['status'] ?? 'active');
             $subscription_status = trim((string) ($_POST['subscription_status'] ?? 'manual'));
-            $allowed_statuses = ['active', 'trialing', 'past_due', 'suspended', 'canceled'];
+            $allowed_statuses = ['active', 'trialing', 'past_due', 'trial_expired', 'suspended', 'blocked', 'canceled'];
             if ($tenant_id <= 0 || !in_array($status, $allowed_statuses, true)) {
                 throw new InvalidArgumentException('Invalid workspace update.');
             }
@@ -60,7 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'status' => $status,
                 'subscription_status' => $subscription_status !== '' ? $subscription_status : 'manual',
                 'plan' => billing_plan_code(),
-                'suspended_at' => $status === 'suspended' ? date('Y-m-d H:i:s') : null,
+                'suspended_at' => in_array($status, ['past_due', 'trial_expired', 'suspended', 'blocked', 'canceled'], true) ? date('Y-m-d H:i:s') : null,
+                'blocked_at' => in_array($status, ['trial_expired', 'blocked', 'canceled'], true) ? date('Y-m-d H:i:s') : null,
             ], 'id = ?', [$tenant_id]);
             $success = 'Workspace updated.';
         }
@@ -74,7 +75,7 @@ $summary = db_fetch_one("
       COUNT(*) AS tenants,
       SUM(status IN ('active','trialing')) AS active_tenants,
       SUM(status = 'past_due') AS past_due_tenants,
-      SUM(status IN ('suspended','canceled')) AS blocked_tenants,
+      SUM(status IN ('trial_expired','suspended','blocked','canceled')) AS blocked_tenants,
       SUM(subscription_status IN ('active','trialing')) AS billing_ok,
       (SELECT COUNT(*) FROM users WHERE deleted_at IS NULL) AS users
     FROM tenants
@@ -885,7 +886,7 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                             <input type="hidden" name="platform_action" value="update_tenant">
                                             <input type="hidden" name="tenant_id" value="<?php echo $tenant_id; ?>">
                                             <select class="op-select" name="status" aria-label="Workspace status">
-                                                <?php foreach (['active', 'trialing', 'past_due', 'suspended', 'canceled'] as $status): ?>
+                                                <?php foreach (['active', 'trialing', 'past_due', 'trial_expired', 'suspended', 'blocked', 'canceled'] as $status): ?>
                                                     <option value="<?php echo $status; ?>" <?php echo ($tenant['status'] ?? '') === $status ? 'selected' : ''; ?>><?php echo $status; ?></option>
                                                 <?php endforeach; ?>
                                             </select>

@@ -25,6 +25,7 @@ define('BILLING_CURRENCY', 'EUR');
 define('BILLING_CLOUD_BASE_PRICE_CENTS', 990);
 define('BILLING_STORAGE_OVERAGE_PRICE_CENTS', 190);
 define('BILLING_INCLUDED_STORAGE_BYTES', 1073741824);
+define('BILLING_TRIAL_DAYS', 14);
 ```
 
 When `BILLING_ENABLED` is `false`, the billing UI remains visible but Checkout and Portal actions return a clear configuration error.
@@ -77,13 +78,16 @@ The endpoint verifies the `Stripe-Signature` header with `STRIPE_WEBHOOK_SECRET`
 
 ## Runtime behavior
 
+- Signup creates a 14-day trial workspace with no card required.
+- Trial workspaces use `tenants.status = trialing`, `tenants.subscription_status = trialing`, and `tenants.trial_ends_at`.
+- When the trial expires before payment, FoxDesk marks the workspace `trial_expired` and locks normal app access. Workspace admins can still open Billing and activate through Stripe Checkout.
 - Platform admins can open Checkout or Customer Portal for any workspace from `Platform`.
 - Workspace admins can open their own billing page from the user menu.
 - Stripe subscription changes update `tenants.stripe_customer_id`, `tenants.stripe_subscription_id`, `tenants.subscription_status`, and `tenants.status`.
 - Paid invoices reactivate the workspace. Failed invoices mark the workspace `past_due` so operators can follow up while Stripe dunning runs.
 - Billing and Platform show storage usage, included storage, billable extra GB, and estimated monthly overage.
 - `bin/report-billing-usage.php` reports daily storage meter events to Stripe for tenants with a Stripe customer id.
-- Tenants with `status` set to `suspended` or `canceled` are redirected to Billing instead of normal app pages.
+- Tenants with `status` set to `trial_expired`, `past_due`, `suspended`, `blocked`, or `canceled` are redirected to Billing instead of normal app pages.
 
 ## Usage reporting
 

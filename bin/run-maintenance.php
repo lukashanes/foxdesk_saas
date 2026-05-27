@@ -41,6 +41,7 @@ $result = [
     'recurring_processed' => 0,
     'email_ingest' => null,
     'update_check' => null,
+    'trial_expiration' => null,
     'billing_usage' => null,
     'errors' => [],
 ];
@@ -104,6 +105,14 @@ try {
 
 // --- Stripe metered storage usage ---
 try {
+    $result['trial_expiration'] = billing_expire_trials();
+} catch (Throwable $e) {
+    $result['ok'] = false;
+    $result['errors'][] = 'trial_expiration: ' . $e->getMessage();
+    $result['trial_expiration'] = ['status' => 'error', 'error' => $e->getMessage()];
+}
+
+try {
     if (billing_enabled()) {
         $result['billing_usage'] = billing_report_storage_usage_all(false);
         if (empty($result['billing_usage']['ok'])) {
@@ -141,6 +150,9 @@ if (is_array($result['billing_usage'])) {
         . ' reported=' . (int) ($result['billing_usage']['reported'] ?? 0)
         . ' skipped=' . (int) ($result['billing_usage']['skipped'] ?? 0)
         . ' failed=' . (int) ($result['billing_usage']['failed'] ?? 0) . PHP_EOL;
+}
+if (is_array($result['trial_expiration'])) {
+    echo '[maintenance] trial_expired=' . (int) ($result['trial_expiration']['expired'] ?? 0) . PHP_EOL;
 }
 
 if (!$result['ok']) {

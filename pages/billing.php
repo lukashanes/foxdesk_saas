@@ -50,6 +50,11 @@ if ($action === 'checkout' || $action === 'portal') {
 
 $page_title = 'Billing';
 $page = 'billing';
+$access_state = function_exists('billing_workspace_access_state')
+    ? billing_workspace_access_state($tenant)
+    : ['allowed' => true, 'reason' => (string) ($tenant['status'] ?? ''), 'message' => ''];
+$tenant = billing_get_tenant((int) $tenant['id']) ?: $tenant;
+$trial_days_remaining = billing_trial_days_remaining($tenant);
 $usage = billing_tenant_usage((int) $tenant['id']);
 $checkout_state = (string) ($_GET['checkout'] ?? $_GET['billing'] ?? '');
 $storage_percent = $usage['included_storage_bytes'] > 0
@@ -68,7 +73,9 @@ require_once BASE_PATH . '/includes/header.php';
         <?php elseif ($checkout_state === 'cancelled'): ?>
             <div class="alert alert-warning mb-5">Checkout was cancelled. Your workspace is still available, but the subscription has not started.</div>
         <?php elseif (isset($_GET['signup'])): ?>
-            <div class="alert alert-info mb-5">Workspace created. Start billing to keep it active after the launch/trial period.</div>
+            <div class="alert alert-info mb-5">Workspace created. Your 14-day trial is active. Add billing before it ends to keep access.</div>
+        <?php elseif (empty($access_state['allowed'])): ?>
+            <div class="alert alert-error mb-5"><?php echo e($access_state['message']); ?></div>
         <?php endif; ?>
 
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
@@ -76,6 +83,9 @@ require_once BASE_PATH . '/includes/header.php';
             <div><dt class="text-xs uppercase" style="color: var(--text-muted);">Workspace status</dt><dd class="font-semibold"><?php echo e($tenant['status']); ?></dd></div>
             <div><dt class="text-xs uppercase" style="color: var(--text-muted);">Subscription</dt><dd class="font-semibold"><?php echo e($tenant['subscription_status'] ?? 'manual'); ?></dd></div>
             <div><dt class="text-xs uppercase" style="color: var(--text-muted);">Billing email</dt><dd class="font-semibold"><?php echo e($tenant['billing_email'] ?? ''); ?></dd></div>
+            <?php if ((string) ($tenant['subscription_status'] ?? '') === 'trialing' && $trial_days_remaining !== null): ?>
+                <div><dt class="text-xs uppercase" style="color: var(--text-muted);">Trial</dt><dd class="font-semibold"><?php echo $trial_days_remaining; ?> day<?php echo $trial_days_remaining === 1 ? '' : 's'; ?> remaining</dd></div>
+            <?php endif; ?>
         </dl>
 
         <div class="rounded-xl border p-4 mb-6" style="border-color: var(--border-light); background: var(--surface-secondary);">
@@ -120,7 +130,7 @@ require_once BASE_PATH . '/includes/header.php';
             <form method="post" action="<?php echo url('billing', ['action' => 'checkout', 'tenant_id' => (int) $tenant['id']]); ?>">
                 <?php echo csrf_field(); ?>
                 <input type="hidden" name="plan" value="<?php echo e(billing_plan_code()); ?>">
-                <button class="btn btn-primary" type="submit">Start subscription</button>
+                <button class="btn btn-primary" type="submit">Activate FoxDesk</button>
             </form>
             <form method="post" action="<?php echo url('billing', ['action' => 'portal', 'tenant_id' => (int) $tenant['id']]); ?>">
                 <?php echo csrf_field(); ?>

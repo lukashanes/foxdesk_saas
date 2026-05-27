@@ -66,7 +66,7 @@ if (!headers_sent()) {
             </nav>
             <div class="fd-header-actions">
                 <a href="<?php echo e(url('login')); ?>" class="fd-btn secondary">Client login</a>
-                <a href="#pricing" class="fd-btn primary">Try FoxDesk</a>
+                <a href="<?php echo e(url('signup')); ?>" class="fd-btn primary">Start free trial</a>
                 <button type="button" class="fd-theme-toggle" onclick="toggleCloudTheme()" aria-label="Toggle color mode">◐</button>
             </div>
         </div>
@@ -78,7 +78,7 @@ if (!headers_sent()) {
                 <h1>Helpdesk & time tracking</h1>
                 <p>Track support tickets and billable hours for your team and your AI agents. One app. No per-agent or per-client fees, ever.</p>
                 <div class="fd-hero-actions">
-                    <a href="#pricing" class="fd-btn primary">Try FoxDesk</a>
+                    <a href="<?php echo e(url('signup')); ?>" class="fd-btn primary">Start 14-day free trial</a>
                     <a href="<?php echo e(url('login')); ?>" class="fd-btn secondary">Sign in to app</a>
                 </div>
                 <div class="fd-hero-proof">
@@ -175,7 +175,7 @@ if (!headers_sent()) {
         <section class="fd-section fd-band" id="pricing">
             <div class="fd-heading">
                 <h2>One simple price.</h2>
-                <p>Unlimited users, agents, clients, organizations, and tickets. Storage scales when you need more.</p>
+                <p>Start free for 14 days. No card required. Unlimited users, agents, clients, organizations, and tickets.</p>
             </div>
             <div class="fd-pricing">
                 <div class="fd-price-card">
@@ -195,7 +195,7 @@ if (!headers_sent()) {
                         <li><span class="fd-check">✓</span><span>Support workflows for your team and AI agents</span></li>
                         <li><span class="fd-check">✓</span><span><?php echo e($included_storage); ?> file storage included</span></li>
                     </ul>
-                    <a href="<?php echo e(url('signup')); ?>" class="fd-btn primary fd-full-width">Try FoxDesk</a>
+                    <a href="<?php echo e(url('signup')); ?>" class="fd-btn primary fd-full-width">Start 14-day free trial</a>
                 </div>
             </div>
         </section>

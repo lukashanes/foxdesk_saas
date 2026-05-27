@@ -651,6 +651,27 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
             </div>
         <?php endif; ?>
 
+        <?php
+        $billing_tenant = function_exists('billing_current_tenant') ? billing_current_tenant() : null;
+        $billing_trial_days = $billing_tenant && function_exists('billing_trial_days_remaining')
+            ? billing_trial_days_remaining($billing_tenant)
+            : null;
+        $billing_status = (string) ($billing_tenant['subscription_status'] ?? '');
+        ?>
+        <?php if ($billing_status === 'trialing' && $billing_trial_days !== null && !is_platform_admin()): ?>
+            <div class="mx-4 lg:mx-8 mt-4 rounded-xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                style="border-color: var(--border-light); background: var(--surface-secondary); color: var(--text-primary);">
+                <div class="text-sm">
+                    <strong>FoxDesk trial:</strong>
+                    <?php echo $billing_trial_days; ?> day<?php echo $billing_trial_days === 1 ? '' : 's'; ?> remaining.
+                    Add billing to keep access after the trial.
+                </div>
+                <?php if (is_admin()): ?>
+                    <a href="<?php echo url('billing'); ?>" class="btn btn-primary btn-sm">Activate FoxDesk</a>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
         <?php if ($_foxdesk_update_info && !is_update_dismissed($_foxdesk_update_info['version'])): ?>
         <!-- Update Available Banner -->
         <div class="foxdesk-update-bar" id="foxdeskUpdateBar">

@@ -40,19 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
 
                 if (login($values['admin_email'], $password)) {
-                    if (billing_enabled()) {
-                        try {
-                            $checkout_url = billing_create_checkout_session((int) $workspace['tenant_id'], billing_plan_code());
-                            header('Location: ' . $checkout_url);
-                            exit;
-                        } catch (Throwable $billing_error) {
-                            flash('Workspace created. Billing checkout could not be started: ' . $billing_error->getMessage(), 'warning');
-                            header('Location: index.php?page=billing&signup=created');
-                            exit;
-                        }
-                    }
-
-                    header('Location: index.php?page=dashboard');
+                    flash('Your 14-day FoxDesk trial is ready. No payment is needed until the trial ends.', 'success');
+                    header('Location: index.php?page=dashboard&signup=trial');
                     exit;
                 }
 
@@ -97,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="signup-card">
                 <div class="mb-7">
                     <h2 class="text-3xl font-bold mb-2">Create workspace</h2>
-                    <p style="color: var(--text-muted);">Your trial workspace is created instantly.</p>
+                    <p style="color: var(--text-muted);">Start a 14-day trial. No card required.</p>
                 </div>
 
                 <?php if ($error): ?>
@@ -132,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label class="block text-sm font-medium mb-1.5">Confirm password</label>
                         <input class="signup-input" type="password" name="password_confirm" minlength="12" required>
                     </div>
-                    <button type="submit" class="btn btn-primary w-full py-2.5">Create FoxDesk</button>
+                    <button type="submit" class="btn btn-primary w-full py-2.5">Start 14-day free trial</button>
                     <p class="text-xs leading-5" style="color: var(--text-muted);">
                         By creating a workspace you agree to the
                         <a href="<?php echo e(url('legal', ['type' => 'terms'])); ?>" target="_blank" rel="noopener" style="color: var(--primary);">Terms</a>

@@ -44,6 +44,11 @@ function billing_included_storage_bytes(): int
     return max(0, (int) billing_env_or_constant('BILLING_INCLUDED_STORAGE_BYTES', 1073741824));
 }
 
+function billing_trial_days(): int
+{
+    return max(1, (int) billing_env_or_constant('BILLING_TRIAL_DAYS', 14));
+}
+
 function billing_plan_code(): string
 {
     return 'cloud';
@@ -428,6 +433,87 @@ function billing_current_tenant(): ?array
     return billing_get_tenant(current_tenant_id());
 }
 
+function billing_trial_ends_at_for_new_workspace(): string
+{
+    return date('Y-m-d H:i:s', strtotime('+' . billing_trial_days() . ' days'));
+}
+
+function billing_trial_days_remaining(?array $tenant = null): ?int
+{
+    $tenant = $tenant ?: billing_current_tenant();
+    $trial_ends_at = trim((string) ($tenant['trial_ends_at'] ?? ''));
+    if ($trial_ends_at === '') {
+        return null;
+    }
+
+    $ends = strtotime($trial_ends_at);
+    if (!$ends) {
+        return null;
+    }
+
+    return max(0, (int) ceil(($ends - time()) / 86400));
+}
+
+function billing_expire_trials(?int $tenant_id = null): array
+{
+    ensure_tenant_baseline();
+
+    $where = "status = 'trialing' AND subscription_status = 'trialing' AND trial_ends_at IS NOT NULL AND trial_ends_at < NOW()";
+    $params = [];
+    if ($tenant_id !== null) {
+        $where .= ' AND id = ?';
+        $params[] = $tenant_id;
+    }
+
+    $expired = db_fetch_all("SELECT id FROM tenants WHERE {$where}", $params);
+    if (!$expired) {
+        return ['expired' => 0, 'tenant_ids' => []];
+    }
+
+    $ids = array_map(static fn($row) => (int) $row['id'], $expired);
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    db_query(
+        "UPDATE tenants
+         SET status = 'trial_expired',
+             subscription_status = 'trial_expired',
+             blocked_at = COALESCE(blocked_at, NOW()),
+             suspended_at = COALESCE(suspended_at, NOW())
+         WHERE id IN ({$placeholders})",
+        $ids
+    );
+
+    return ['expired' => count($ids), 'tenant_ids' => $ids];
+}
+
+function billing_workspace_access_state(?array $tenant = null): array
+{
+    $tenant = $tenant ?: billing_current_tenant();
+    if (!$tenant) {
+        return ['allowed' => true, 'reason' => 'missing_tenant', 'message' => ''];
+    }
+
+    if ((string) ($tenant['status'] ?? '') === 'trialing' && (string) ($tenant['subscription_status'] ?? '') === 'trialing') {
+        billing_expire_trials((int) $tenant['id']);
+        $tenant = billing_get_tenant((int) $tenant['id']) ?: $tenant;
+    }
+
+    $status = (string) ($tenant['status'] ?? '');
+    $subscription_status = (string) ($tenant['subscription_status'] ?? '');
+    if ($status === 'active' || ($status === 'trialing' && $subscription_status === 'trialing')) {
+        return ['allowed' => true, 'reason' => $status, 'message' => ''];
+    }
+
+    $reason = $subscription_status !== '' ? $subscription_status : $status;
+    $message = match ($reason) {
+        'trial_expired' => 'Your 14-day trial has ended. Activate FoxDesk to continue.',
+        'past_due' => 'Payment is past due. Update billing to continue.',
+        'canceled' => 'This subscription has been canceled.',
+        default => 'Workspace access is restricted. Please update billing to continue.',
+    };
+
+    return ['allowed' => false, 'reason' => $reason, 'message' => $message];
+}
+
 function billing_create_or_get_customer(array $tenant): string
 {
     $existing = trim((string) ($tenant['stripe_customer_id'] ?? ''));
@@ -597,6 +683,7 @@ function billing_tenant_status_from_subscription(string $subscription_status): s
         'trialing' => 'trialing',
         'past_due' => 'past_due',
         'canceled' => 'canceled',
+        'trial_expired' => 'trial_expired',
         default => 'active',
     };
 }
@@ -647,7 +734,8 @@ function billing_apply_subscription_update(array $subscription): ?int
         'subscription_status' => $subscription_status,
         'status' => $tenant_status,
         'trial_ends_at' => $trial_end,
-        'suspended_at' => $tenant_status === 'suspended' ? date('Y-m-d H:i:s') : null,
+        'suspended_at' => in_array($tenant_status, ['past_due', 'trial_expired', 'blocked', 'canceled'], true) ? date('Y-m-d H:i:s') : null,
+        'blocked_at' => in_array($tenant_status, ['trial_expired', 'blocked', 'canceled'], true) ? date('Y-m-d H:i:s') : null,
     ];
 
     if (!empty($subscription['customer'])) {
@@ -670,6 +758,7 @@ function billing_apply_invoice_payment_state(array $invoice, bool $paid): ?int
         'subscription_status' => $paid ? 'active' : 'past_due',
         'status' => $paid ? 'active' : 'past_due',
         'suspended_at' => null,
+        'blocked_at' => null,
     ];
 
     if (!$paid) {
@@ -707,6 +796,8 @@ function billing_handle_webhook_event(array $event): array
                 'stripe_subscription_id' => (string) $object['subscription'],
                 'subscription_status' => 'active',
                 'status' => 'active',
+                'suspended_at' => null,
+                'blocked_at' => null,
             ], 'id = ?', [$tenant_id]);
             return ['handled' => true, 'tenant_id' => $tenant_id, 'type' => $type];
         }
