@@ -7,7 +7,7 @@
  */
 
 $page_title = 'FoxDesk Cloud';
-$cloud_regular_price = billing_format_money(billing_cloud_base_price_cents());
+$cloud_regular_price = billing_format_money(billing_cloud_base_price_cents() * 2);
 $cloud_launch_price = billing_currency() === 'CZK' ? '249 Kc' : 'EUR 9.90';
 $cloud_launch_until = 'May 31, 2026';
 $included_storage = billing_included_storage_bytes() === 1073741824
