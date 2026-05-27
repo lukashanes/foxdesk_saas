@@ -11,7 +11,11 @@ $operator = [
     'billing' => 'billing@foxdesk.net',
 ];
 
-$is_logged_in = function_exists('is_logged_in') && is_logged_in();
+if ($type === 'subprocessors') {
+    http_response_code(404);
+    echo 'Not found.';
+    exit;
+}
 
 $documents = [
     'privacy' => [
@@ -58,7 +62,7 @@ $documents = [
             ['Customer instructions', 'Aenze s.r.o. processes workspace personal data only on documented customer instructions, including this DPA, the Terms, product settings, support requests, and lawful written instructions. Aenze s.r.o. will inform the customer if an instruction appears to violate applicable data protection law.'],
             ['Confidentiality', 'Personnel with access to workspace data are required to keep such data confidential and may access it only where needed for operation, support, security, or legal compliance.'],
             ['Security measures', 'Aenze s.r.o. maintains reasonable technical and organizational measures, including tenant-aware access controls, TLS, password hashing, CSRF protection, upload controls, backup controls, logging, restricted operational access, and separation of production secrets from source code.'],
-            ['Subprocessors', 'The customer gives general authorization for Aenze s.r.o. to use subprocessors necessary to provide FoxDesk Cloud. Aenze s.r.o. remains responsible for subprocessors under applicable data protection law and requires them to protect personal data through contractual or equivalent safeguards. The current list is available to logged-in customers or on request.'],
+            ['Approved providers', 'Aenze s.r.o. may use carefully selected third-party providers where needed to provide FoxDesk Cloud, including hosting, storage, email delivery, security, billing, and operational services. Aenze s.r.o. remains responsible for provider use under applicable data protection law and requires appropriate contractual or equivalent safeguards. Provider details can be supplied to customers where legally required.'],
             ['Assistance', 'Taking into account the nature of processing, Aenze s.r.o. will reasonably assist the customer with data subject requests, security obligations, incident handling, and data protection impact assessments where required and technically possible.'],
             ['Personal data breach', 'Aenze s.r.o. will investigate confirmed security incidents involving customer workspace personal data and notify affected customers without undue delay after becoming aware of a personal data breach.'],
             ['Return and deletion', 'On termination, customer data may be exportable where technically possible. Data will be deleted or anonymized after the retention period, subject to backups, legal obligations, accounting, security, dispute handling, and legitimate operational needs.'],
@@ -75,17 +79,6 @@ $documents = [
             ['Non-refundable cases', 'Refunds are generally not provided for unused time after ordinary cancellation, customer misconfiguration, lack of usage, blocked access caused by breach of the Terms, or issues caused by third-party systems outside FoxDesk Cloud control.'],
             ['Storage overage', 'Metered storage overage is based on recorded usage for the billing period. If a customer believes usage was measured incorrectly, Aenze s.r.o. will review the records and correct the invoice where appropriate.'],
             ['How to request a refund', 'Send refund or billing requests to ' . $operator['billing'] . ' and include workspace name, billing email, invoice number, and a short explanation. We may request additional verification before changing billing records.'],
-        ],
-    ],
-    'subprocessors' => [
-        'title' => 'Subprocessors',
-        'intro' => 'This customer-facing list identifies core providers used to operate FoxDesk Cloud. It is not linked from the public marketing footer.',
-        'sections' => [
-            ['Hetzner', 'Infrastructure hosting for application servers, databases, and related production workloads in the hosted FoxDesk Cloud environment.'],
-            ['Cloudflare', 'DNS, TLS/proxy services, security controls, caching, R2 object storage, and Cloudflare Email services used for transactional service delivery.'],
-            ['Stripe', 'Subscription billing, Checkout, Customer Portal, invoices, payment processing, customer billing records, and subscription status webhooks.'],
-            ['Email delivery infrastructure', 'Transactional email metadata may be processed to deliver password resets, account messages, ticket notifications, migration communication, and billing notices.'],
-            ['Changes', 'Aenze s.r.o. may update subprocessors when needed for security, reliability, compliance, or service delivery. Material changes should be communicated to affected customers or made available in the customer account area.'],
         ],
     ],
     'security' => [
@@ -107,11 +100,6 @@ if (!isset($documents[$type])) {
     $type = 'privacy';
 }
 
-if ($type === 'subprocessors' && !$is_logged_in) {
-    http_response_code(404);
-    $type = 'privacy';
-}
-
 $doc = $documents[$type];
 $nav = [
     'privacy' => 'Privacy',
@@ -120,18 +108,12 @@ $nav = [
     'refunds' => 'Refunds',
     'security' => 'Security',
 ];
-if ($is_logged_in) {
-    $nav['subprocessors'] = 'Subprocessors';
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <?php if ($type === 'subprocessors'): ?>
-        <meta name="robots" content="noindex,nofollow">
-    <?php endif; ?>
     <title><?php echo e($doc['title']); ?> - FoxDesk Cloud</title>
     <style>
         :root { color-scheme: light; --ink:#111827; --muted:#667085; --line:#e5e7eb; --bg:#f7f8fb; --panel:#fff; --blue:#2557d6; }
