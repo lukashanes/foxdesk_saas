@@ -179,6 +179,9 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         * {
             box-sizing: border-box;
         }
+        html {
+            scroll-behavior: smooth;
+        }
         body {
             margin: 0;
             min-height: 100vh;
@@ -192,24 +195,30 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             animation: none !important;
             overflow-x: hidden;
         }
+        section[id] {
+            scroll-margin-top: 76px;
+        }
         a {
             color: inherit;
             text-decoration: none;
         }
         .op-shell {
             min-height: 100vh;
-            display: grid;
-            grid-template-columns: 228px minmax(0, 1fr);
+            display: block;
         }
         .op-sidebar {
             position: sticky;
             top: 0;
-            height: 100vh;
-            padding: 14px 12px;
-            border-right: 1px solid var(--op-line);
+            z-index: 30;
+            min-height: 56px;
+            padding: 9px clamp(12px, 2vw, 24px);
+            border-bottom: 1px solid var(--op-line);
             background: rgba(255, 255, 255, .54);
             backdrop-filter: blur(24px);
             -webkit-backdrop-filter: blur(24px);
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         [data-theme="dark"] .op-sidebar {
             background: rgba(2, 6, 23, .64);
@@ -221,6 +230,7 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             min-height: 34px;
             font-weight: 820;
             font-size: 15px;
+            flex: 0 0 auto;
         }
         .op-mark {
             width: 32px;
@@ -244,9 +254,16 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             margin-top: 2px;
         }
         .op-nav {
-            margin-top: 18px;
-            display: grid;
+            margin: 0;
+            display: flex;
+            align-items: center;
             gap: 4px;
+            min-width: 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .op-nav::-webkit-scrollbar {
+            display: none;
         }
         .op-nav a {
             min-height: 34px;
@@ -258,6 +275,8 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             color: var(--op-muted);
             font-size: 13px;
             font-weight: 680;
+            white-space: nowrap;
+            flex: 0 0 auto;
         }
         .op-nav a:hover,
         .op-nav a.active {
@@ -270,12 +289,12 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             stroke-width: 2;
         }
         .op-sidebar-bottom {
-            position: absolute;
-            left: 12px;
-            right: 12px;
-            bottom: 12px;
-            display: grid;
+            position: static;
+            margin-left: auto;
+            display: flex;
+            align-items: center;
             gap: 8px;
+            flex: 0 0 auto;
         }
         .op-user {
             display: flex;
@@ -313,7 +332,8 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         }
         .op-main {
             min-width: 0;
-            padding: 14px;
+            width: 100%;
+            padding: 14px clamp(12px, 2vw, 24px) 24px;
         }
         .op-topbar {
             min-height: 40px;
@@ -446,7 +466,7 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         }
         .op-grid {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 312px;
+            grid-template-columns: minmax(0, 1fr);
             gap: 12px;
             align-items: start;
         }
@@ -600,6 +620,7 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         }
         .op-stack {
             display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 12px;
         }
         .op-panel-body {
@@ -649,32 +670,40 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             display: none;
         }
         @media (max-width: 1180px) {
-            .op-shell {
-                grid-template-columns: 1fr;
-            }
             .op-sidebar {
-                position: relative;
-                height: auto;
-                display: none;
-            }
-            .op-sidebar.open {
-                display: block;
+                align-items: flex-start;
+                flex-wrap: wrap;
             }
             .op-sidebar-bottom {
-                position: static;
-                margin-top: 22px;
+                margin-left: 0;
             }
             .op-mobile-toggle {
-                display: inline-flex;
+                display: none;
             }
-            .op-overview,
-            .op-grid {
+            .op-overview {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 960px) {
+            .op-stack {
                 grid-template-columns: 1fr;
             }
         }
         @media (max-width: 720px) {
             .op-main {
                 padding: 12px;
+            }
+            .op-sidebar {
+                position: static;
+                display: grid;
+                grid-template-columns: 1fr;
+            }
+            .op-nav {
+                width: 100%;
+            }
+            .op-sidebar-bottom {
+                width: 100%;
+                justify-content: space-between;
             }
             .op-topbar {
                 align-items: flex-start;
