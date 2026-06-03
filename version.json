@@ -1,27 +1,13 @@
 {
-    "version": "0.3.123",
-    "date": "2026-05-22",
+    "version": "0.3.129",
+    "date": "2026-06-03",
     "min_php": "8.1",
     "changelog": [
-        "Production and local Docker images now include the PHP IMAP extension required for incoming email ingest",
-        "Incoming HTML emails now keep readable paragraphs, line breaks, lists, and table spacing when creating tickets or comments",
-        "Email ingest now prefers the better formatted HTML-derived body when plain text is collapsed into one line",
-        "Separated SaaS managed deployments from the self-hosted public update channel",
-        "Disabled in-app ZIP update controls when FoxDesk runs as a managed SaaS deployment",
-        "Added explicit FOXDESK_EDITION and FOXDESK_UPDATE_CHANNEL defaults for production SaaS containers",
-        "Redesigned the SaaS operator console as a standalone control plane for workspaces, billing state, migrations, and tenant lifecycle",
-        "Removed internal unit economics and margin copy from public/operator screens",
-        "Improved platform admin responsive layout with mobile-safe workspace cards and search",
-        "Aligned FoxDesk Cloud public copy with the app.foxdesk.net launch domain",
-        "Added the public FoxDesk Cloud SaaS website with light and dark product previews",
-        "Added a SaaS platform dashboard for creating workspaces, tracking usage, billing state, storage overage, and recent migrations",
-        "Added self-hosted to SaaS migration export packages for admins",
-        "Added SaaS migration import that creates a tenant workspace, remaps data IDs, imports attachments, and records migration history",
-        "Added deployment and migration documentation for Hetzner, Cloudflare, and self-hosted cutover",
-        "Added production nginx/Caddy proxy support for app.foxdesk.net and foxdesk.net launch routing",
-        "Fixed internal HTTPS redirect handling behind the Hetzner nginx reverse proxy",
-        "Updated the default extra storage overage price to EUR 1.90 per GB",
-        "Updated Playwright and smoke tests for the SaaS control plane login flow"
+        "SaaS migration API now accepts token-protected self-hosted sync plans, table chunks, and attachment uploads",
+        "Platform operators can manage migration bridge tokens from the workspace detail view",
+        "Self-hosted migration data is mapped into the target tenant workspace with source object mapping",
+        "Ticket creation no longer sends duplicate internal emails when an admin or agent assigns a ticket to themselves",
+        "Ticket search now looks across all non-archived tickets by default instead of only the current view"
     ],
     "delete_files": []
 }

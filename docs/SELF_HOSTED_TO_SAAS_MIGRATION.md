@@ -38,7 +38,7 @@ and email credentials are re-entered in SaaS.
 
 Use ZIP import only when API sync is not available.
 
-1. Update the self-hosted FoxDesk to public version `0.3.115` or newer.
+1. Update the self-hosted FoxDesk to public version `0.3.129` or newer.
 2. Log in as an admin.
 3. Open `index.php?page=admin&section=migration-export`.
 4. Click **Download migration package**.
