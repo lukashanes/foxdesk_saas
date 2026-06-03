@@ -16,6 +16,8 @@ $user = current_user();
 $error = '';
 $success = '';
 $operator_link = '';
+$operator_secret = '';
+$operator_secret_label = '';
 $selected_tenant_id = (int) ($_GET['tenant_id'] ?? $_POST['return_tenant_id'] ?? $_POST['tenant_id'] ?? 0);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -96,6 +98,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($result['sent'])) {
                 $operator_link = (string) $result['reset_link'];
             }
+        } elseif ($action === 'create_migration_token') {
+            $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
+            $result = platform_create_migration_token($tenant_id);
+            $selected_tenant_id = $tenant_id;
+            $operator_secret = (string) $result['token'];
+            $operator_secret_label = 'Migration token';
+            $success = 'Migration token created. Copy it now; it will not be shown again.';
         }
     } catch (Throwable $e) {
         $error = $e->getMessage();
@@ -903,6 +912,12 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                 <code class="op-reset-code"><?php echo e($operator_link); ?></code>
             </div>
         <?php endif; ?>
+        <?php if ($operator_secret): ?>
+            <div class="op-alert success">
+                <?php echo e($operator_secret_label ?: 'Generated secret'); ?>
+                <code class="op-reset-code"><?php echo e($operator_secret); ?></code>
+            </div>
+        <?php endif; ?>
 
         <section class="op-overview" id="overview">
             <div class="op-card op-compact-card primary">
@@ -1099,6 +1114,44 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                     </div>
 
                     <div class="op-stack" style="grid-template-columns: 1fr;">
+                        <section class="op-card">
+                            <div class="op-section-head">
+                                <div>
+                                    <h2>Migration bridge</h2>
+                                    <p>Issue a scoped token for one-way self-hosted sync and final cutover.</p>
+                                </div>
+                                <form method="post">
+                                    <?php echo csrf_field(); ?>
+                                    <input type="hidden" name="platform_action" value="create_migration_token">
+                                    <input type="hidden" name="tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                    <input type="hidden" name="return_tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                    <button class="op-btn primary" type="submit">Create token</button>
+                                </form>
+                            </div>
+                            <div class="op-panel-body op-list">
+                                <?php if (empty($selected_detail['migration_connections'])): ?>
+                                    <div class="op-empty">No migration bridge has been issued for this workspace yet.</div>
+                                <?php endif; ?>
+                                <?php foreach ($selected_detail['migration_connections'] as $connection): ?>
+                                    <?php $migration_status = preg_replace('/[^a-z_]/', '', (string) ($connection['status'] ?? 'issued')); ?>
+                                    <div class="op-list-row">
+                                        <span>
+                                            <span class="op-label"><?php echo e($connection['label'] ?: 'Self-hosted sync'); ?></span>
+                                            <div class="op-name"><?php echo e($connection['source_url'] ?: 'Waiting for source app'); ?></div>
+                                            <div class="op-sub">
+                                                created <?php echo e((string) $connection['created_at']); ?>
+                                                <?php echo !empty($connection['last_seen_at']) ? ' · seen ' . e((string) $connection['last_seen_at']) : ''; ?>
+                                                <?php echo !empty($connection['expires_at']) ? ' · expires ' . e((string) $connection['expires_at']) : ''; ?>
+                                            </div>
+                                        </span>
+                                        <span class="op-pill <?php echo e(in_array($migration_status, ['connected', 'syncing', 'ready_for_cutover', 'cutover_complete'], true) ? 'good' : 'notice'); ?>">
+                                            <?php echo e($connection['status']); ?>
+                                        </span>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </section>
+
                         <section class="op-card">
                             <div class="op-section-head">
                                 <div>

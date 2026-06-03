@@ -224,6 +224,17 @@ function platform_invite_or_set_owner(int $tenant_id, string $email, string $fir
     ]);
 }
 
+function platform_create_migration_token(int $tenant_id): array
+{
+    require_once BASE_PATH . '/includes/migration-functions.php';
+
+    return migration_bridge_create_connection(
+        $tenant_id,
+        (int) ($_SESSION['user_id'] ?? 0),
+        'Self-hosted sync'
+    );
+}
+
 function platform_tenant_detail_context(int $tenant_id): ?array
 {
     if ($tenant_id <= 0) {
@@ -243,6 +254,22 @@ function platform_tenant_detail_context(int $tenant_id): ?array
     ", [$tenant_id]);
     if (!$tenant) {
         return null;
+    }
+
+    $migration_connections = [];
+    if (function_exists('migration_bridge_ensure_connections_table')) {
+        try {
+            migration_bridge_ensure_connections_table();
+            $migration_connections = db_fetch_all("
+                SELECT id, label, source_url, source_version, status, last_seen_at, created_at, expires_at, cutover_at
+                FROM migration_connections
+                WHERE tenant_id = ?
+                ORDER BY created_at DESC, id DESC
+                LIMIT 6
+            ", [$tenant_id]);
+        } catch (Throwable $e) {
+            // Keep tenant detail available even if the migration table cannot be prepared.
+        }
     }
 
     $deleted_filter = column_exists('users', 'deleted_at') ? "AND deleted_at IS NULL" : "";
@@ -327,6 +354,7 @@ function platform_tenant_detail_context(int $tenant_id): ?array
         'usage' => billing_tenant_usage($tenant_id),
         'owner' => platform_find_owner($tenant_id),
         'users' => $users,
+        'migration_connections' => $migration_connections,
         'history' => $history,
         'usage_events' => $usage_events,
     ];

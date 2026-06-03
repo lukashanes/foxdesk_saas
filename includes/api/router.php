@@ -21,6 +21,7 @@ require_once __DIR__ . '/allowed-senders-handler.php';
 require_once __DIR__ . '/push-handler.php';
 require_once __DIR__ . '/app-handler.php';
 require_once __DIR__ . '/mobile-handler.php';
+require_once __DIR__ . '/migration-handler.php';
 
 /**
  * Record tenant-level API volume for abuse monitoring.
@@ -63,6 +64,11 @@ function route_api_request($action) {
         'mobile-login',
         'mobile-verify-2fa',
         'mobile-refresh',
+        'migration-connect',
+        'migration-plan',
+        'migration-status',
+        'migration-push-table',
+        'migration-push-attachment',
     ];
 
     // --- Bearer token authentication (for agent/external API access) ---
@@ -165,6 +171,13 @@ function route_api_request($action) {
         'mobile-logout' => 'api_mobile_logout',
         'mobile-register-device' => 'api_mobile_register_device',
         'mobile-unregister-device' => 'api_mobile_unregister_device',
+
+        // Self-hosted to SaaS migration bridge
+        'migration-connect' => 'api_migration_connect',
+        'migration-plan' => 'api_migration_plan',
+        'migration-status' => 'api_migration_status',
+        'migration-push-table' => 'api_migration_push_table',
+        'migration-push-attachment' => 'api_migration_push_attachment',
 
         // Dashboard layout
         'save-dashboard-layout' => 'api_save_dashboard_layout',
