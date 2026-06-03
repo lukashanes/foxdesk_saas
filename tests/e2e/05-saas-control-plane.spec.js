@@ -13,8 +13,10 @@ function tenantIdByOwnerEmail(email) {
   return Number(lines[1] || 0);
 }
 
-function seedStorageUsage(ownerEmail, fileSizeBytes) {
-  const ticketHash = `stor${Date.now()}`.slice(0, 16);
+function seedStorageUsage(ownerEmail, fileSizeBytes, storageDriver = 'local') {
+  const ticketHash = `stor${storageDriver[0]}${Date.now()}`.slice(0, 16);
+  const storageBucket = storageDriver === 'r2' ? 'foxdesk-e2e-r2' : '';
+  const storageKey = storageDriver === 'r2' ? `e2e/${ticketHash}.bin` : '';
   dbQuery(`
     INSERT INTO tickets (tenant_id, hash, title, description, user_id, status_id, created_at, updated_at)
     SELECT u.tenant_id, ${sqlString(ticketHash)}, 'Storage usage seed', 'E2E storage usage seed', u.id,
@@ -24,9 +26,9 @@ function seedStorageUsage(ownerEmail, fileSizeBytes) {
     LIMIT 1;
   `);
   dbQuery(`
-    INSERT INTO attachments (tenant_id, ticket_id, filename, original_name, mime_type, file_size, uploaded_by, created_at)
+    INSERT INTO attachments (tenant_id, ticket_id, filename, original_name, mime_type, file_size, storage_driver, storage_bucket, storage_key, uploaded_by, created_at)
     SELECT t.tenant_id, t.id, ${sqlString(`${ticketHash}.bin`)}, 'storage.bin', 'application/octet-stream', ${Number(fileSizeBytes)},
-      t.user_id, NOW()
+      ${sqlString(storageDriver)}, ${sqlString(storageBucket)}, ${sqlString(storageKey)}, t.user_id, NOW()
     FROM tickets t
     WHERE t.hash = ${sqlString(ticketHash)}
     LIMIT 1;
@@ -75,6 +77,8 @@ test('public signup creates an isolated FoxDesk workspace and platform admin can
     ownerPassword
   });
   await expect(signupPage.locator('body')).toContainText('Dashboard');
+  await expect(signupPage.locator('#get-started')).toContainText('Create your first ticket');
+  await expect(signupPage.locator('#get-started')).toContainText('Review trial and billing');
 
   await signupPage.goto('/index.php?page=platform');
   await expect(signupPage).toHaveURL(/page=dashboard|dashboard/);
@@ -88,6 +92,32 @@ test('public signup creates an isolated FoxDesk workspace and platform admin can
   await expect(platformPage.locator('body')).toContainText(workspaceName);
   await expect(platformPage.locator('body')).toContainText(ownerEmail);
   await expect(platformPage.locator('body')).toContainText('FoxDesk Cloud');
+
+  const workspaceRow = platformPage.locator('[data-workspace-row]').filter({ hasText: workspaceName });
+  await expect(workspaceRow).toHaveCount(1);
+  await workspaceRow.getByText('Open detail').click();
+  await expect(platformPage).toHaveURL(/tenant_id=/);
+  await expect(platformPage.locator('#tenant-detail')).toContainText(workspaceName);
+  await expect(platformPage.locator('#tenant-detail')).toContainText('Owner access');
+  await expect(platformPage.locator('#tenant-detail')).toContainText('Subscription history');
+  await expect(platformPage.locator('#tenant-detail')).toContainText('Usage overview');
+
+  const replacementOwner = `replacement.${stamp}@example.test`;
+  await platformPage.locator('#tenant-detail input[name="owner_email"]').fill(replacementOwner);
+  await platformPage.locator('#tenant-detail input[name="owner_first_name"]').fill('Replacement');
+  await platformPage.locator('#tenant-detail input[name="owner_last_name"]').fill('Owner');
+  await platformPage.locator('#tenant-detail button', { hasText: 'Invite owner' }).click();
+  await expect(platformPage.locator('body')).toContainText('Owner invite sent');
+  await expect(platformPage.locator('#tenant-detail')).toContainText(replacementOwner);
+
+  const ownerUpdate = dbQuery(`
+    SELECT u.email, u.reset_token IS NOT NULL AS has_reset
+    FROM tenants t
+    JOIN users u ON u.id = t.owner_user_id
+    WHERE t.name = ${sqlString(workspaceName)}
+    LIMIT 1;
+  `);
+  expect(ownerUpdate).toContain(`${replacementOwner}\t1`);
   await platformContext.close();
 });
 
@@ -140,8 +170,15 @@ test('Stripe webhook updates tenant billing state and rejects invalid signatures
   });
   expect(response.status()).toBe(200);
   await expect(response).toBeOK();
+  expect(await response.json()).toEqual(expect.objectContaining({
+    duplicate: false,
+    event_id: `evt_${stamp}`,
+    handled: true,
+    tenant_id: tenantId,
+    type: 'customer.subscription.updated'
+  }));
 
-  const output = dbQuery(`
+  let output = dbQuery(`
     SELECT status, subscription_status, stripe_customer_id, stripe_subscription_id
     FROM tenants
     WHERE id = ${tenantId}
@@ -150,6 +187,55 @@ test('Stripe webhook updates tenant billing state and rejects invalid signatures
   expect(output).toContain('active\tactive');
   expect(output).toContain(`cus_${stamp}`);
   expect(output).toContain(`sub_${stamp}`);
+
+  output = dbQuery(`
+    SELECT event_id, event_type, tenant_id, status, error_message
+    FROM billing_stripe_events
+    WHERE event_id = ${sqlString(`evt_${stamp}`)}
+    LIMIT 1;
+  `);
+  expect(output).toContain(`evt_${stamp}\tcustomer.subscription.updated\t${tenantId}\tprocessed`);
+
+  dbQuery(`
+    UPDATE tenants
+    SET status = 'past_due', subscription_status = 'past_due',
+      stripe_customer_id = 'cus_duplicate_guard_${stamp}',
+      stripe_subscription_id = 'sub_duplicate_guard_${stamp}'
+    WHERE id = ${tenantId};
+  `);
+
+  const duplicate = await request.post('/index.php?page=stripe-webhook', {
+    data: payload,
+    headers: {
+      'Content-Type': 'application/json',
+      'Stripe-Signature': stripeSignature(payload)
+    }
+  });
+  expect(duplicate.status()).toBe(200);
+  expect(await duplicate.json()).toEqual(expect.objectContaining({
+    duplicate: true,
+    event_id: `evt_${stamp}`,
+    tenant_id: tenantId,
+    status: 'processed',
+    type: 'customer.subscription.updated'
+  }));
+
+  output = dbQuery(`
+    SELECT status, subscription_status, stripe_customer_id, stripe_subscription_id
+    FROM tenants
+    WHERE id = ${tenantId}
+    LIMIT 1;
+  `);
+  expect(output).toContain('past_due\tpast_due');
+  expect(output).toContain(`cus_duplicate_guard_${stamp}`);
+  expect(output).toContain(`sub_duplicate_guard_${stamp}`);
+
+  output = dbQuery(`
+    SELECT COUNT(*) AS c
+    FROM billing_stripe_events
+    WHERE event_id = ${sqlString(`evt_${stamp}`)};
+  `);
+  expect(output).toContain('\n1');
 });
 
 test('Stripe checkout and invoice webhooks keep tenant lifecycle in sync', async ({ browser, request }) => {
@@ -223,12 +309,38 @@ test('Stripe checkout and invoice webhooks keep tenant lifecycle in sync', async
   expect(failedResponse.status()).toBe(200);
 
   output = dbQuery(`
-    SELECT status, subscription_status
+    SELECT status, subscription_status, suspended_at IS NOT NULL AS has_suspended_at, blocked_at IS NULL AS has_no_blocked_at
     FROM tenants
     WHERE id = ${tenantId}
     LIMIT 1;
   `);
-  expect(output).toContain('past_due\tpast_due');
+  expect(output).toContain('past_due\tpast_due\t1\t1');
+
+  const ownerContext = await browser.newContext({ baseURL });
+  const ownerPage = await ownerContext.newPage();
+  await login(ownerPage, ownerEmail, 'OwnerPass123!');
+  await ownerPage.goto('/index.php?page=tickets');
+  await expect(ownerPage).not.toHaveURL(/page=billing/);
+
+  dbQuery(`
+    UPDATE tenants
+    SET suspended_at = DATE_SUB(NOW(), INTERVAL 5 DAY)
+    WHERE id = ${tenantId};
+  `);
+  const maintenance = JSON.parse(dockerExec(webContainer, ['php', 'bin/run-maintenance.php', '--json']));
+  expect(maintenance.past_due_suspension.tenant_ids).toContain(tenantId);
+
+  output = dbQuery(`
+    SELECT status, subscription_status, blocked_at IS NOT NULL AS has_blocked_at
+    FROM tenants
+    WHERE id = ${tenantId}
+    LIMIT 1;
+  `);
+  expect(output).toContain('suspended\tpast_due\t1');
+
+  await ownerPage.goto('/index.php?page=tickets');
+  await expect(ownerPage).toHaveURL(/page=billing/);
+  await expect(ownerPage.locator('body')).toContainText('Workspace access is suspended');
 
   const paidInvoice = {
     id: `evt_invoice_paid_${stamp}`,
@@ -252,12 +364,16 @@ test('Stripe checkout and invoice webhooks keep tenant lifecycle in sync', async
   expect(paidResponse.status()).toBe(200);
 
   output = dbQuery(`
-    SELECT status, subscription_status
+    SELECT status, subscription_status, suspended_at IS NULL AS no_suspended_at, blocked_at IS NULL AS no_blocked_at
     FROM tenants
     WHERE id = ${tenantId}
     LIMIT 1;
   `);
-  expect(output).toContain('active\tactive');
+  expect(output).toContain('active\tactive\t1\t1');
+
+  await ownerPage.goto('/index.php?page=tickets');
+  await expect(ownerPage).not.toHaveURL(/page=billing/);
+  await ownerContext.close();
 });
 
 test('blocked tenant admins are redirected to billing instead of app pages', async ({ browser }) => {
@@ -314,8 +430,27 @@ test('trial lifecycle emails, expiry, and operator extension work end to end', a
     SET trial_ends_at = DATE_SUB(NOW(), INTERVAL 1 HOUR)
     WHERE id = ${tenantId};
   `);
-  const maintenance = JSON.parse(dockerExec(webContainer, ['php', 'bin/run-maintenance.php', '--json']));
-  expect(maintenance.trial_expiration.expired).toBeGreaterThanOrEqual(1);
+  let maintenance = JSON.parse(dockerExec(webContainer, ['php', 'bin/run-maintenance.php', '--json']));
+  expect(maintenance.trial_expiration.tenant_ids).not.toContain(tenantId);
+
+  output = dbQuery(`
+    SELECT status, subscription_status
+    FROM tenants
+    WHERE id = ${tenantId}
+    LIMIT 1;
+  `);
+  expect(output).toContain('trialing\ttrialing');
+
+  await page.goto('/index.php?page=tickets');
+  await expect(page).not.toHaveURL(/page=billing/);
+
+  dbQuery(`
+    UPDATE tenants
+    SET trial_ends_at = DATE_SUB(NOW(), INTERVAL 5 DAY)
+    WHERE id = ${tenantId};
+  `);
+  maintenance = JSON.parse(dockerExec(webContainer, ['php', 'bin/run-maintenance.php', '--json']));
+  expect(maintenance.trial_expiration.tenant_ids).toContain(tenantId);
 
   output = dbQuery(`
     SELECT status, subscription_status
@@ -368,15 +503,21 @@ test('single cloud plan shows unlimited usage and storage overage', async ({ bro
     lastName: 'Owner'
   });
 
-  seedStorageUsage(ownerEmail, 3 * 1073741824);
+  seedStorageUsage(ownerEmail, 2 * 1073741824, 'local');
+  seedStorageUsage(ownerEmail, 1 * 1073741824, 'r2');
   const tenantId = tenantIdByOwnerEmail(ownerEmail);
   dbQuery(`UPDATE tenants SET stripe_customer_id = 'cus_usage_${stamp}' WHERE id = ${tenantId};`);
+
+  await page.request.get('/index.php?page=api&action=app-shell');
 
   await page.goto('/index.php?page=billing');
   await expect(page.locator('body')).toContainText('FoxDesk Cloud');
   await expect(page.locator('body')).toContainText('Unlimited users, clients, agents, and tickets');
   await expect(page.locator('body')).toContainText('3.00 GB / 1.00 GB');
   await expect(page.locator('body')).toContainText('2 GB');
+  await expect(page.locator('body')).toContainText('Local storage');
+  await expect(page.locator('body')).toContainText('R2 storage');
+  await expect(page.locator('body')).toContainText('API requests');
   await expect(page.locator('body')).toContainText('EUR 3.80');
 
   const report = JSON.parse(dockerExec(webContainer, ['php', 'bin/report-billing-usage.php', '--dry-run', '--json']));

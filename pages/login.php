@@ -20,7 +20,9 @@ if (empty($_SESSION['2fa_pending']) && !empty($_COOKIE['foxdesk_remember']) && v
 
 $settings = get_settings();
 $app_name = $settings['app_name'] ?? (defined('APP_NAME') ? APP_NAME : 'FoxDesk');
-$login_brand_name = foxdesk_is_app_host() ? 'FoxDesk Cloud' : $app_name;
+$login_brand_name = function_exists('foxdesk_is_platform_host') && foxdesk_is_platform_host()
+    ? 'FoxDesk Platform'
+    : (foxdesk_is_app_host() ? 'FoxDesk Cloud' : $app_name);
 
 $error = '';
 $info_message = '';
@@ -130,57 +132,65 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
             ensure_totp_columns();
             $logged_user = current_user();
 
-            $user_has_2fa = is_2fa_enabled($logged_user);
-            $role_requires_2fa = is_2fa_required_for_role($logged_user['role']);
+            if (function_exists('foxdesk_is_platform_host') && foxdesk_is_platform_host() && !is_platform_admin($logged_user)) {
+                logout();
+                $workspace_login = function_exists('foxdesk_workspace_url') ? foxdesk_workspace_url('index.php?page=login') : 'index.php?page=login';
+                $error = 'This address is for FoxDesk platform administrators. Use the workspace login instead: ' . $workspace_login;
+                log_security_event('platform_login_rejected', null, 'email=' . $email);
+            } else {
 
-            if ($user_has_2fa || $role_requires_2fa) {
-                // Park the session — user is NOT logged in yet
-                $pending = [
-                    'user_id'      => $_SESSION['user_id'],
-                    'user_email'   => $_SESSION['user_email'],
-                    'user_name'    => $_SESSION['user_name'],
-                    'user_role'    => $_SESSION['user_role'],
-                    'lang'         => $_SESSION['lang'] ?? 'en',
-                    'remember_me'  => !empty($_POST['remember_me']),
-                    'totp_enabled' => $user_has_2fa,
-                    'timestamp'    => time(),
-                ];
+                $user_has_2fa = is_2fa_enabled($logged_user);
+                $role_requires_2fa = is_2fa_required_for_role($logged_user['role']);
 
-                // Wipe the login session — is_logged_in() must return false
-                $_SESSION = [];
-                session_regenerate_id(true);
-                $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+                if ($user_has_2fa || $role_requires_2fa) {
+                    // Park the session — user is NOT logged in yet
+                    $pending = [
+                        'user_id'      => $_SESSION['user_id'],
+                        'user_email'   => $_SESSION['user_email'],
+                        'user_name'    => $_SESSION['user_name'],
+                        'user_role'    => $_SESSION['user_role'],
+                        'lang'         => $_SESSION['lang'] ?? 'en',
+                        'remember_me'  => !empty($_POST['remember_me']),
+                        'totp_enabled' => $user_has_2fa,
+                        'timestamp'    => time(),
+                    ];
 
-                if ($user_has_2fa) {
-                    // User has 2FA set up → show code entry form
-                    $_SESSION['2fa_pending'] = $pending;
-                    log_security_event('2fa_challenge', $pending['user_id']);
-                    $show_2fa_form = true;
+                    // Wipe the login session — is_logged_in() must return false
+                    $_SESSION = [];
+                    session_regenerate_id(true);
+                    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+
+                    if ($user_has_2fa) {
+                        // User has 2FA set up → show code entry form
+                        $_SESSION['2fa_pending'] = $pending;
+                        log_security_event('2fa_challenge', $pending['user_id']);
+                        $show_2fa_form = true;
+                    } else {
+                        // 2FA required by role but user hasn't set it up → force setup
+                        $_SESSION['user_id']    = $pending['user_id'];
+                        $_SESSION['user_email'] = $pending['user_email'];
+                        $_SESSION['user_name']  = $pending['user_name'];
+                        $_SESSION['user_role']  = $pending['user_role'];
+                        $_SESSION['lang']       = $pending['lang'];
+                        $_SESSION['2fa_setup_required'] = true;
+
+                        if (!empty($pending['remember_me'])) {
+                            set_remember_token($pending['user_id']);
+                        }
+                        rate_limit_clear($rate_key);
+                        header('Location: index.php?page=profile&setup2fa=1');
+                        exit;
+                    }
                 } else {
-                    // 2FA required by role but user hasn't set it up → force setup
-                    $_SESSION['user_id']    = $pending['user_id'];
-                    $_SESSION['user_email'] = $pending['user_email'];
-                    $_SESSION['user_name']  = $pending['user_name'];
-                    $_SESSION['user_role']  = $pending['user_role'];
-                    $_SESSION['lang']       = $pending['lang'];
-                    $_SESSION['2fa_setup_required'] = true;
-
-                    if (!empty($pending['remember_me'])) {
-                        set_remember_token($pending['user_id']);
+                    // No 2FA needed — complete login normally
+                    if (!empty($_POST['remember_me'])) {
+                        set_remember_token($_SESSION['user_id']);
                     }
                     rate_limit_clear($rate_key);
-                    header('Location: index.php?page=profile&setup2fa=1');
+                    $redirect_page = function_exists('foxdesk_authenticated_home_page') ? foxdesk_authenticated_home_page() : 'dashboard';
+                    header('Location: index.php?page=' . $redirect_page);
                     exit;
                 }
-            } else {
-                // No 2FA needed — complete login normally
-                if (!empty($_POST['remember_me'])) {
-                    set_remember_token($_SESSION['user_id']);
-                }
-                rate_limit_clear($rate_key);
-                $redirect_page = is_platform_admin(current_user()) ? 'platform' : 'dashboard';
-                header('Location: index.php?page=' . $redirect_page);
-                exit;
             }
         } else {
             rate_limit_record($rate_key, 900);
@@ -292,9 +302,11 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
             <?php endif; ?>
             <h1 class="text-4xl font-bold mb-4"><?php echo e(t('Welcome to {app}', ['app' => $login_brand_name])); ?></h1>
             <p class="text-slate-300 text-lg">
-                <?php echo foxdesk_is_app_host()
+                <?php echo (function_exists('foxdesk_is_platform_host') && foxdesk_is_platform_host())
+                    ? e('Sign in to operate hosted FoxDesk workspaces.')
+                    : (foxdesk_is_app_host()
                     ? e('Sign in to your hosted FoxDesk workspace.')
-                    : e($settings['login_welcome_text'] ?? t('Manage your tickets, track time, and support your customers with our corporate enterprise helpdesk.')); ?>
+                    : e($settings['login_welcome_text'] ?? t('Manage your tickets, track time, and support your customers with our corporate enterprise helpdesk.'))); ?>
             </p>
         </div>
     </div>
@@ -391,7 +403,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                 <div class="text-left mb-8">
                     <h2 class="text-3xl font-bold mb-2" style="color: var(--text-primary);"><?php echo e(t('Sign in')); ?>
                     </h2>
-                    <p style="color: var(--text-muted);"><?php echo e(foxdesk_is_app_host() ? 'Use the account from your FoxDesk workspace.' : t('Sign in to your account')); ?></p>
+                    <p style="color: var(--text-muted);"><?php echo e((function_exists('foxdesk_is_platform_host') && foxdesk_is_platform_host()) ? 'Use your FoxDesk platform admin account.' : (foxdesk_is_app_host() ? 'Use the account from your FoxDesk workspace.' : t('Sign in to your account'))); ?></p>
                 </div>
 
                 <?php if ($error): ?>

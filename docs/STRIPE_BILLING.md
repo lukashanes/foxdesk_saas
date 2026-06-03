@@ -21,11 +21,16 @@ define('STRIPE_WEBHOOK_SECRET', 'whsec_...');
 define('STRIPE_PRICE_CLOUD_BASE', 'price_...');
 define('STRIPE_PRICE_STORAGE_OVERAGE', 'price_...');
 define('STRIPE_STORAGE_METER_EVENT_NAME', 'foxdesk_storage_extra_gb');
+define('STRIPE_TAX_ENABLED', true);
+define('STRIPE_TAX_ID_COLLECTION_ENABLED', true);
+define('STRIPE_TAX_ID_COLLECTION_REQUIRED', '');
 define('BILLING_CURRENCY', 'EUR');
 define('BILLING_CLOUD_BASE_PRICE_CENTS', 990);
 define('BILLING_STORAGE_OVERAGE_PRICE_CENTS', 190);
 define('BILLING_INCLUDED_STORAGE_BYTES', 1073741824);
 define('BILLING_TRIAL_DAYS', 14);
+define('BILLING_TRIAL_GRACE_DAYS', 3);
+define('BILLING_PAST_DUE_GRACE_DAYS', 7);
 ```
 
 When `BILLING_ENABLED` is `false`, the billing UI remains visible but Checkout and Portal actions return a clear configuration error.
@@ -36,6 +41,15 @@ Create two recurring Prices in Stripe for the single public plan:
 
 - FoxDesk Cloud base subscription -> `STRIPE_PRICE_CLOUD_BASE`
 - Metered extra storage per GB -> `STRIPE_PRICE_STORAGE_OVERAGE`
+
+Set both Prices to `tax_behavior=exclusive`. FoxDesk public prices are treated as prices before tax. Stripe Tax then adds VAT/sales tax only when due; EU VAT-registered business customers can enter a VAT ID in Checkout and Stripe applies reverse charge or zero-rate where applicable. If a Price is `inclusive`, reverse charge does not reduce the total amount paid, so EU VAT payers would not see a lower total.
+
+Enable Stripe Tax in live mode before setting `STRIPE_TAX_ENABLED=true`:
+
+- head office: Aenze s.r.o., Moskevska 1842, 272 04 Kladno, Czech Republic
+- default tax behavior: `exclusive`
+- product tax code: `txcd_10103001` (`Software as a service (SaaS) - business use`)
+- customer portal: enable customer updates for billing address and Tax ID
 
 Create a Stripe meter with event name matching `STRIPE_STORAGE_METER_EVENT_NAME`. Configure it to aggregate the latest reported value for the billing period. FoxDesk reports the current extra started GB as a whole-number meter event.
 
@@ -81,17 +95,20 @@ The endpoint verifies the `Stripe-Signature` header with `STRIPE_WEBHOOK_SECRET`
 - Signup creates a 14-day trial workspace with no card required.
 - Trial workspaces use `tenants.status = trialing`, `tenants.subscription_status = trialing`, and `tenants.trial_ends_at`.
 - Trial lifecycle emails are recorded in `billing_trial_email_events` so signup, 3-day, 1-day, and expired notices are sent at most once per workspace.
-- When the trial expires before payment, FoxDesk marks the workspace `trial_expired` and locks normal app access. Workspace admins can still open Billing and activate through Stripe Checkout.
-- Maintenance (`php bin/run-maintenance.php`) and pseudo-cron both expire trials and send pending trial reminders.
+- When the trial end passes, the workspace stays accessible through `BILLING_TRIAL_GRACE_DAYS`. After that grace period, FoxDesk marks it `trial_expired` and locks normal app access. Workspace admins can still open Billing and activate through Stripe Checkout.
+- Maintenance (`php bin/run-maintenance.php`) and pseudo-cron both expire trials, suspend overdue failed-payment tenants, and send pending trial reminders.
 - Platform admins can open Checkout or Customer Portal for any workspace from `Platform`.
 - Customer Portal uses `STRIPE_PORTAL_CONFIGURATION_ID` when present; otherwise it falls back to the first active Stripe Portal configuration.
+- Checkout collects billing address and business tax ID when `STRIPE_TAX_ID_COLLECTION_ENABLED=true`.
+- Checkout enables Stripe automatic tax when `STRIPE_TAX_ENABLED=true`.
 - Platform admins can extend a trial, block a tenant, or manually reactivate a workspace from the workspace catalog.
 - Workspace admins can open their own billing page from the user menu.
 - Stripe subscription changes update `tenants.stripe_customer_id`, `tenants.stripe_subscription_id`, `tenants.subscription_status`, and `tenants.status`.
-- Paid invoices reactivate the workspace. Failed invoices mark the workspace `past_due` so operators can follow up while Stripe dunning runs.
+- Paid invoices reactivate the workspace and clear suspension timestamps. Failed invoices mark the workspace `past_due`, preserve the first failed-payment timestamp in `suspended_at`, and keep app access open through `BILLING_PAST_DUE_GRACE_DAYS`.
+- After the past-due grace period, maintenance changes `tenants.status` to `suspended` and normal app pages redirect to Billing until Stripe reports a paid invoice.
 - Billing and Platform show storage usage, included storage, billable extra GB, and estimated monthly overage.
 - `bin/report-billing-usage.php` reports daily storage meter events to Stripe for tenants with a Stripe customer id.
-- Tenants with `status` set to `trial_expired`, `past_due`, `suspended`, `blocked`, or `canceled` are redirected to Billing instead of normal app pages.
+- Tenants with `status` set to `trial_expired`, `suspended`, `blocked`, or `canceled` are redirected to Billing instead of normal app pages. `past_due` tenants stay usable until the configured grace period ends.
 
 ## Usage reporting
 
@@ -107,13 +124,56 @@ Run without calling Stripe:
 php bin/report-billing-usage.php --dry-run --json
 ```
 
+Validate one tenant end to end against Stripe test mode:
+
+```bash
+php bin/validate-stripe-usage.php --tenant-id=1 --live --json
+```
+
+The validation command:
+
+- checks the configured Stripe key mode without printing the secret
+- refuses live Stripe keys unless `--allow-live-key` is explicitly passed
+- checks that an active Billing Meter exists for `STRIPE_STORAGE_METER_EVENT_NAME`
+- runs a local dry-run first
+- sends one tenant-scoped meter event when `--live` is used
+- checks meter event summaries and invoice preview when Stripe has enough data
+
+Stripe meter events are processed asynchronously, so a fresh event can be
+accepted before it appears in summaries or invoice previews. Re-run the command
+after a short delay if the meter event was reported but the summary has not
+caught up yet.
+
+For targeted local checks:
+
+```bash
+php bin/report-billing-usage.php --tenant-id=1 --period=2026-06-01 --dry-run --json
+```
+
 The maintenance runner also calls usage reporting:
 
 ```bash
 php bin/run-maintenance.php
 ```
 
-Reporting is idempotent per tenant and day. Each row is stored in `billing_usage_reports` with a deterministic idempotency key.
+Reporting is idempotent per tenant and day. Each row is stored in
+`billing_usage_reports` with a deterministic idempotency key. A dry-run row does
+not block a later live report for the same tenant and day; only a successfully
+reported Stripe event blocks a duplicate live report.
+
+`billing_tenant_usage()` now separates storage by backend:
+
+- `storage_local_bytes` counts local attachment files
+- `storage_r2_bytes` counts attachments already moved to Cloudflare R2
+- `storage_unknown_bytes` keeps future/unknown drivers visible
+- `storage_bytes` remains the billing total used for included storage and Stripe
+  overage reporting
+
+Monthly abuse-monitoring counters are stored in `billing_usage_events` for
+outbound email and API volume. Inbound email volume is read from
+`email_ingest_logs` and attributed by `tenant_id` or by the linked ticket tenant.
+These counters are visible in Billing and Platform, but they are not billed in
+Stripe yet.
 
 ## Test coverage
 
@@ -123,7 +183,9 @@ The E2E suite verifies:
 - platform admins can see created workspaces
 - Stripe webhook rejects invalid signatures
 - signed subscription webhooks update tenant billing state
+- failed invoice grace, suspension, and paid-invoice reactivation are enforced
 - storage usage and the single-plan billing UI render on Platform and Billing
+- local/R2 storage breakdown and email/API usage counters are surfaced in UI
 - dry-run metered usage reporting creates an idempotent local usage report
 - canceled tenant admins are redirected to the Billing page
 

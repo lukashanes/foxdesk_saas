@@ -8,6 +8,7 @@ require_once BASE_PATH . '/includes/security-helpers.php';
 require_once BASE_PATH . '/includes/settings-functions.php';
 require_once BASE_PATH . '/includes/user-functions.php';
 require_once BASE_PATH . '/includes/ticket-functions.php';
+require_once BASE_PATH . '/includes/modules/bootstrap.php';
 require_once BASE_PATH . '/includes/email-functions.php';
 require_once BASE_PATH . '/includes/report-functions.php';
 require_once BASE_PATH . '/includes/recurring-task-functions.php';
@@ -331,11 +332,58 @@ function upload_url(string $path): string
  */
 function url($page, $params = [])
 {
-    $url = 'index.php?page=' . $page;
+    $url = 'index.php?page=' . urlencode((string) $page);
     foreach ($params as $key => $value) {
         $url .= '&' . urlencode($key) . '=' . urlencode($value);
     }
+
+    if (function_exists('foxdesk_is_platform_host')) {
+        $platform_local_pages = ['platform', 'profile', 'login', 'logout', 'forgot-password', 'reset-password', 'health'];
+        $workspace_entry_pages = ['login', 'signup', 'forgot-password', 'reset-password'];
+
+        if ((string) $page === 'platform' && !foxdesk_is_platform_host()) {
+            return foxdesk_platform_url($url);
+        }
+
+        if (foxdesk_is_platform_host() && !in_array((string) $page, $platform_local_pages, true)) {
+            return foxdesk_workspace_url($url);
+        }
+
+        if (
+            !foxdesk_is_platform_host()
+            && function_exists('foxdesk_is_workspace_host')
+            && !foxdesk_is_workspace_host()
+            && in_array((string) $page, $workspace_entry_pages, true)
+        ) {
+            return foxdesk_workspace_url($url);
+        }
+    }
+
     return $url;
+}
+
+function foxdesk_workspace_url(string $path = ''): string
+{
+    $base = defined('APP_URL') && APP_URL !== ''
+        ? rtrim((string) APP_URL, '/')
+        : foxdesk_base_url_for_host(function_exists('foxdesk_workspace_host') ? foxdesk_workspace_host() : 'app.foxdesk.net');
+
+    return $path !== '' ? $base . '/' . ltrim($path, '/') : $base;
+}
+
+function foxdesk_platform_url(string $path = ''): string
+{
+    $base = defined('PLATFORM_URL') && PLATFORM_URL !== ''
+        ? rtrim((string) PLATFORM_URL, '/')
+        : foxdesk_base_url_for_host(function_exists('foxdesk_platform_host') ? foxdesk_platform_host() : 'platform.foxdesk.net');
+
+    return $path !== '' ? $base . '/' . ltrim($path, '/') : $base;
+}
+
+function foxdesk_base_url_for_host(string $host): string
+{
+    $scheme = function_exists('foxdesk_request_scheme') ? foxdesk_request_scheme() : 'https';
+    return $scheme . '://' . trim($host, '/');
 }
 
 /**
@@ -549,16 +597,32 @@ function get_organization($id)
 // PRIORITIES
 // =============================================================================
 
+function workflow_reference_sql_filter(string $table, array &$params, string $alias = ''): string
+{
+    if (!function_exists('tenant_scoped_table_has_column') || !tenant_scoped_table_has_column($table)) {
+        return '';
+    }
+
+    $prefix = $alias !== '' ? $alias . '.' : '';
+    $params[] = current_tenant_id();
+    return " AND ({$prefix}tenant_id = ? OR {$prefix}tenant_id IS NULL)";
+}
+
 /**
  * Get all priorities
  */
 function get_priorities()
 {
-    static $cache = null;
-    if ($cache !== null) return $cache;
+    static $cache = [];
+    $tenant_key = function_exists('current_tenant_id') ? (string) current_tenant_id() : 'global';
+    if (isset($cache[$tenant_key])) return $cache[$tenant_key];
     try {
-        $cache = db_fetch_all("SELECT * FROM priorities ORDER BY sort_order");
-        return $cache;
+        $params = [];
+        $sql = "SELECT * FROM priorities WHERE 1=1";
+        $sql .= workflow_reference_sql_filter('priorities', $params);
+        $sql .= " ORDER BY sort_order";
+        $cache[$tenant_key] = db_fetch_all($sql, $params);
+        return $cache[$tenant_key];
     } catch (Exception $e) {
         // Fallback for old installations
         return [
@@ -577,10 +641,15 @@ function get_priority($id)
 {
     static $cache = [];
     $id = (int) $id;
-    if (!isset($cache[$id])) {
-        $cache[$id] = db_fetch_one("SELECT * FROM priorities WHERE id = ?", [$id]);
+    $tenant_key = function_exists('current_tenant_id') ? (string) current_tenant_id() : 'global';
+    $key = $tenant_key . ':' . $id;
+    if (!isset($cache[$key])) {
+        $params = [$id];
+        $sql = "SELECT * FROM priorities WHERE id = ?";
+        $sql .= workflow_reference_sql_filter('priorities', $params);
+        $cache[$key] = db_fetch_one($sql, $params);
     }
-    return $cache[$id];
+    return $cache[$key];
 }
 
 /**
@@ -588,7 +657,11 @@ function get_priority($id)
  */
 function get_default_priority()
 {
-    return db_fetch_one("SELECT * FROM priorities WHERE is_default = 1 LIMIT 1");
+    $params = [];
+    $sql = "SELECT * FROM priorities WHERE is_default = 1";
+    $sql .= workflow_reference_sql_filter('priorities', $params);
+    $sql .= " LIMIT 1";
+    return db_fetch_one($sql, $params);
 }
 
 /**
@@ -643,15 +716,18 @@ function get_priority_color($priority)
 function get_ticket_types($include_inactive = false)
 {
     static $cache = [];
-    $key = $include_inactive ? 'all' : 'active';
+    $tenant_key = function_exists('current_tenant_id') ? (string) current_tenant_id() : 'global';
+    $key = $tenant_key . ':' . ($include_inactive ? 'all' : 'active');
     if (isset($cache[$key])) return $cache[$key];
     try {
-        $sql = "SELECT * FROM ticket_types";
+        $params = [];
+        $sql = "SELECT * FROM ticket_types WHERE 1=1";
         if (!$include_inactive) {
-            $sql .= " WHERE is_active = 1";
+            $sql .= " AND is_active = 1";
         }
+        $sql .= workflow_reference_sql_filter('ticket_types', $params);
         $sql .= " ORDER BY sort_order";
-        $cache[$key] = db_fetch_all($sql);
+        $cache[$key] = db_fetch_all($sql, $params);
         return $cache[$key];
     } catch (Exception $e) {
         // Fallback for old installations
@@ -670,7 +746,10 @@ function get_ticket_types($include_inactive = false)
 function get_ticket_type($slug)
 {
     try {
-        return db_fetch_one("SELECT * FROM ticket_types WHERE slug = ?", [$slug]);
+        $params = [$slug];
+        $sql = "SELECT * FROM ticket_types WHERE slug = ?";
+        $sql .= workflow_reference_sql_filter('ticket_types', $params);
+        return db_fetch_one($sql, $params);
     } catch (Exception $e) {
         return null;
     }
@@ -685,11 +764,16 @@ function get_ticket_type($slug)
  */
 function get_statuses()
 {
-    static $cache = null;
-    if ($cache === null) {
-        $cache = db_fetch_all("SELECT * FROM statuses ORDER BY sort_order");
+    static $cache = [];
+    $tenant_key = function_exists('current_tenant_id') ? (string) current_tenant_id() : 'global';
+    if (!isset($cache[$tenant_key])) {
+        $params = [];
+        $sql = "SELECT * FROM statuses WHERE 1=1";
+        $sql .= workflow_reference_sql_filter('statuses', $params);
+        $sql .= " ORDER BY sort_order";
+        $cache[$tenant_key] = db_fetch_all($sql, $params);
     }
-    return $cache;
+    return $cache[$tenant_key];
 }
 
 /**
@@ -699,10 +783,15 @@ function get_status($id)
 {
     static $cache = [];
     $id = (int) $id;
-    if (!isset($cache[$id])) {
-        $cache[$id] = db_fetch_one("SELECT * FROM statuses WHERE id = ?", [$id]);
+    $tenant_key = function_exists('current_tenant_id') ? (string) current_tenant_id() : 'global';
+    $key = $tenant_key . ':' . $id;
+    if (!isset($cache[$key])) {
+        $params = [$id];
+        $sql = "SELECT * FROM statuses WHERE id = ?";
+        $sql .= workflow_reference_sql_filter('statuses', $params);
+        $cache[$key] = db_fetch_one($sql, $params);
     }
-    return $cache[$id];
+    return $cache[$key];
 }
 
 /**
@@ -710,7 +799,11 @@ function get_status($id)
  */
 function get_default_status()
 {
-    return db_fetch_one("SELECT * FROM statuses WHERE is_default = 1 LIMIT 1");
+    $params = [];
+    $sql = "SELECT * FROM statuses WHERE is_default = 1";
+    $sql .= workflow_reference_sql_filter('statuses', $params);
+    $sql .= " LIMIT 1";
+    return db_fetch_one($sql, $params);
 }
 
 // =============================================================================

@@ -28,12 +28,16 @@ function api_get_active_user_by_id($user_id) {
         return null;
     }
 
+    $params = [$user_id];
     $sql = "SELECT * FROM users WHERE id = ? AND is_active = 1";
     if (function_exists('users_deleted_at_column_exists') && users_deleted_at_column_exists()) {
         $sql .= " AND deleted_at IS NULL";
     }
+    if (function_exists('tenant_sql_filter')) {
+        $sql .= tenant_sql_filter('users', '', $params);
+    }
 
-    return db_fetch_one($sql, [$user_id]);
+    return db_fetch_one($sql, $params);
 }
 
 function api_get_active_staff_user_by_id($user_id) {
@@ -202,7 +206,7 @@ function api_start_timer() {
 
     // Get billing rates
     $ticket_billable_rate = function_exists('get_ticket_effective_billable_rate')
-        ? get_ticket_effective_billable_rate($ticket)
+        ? get_ticket_effective_billable_rate($ticket, (int) $user['id'])
         : 0.0;
     $user_cost_rate = (float)($user['cost_rate'] ?? 0);
 
@@ -263,7 +267,7 @@ function api_quick_start() {
     // Start timer (same logic as api_start_timer)
     $user_cost_rate = (float)($user['cost_rate'] ?? 0);
     $ticket_billable_rate = function_exists('get_ticket_effective_billable_rate')
-        ? get_ticket_effective_billable_rate($ticket)
+        ? get_ticket_effective_billable_rate($ticket, (int) $user['id'])
         : 0.0;
 
     db_insert('ticket_time_entries', [
@@ -892,7 +896,7 @@ function api_quick_log_time() {
 
     // Resolve billable / cost rates like the form handler does.
     $ticket_billable_rate = function_exists('get_ticket_effective_billable_rate')
-        ? get_ticket_effective_billable_rate($ticket)
+        ? get_ticket_effective_billable_rate($ticket, (int) $user['id'])
         : 0.0;
     $user_cost_rate = (float) ($user['cost_rate'] ?? 0);
 
@@ -1314,6 +1318,31 @@ function api_search_tickets() {
     }
 
     api_success(['tickets' => $tickets]);
+}
+
+/**
+ * Global Spotlight search.
+ * Returns grouped sections so UI can show open work, completed history, and clients.
+ */
+function api_global_search() {
+    $q = trim((string) ($_GET['q'] ?? ''));
+    $limit = (int) ($_GET['limit'] ?? 6);
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+
+    if (!function_exists('global_search')) {
+        api_error('Global search is not available.', 500);
+    }
+
+    try {
+        api_success(global_search($q, $user, $limit));
+    } catch (Throwable $e) {
+        error_log('api_global_search failed: ' . $e->getMessage());
+        api_error(t('Search failed.'), 500);
+    }
 }
 
 /**

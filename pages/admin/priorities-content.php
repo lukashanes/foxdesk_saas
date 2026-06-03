@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
             if ($is_default) {
                 admin_crud_clear_default('priorities');
             }
-            db_update('priorities', ['name' => $name, 'color' => $color, 'icon' => $icon, 'is_default' => $is_default], 'id = ?', [$id]);
+            admin_crud_update_record('priorities', $id, ['name' => $name, 'color' => $color, 'icon' => $icon, 'is_default' => $is_default]);
             flash(t('Priority updated.'), 'success');
         }
         redirect('admin', ['section' => 'settings', 'tab' => 'workflow']);
@@ -56,7 +56,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
     // Delete priority
     if (isset($_POST['delete_priority'])) {
         $id = (int)$_POST['id'];
-        if (!admin_crud_delete_if_unused('priorities', $id, "SELECT COUNT(*) as c FROM tickets WHERE priority_id = ?", [$id])) {
+        $usage_params = [$id];
+        $usage_sql = "SELECT COUNT(*) as c FROM tickets WHERE priority_id = ?";
+        $usage_sql .= admin_crud_tenant_filter('tickets', $usage_params);
+
+        if (!admin_crud_delete_if_unused('priorities', $id, $usage_sql, $usage_params)) {
             flash(t('Cannot delete a priority that is used by tickets.'), 'error');
         } else {
             flash(t('Priority deleted.'), 'success');

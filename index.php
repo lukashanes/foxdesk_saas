@@ -15,7 +15,7 @@ define('REMEMBER_ME_DURATION', 30 * 86400); // 30 days
 
 require_once BASE_PATH . '/includes/session-bootstrap.php';
 
-define('APP_VERSION', '0.3.123');
+define('APP_VERSION', '0.3.127');
 
 // Check if installed
 if (!file_exists(BASE_PATH . '/config.php')) {
@@ -100,19 +100,22 @@ if (defined('DB_HOST')) {
 }
 
 require_once BASE_PATH . '/includes/functions.php';
+require_once BASE_PATH . '/includes/admin-crud-helper.php';
 require_once BASE_PATH . '/includes/auth.php';
 send_security_headers();
 
 function foxdesk_is_app_host(): bool
 {
-    $host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
-    $host = preg_replace('/:\d+$/', '', $host);
-    return in_array($host, ['app.foxdesk.org', 'app.foxdesk.net'], true);
+    return function_exists('foxdesk_is_workspace_host') ? foxdesk_is_workspace_host() : false;
 }
 
 function foxdesk_authenticated_home_page(): string
 {
-    return (function_exists('is_platform_admin') && is_platform_admin()) ? 'platform' : 'dashboard';
+    if (function_exists('foxdesk_is_platform_host') && foxdesk_is_platform_host()) {
+        return 'platform';
+    }
+
+    return 'work';
 }
 
 // Get current page
@@ -128,6 +131,17 @@ if (!in_array($page, ['cron', 'api', 'health', 'stripe-webhook'], true) && file_
 
 // Pages that don't require login
 $public_pages = ['cloud', 'legal', 'login', 'logout', 'signup', 'forgot-password', 'reset-password', 'ticket-share', 'report-share', 'report-public', 'stripe-webhook', 'api', 'health', 'cron'];
+
+if (foxdesk_is_platform_host()) {
+    $platform_pages = ['platform', 'profile', 'login', 'logout', 'forgot-password', 'reset-password', 'health'];
+    if (!in_array($page, $platform_pages, true)) {
+        header('Location: ' . url(is_logged_in() ? 'platform' : 'login'));
+        exit;
+    }
+} elseif ($page === 'platform') {
+    header('Location: ' . url('platform'));
+    exit;
+}
 
 // Check authentication
 if (!in_array($page, $public_pages)) {
@@ -183,7 +197,7 @@ if (!in_array($page, $public_pages)) {
     }
 }
 
-if ($page === 'dashboard' && foxdesk_is_app_host() && is_platform_admin()) {
+if ($page === 'dashboard' && foxdesk_is_platform_host()) {
     header('Location: index.php?page=platform');
     exit;
 }
@@ -334,6 +348,14 @@ switch ($page) {
         require_once BASE_PATH . '/pages/dashboard.php';
         break;
 
+    case 'work':
+        require_once BASE_PATH . '/pages/work.php';
+        break;
+
+    case 'inbox':
+        require_once BASE_PATH . '/pages/inbox.php';
+        break;
+
     case 'platform':
         require_once BASE_PATH . '/pages/platform.php';
         break;
@@ -344,6 +366,10 @@ switch ($page) {
 
     case 'tickets':
         require_once BASE_PATH . '/pages/tickets.php';
+        break;
+
+    case 'client':
+        require_once BASE_PATH . '/pages/client.php';
         break;
 
     case 'ticket':
@@ -372,7 +398,7 @@ switch ($page) {
         // Agents can access reports section; everything else requires admin
         $agent_allowed_sections = ['reports'];
         if (!is_admin() && !(is_agent() && in_array($admin_page, $agent_allowed_sections, true))) {
-            header('Location: index.php?page=dashboard');
+            header('Location: index.php?page=' . foxdesk_authenticated_home_page());
             exit;
         }
 
@@ -417,6 +443,10 @@ switch ($page) {
                 require_once BASE_PATH . '/pages/admin/activity.php';
                 break;
             case 'migration-export':
+                if (foxdesk_is_app_host()) {
+                    header('Location: ' . url('admin', ['section' => 'settings']));
+                    exit;
+                }
                 require_once BASE_PATH . '/pages/admin/migration-export.php';
                 break;
             default:
@@ -476,7 +506,7 @@ switch ($page) {
         }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: index.php?page=dashboard');
+            header('Location: index.php?page=' . foxdesk_authenticated_home_page());
             exit;
         }
 
@@ -490,7 +520,7 @@ switch ($page) {
                 'reason' => 'not_admin'
             ]));
             flash(t('Access denied.'), 'error');
-            header('Location: index.php?page=dashboard');
+            header('Location: index.php?page=' . foxdesk_authenticated_home_page());
             exit;
         }
 
@@ -543,7 +573,7 @@ switch ($page) {
                 if (ob_get_level() > 0) {
                     ob_clean(); // Clean any accidental output before headers
                 }
-                header('Location: index.php?page=dashboard');
+                header('Location: index.php?page=' . foxdesk_authenticated_home_page());
                 exit;
             }
         }

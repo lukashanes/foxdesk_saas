@@ -188,10 +188,17 @@ function seedTenantIsolationFixture() {
     INSERT INTO tickets (tenant_id, hash, title, description, type, priority_id, user_id, organization_id, status_id, tags, is_archived, created_at)
     VALUES (${tenantId}, 'e2etenantb0001', 'Tenant B Confidential Ticket', 'Must not be visible to default tenant admin', 'general', ${Number(ids.priority_id)}, ${Number(user.id)}, ${Number(org.id)}, ${Number(ids.status_id)}, 'tenant-b-hidden', 0, NOW())
   `);
+  dbQuery(`
+    INSERT INTO page_views (tenant_id, user_id, page, section, created_at)
+    VALUES (${tenantId}, ${Number(user.id)}, 'admin', 'tenant-b-secret-activity', NOW())
+  `);
 
   const ticket = rowObject(dbQuery("SELECT id FROM tickets WHERE hash = 'e2etenantb0001' LIMIT 1"));
   return {
-    ticketCode: `TK-${String(Number(ticket.id) + 10000).padStart(5, '0')}`
+    ticketCode: `TK-${String(Number(ticket.id) + 10000).padStart(5, '0')}`,
+    tenantId,
+    orgId: Number(org.id),
+    userId: Number(user.id)
   };
 }
 
@@ -261,4 +268,57 @@ test('default tenant admin cannot search tickets from another tenant', async ({ 
   const codeSearch = await page.request.get(`/index.php?page=api&action=search-tickets&q=${fixture.ticketCode}`);
   expect(codeSearch.status()).toBe(200);
   expect(await codeSearch.json()).toMatchObject({ success: true, tickets: [] });
+});
+
+test('default tenant admin cannot mutate another tenant users or organizations', async ({ page }) => {
+  const fixture = seedTenantIsolationFixture();
+  await login(page);
+
+  await page.goto('/index.php?page=admin&section=users');
+  const csrf = await getCsrf(page);
+
+  await page.request.post('/index.php?page=admin&section=users', {
+    form: {
+      csrf_token: csrf,
+      update_user: '1',
+      id: String(fixture.userId),
+      email: 'tenant-b-admin@example.test',
+      first_name: 'Hacked',
+      last_name: 'CrossTenant',
+      role: 'user',
+      is_active: '1',
+      organization_id: ''
+    }
+  });
+
+  await page.request.post('/index.php?page=admin&section=organizations', {
+    form: {
+      csrf_token: csrf,
+      update: '1',
+      id: String(fixture.orgId),
+      name: 'Hacked Tenant B Org',
+      ico: '',
+      address: '',
+      contact_email: '',
+      contact_phone: '',
+      notes: '',
+      billable_rate: '0'
+    }
+  });
+
+  const user = rowObject(dbQuery(`SELECT first_name, last_name, role FROM users WHERE id = ${fixture.userId}`));
+  expect(user.first_name).toBe('TenantB');
+  expect(user.last_name).toBe('Admin');
+  expect(user.role).toBe('admin');
+
+  const org = rowObject(dbQuery(`SELECT name FROM organizations WHERE id = ${fixture.orgId}`));
+  expect(org.name).toBe('E2E Tenant B Org');
+});
+
+test('default tenant admin activity page does not include another tenant activity', async ({ page }) => {
+  seedTenantIsolationFixture();
+  await login(page);
+
+  await page.goto('/index.php?page=admin&section=activity&tab=log&range=30');
+  await expect(page.locator('body')).not.toContainText('tenant-b-secret-activity');
 });

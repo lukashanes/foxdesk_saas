@@ -60,13 +60,12 @@ if (!headers_sent()) {
                 <a href="#cloud">Cloud</a>
                 <a href="#features">Features</a>
                 <a href="#pricing">Pricing</a>
-                <a href="#migration">Migration</a>
                 <a href="<?php echo e(url('legal', ['type' => 'privacy'])); ?>">Privacy</a>
                 <a href="https://foxdesk.org" target="_blank" rel="noopener">Open-source</a>
             </nav>
             <div class="fd-header-actions">
                 <a href="<?php echo e(url('login')); ?>" class="fd-btn secondary">Client login</a>
-                <a href="<?php echo e(url('signup')); ?>" class="fd-btn primary">Start free trial</a>
+                <a href="<?php echo e(url('signup')); ?>" class="fd-btn primary">Try FoxDesk</a>
                 <button type="button" class="fd-theme-toggle" onclick="toggleCloudTheme()" aria-label="Toggle color mode">◐</button>
             </div>
         </div>
@@ -76,15 +75,15 @@ if (!headers_sent()) {
         <section class="fd-section fd-hero" id="cloud">
             <div class="fd-hero-copy">
                 <h1>Helpdesk & time tracking</h1>
-                <p>Track support tickets and billable hours for your team and your AI agents. One app. No per-agent or per-client fees, ever.</p>
+                <p>Track support tickets and billable hours for your team and your AI agents. One app. No per-agent or client fees, ever.</p>
                 <div class="fd-hero-actions">
-                    <a href="<?php echo e(url('signup')); ?>" class="fd-btn primary">Start 14-day free trial</a>
-                    <a href="<?php echo e(url('login')); ?>" class="fd-btn secondary">Sign in to app</a>
+                    <a href="<?php echo e(url('signup')); ?>" class="fd-btn primary">Try FoxDesk</a>
+                    <a href="<?php echo e(url('login')); ?>" class="fd-btn secondary">Client login</a>
                 </div>
                 <div class="fd-hero-proof">
                     <div class="fd-proof-item"><strong>Unlimited</strong><span>Users, agents, clients, organizations, and tickets</span></div>
                     <div class="fd-proof-item"><strong>Time</strong><span>Billable hours tracked directly on tickets</span></div>
-                    <div class="fd-proof-item"><strong>AI ready</strong><span>Support workflows for people and AI agents</span></div>
+                    <div class="fd-proof-item"><strong>AI agents</strong><span>Human and AI support work in the same flow</span></div>
                 </div>
             </div>
 
@@ -103,7 +102,7 @@ if (!headers_sent()) {
         <section class="fd-section fd-band" id="features">
             <div class="fd-heading">
                 <h2>Support work in one place.</h2>
-                <p>Tickets, clients, time tracking, reports, and AI agent workflows without per-seat pricing.</p>
+                <p>The core FoxDesk workflow hosted as a managed SaaS, without per-seat pricing.</p>
             </div>
             <div class="fd-grid">
                 <article class="fd-card">
@@ -174,28 +173,28 @@ if (!headers_sent()) {
 
         <section class="fd-section fd-band" id="pricing">
             <div class="fd-heading">
-                <h2>One simple price.</h2>
-                <p>Start free for 14 days. No card required. Unlimited users, agents, clients, organizations, and tickets.</p>
+                <h2>One plan for your support team.</h2>
+                <p>Start free for 14 days. No card required. Unlimited users, clients, tickets, and AI agents.</p>
             </div>
             <div class="fd-pricing">
                 <div class="fd-price-card">
                     <div class="fd-price-top">
                         <div>
                             <h3 class="fd-plan-title">FoxDesk Cloud</h3>
-                            <p class="fd-offer-line">Launch price available until <?php echo e($cloud_launch_until); ?>.</p>
+                            <p class="fd-offer-line">50% launch price until <?php echo e($cloud_launch_until); ?>. Regular EUR 19.80/month.</p>
                         </div>
                     </div>
                     <div class="fd-price">
                         <strong><?php echo e($cloud_launch_price); ?></strong>
                         <span>/ month</span>
                     </div>
+                    <p class="fd-tax-note">Excl. VAT where applicable. Valid EU VAT IDs are handled at checkout.</p>
                     <ul class="fd-list">
                         <li><span class="fd-check">✓</span><span>Unlimited users, agents, clients, organizations, and tickets</span></li>
                         <li><span class="fd-check">✓</span><span>Helpdesk and billable time tracking in one app</span></li>
-                        <li><span class="fd-check">✓</span><span>Support workflows for your team and AI agents</span></li>
                         <li><span class="fd-check">✓</span><span><?php echo e($included_storage); ?> file storage included</span></li>
                     </ul>
-                    <a href="<?php echo e(url('signup')); ?>" class="fd-btn primary fd-full-width">Start 14-day free trial</a>
+                    <a href="<?php echo e(url('signup')); ?>" class="fd-btn primary fd-full-width">Try FoxDesk free for 14 days</a>
                 </div>
             </div>
         </section>
@@ -213,36 +212,6 @@ if (!headers_sent()) {
             </div>
         </section>
 
-        <section class="fd-section fd-band" id="migration">
-            <div class="fd-migration">
-                <div>
-                    <h2>Move your existing FoxDesk safely.</h2>
-                    <p>If you already run FoxDesk elsewhere, move it carefully: backup first, restore second, switch only after testing.</p>
-                    <div class="fd-hero-actions">
-                        <a href="<?php echo e(url('login')); ?>" class="fd-btn secondary">App login</a>
-                        <a href="mailto:hanes.lukas@gmail.com?subject=FoxDesk%20migration" class="fd-btn primary">Plan migration</a>
-                    </div>
-                </div>
-                <div class="fd-steps">
-                    <div class="fd-step">
-                        <div class="fd-step-number">1</div>
-                        <div><strong>Export current installation</strong><span>Database dump, uploaded files, config, cron/email settings, and current FoxDesk version.</span></div>
-                    </div>
-                    <div class="fd-step">
-                        <div class="fd-step-number">2</div>
-                        <div><strong>Restore in the new workspace</strong><span>Import data, copy files, and verify email, storage, users, and permissions.</span></div>
-                    </div>
-                    <div class="fd-step">
-                        <div class="fd-step-number">3</div>
-                        <div><strong>Test before switching DNS</strong><span>Login, tickets, attachments, outbound email, inbound email, cron, health endpoint, and admin permissions.</span></div>
-                    </div>
-                    <div class="fd-step">
-                        <div class="fd-step-number">4</div>
-                        <div><strong>Switch production traffic</strong><span>Lower DNS TTL, point the app domain to the new server, monitor logs, then keep the old host as rollback for a short period.</span></div>
-                    </div>
-                </div>
-            </div>
-        </section>
     </main>
 
     <footer class="fd-footer">

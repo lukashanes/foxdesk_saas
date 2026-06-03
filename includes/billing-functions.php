@@ -19,6 +19,21 @@ function billing_enabled(): bool
     return $enabled === true || $enabled === '1' || $enabled === 1 || $enabled === 'true';
 }
 
+function billing_env_bool(string $name, bool $default = false): bool
+{
+    $value = billing_env_or_constant($name, $default);
+    if (is_bool($value)) {
+        return $value;
+    }
+
+    $normalized = strtolower(trim((string) $value));
+    if ($normalized === '') {
+        return $default;
+    }
+
+    return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
+}
+
 function billing_webhook_secret(): string
 {
     return trim((string) billing_env_or_constant('STRIPE_WEBHOOK_SECRET', ''));
@@ -49,6 +64,16 @@ function billing_trial_days(): int
     return max(1, (int) billing_env_or_constant('BILLING_TRIAL_DAYS', 14));
 }
 
+function billing_trial_grace_days(): int
+{
+    return max(0, (int) billing_env_or_constant('BILLING_TRIAL_GRACE_DAYS', 3));
+}
+
+function billing_past_due_grace_days(): int
+{
+    return max(0, (int) billing_env_or_constant('BILLING_PAST_DUE_GRACE_DAYS', 7));
+}
+
 function billing_plan_code(): string
 {
     return 'cloud';
@@ -77,7 +102,95 @@ function billing_storage_overage_price_id(): string
 
 function billing_storage_meter_event_name(): string
 {
-    return trim((string) billing_env_or_constant('STRIPE_STORAGE_METER_EVENT_NAME', 'foxdesk_storage_extra_gb'));
+    $event_name = trim((string) billing_env_or_constant('STRIPE_STORAGE_METER_EVENT_NAME', 'foxdesk_storage_extra_gb'));
+    return $event_name !== '' ? $event_name : 'foxdesk_storage_extra_gb';
+}
+
+function billing_stripe_tax_enabled(): bool
+{
+    return billing_env_bool('STRIPE_TAX_ENABLED', false);
+}
+
+function billing_tax_id_collection_enabled(): bool
+{
+    return billing_env_bool('STRIPE_TAX_ID_COLLECTION_ENABLED', billing_stripe_tax_enabled());
+}
+
+function billing_tax_id_collection_required(): string
+{
+    $required = strtolower(trim((string) billing_env_or_constant('STRIPE_TAX_ID_COLLECTION_REQUIRED', '')));
+    return $required === 'if_supported' ? 'if_supported' : '';
+}
+
+function billing_stripe_secret_key_mode(): string
+{
+    $secret = trim((string) billing_env_or_constant('STRIPE_SECRET_KEY', ''));
+    if ($secret === '') {
+        return 'missing';
+    }
+
+    if (str_starts_with($secret, 'sk_test_')) {
+        return 'test';
+    }
+
+    if (str_starts_with($secret, 'sk_live_')) {
+        return 'live';
+    }
+
+    return 'unknown';
+}
+
+function billing_usage_reporting_config_status(bool $require_stripe_secret = false): array
+{
+    $key_mode = billing_stripe_secret_key_mode();
+    $meter_event = billing_storage_meter_event_name();
+    $errors = [];
+    $warnings = [];
+
+    if (!extension_loaded('curl')) {
+        $errors[] = 'PHP cURL extension is required for Stripe billing requests.';
+    }
+
+    if ($meter_event === '') {
+        $errors[] = 'STRIPE_STORAGE_METER_EVENT_NAME is required.';
+    }
+
+    if ($key_mode === 'missing') {
+        $message = 'STRIPE_SECRET_KEY is not configured.';
+        if ($require_stripe_secret) {
+            $errors[] = $message;
+        } else {
+            $warnings[] = $message;
+        }
+    } elseif ($key_mode === 'unknown') {
+        $errors[] = 'STRIPE_SECRET_KEY must start with sk_test_ or sk_live_.';
+    }
+
+    if (!billing_enabled()) {
+        $warnings[] = 'BILLING_ENABLED is false; scheduled maintenance will not send live usage.';
+    }
+
+    if (billing_storage_overage_price_id() === '') {
+        $warnings[] = 'STRIPE_PRICE_STORAGE_OVERAGE is not configured; Checkout will not include metered storage.';
+    }
+
+    if (billing_stripe_tax_enabled() && !billing_tax_id_collection_enabled()) {
+        $warnings[] = 'STRIPE_TAX_ENABLED is true but STRIPE_TAX_ID_COLLECTION_ENABLED is false; EU VAT reverse-charge customers might not be able to enter VAT IDs during Checkout.';
+    }
+
+    return [
+        'ok' => empty($errors),
+        'billing_enabled' => billing_enabled(),
+        'stripe_tax_enabled' => billing_stripe_tax_enabled(),
+        'tax_id_collection_enabled' => billing_tax_id_collection_enabled(),
+        'tax_id_collection_required' => billing_tax_id_collection_required(),
+        'key_mode' => $key_mode,
+        'meter_event' => $meter_event,
+        'has_storage_price' => billing_storage_overage_price_id() !== '',
+        'curl' => extension_loaded('curl'),
+        'errors' => $errors,
+        'warnings' => $warnings,
+    ];
 }
 
 function billing_portal_configuration_id(): string
@@ -163,6 +276,260 @@ function billing_ensure_usage_reports_table(): void
     ");
 }
 
+function billing_ensure_usage_events_table(): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+
+    db_query("
+        CREATE TABLE IF NOT EXISTS billing_usage_events (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            tenant_id INT NULL,
+            event_type VARCHAR(80) NOT NULL,
+            quantity INT NOT NULL DEFAULT 1,
+            metadata_json TEXT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_billing_usage_events_tenant_created (tenant_id, created_at),
+            INDEX idx_billing_usage_events_type_created (event_type, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+}
+
+function billing_record_usage_event(?int $tenant_id, string $event_type, int $quantity = 1, array $metadata = []): void
+{
+    try {
+        billing_ensure_usage_events_table();
+
+        $event_type = trim($event_type);
+        if ($event_type === '') {
+            return;
+        }
+        if (function_exists('mb_substr')) {
+            $event_type = mb_substr($event_type, 0, 80);
+        } else {
+            $event_type = substr($event_type, 0, 80);
+        }
+
+        $quantity = max(1, $quantity);
+        $tenant_id = $tenant_id && $tenant_id > 0 ? $tenant_id : null;
+        $metadata_json = $metadata ? json_encode($metadata, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null;
+        if (is_string($metadata_json) && strlen($metadata_json) > 4000) {
+            $metadata_json = substr($metadata_json, 0, 4000);
+        }
+
+        db_insert('billing_usage_events', [
+            'tenant_id' => $tenant_id,
+            'event_type' => $event_type,
+            'quantity' => $quantity,
+            'metadata_json' => $metadata_json,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+    } catch (Throwable $e) {
+        error_log('billing_record_usage_event failed: ' . $e->getMessage());
+    }
+}
+
+function billing_ensure_stripe_events_table(): void
+{
+    if (!function_exists('table_exists') || table_exists('billing_stripe_events')) {
+        return;
+    }
+
+    db_query("
+        CREATE TABLE IF NOT EXISTS billing_stripe_events (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            event_id VARCHAR(255) NOT NULL,
+            event_type VARCHAR(120) NOT NULL,
+            tenant_id INT NULL,
+            status ENUM('pending', 'processed', 'ignored', 'failed') NOT NULL DEFAULT 'pending',
+            error_message TEXT NULL,
+            processed_at DATETIME NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_billing_stripe_event_id (event_id),
+            INDEX idx_billing_stripe_events_tenant (tenant_id),
+            INDEX idx_billing_stripe_events_status (status),
+            INDEX idx_billing_stripe_events_type (event_type)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+}
+
+function billing_usage_period_window(?string $period_key = null): array
+{
+    $period_key = trim((string) $period_key);
+    if ($period_key === '') {
+        $timestamp = time();
+    } elseif (preg_match('/^\d{4}-\d{2}$/', $period_key)) {
+        $timestamp = strtotime($period_key . '-01 00:00:00') ?: time();
+    } else {
+        $timestamp = strtotime($period_key) ?: time();
+    }
+
+    $start = date('Y-m-01 00:00:00', $timestamp);
+    $end = date('Y-m-d H:i:s', strtotime('+1 month', strtotime($start)));
+
+    return [
+        'start' => $start,
+        'end' => $end,
+    ];
+}
+
+function billing_storage_breakdown(int $tenant_id): array
+{
+    $empty = [
+        'storage_bytes' => 0,
+        'storage_local_bytes' => 0,
+        'storage_r2_bytes' => 0,
+        'storage_unknown_bytes' => 0,
+        'storage_objects' => 0,
+        'storage_local_objects' => 0,
+        'storage_r2_objects' => 0,
+        'storage_unknown_objects' => 0,
+    ];
+
+    if (!table_exists('attachments')) {
+        return $empty;
+    }
+
+    if (!column_exists('attachments', 'storage_driver')) {
+        $attachments = db_fetch_one("
+            SELECT
+                COALESCE(SUM(file_size), 0) AS bytes,
+                COUNT(*) AS objects
+            FROM attachments
+            WHERE tenant_id = ?
+        ", [$tenant_id]);
+
+        $bytes = (int) ($attachments['bytes'] ?? 0);
+        $objects = (int) ($attachments['objects'] ?? 0);
+        return array_merge($empty, [
+            'storage_bytes' => $bytes,
+            'storage_local_bytes' => $bytes,
+            'storage_objects' => $objects,
+            'storage_local_objects' => $objects,
+        ]);
+    }
+
+    $attachments = db_fetch_one("
+        SELECT
+            COALESCE(SUM(file_size), 0) AS total_bytes,
+            COALESCE(SUM(CASE WHEN COALESCE(storage_driver, 'local') = 'local' THEN file_size ELSE 0 END), 0) AS local_bytes,
+            COALESCE(SUM(CASE WHEN storage_driver = 'r2' THEN file_size ELSE 0 END), 0) AS r2_bytes,
+            COALESCE(SUM(CASE WHEN COALESCE(storage_driver, 'local') NOT IN ('local', 'r2') THEN file_size ELSE 0 END), 0) AS unknown_bytes,
+            COUNT(*) AS total_objects,
+            COALESCE(SUM(CASE WHEN COALESCE(storage_driver, 'local') = 'local' THEN 1 ELSE 0 END), 0) AS local_objects,
+            COALESCE(SUM(CASE WHEN storage_driver = 'r2' THEN 1 ELSE 0 END), 0) AS r2_objects,
+            COALESCE(SUM(CASE WHEN COALESCE(storage_driver, 'local') NOT IN ('local', 'r2') THEN 1 ELSE 0 END), 0) AS unknown_objects
+        FROM attachments
+        WHERE tenant_id = ?
+    ", [$tenant_id]);
+
+    return [
+        'storage_bytes' => (int) ($attachments['total_bytes'] ?? 0),
+        'storage_local_bytes' => (int) ($attachments['local_bytes'] ?? 0),
+        'storage_r2_bytes' => (int) ($attachments['r2_bytes'] ?? 0),
+        'storage_unknown_bytes' => (int) ($attachments['unknown_bytes'] ?? 0),
+        'storage_objects' => (int) ($attachments['total_objects'] ?? 0),
+        'storage_local_objects' => (int) ($attachments['local_objects'] ?? 0),
+        'storage_r2_objects' => (int) ($attachments['r2_objects'] ?? 0),
+        'storage_unknown_objects' => (int) ($attachments['unknown_objects'] ?? 0),
+    ];
+}
+
+function billing_volume_counters(int $tenant_id, ?string $period_key = null): array
+{
+    $window = billing_usage_period_window($period_key);
+    $counters = [
+        'usage_period_start' => $window['start'],
+        'usage_period_end' => $window['end'],
+        'api_requests' => 0,
+        'outbound_email_sent' => 0,
+        'outbound_email_failed' => 0,
+        'outbound_email_skipped' => 0,
+        'inbound_email_total' => 0,
+        'inbound_email_processed' => 0,
+        'inbound_email_skipped' => 0,
+        'inbound_email_failed' => 0,
+    ];
+
+    try {
+        billing_ensure_usage_events_table();
+        $events = db_fetch_all("
+            SELECT event_type, COALESCE(SUM(quantity), 0) AS quantity
+            FROM billing_usage_events
+            WHERE tenant_id = ?
+              AND created_at >= ?
+              AND created_at < ?
+            GROUP BY event_type
+        ", [$tenant_id, $window['start'], $window['end']]);
+
+        foreach ($events as $event) {
+            $quantity = (int) ($event['quantity'] ?? 0);
+            switch ((string) ($event['event_type'] ?? '')) {
+                case 'api.request':
+                    $counters['api_requests'] = $quantity;
+                    break;
+                case 'email.sent':
+                    $counters['outbound_email_sent'] = $quantity;
+                    break;
+                case 'email.failed':
+                    $counters['outbound_email_failed'] = $quantity;
+                    break;
+                case 'email.skipped':
+                    $counters['outbound_email_skipped'] = $quantity;
+                    break;
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('billing_volume_counters events failed: ' . $e->getMessage());
+    }
+
+    try {
+        if (table_exists('email_ingest_logs')) {
+            $has_log_tenant = column_exists('email_ingest_logs', 'tenant_id');
+            $can_join_tickets = table_exists('tickets')
+                && column_exists('email_ingest_logs', 'ticket_id')
+                && column_exists('tickets', 'tenant_id');
+
+            if ($has_log_tenant || $can_join_tickets) {
+                $join = $can_join_tickets ? "LEFT JOIN tickets t ON t.id = l.ticket_id" : "";
+                if ($has_log_tenant && $can_join_tickets) {
+                    $tenant_expr = "COALESCE(l.tenant_id, t.tenant_id)";
+                } elseif ($has_log_tenant) {
+                    $tenant_expr = "l.tenant_id";
+                } else {
+                    $tenant_expr = "t.tenant_id";
+                }
+
+                $inbound = db_fetch_one("
+                    SELECT
+                        COUNT(*) AS total,
+                        COALESCE(SUM(l.status = 'processed'), 0) AS processed,
+                        COALESCE(SUM(l.status = 'skipped'), 0) AS skipped,
+                        COALESCE(SUM(l.status = 'failed'), 0) AS failed
+                    FROM email_ingest_logs l
+                    {$join}
+                    WHERE {$tenant_expr} = ?
+                      AND l.created_at >= ?
+                      AND l.created_at < ?
+                ", [$tenant_id, $window['start'], $window['end']]);
+
+                $counters['inbound_email_total'] = (int) ($inbound['total'] ?? 0);
+                $counters['inbound_email_processed'] = (int) ($inbound['processed'] ?? 0);
+                $counters['inbound_email_skipped'] = (int) ($inbound['skipped'] ?? 0);
+                $counters['inbound_email_failed'] = (int) ($inbound['failed'] ?? 0);
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('billing_volume_counters inbound failed: ' . $e->getMessage());
+    }
+
+    return $counters;
+}
+
 function billing_tenant_usage(int $tenant_id): array
 {
     ensure_tenant_baseline();
@@ -171,7 +538,6 @@ function billing_tenant_usage(int $tenant_id): array
     $agent_count = 0;
     $client_count = 0;
     $ticket_count = 0;
-    $storage_bytes = 0;
 
     if (table_exists('users')) {
         $users = db_fetch_one(
@@ -196,27 +562,25 @@ function billing_tenant_usage(int $tenant_id): array
         $ticket_count = (int) ($tickets['c'] ?? 0);
     }
 
-    if (table_exists('attachments')) {
-        $attachments = db_fetch_one("SELECT COALESCE(SUM(file_size), 0) AS bytes FROM attachments WHERE tenant_id = ?", [$tenant_id]);
-        $storage_bytes = (int) ($attachments['bytes'] ?? 0);
-    }
+    $storage = billing_storage_breakdown($tenant_id);
+    $volume = billing_volume_counters($tenant_id);
+    $storage_bytes = (int) $storage['storage_bytes'];
 
     $included_bytes = billing_included_storage_bytes();
     $extra_bytes = max(0, $storage_bytes - $included_bytes);
     $extra_gb = $extra_bytes > 0 ? (int) ceil($extra_bytes / 1073741824) : 0;
     $overage_cents = $extra_gb * billing_storage_overage_price_cents();
 
-    return [
+    return array_merge([
         'users' => $user_count,
         'agents' => $agent_count,
         'clients' => $client_count,
         'tickets' => $ticket_count,
-        'storage_bytes' => $storage_bytes,
         'included_storage_bytes' => $included_bytes,
         'extra_storage_bytes' => $extra_bytes,
         'extra_storage_gb' => $extra_gb,
         'storage_overage_cents' => $overage_cents,
-    ];
+    ], $storage, $volume);
 }
 
 function billing_stripe_request(string $method, string $path, array $params = [], array $extra_headers = []): array
@@ -229,8 +593,11 @@ function billing_stripe_request(string $method, string $path, array $params = []
         throw new RuntimeException('PHP cURL extension is required for Stripe billing.');
     }
 
-    $url = 'https://api.stripe.com/v1/' . ltrim($path, '/');
     $method = strtoupper($method);
+    $url = 'https://api.stripe.com/v1/' . ltrim($path, '/');
+    if (!empty($params) && in_array($method, ['GET', 'DELETE'], true)) {
+        $url .= (str_contains($url, '?') ? '&' : '?') . http_build_query($params);
+    }
 
     $ch = curl_init($url);
     $options = [
@@ -243,7 +610,7 @@ function billing_stripe_request(string $method, string $path, array $params = []
         CURLOPT_TIMEOUT => 20,
     ];
 
-    if (!empty($params)) {
+    if (!empty($params) && !in_array($method, ['GET', 'DELETE'], true)) {
         $options[CURLOPT_POSTFIELDS] = http_build_query($params);
     }
 
@@ -294,6 +661,66 @@ function billing_record_meter_event(string $event_name, string $stripe_customer_
     ]);
 }
 
+function billing_find_meter_by_event_name(string $event_name): ?array
+{
+    $event_name = trim($event_name);
+    if ($event_name === '') {
+        return null;
+    }
+
+    $params = [
+        'status' => 'active',
+        'limit' => 100,
+    ];
+
+    for ($page = 0; $page < 20; $page++) {
+        $response = billing_stripe_request('GET', 'billing/meters', $params);
+        $meters = is_array($response['data'] ?? null) ? $response['data'] : [];
+        foreach ($meters as $meter) {
+            if ((string) ($meter['event_name'] ?? '') === $event_name) {
+                return $meter;
+            }
+        }
+
+        if (empty($response['has_more']) || empty($meters)) {
+            break;
+        }
+
+        $last = end($meters);
+        if (empty($last['id'])) {
+            break;
+        }
+        $params['starting_after'] = (string) $last['id'];
+    }
+
+    return null;
+}
+
+function billing_meter_event_summaries(string $meter_id, string $stripe_customer_id, int $start_time, int $end_time): array
+{
+    $start_time -= $start_time % 60;
+    $end_time -= $end_time % 60;
+    if ($end_time <= $start_time) {
+        $end_time = $start_time + 60;
+    }
+
+    return billing_stripe_request('GET', 'billing/meters/' . rawurlencode($meter_id) . '/event_summaries', [
+        'customer' => $stripe_customer_id,
+        'start_time' => $start_time,
+        'end_time' => $end_time,
+    ]);
+}
+
+function billing_invoice_preview_for_customer(string $stripe_customer_id, ?string $stripe_subscription_id = null): array
+{
+    $params = ['customer' => $stripe_customer_id];
+    if ($stripe_subscription_id !== null && $stripe_subscription_id !== '') {
+        $params['subscription'] = $stripe_subscription_id;
+    }
+
+    return billing_stripe_request('POST', 'invoices/create_preview', $params);
+}
+
 function billing_report_storage_usage_for_tenant(int $tenant_id, ?string $period_key = null, bool $dry_run = false): array
 {
     billing_ensure_usage_reports_table();
@@ -318,7 +745,8 @@ function billing_report_storage_usage_for_tenant(int $tenant_id, ?string $period
         "SELECT * FROM billing_usage_reports WHERE idempotency_key = ? LIMIT 1",
         [$identifier]
     );
-    if ($existing && in_array((string) $existing['status'], ['reported', 'dry_run'], true)) {
+    $existing_status = $existing ? (string) $existing['status'] : '';
+    if ($existing_status === 'reported') {
         return [
             'tenant_id' => $tenant_id,
             'status' => 'skipped',
@@ -393,7 +821,7 @@ function billing_report_storage_usage_for_tenant(int $tenant_id, ?string $period
     }
 }
 
-function billing_report_storage_usage_all(bool $dry_run = false): array
+function billing_report_storage_usage_all(bool $dry_run = false, ?string $period_key = null): array
 {
     billing_ensure_usage_reports_table();
     $summary = [
@@ -413,7 +841,7 @@ function billing_report_storage_usage_all(bool $dry_run = false): array
     ");
 
     foreach ($tenants as $row) {
-        $result = billing_report_storage_usage_for_tenant((int) $row['id'], null, $dry_run);
+        $result = billing_report_storage_usage_for_tenant((int) $row['id'], $period_key, $dry_run);
         $status = (string) ($result['status'] ?? 'skipped');
         if (array_key_exists($status, $summary)) {
             $summary[$status]++;
@@ -459,11 +887,47 @@ function billing_trial_days_remaining(?array $tenant = null): ?int
     return max(0, (int) ceil(($ends - time()) / 86400));
 }
 
+function billing_datetime_add_days(?string $date_time, int $days): ?string
+{
+    $date_time = trim((string) $date_time);
+    if ($date_time === '') {
+        return null;
+    }
+
+    $timestamp = strtotime($date_time);
+    if (!$timestamp) {
+        return null;
+    }
+
+    return date('Y-m-d H:i:s', strtotime('+' . max(0, $days) . ' days', $timestamp));
+}
+
+function billing_trial_grace_ends_at(?array $tenant = null): ?string
+{
+    $tenant = $tenant ?: billing_current_tenant();
+    if (!$tenant) {
+        return null;
+    }
+
+    return billing_datetime_add_days($tenant['trial_ends_at'] ?? null, billing_trial_grace_days());
+}
+
+function billing_past_due_grace_ends_at(?array $tenant = null): ?string
+{
+    $tenant = $tenant ?: billing_current_tenant();
+    if (!$tenant) {
+        return null;
+    }
+
+    return billing_datetime_add_days($tenant['suspended_at'] ?? null, billing_past_due_grace_days());
+}
+
 function billing_expire_trials(?int $tenant_id = null): array
 {
     ensure_tenant_baseline();
 
-    $where = "status = 'trialing' AND subscription_status = 'trialing' AND trial_ends_at IS NOT NULL AND trial_ends_at < NOW()";
+    $grace_days = billing_trial_grace_days();
+    $where = "status = 'trialing' AND subscription_status = 'trialing' AND trial_ends_at IS NOT NULL AND DATE_ADD(trial_ends_at, INTERVAL {$grace_days} DAY) < NOW()";
     $params = [];
     if ($tenant_id !== null) {
         $where .= ' AND id = ?';
@@ -488,6 +952,50 @@ function billing_expire_trials(?int $tenant_id = null): array
     );
 
     return ['expired' => count($ids), 'tenant_ids' => $ids];
+}
+
+function billing_suspend_past_due_tenants(?int $tenant_id = null): array
+{
+    ensure_tenant_baseline();
+
+    $params = [];
+    $scope = "status = 'past_due'";
+    if ($tenant_id !== null) {
+        $scope .= ' AND id = ?';
+        $params[] = $tenant_id;
+    }
+
+    db_query(
+        "UPDATE tenants
+         SET suspended_at = COALESCE(suspended_at, NOW())
+         WHERE {$scope}",
+        $params
+    );
+
+    $grace_days = billing_past_due_grace_days();
+    $where = "status = 'past_due' AND suspended_at IS NOT NULL AND DATE_ADD(suspended_at, INTERVAL {$grace_days} DAY) < NOW()";
+    $select_params = [];
+    if ($tenant_id !== null) {
+        $where .= ' AND id = ?';
+        $select_params[] = $tenant_id;
+    }
+
+    $suspended = db_fetch_all("SELECT id FROM tenants WHERE {$where}", $select_params);
+    if (!$suspended) {
+        return ['suspended' => 0, 'tenant_ids' => []];
+    }
+
+    $ids = array_map(static fn($row) => (int) $row['id'], $suspended);
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    db_query(
+        "UPDATE tenants
+         SET status = 'suspended',
+             blocked_at = COALESCE(blocked_at, NOW())
+         WHERE id IN ({$placeholders})",
+        $ids
+    );
+
+    return ['suspended' => count($ids), 'tenant_ids' => $ids];
 }
 
 function billing_ensure_trial_email_events_table(): void
@@ -554,15 +1062,15 @@ function billing_trial_email_copy(array $tenant, string $event_type): array
         ],
         'trial_3_days_left' => [
             'subject' => 'FoxDesk trial ends in 3 days',
-            'body' => "Hi,\n\n{$workspace} has {$days_text} days left in the trial.\n\nActivate FoxDesk here to keep access:\n{$billing_url}\n\nFoxDesk",
+            'body' => "Hi,\n\n{$workspace} has {$days_text} days left in the trial.\n\nAdd billing here to keep access:\n{$billing_url}\n\nFoxDesk",
         ],
         'trial_1_day_left' => [
             'subject' => 'FoxDesk trial ends tomorrow',
-            'body' => "Hi,\n\n{$workspace} has {$days_text} day left in the trial.\n\nActivate FoxDesk here to keep access:\n{$billing_url}\n\nFoxDesk",
+            'body' => "Hi,\n\n{$workspace} has {$days_text} day left in the trial.\n\nAdd billing here to keep access:\n{$billing_url}\n\nFoxDesk",
         ],
         'trial_expired' => [
             'subject' => 'FoxDesk trial has ended',
-            'body' => "Hi,\n\nThe trial for {$workspace} has ended. Admins can still open Billing and activate FoxDesk to restore access.\n\nActivate here:\n{$billing_url}\n\nFoxDesk",
+            'body' => "Hi,\n\nThe trial for {$workspace} has ended. Admins can still open Billing and start a subscription to restore access.\n\nOpen Billing here:\n{$billing_url}\n\nFoxDesk",
         ],
         default => [
             'subject' => 'FoxDesk trial update',
@@ -677,21 +1185,175 @@ function billing_workspace_access_state(?array $tenant = null): array
         $tenant = billing_get_tenant((int) $tenant['id']) ?: $tenant;
     }
 
+    if ((string) ($tenant['status'] ?? '') === 'past_due') {
+        billing_suspend_past_due_tenants((int) $tenant['id']);
+        $tenant = billing_get_tenant((int) $tenant['id']) ?: $tenant;
+    }
+
     $status = (string) ($tenant['status'] ?? '');
     $subscription_status = (string) ($tenant['subscription_status'] ?? '');
+    if (billing_subscription_is_manual_access($subscription_status) && in_array($status, ['active', 'trialing'], true)) {
+        return ['allowed' => true, 'reason' => $subscription_status, 'message' => ''];
+    }
+
     if ($status === 'active' || ($status === 'trialing' && $subscription_status === 'trialing')) {
         return ['allowed' => true, 'reason' => $status, 'message' => ''];
     }
+    if ($status === 'past_due') {
+        return ['allowed' => true, 'reason' => 'past_due_grace', 'message' => ''];
+    }
 
-    $reason = $subscription_status !== '' ? $subscription_status : $status;
+    $status_reasons = ['past_due', 'trial_expired', 'suspended', 'blocked', 'canceled'];
+    $reason = in_array($status, $status_reasons, true)
+        ? $status
+        : ($subscription_status !== '' ? $subscription_status : $status);
     $message = match ($reason) {
-        'trial_expired' => 'Your 14-day trial has ended. Activate FoxDesk to continue.',
+        'trial_expired' => 'Your ' . billing_trial_days() . '-day trial has ended. Add billing to continue.',
         'past_due' => 'Payment is past due. Update billing to continue.',
+        'suspended' => 'Workspace access is suspended after an unpaid invoice. Update billing to restore access.',
+        'blocked' => 'This workspace was blocked by the FoxDesk platform admin. Contact support to restore access.',
         'canceled' => 'This subscription has been canceled.',
-        default => 'Workspace access is restricted. Please update billing to continue.',
+        default => 'Workspace access is limited by its billing state (' . trim($status . ' / ' . $subscription_status, ' /') . '). Open Billing, or ask a platform admin to review the workspace.',
     };
 
     return ['allowed' => false, 'reason' => $reason, 'message' => $message];
+}
+
+function billing_manual_access_subscription_statuses(): array
+{
+    return ['manual', 'free', 'comped'];
+}
+
+function billing_subscription_is_manual_access(string $subscription_status): bool
+{
+    return in_array($subscription_status, billing_manual_access_subscription_statuses(), true);
+}
+
+function billing_tenant_billing_action_state(?array $tenant = null, ?array $access_state = null): array
+{
+    $tenant = $tenant ?: billing_current_tenant();
+    if (!$tenant) {
+        return [
+            'show_checkout' => false,
+            'checkout_label' => 'Start subscription',
+            'show_portal' => false,
+            'portal_label' => 'Manage billing',
+            'notice_title' => 'Billing unavailable',
+            'notice_body' => 'Workspace billing state could not be loaded.',
+            'notice_variant' => 'warning',
+        ];
+    }
+
+    $status = (string) ($tenant['status'] ?? '');
+    $subscription_status = (string) ($tenant['subscription_status'] ?? 'manual');
+    $has_customer = trim((string) ($tenant['stripe_customer_id'] ?? '')) !== '';
+    $has_subscription = trim((string) ($tenant['stripe_subscription_id'] ?? '')) !== '';
+    $access_state = $access_state ?: billing_workspace_access_state($tenant);
+    $reason = (string) ($access_state['reason'] ?? '');
+
+    $state = [
+        'show_checkout' => false,
+        'checkout_label' => 'Start subscription',
+        'show_portal' => false,
+        'portal_label' => 'Manage billing',
+        'notice_title' => '',
+        'notice_body' => '',
+        'notice_variant' => 'info',
+    ];
+
+    if (!billing_enabled()) {
+        $state['notice_title'] = 'Billing is not enabled';
+        $state['notice_body'] = 'Stripe billing is configured later; no customer action is available right now.';
+        return $state;
+    }
+
+    if (billing_subscription_is_manual_access($subscription_status)) {
+        $state['show_portal'] = true;
+        $state['portal_label'] = 'Manage billing details';
+        $state['notice_title'] = 'Workspace active';
+        $state['notice_body'] = 'This workspace is active by platform admin override. No Stripe subscription is required. Billing details, address, and VAT ID can still be managed in Stripe.';
+        return $state;
+    }
+
+    if ($subscription_status === 'active' || ($status === 'active' && $has_subscription)) {
+        $state['show_portal'] = $has_customer;
+        $state['notice_title'] = 'Subscription active';
+        $state['notice_body'] = $has_customer
+            ? 'Your subscription is active. Use the billing portal for invoices, payment method, and cancellation.'
+            : 'Your workspace is active. No checkout action is required.';
+        return $state;
+    }
+
+    if ($status === 'trialing' && $subscription_status === 'trialing') {
+        $state['show_checkout'] = true;
+        $state['checkout_label'] = 'Add billing';
+        $state['show_portal'] = $has_customer && $has_subscription;
+        $state['notice_title'] = 'Trial active';
+        $state['notice_body'] = 'Add billing when you are ready to keep access after the trial.';
+        return $state;
+    }
+
+    if ($status === 'past_due' || $subscription_status === 'past_due' || $reason === 'past_due_grace') {
+        $state['show_portal'] = $has_customer;
+        $state['show_checkout'] = !$has_customer;
+        $state['checkout_label'] = 'Start subscription';
+        $state['portal_label'] = 'Update payment';
+        $state['notice_title'] = 'Payment needs attention';
+        $state['notice_body'] = $has_customer
+            ? 'Update the payment method in Stripe to keep the workspace active.'
+            : 'Start a subscription to keep the workspace active.';
+        $state['notice_variant'] = 'warning';
+        return $state;
+    }
+
+    if ($status === 'trial_expired' || $subscription_status === 'trial_expired') {
+        $state['show_checkout'] = true;
+        $state['checkout_label'] = 'Start subscription';
+        $state['notice_title'] = 'Trial ended';
+        $state['notice_body'] = 'Start a subscription to restore workspace access.';
+        $state['notice_variant'] = 'warning';
+        return $state;
+    }
+
+    if ($status === 'suspended') {
+        $state['show_portal'] = $has_customer;
+        $state['show_checkout'] = !$has_customer;
+        $state['checkout_label'] = 'Start subscription';
+        $state['portal_label'] = 'Update payment';
+        $state['notice_title'] = 'Workspace suspended';
+        $state['notice_body'] = $has_customer
+            ? 'Update billing to restore access.'
+            : 'Start a subscription or contact support to restore access.';
+        $state['notice_variant'] = 'warning';
+        return $state;
+    }
+
+    if ($status === 'canceled' || $subscription_status === 'canceled') {
+        $state['show_checkout'] = true;
+        $state['checkout_label'] = 'Restart subscription';
+        $state['notice_title'] = 'Subscription canceled';
+        $state['notice_body'] = 'Restart the subscription to restore or keep access.';
+        $state['notice_variant'] = 'warning';
+        return $state;
+    }
+
+    if ($status === 'blocked') {
+        $state['notice_title'] = 'Workspace blocked';
+        $state['notice_body'] = 'This workspace was blocked by the platform admin. Contact support to restore access.';
+        $state['notice_variant'] = 'warning';
+        return $state;
+    }
+
+    if ($status === 'active') {
+        $state['notice_title'] = 'Workspace active';
+        $state['notice_body'] = 'No billing action is required for this workspace right now.';
+        return $state;
+    }
+
+    $state['notice_title'] = 'Billing state needs review';
+    $state['notice_body'] = 'This workspace has an unusual billing state. Contact support or review it from the platform console.';
+    $state['notice_variant'] = 'warning';
+    return $state;
 }
 
 function billing_create_or_get_customer(array $tenant): string
@@ -768,6 +1430,19 @@ function billing_create_checkout_session(int $tenant_id, string $plan = 'cloud')
     $storage_price_id = billing_storage_overage_price_id();
     if ($storage_price_id !== '') {
         $params['line_items[1][price]'] = $storage_price_id;
+    }
+
+    if (billing_stripe_tax_enabled()) {
+        $params['automatic_tax[enabled]'] = 'true';
+    }
+
+    if (billing_tax_id_collection_enabled()) {
+        $params['billing_address_collection'] = 'required';
+        $params['tax_id_collection[enabled]'] = 'true';
+        $tax_id_required = billing_tax_id_collection_required();
+        if ($tax_id_required !== '') {
+            $params['tax_id_collection[required]'] = $tax_id_required;
+        }
     }
 
     $session = billing_stripe_request('POST', 'checkout/sessions', $params);
@@ -917,20 +1592,30 @@ function billing_apply_subscription_update(array $subscription): ?int
         return null;
     }
 
+    $tenant = billing_get_tenant($tenant_id);
     $subscription_status = billing_subscription_status_from_stripe((string) ($subscription['status'] ?? ''));
     $tenant_status = billing_tenant_status_from_subscription($subscription_status);
     $trial_end = !empty($subscription['trial_end'])
         ? date('Y-m-d H:i:s', (int) $subscription['trial_end'])
         : null;
+    $past_due_started_at = trim((string) ($tenant['suspended_at'] ?? ''));
+    $now = date('Y-m-d H:i:s');
 
     $updates = [
         'stripe_subscription_id' => (string) ($subscription['id'] ?? ''),
         'subscription_status' => $subscription_status,
         'status' => $tenant_status,
         'trial_ends_at' => $trial_end,
-        'suspended_at' => in_array($tenant_status, ['past_due', 'trial_expired', 'blocked', 'canceled'], true) ? date('Y-m-d H:i:s') : null,
-        'blocked_at' => in_array($tenant_status, ['trial_expired', 'blocked', 'canceled'], true) ? date('Y-m-d H:i:s') : null,
+        'suspended_at' => null,
+        'blocked_at' => null,
     ];
+
+    if ($tenant_status === 'past_due') {
+        $updates['suspended_at'] = $past_due_started_at !== '' ? $past_due_started_at : $now;
+    } elseif (in_array($tenant_status, ['trial_expired', 'blocked', 'canceled'], true)) {
+        $updates['suspended_at'] = $now;
+        $updates['blocked_at'] = $now;
+    }
 
     if (!empty($subscription['customer'])) {
         $updates['stripe_customer_id'] = (string) $subscription['customer'];
@@ -948,6 +1633,8 @@ function billing_apply_invoice_payment_state(array $invoice, bool $paid): ?int
         return null;
     }
 
+    $tenant = billing_get_tenant($tenant_id);
+    $past_due_started_at = trim((string) ($tenant['suspended_at'] ?? ''));
     $updates = [
         'subscription_status' => $paid ? 'active' : 'past_due',
         'status' => $paid ? 'active' : 'past_due',
@@ -956,7 +1643,7 @@ function billing_apply_invoice_payment_state(array $invoice, bool $paid): ?int
     ];
 
     if (!$paid) {
-        $updates['suspended_at'] = date('Y-m-d H:i:s');
+        $updates['suspended_at'] = $past_due_started_at !== '' ? $past_due_started_at : date('Y-m-d H:i:s');
     }
     if (!empty($invoice['customer'])) {
         $updates['stripe_customer_id'] = (string) $invoice['customer'];
@@ -969,7 +1656,59 @@ function billing_apply_invoice_payment_state(array $invoice, bool $paid): ?int
     return $tenant_id;
 }
 
-function billing_handle_webhook_event(array $event): array
+function billing_tenant_id_from_webhook_event(array $event): ?int
+{
+    $object = $event['data']['object'] ?? [];
+    if (!is_array($object)) {
+        return null;
+    }
+
+    $tenant_id = (int) ($object['metadata']['tenant_id'] ?? $object['client_reference_id'] ?? 0);
+    if ($tenant_id > 0) {
+        return $tenant_id;
+    }
+
+    return billing_find_tenant_id_for_stripe_object($object);
+}
+
+function billing_reserve_stripe_event(string $event_id, string $event_type, ?int $tenant_id = null): array
+{
+    billing_ensure_stripe_events_table();
+
+    try {
+        db_insert('billing_stripe_events', [
+            'event_id' => $event_id,
+            'event_type' => $event_type,
+            'tenant_id' => $tenant_id,
+            'status' => 'pending',
+        ]);
+        return ['reserved' => true];
+    } catch (Throwable $e) {
+        $existing = db_fetch_one(
+            "SELECT event_id, event_type, tenant_id, status, error_message FROM billing_stripe_events WHERE event_id = ? LIMIT 1",
+            [$event_id]
+        );
+        if ($existing) {
+            return ['reserved' => false, 'event' => $existing];
+        }
+
+        throw $e;
+    }
+}
+
+function billing_finish_stripe_event(string $event_id, string $status, ?int $tenant_id = null, ?string $error_message = null): void
+{
+    billing_ensure_stripe_events_table();
+
+    db_update('billing_stripe_events', [
+        'tenant_id' => $tenant_id,
+        'status' => $status,
+        'error_message' => $error_message,
+        'processed_at' => date('Y-m-d H:i:s'),
+    ], 'event_id = ?', [$event_id]);
+}
+
+function billing_process_webhook_event(array $event): array
 {
     $type = (string) ($event['type'] ?? '');
     $object = $event['data']['object'] ?? [];
@@ -1008,4 +1747,39 @@ function billing_handle_webhook_event(array $event): array
     }
 
     return ['handled' => false, 'type' => $type];
+}
+
+function billing_handle_webhook_event(array $event): array
+{
+    $event_id = trim((string) ($event['id'] ?? ''));
+    $type = (string) ($event['type'] ?? '');
+
+    if ($event_id === '') {
+        $result = billing_process_webhook_event($event);
+        return ['idempotent' => false] + $result;
+    }
+
+    $tenant_id = billing_tenant_id_from_webhook_event($event);
+    $reservation = billing_reserve_stripe_event($event_id, $type, $tenant_id);
+    if (empty($reservation['reserved'])) {
+        $existing = is_array($reservation['event'] ?? null) ? $reservation['event'] : [];
+        return [
+            'handled' => false,
+            'duplicate' => true,
+            'event_id' => $event_id,
+            'tenant_id' => isset($existing['tenant_id']) ? (int) $existing['tenant_id'] : null,
+            'type' => (string) ($existing['event_type'] ?? $type),
+            'status' => (string) ($existing['status'] ?? 'processed'),
+        ];
+    }
+
+    try {
+        $result = billing_process_webhook_event($event);
+        $processed_tenant_id = isset($result['tenant_id']) ? (int) $result['tenant_id'] : $tenant_id;
+        billing_finish_stripe_event($event_id, !empty($result['handled']) ? 'processed' : 'ignored', $processed_tenant_id);
+        return ['event_id' => $event_id, 'duplicate' => false] + $result;
+    } catch (Throwable $e) {
+        billing_finish_stripe_event($event_id, 'failed', $tenant_id, $e->getMessage());
+        throw $e;
+    }
 }

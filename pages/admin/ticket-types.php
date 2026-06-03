@@ -11,9 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reorder'])) {
     require_csrf_token();
     $order = json_decode($_POST['order'], true);
     if (is_array($order)) {
-        foreach ($order as $index => $id) {
-            db_update('ticket_types', ['sort_order' => $index], 'id = ?', [$id]);
-        }
+        reorder_items('ticket_types', $order);
         echo json_encode(['success' => true]);
         exit;
     }
@@ -32,23 +30,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($name)) {
             flash(t('Type name is required.'), 'error');
         } else {
-            // Generate slug
-            $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', $name));
-            $slug = trim($slug, '_');
-            
-            // Check if slug exists
-            $existing = db_fetch_one("SELECT id FROM ticket_types WHERE slug = ?", [$slug]);
-            if ($existing) {
-                $slug .= '_' . time();
-            }
-            
-            // Get max sort_order
-            $max = db_fetch_one("SELECT MAX(sort_order) as max_order FROM ticket_types");
-            $sort_order = ($max['max_order'] ?? 0) + 1;
+            $slug = admin_crud_unique_slug('ticket_types', $name);
+            $sort_order = admin_crud_next_sort_order('ticket_types');
             
             // If this is default, unset others
             if ($is_default) {
-                db_query("UPDATE ticket_types SET is_default = 0");
+                admin_crud_clear_default('ticket_types');
             }
             
             db_insert('ticket_types', [
@@ -78,15 +65,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash(t('Type name is required.'), 'error');
         } else {
             if ($is_default) {
-                db_query("UPDATE ticket_types SET is_default = 0");
+                admin_crud_clear_default('ticket_types');
             }
             
-            db_update('ticket_types', [
+            admin_crud_update_record('ticket_types', $id, [
                 'name' => $name,
                 'icon' => $icon,
                 'color' => $color,
                 'is_default' => $is_default
-            ], 'id = ?', [$id]);
+            ]);
             flash(t('Ticket type updated.'), 'success');
         }
         redirect('admin', ['section' => 'ticket-types']);
@@ -95,10 +82,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Toggle active
     if (isset($_POST['toggle'])) {
         $id = (int)$_POST['id'];
-        $type = db_fetch_one("SELECT * FROM ticket_types WHERE id = ?", [$id]);
+        $type = admin_crud_fetch_record('ticket_types', $id);
         if ($type) {
             $new_status = $type['is_active'] ? 0 : 1;
-            db_update('ticket_types', ['is_active' => $new_status], 'id = ?', [$id]);
+            admin_crud_update_record('ticket_types', $id, ['is_active' => $new_status]);
             flash($new_status ? t('Type activated.') : t('Type deactivated.'), 'success');
         }
         redirect('admin', ['section' => 'ticket-types']);
@@ -109,11 +96,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int)$_POST['id'];
         
         // Check if type is used
-        $tickets_count = db_fetch_one("SELECT COUNT(*) as c FROM tickets WHERE type = (SELECT slug FROM ticket_types WHERE id = ?)", [$id]);
+        $type = admin_crud_fetch_record('ticket_types', $id);
+        $tickets_count = null;
+        if ($type) {
+            $ticket_params = [$type['slug']];
+            $ticket_sql = "SELECT COUNT(*) as c FROM tickets WHERE type = ?";
+            $ticket_sql .= admin_crud_tenant_filter('tickets', $ticket_params);
+            $tickets_count = db_fetch_one($ticket_sql, $ticket_params);
+        }
         if ($tickets_count && $tickets_count['c'] > 0) {
             flash(t('Cannot delete a type that is used by tickets.'), 'error');
         } else {
-            db_query("DELETE FROM ticket_types WHERE id = ?", [$id]);
+            admin_crud_delete_record('ticket_types', $id);
             flash(t('Ticket type deleted.'), 'success');
         }
         redirect('admin', ['section' => 'ticket-types']);
@@ -124,27 +118,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int)$_POST['id'];
         $direction = $_POST['direction'];
         
-        $type = db_fetch_one("SELECT * FROM ticket_types WHERE id = ?", [$id]);
-        if ($type) {
-            $current_order = $type['sort_order'];
-            
-            if ($direction === 'up') {
-                $swap = db_fetch_one("SELECT id, sort_order FROM ticket_types WHERE sort_order < ? ORDER BY sort_order DESC LIMIT 1", [$current_order]);
-            } else {
-                $swap = db_fetch_one("SELECT id, sort_order FROM ticket_types WHERE sort_order > ? ORDER BY sort_order ASC LIMIT 1", [$current_order]);
-            }
-            
-            if ($swap) {
-                db_update('ticket_types', ['sort_order' => $swap['sort_order']], 'id = ?', [$id]);
-                db_update('ticket_types', ['sort_order' => $current_order], 'id = ?', [$swap['id']]);
-            }
+        if ($direction === 'up') {
+            move_item_up('ticket_types', $id);
+        } else {
+            move_item_down('ticket_types', $id);
         }
         redirect('admin', ['section' => 'ticket-types']);
     }
 }
 
 // Get all types
-$types = db_fetch_all("SELECT * FROM ticket_types ORDER BY sort_order");
+$types = admin_crud_fetch_ordered('ticket_types');
 
 // Common icons for selection
 $common_icons = [
@@ -179,10 +163,10 @@ $page_header_subtitle = t('Manage ticket types and ordering.');
 include BASE_PATH . '/includes/components/page-header.php';
 ?>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+<div class="admin-two-column workflow-admin-page">
     <!-- Types List -->
-    <div class="lg:col-span-2">
-    <div class="card overflow-hidden">
+    <div class="admin-main-column">
+    <div class="admin-list-card overflow-hidden">
         <div class="px-6 py-3 border-b flex items-center justify-between">
             <h3 class="font-semibold text-gray-800"><?php echo e(t('Ticket type list')); ?></h3>
             <span class="text-sm text-gray-500"><?php echo e(t('Drag to reorder')); ?></span>
@@ -196,7 +180,10 @@ include BASE_PATH . '/includes/components/page-header.php';
         <?php else: ?>
         <ul id="types-list" class="divide-y divide-gray-200">
             <?php foreach ($types as $index => $type): 
-                $tickets_count = db_fetch_one("SELECT COUNT(*) as c FROM tickets WHERE type = ?", [$type['slug']]);
+                $ticket_params = [$type['slug']];
+                $ticket_sql = "SELECT COUNT(*) as c FROM tickets WHERE type = ?";
+                $ticket_sql .= admin_crud_tenant_filter('tickets', $ticket_params);
+                $tickets_count = db_fetch_one($ticket_sql, $ticket_params);
             ?>
             <li data-id="<?php echo $type['id']; ?>" 
                 class="px-6 py-3 flex items-center justify-between bg-white hover:bg-gray-50 cursor-move <?php echo !$type['is_active'] ? 'opacity-50' : ''; ?>">
@@ -256,6 +243,7 @@ include BASE_PATH . '/includes/components/page-header.php';
     </div>
 
     <!-- Add Type Form (Sidebar) -->
+    <div class="admin-side-column">
     <div class="card card-body h-fit">
         <h3 class="font-semibold text-gray-800 mb-4"><?php echo e(t('Add ticket type')); ?></h3>
 
@@ -302,11 +290,12 @@ include BASE_PATH . '/includes/components/page-header.php';
             </button>
         </form>
     </div>
+    </div>
 </div>
 
 <!-- Edit Type Modal -->
 <div id="editTypeModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-4 max-h-[90vh] overflow-y-auto">
+    <div class="workflow-admin-modal rounded-xl shadow-xl max-w-lg w-full mx-4 p-4 max-h-[90vh] overflow-y-auto">
         <h3 class="font-semibold text-gray-800 mb-4"><?php echo e(t('Edit ticket type')); ?></h3>
 
         <form method="post" id="editTypeForm" class="space-y-4">

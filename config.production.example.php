@@ -27,7 +27,11 @@ define('DB_PASS', foxdesk_env('DB_PASS'));
 define('SECRET_KEY', foxdesk_env('SECRET_KEY'));
 
 define('APP_NAME', foxdesk_env('APP_NAME', 'FoxDesk'));
+define('APP_HOST', foxdesk_env('APP_HOST', 'app.foxdesk.net'));
+define('PLATFORM_HOST', foxdesk_env('PLATFORM_HOST', 'platform.foxdesk.net'));
+define('APP_MARKETING_HOST', foxdesk_env('APP_MARKETING_HOST', 'foxdesk.net'));
 define('APP_URL', rtrim(foxdesk_env('APP_URL', 'https://app.foxdesk.net'), '/'));
+define('PLATFORM_URL', rtrim(foxdesk_env('PLATFORM_URL', 'https://platform.foxdesk.net'), '/'));
 define('APP_DEBUG', foxdesk_env_bool('APP_DEBUG', false));
 define('TRUST_PROXY', foxdesk_env_bool('TRUST_PROXY', true));
 
@@ -37,11 +41,16 @@ define('STRIPE_WEBHOOK_SECRET', foxdesk_env('STRIPE_WEBHOOK_SECRET'));
 define('STRIPE_PRICE_CLOUD_BASE', foxdesk_env('STRIPE_PRICE_CLOUD_BASE'));
 define('STRIPE_PRICE_STORAGE_OVERAGE', foxdesk_env('STRIPE_PRICE_STORAGE_OVERAGE'));
 define('STRIPE_STORAGE_METER_EVENT_NAME', foxdesk_env('STRIPE_STORAGE_METER_EVENT_NAME', 'foxdesk_storage_extra_gb'));
+define('STRIPE_TAX_ENABLED', foxdesk_env_bool('STRIPE_TAX_ENABLED', false));
+define('STRIPE_TAX_ID_COLLECTION_ENABLED', foxdesk_env_bool('STRIPE_TAX_ID_COLLECTION_ENABLED', true));
+define('STRIPE_TAX_ID_COLLECTION_REQUIRED', foxdesk_env('STRIPE_TAX_ID_COLLECTION_REQUIRED', ''));
 define('BILLING_CURRENCY', foxdesk_env('BILLING_CURRENCY', 'EUR'));
 define('BILLING_CLOUD_BASE_PRICE_CENTS', (int) foxdesk_env('BILLING_CLOUD_BASE_PRICE_CENTS', 990));
 define('BILLING_STORAGE_OVERAGE_PRICE_CENTS', (int) foxdesk_env('BILLING_STORAGE_OVERAGE_PRICE_CENTS', 190));
 define('BILLING_INCLUDED_STORAGE_BYTES', (int) foxdesk_env('BILLING_INCLUDED_STORAGE_BYTES', 1073741824));
 define('BILLING_TRIAL_DAYS', (int) foxdesk_env('BILLING_TRIAL_DAYS', 14));
+define('BILLING_TRIAL_GRACE_DAYS', (int) foxdesk_env('BILLING_TRIAL_GRACE_DAYS', 3));
+define('BILLING_PAST_DUE_GRACE_DAYS', (int) foxdesk_env('BILLING_PAST_DUE_GRACE_DAYS', 7));
 define('STRIPE_SUCCESS_URL', APP_URL . '/index.php?page=billing&checkout=success');
 define('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=billing&checkout=cancelled');
 

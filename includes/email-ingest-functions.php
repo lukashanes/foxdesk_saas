@@ -647,6 +647,7 @@ function email_ingest_ensure_schema()
         "SHOW TABLES LIKE 'email_ingest_logs'" => "
             CREATE TABLE email_ingest_logs (
                 id INT AUTO_INCREMENT PRIMARY KEY,
+                tenant_id INT NULL,
                 mailbox VARCHAR(120) NOT NULL,
                 uid INT NOT NULL,
                 message_id VARCHAR(255) NULL,
@@ -658,6 +659,7 @@ function email_ingest_ensure_schema()
                 error TEXT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE KEY uniq_mailbox_uid (mailbox, uid),
+                INDEX idx_tenant_id (tenant_id),
                 INDEX idx_message_id (message_id),
                 INDEX idx_sender_email (sender_email),
                 INDEX idx_ticket_id (ticket_id),
@@ -678,6 +680,12 @@ function email_ingest_ensure_schema()
         if (!$exists) {
             db_query($create_sql);
         }
+    }
+
+    $tenant_col = db_fetch_one("SHOW COLUMNS FROM email_ingest_logs LIKE 'tenant_id'");
+    if (!$tenant_col) {
+        db_query("ALTER TABLE email_ingest_logs ADD COLUMN tenant_id INT NULL AFTER id");
+        db_query("CREATE INDEX idx_tenant_id ON email_ingest_logs (tenant_id)");
     }
 
     $source_col = db_fetch_one("SHOW COLUMNS FROM tickets LIKE 'source'");
@@ -776,10 +784,18 @@ function email_ingest_log($mailbox, $uid, $message_id, $status, $reason = null, 
             $ticket_id = null;
         }
 
+        $tenant_id = isset($meta['tenant_id']) ? (int) $meta['tenant_id'] : 0;
+        if ($tenant_id <= 0 && $ticket_id !== null && function_exists('table_exists') && table_exists('tickets')) {
+            $ticket = db_fetch_one("SELECT tenant_id FROM tickets WHERE id = ? LIMIT 1", [$ticket_id]);
+            $tenant_id = (int) ($ticket['tenant_id'] ?? 0);
+        }
+        $tenant_id = $tenant_id > 0 ? $tenant_id : null;
+
         db_query(
-            "INSERT INTO email_ingest_logs (mailbox, uid, message_id, sender_email, subject, ticket_id, status, reason, error, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            "INSERT INTO email_ingest_logs (tenant_id, mailbox, uid, message_id, sender_email, subject, ticket_id, status, reason, error, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
              ON DUPLICATE KEY UPDATE
+                tenant_id = VALUES(tenant_id),
                 message_id = VALUES(message_id),
                 sender_email = VALUES(sender_email),
                 subject = VALUES(subject),
@@ -788,7 +804,7 @@ function email_ingest_log($mailbox, $uid, $message_id, $status, $reason = null, 
                 reason = VALUES(reason),
                 error = VALUES(error),
                 created_at = NOW()",
-            [$mailbox, $uid, $message_id, $sender_email, $subject, $ticket_id, $status, $reason, $error]
+            [$tenant_id, $mailbox, $uid, $message_id, $sender_email, $subject, $ticket_id, $status, $reason, $error]
         );
     } catch (Throwable $e) {
         error_log('email_ingest_log failed: ' . $e->getMessage());
@@ -1304,7 +1320,15 @@ function email_ingest_send_requester_notifications($ticket_id, $ticket_created, 
     $subject = str_replace(array_keys($placeholders), array_values($placeholders), $subject);
     $body = str_replace(array_keys($placeholders), array_values($placeholders), $body);
 
-    if (function_exists('send_email')) {
+    if (function_exists('send_ticket_notification_email')) {
+        @send_ticket_notification_email($user['email'], $subject, $body, [
+            'eyebrow' => 'Ticket received',
+            'title' => (string) ($ticket['title'] ?? $subject),
+            'cta_label' => 'View ticket',
+            'cta_url' => $ticket_url,
+            'reason' => 'You are receiving this confirmation because your email created a new ticket.',
+        ]);
+    } elseif (function_exists('send_email')) {
         @send_email($user['email'], $subject, $body);
     }
 }
@@ -1731,12 +1755,98 @@ function email_ingest_sanitize_html($html)
 function email_ingest_normalize_plain_text($text)
 {
     $text = html_entity_decode((string) $text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $text = str_replace("\xc2\xa0", ' ', $text);
+    $without_zero_width = @preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $text);
+    if (is_string($without_zero_width)) {
+        $text = $without_zero_width;
+    }
     $text = preg_replace("/\r\n|\r/", "\n", $text);
     $text = preg_replace("/[ \t]+\n/", "\n", $text);
     $text = preg_replace("/\n[ \t]+/", "\n", $text);
     $text = preg_replace("/[ \t]{2,}/", ' ', $text);
     $text = preg_replace("/\n{3,}/", "\n\n", $text);
     return trim($text);
+}
+
+/**
+ * Detect an Outlook-style forwarded/replied header block.
+ */
+function email_ingest_is_reply_header_block(array $lines, int $index): bool
+{
+    $line = trim((string) ($lines[$index] ?? ''));
+    if (!preg_match('/^(From|Sent|To|Subject|Cc|Date):\s.+/i', $line)) {
+        return false;
+    }
+
+    $matches = 1;
+    for ($i = $index + 1; $i < min(count($lines), $index + 7); $i++) {
+        $candidate = trim((string) $lines[$i]);
+        if ($candidate === '') {
+            continue;
+        }
+        if (preg_match('/^(From|Sent|To|Subject|Cc|Date):\s.+/i', $candidate)) {
+            $matches++;
+        }
+    }
+
+    return $matches >= 2;
+}
+
+/**
+ * Remove quoted previous replies and signatures while keeping the new message.
+ */
+function email_ingest_strip_quoted_reply($text)
+{
+    $normalized = email_ingest_normalize_plain_text($text);
+    if ($normalized === '') {
+        return '';
+    }
+
+    $lines = explode("\n", $normalized);
+    $kept = [];
+    $kept_non_empty = 0;
+
+    foreach ($lines as $index => $line) {
+        $trimmed = trim($line);
+
+        if ($kept_non_empty > 0) {
+            if ($trimmed === '--') {
+                break;
+            }
+            if (preg_match('/^[-_]{2,}\s*(Original Message|Forwarded message)\s*[-_]{2,}$/i', $trimmed)) {
+                break;
+            }
+            if (preg_match('/^(On .+ wrote:|Dne .+ napsal(?:\(a\))?:|Am .+ schrieb .+:|Le .+ a écrit\s*:|El .+ escribió:)$/iu', $trimmed)) {
+                break;
+            }
+            if (email_ingest_is_reply_header_block($lines, $index)) {
+                break;
+            }
+        }
+
+        if ($kept_non_empty > 0 && preg_match('/^>+/', $trimmed)) {
+            continue;
+        }
+
+        $kept[] = $line;
+        if ($trimmed !== '') {
+            $kept_non_empty++;
+        }
+    }
+
+    $cleaned = email_ingest_normalize_plain_text(implode("\n", $kept));
+    return $cleaned !== '' ? $cleaned : $normalized;
+}
+
+/**
+ * Final display cleanup for inbound ticket descriptions/comments.
+ */
+function email_ingest_cleanup_display_body($text)
+{
+    $text = email_ingest_strip_quoted_reply($text);
+    $text = preg_replace('/^\s*\[(cid|image):[^\]]+\]\s*$/mi', '', $text);
+    $text = preg_replace('/^\s*Sent from my (iPhone|iPad|Android).*$/mi', '', $text);
+    return email_ingest_normalize_plain_text($text);
 }
 
 /**
@@ -1750,16 +1860,19 @@ function email_ingest_html_to_text($html)
     }
 
     $html = preg_replace('/<(script|style|head)\b[^>]*>.*?<\/\1>/is', '', $html);
+    $html = preg_replace('/<\s*wbr\s*\/?>/i', '', $html);
     $html = preg_replace('/<\s*br\s*\/?>/i', "\n", $html);
+    $html = preg_replace('/<\s*(p|div|section|article|header|footer|blockquote|pre|h[1-6])\b[^>]*>/i', "\n", $html);
     $html = preg_replace('/<\/\s*(p|div|section|article|header|footer|blockquote|pre|h[1-6])\s*>/i', "\n\n", $html);
     $html = preg_replace('/<\s*li\b[^>]*>/i', "\n- ", $html);
     $html = preg_replace('/<\/\s*li\s*>/i', "\n", $html);
     $html = preg_replace('/<\/\s*(ul|ol)\s*>/i', "\n", $html);
     $html = preg_replace('/<\/\s*(tr|table)\s*>/i', "\n", $html);
+    $html = preg_replace('/<\s*t[dh]\b[^>]*>/i', ' ', $html);
     $html = preg_replace('/<\/\s*t[dh]\s*>/i', " ", $html);
     $html = preg_replace('/<\s*hr\s*\/?>/i', "\n---\n", $html);
 
-    return email_ingest_normalize_plain_text(strip_tags($html));
+    return email_ingest_cleanup_display_body(strip_tags($html));
 }
 
 /**
@@ -1767,7 +1880,7 @@ function email_ingest_html_to_text($html)
  */
 function email_ingest_select_display_body($plain_text, $html)
 {
-    $plain_text = email_ingest_normalize_plain_text($plain_text);
+    $plain_text = email_ingest_cleanup_display_body($plain_text);
     $html_text = email_ingest_html_to_text($html);
 
     if ($plain_text === '') {
@@ -1784,7 +1897,7 @@ function email_ingest_select_display_body($plain_text, $html)
         return $html_text;
     }
 
-    return $plain_text;
+    return email_ingest_cleanup_display_body($plain_text);
 }
 
 /**

@@ -357,9 +357,16 @@ function set_user_organization_memberships($user_id, $organization_ids, $primary
     }
 
     $org_ids = normalize_organization_ids($organization_ids);
+    $valid_org_ids = array_map('intval', array_column(get_organizations(true), 'id'));
+    if (!empty($valid_org_ids)) {
+        $org_ids = array_values(array_intersect($org_ids, $valid_org_ids));
+    }
 
     if ($primary_organization_id !== null) {
         $primary_organization_id = (int) $primary_organization_id;
+        if (!empty($valid_org_ids) && !in_array($primary_organization_id, $valid_org_ids, true)) {
+            $primary_organization_id = null;
+        }
         if ($primary_organization_id > 0 && !in_array($primary_organization_id, $org_ids, true)) {
             array_unshift($org_ids, $primary_organization_id);
             $org_ids = normalize_organization_ids($org_ids);
@@ -401,7 +408,14 @@ function set_user_organization_memberships($user_id, $organization_ids, $primary
 
     $updates['permissions'] = json_encode($permissions);
 
-    db_update('users', $updates, 'id = ?', [$user_id]);
+    $where = 'id = ?';
+    $params = [$user_id];
+    if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('users')) {
+        $where .= ' AND tenant_id = ?';
+        $params[] = current_tenant_id();
+    }
+
+    db_update('users', $updates, $where, $params);
     return true;
 }
 
@@ -412,6 +426,9 @@ function add_user_organization_membership($user_id, $organization_id)
 {
     $organization_id = (int) $organization_id;
     if ($organization_id <= 0) {
+        return false;
+    }
+    if (!get_organization($organization_id)) {
         return false;
     }
 
@@ -440,6 +457,9 @@ function remove_user_organization_membership($user_id, $organization_id)
 {
     $organization_id = (int) $organization_id;
     if ($organization_id <= 0) {
+        return false;
+    }
+    if (!get_organization($organization_id)) {
         return false;
     }
 

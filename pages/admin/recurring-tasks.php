@@ -134,7 +134,7 @@ foreach ($tasks as $task) {
 $ticket_types = get_ticket_types();
 $organizations = get_organizations(true);
 $_ai_excl = (function_exists('ai_agent_column_exists') && ai_agent_column_exists()) ? ' AND is_ai_agent = 0' : '';
-$agents = db_fetch_all("SELECT id, first_name, last_name FROM users WHERE role IN ('agent', 'admin') AND is_active = 1{$_ai_excl} ORDER BY first_name, last_name");
+$agents = db_fetch_all("SELECT id, first_name, last_name FROM users WHERE role IN ('agent', 'admin') AND is_active = 1{$_ai_excl} AND tenant_id = ? ORDER BY first_name, last_name", [current_tenant_id()]);
 $priorities = get_priorities();
 $statuses = get_statuses();
 

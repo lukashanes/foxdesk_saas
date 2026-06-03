@@ -210,8 +210,8 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
     <!-- Sidebar -->
     <aside id="sidebar" class="sidebar fixed top-0 left-0 h-full z-50 flex flex-col" role="complementary" aria-label="<?php echo e(t('Sidebar navigation')); ?>">
         <!-- Logo - Fixed at top -->
-        <div class="p-3 flex-shrink-0 flex items-center justify-between">
-            <a href="<?php echo url('dashboard'); ?>" class="flex items-center space-x-3 group">
+        <div class="sidebar-brand-row p-3 flex-shrink-0 flex items-center justify-between">
+            <a href="<?php echo url('work'); ?>" class="sidebar-brand-link flex items-center space-x-3 group" title="<?php echo e($app_name); ?>">
                 <?php $app_logo = get_setting('app_logo', ''); ?>
                 <?php if ($app_logo): ?>
                     <img src="<?php echo e(upload_url($app_logo)); ?>" alt="<?php echo e($app_name); ?>"
@@ -220,8 +220,20 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                     <img src="assets/img/logo.png" alt="<?php echo e($app_name); ?>"
                          class="w-10 h-10 rounded-xl object-cover shadow-lg transition-transform group-hover:scale-105">
                 <?php endif; ?>
-                <span class="text-xl font-bold text-gradient"><?php echo e($app_name); ?></span>
+                <span class="sidebar-brand-label text-xl font-bold text-gradient"><?php echo e($app_name); ?></span>
             </a>
+            <button onclick="toggleSidebarCompact(); if (window.syncSidebarCompactLayout) window.syncSidebarCompactLayout();" id="sidebar-collapse-btn"
+                class="sidebar-collapse-btn items-center justify-center w-8 h-8 rounded-xl transition-all sidebar-hover"
+                style="color: var(--text-muted);"
+                aria-label="<?php echo e(t('Collapse sidebar')); ?>"
+                aria-pressed="false"
+                aria-controls="sidebar"
+                data-collapse-label="<?php echo e(t('Collapse sidebar')); ?>"
+                data-expand-label="<?php echo e(t('Expand sidebar')); ?>"
+                title="<?php echo e(t('Collapse sidebar')); ?>">
+                <span class="sidebar-collapse-icon-expanded"><?php echo get_icon('chevron-left', 'w-4 h-4'); ?></span>
+                <span class="sidebar-collapse-icon-collapsed hidden"><?php echo get_icon('chevron-right', 'w-4 h-4'); ?></span>
+            </button>
             <!-- Close button for mobile -->
             <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-xl transition-all" style="color: var(--text-muted);"
                 aria-label="<?php echo e(t('Close menu')); ?>" aria-controls="sidebar">
@@ -229,21 +241,56 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
             </button>
         </div>
 
+        <script>
+            window.syncSidebarCompactLayout = function() {
+                var compact = document.body.classList.contains('sidebar-compact') && window.innerWidth >= 1025;
+                var sidebar = document.getElementById('sidebar');
+                var mainContent = document.getElementById('main-content');
+                if (sidebar) sidebar.style.width = compact ? '76px' : '';
+                if (mainContent) mainContent.style.marginLeft = compact ? '76px' : '';
+            };
+            document.addEventListener('DOMContentLoaded', function() {
+                window.syncSidebarCompactLayout();
+            });
+        </script>
+
         <!-- Scrollable Navigation -->
         <div class="sidebar-nav flex-1 px-2.5 pb-1">
             <!-- Main Navigation -->
             <nav class="space-y-1.5" aria-label="<?php echo e(t('Main navigation')); ?>">
+                <?php $is_work = ($page ?? '') === 'work'; ?>
+                <a href="<?php echo url('work'); ?>"
+                    class="nav-item <?php echo $is_work ? 'active' : ''; ?>"
+                    title="<?php echo e(t('Work')); ?>"
+                    <?php echo $is_work ? 'aria-current="page"' : ''; ?>>
+                    <?php echo get_icon('home', 'nav-item__icon'); ?>
+                    <span><?php echo e(t('Work')); ?></span>
+                </a>
+
+                <?php if (is_admin() || is_agent()): ?>
+                <?php $is_inbox = ($page ?? '') === 'inbox'; ?>
+                <a href="<?php echo url('inbox'); ?>"
+                    class="nav-item <?php echo $is_inbox ? 'active' : ''; ?>"
+                    title="<?php echo e(t('Inbox')); ?>"
+                    <?php echo $is_inbox ? 'aria-current="page"' : ''; ?>>
+                    <?php echo get_icon('inbox', 'nav-item__icon'); ?>
+                    <span><?php echo e(t('Inbox')); ?></span>
+                </a>
+                <?php endif; ?>
+
                 <?php $is_dashboard = ($page ?? '') === 'dashboard'; ?>
                 <a href="<?php echo url('dashboard'); ?>"
                     class="nav-item <?php echo $is_dashboard ? 'active' : ''; ?>"
+                    title="<?php echo e(t('Dashboard')); ?>"
                     <?php echo $is_dashboard ? 'aria-current="page"' : ''; ?>>
-                    <?php echo get_icon('home', 'nav-item__icon'); ?>
+                    <?php echo get_icon('chart-bar', 'nav-item__icon'); ?>
                     <span><?php echo e(t('Dashboard')); ?></span>
                 </a>
 
                 <?php $is_notifications_page = ($page ?? '') === 'notifications'; ?>
                 <a href="<?php echo url('notifications'); ?>"
                     class="nav-item <?php echo $is_notifications_page ? 'active' : ''; ?>"
+                    title="<?php echo e(t('Notifications')); ?>"
                     <?php echo $is_notifications_page ? 'aria-current="page"' : ''; ?>>
                     <?php echo get_icon('bell', 'nav-item__icon'); ?>
                     <span><?php echo e(t('Notifications')); ?></span>
@@ -253,6 +300,7 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                 <?php $is_tickets = ($page ?? '') === 'tickets' && ($_GET['archived'] ?? '') !== '1'; ?>
                 <a href="<?php echo url('tickets'); ?>"
                     class="nav-item <?php echo $is_tickets ? 'active' : ''; ?>"
+                    title="<?php echo e(t('All tickets')); ?>"
                     <?php echo $is_tickets ? 'aria-current="page"' : ''; ?>>
                     <?php echo get_icon('ticket-alt', 'nav-item__icon'); ?>
                     <span><?php echo e(t('All tickets')); ?></span>
@@ -263,6 +311,7 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                 <?php if ($has_quick_start): ?><div class="nav-item-group"><?php endif; ?>
                 <a href="<?php echo url('new-ticket'); ?>"
                     class="nav-item nav-item--cta <?php echo $is_new_ticket ? 'active' : ''; ?>"
+                    title="<?php echo e(t('New ticket')); ?>"
                     <?php echo $is_new_ticket ? 'aria-current="page"' : ''; ?>>
                     <?php echo get_icon('plus', 'nav-item__icon'); ?>
                     <span><?php echo e(t('New ticket')); ?></span>
@@ -445,12 +494,14 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                     <?php echo get_icon('cog', 'w-4 h-4'); ?>
                     <span><?php echo e(t('Settings')); ?></span>
                 </a>
-                <a href="<?php echo url('admin', ['section' => 'migration-export']); ?>" role="menuitem"
-                    class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors sidebar-hover"
-                    style="color: var(--text-secondary);">
-                    <?php echo get_icon('cloud-upload-alt', 'w-4 h-4'); ?>
-                    <span>Cloud migration</span>
-                </a>
+                <?php if (!(function_exists('foxdesk_is_app_host') && foxdesk_is_app_host())): ?>
+                    <a href="<?php echo url('admin', ['section' => 'migration-export']); ?>" role="menuitem"
+                        class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors sidebar-hover"
+                        style="color: var(--text-secondary);">
+                        <?php echo get_icon('cloud-upload-alt', 'w-4 h-4'); ?>
+                        <span>Cloud migration</span>
+                    </a>
+                <?php endif; ?>
                 <a href="<?php echo url('admin', ['section' => 'recurring-tasks']); ?>" role="menuitem"
                     class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors sidebar-hover"
                     style="color: var(--text-secondary);">
@@ -507,10 +558,10 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                     </button>
                 </div>
 
-                <a href="<?php echo url('tickets'); ?>" class="p-2 rounded-xl transition-all sidebar-hover" style="color: var(--text-secondary);"
-                    aria-label="<?php echo e(t('Search tickets')); ?>">
+                <button type="button" id="mobile-header-search" class="p-2 rounded-xl transition-all sidebar-hover" style="color: var(--text-secondary);"
+                    aria-label="<?php echo e(t('Search')); ?>">
                     <?php echo get_icon('search'); ?>
-                </a>
+                </button>
 
                 <!-- Mobile User Dropdown -->
                 <div class="relative">
@@ -657,6 +708,9 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
             ? billing_trial_days_remaining($billing_tenant)
             : null;
         $billing_status = (string) ($billing_tenant['subscription_status'] ?? '');
+        $billing_action_state = $billing_tenant && function_exists('billing_tenant_billing_action_state')
+            ? billing_tenant_billing_action_state($billing_tenant)
+            : ['show_checkout' => false, 'checkout_label' => 'Add billing'];
         ?>
         <?php if ($billing_status === 'trialing' && $billing_trial_days !== null && !is_platform_admin()): ?>
             <div class="mx-4 lg:mx-8 mt-4 rounded-xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
@@ -666,8 +720,8 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                     <?php echo $billing_trial_days; ?> day<?php echo $billing_trial_days === 1 ? '' : 's'; ?> remaining.
                     Add billing to keep access after the trial.
                 </div>
-                <?php if (is_admin()): ?>
-                    <a href="<?php echo url('billing'); ?>" class="btn btn-primary btn-sm">Activate FoxDesk</a>
+                <?php if (is_admin() && !empty($billing_action_state['show_checkout'])): ?>
+                    <a href="<?php echo url('billing'); ?>" class="btn btn-primary btn-sm"><?php echo e((string) ($billing_action_state['checkout_label'] ?? 'Add billing')); ?></a>
                 <?php endif; ?>
             </div>
         <?php endif; ?>

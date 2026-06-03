@@ -31,6 +31,11 @@ try {
 } catch (Exception $e) {
     $organizations = [];
 }
+$valid_organization_ids = array_map('intval', array_column($organizations, 'id'));
+$filter_tenant_organization_ids = function ($organization_ids) use ($valid_organization_ids) {
+    $ids = normalize_organization_ids($organization_ids);
+    return array_values(array_intersect($ids, $valid_organization_ids));
+};
 
 $email_pref_column_exists = column_exists('users', 'email_notifications_enabled');
 $in_app_pref_column_exists = column_exists('users', 'in_app_notifications_enabled');
@@ -73,7 +78,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password = $_POST['password'] ?? '';
         $role = $_POST['role'] ?? 'user';
         $organization_id = !empty($_POST['organization_id']) ? (int) $_POST['organization_id'] : null;
-        $organization_membership_ids = normalize_organization_ids($_POST['organization_membership_ids'] ?? []);
+        $organization_membership_ids = $filter_tenant_organization_ids($_POST['organization_membership_ids'] ?? []);
+        if ($organization_id && !in_array($organization_id, $valid_organization_ids, true)) {
+            $organization_id = null;
+        }
         $contact_phone = trim($_POST['contact_phone'] ?? '');
         $notes = trim($_POST['notes'] ?? '');
         $cost_rate_input = trim($_POST['cost_rate'] ?? '');
@@ -82,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($organization_id && !in_array($organization_id, $organization_membership_ids, true)) {
             $organization_membership_ids[] = $organization_id;
         }
-        $organization_membership_ids = normalize_organization_ids($organization_membership_ids);
+        $organization_membership_ids = $filter_tenant_organization_ids($organization_membership_ids);
         if (!$organization_id && !empty($organization_membership_ids)) {
             $organization_id = (int) $organization_membership_ids[0];
         }
@@ -128,9 +136,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         // Both agents and users can have multi-org selection via 'organization' scope
                         if (($role === 'agent' || $role === 'user') && $ticket_scope === 'organization' && !empty($_POST['scope_organization_ids'])) {
-                            $scope_organization_ids = array_map('intval', (array) $_POST['scope_organization_ids']);
+                            $scope_organization_ids = $filter_tenant_organization_ids($_POST['scope_organization_ids']);
                         }
-                        $scope_organization_ids = normalize_organization_ids($scope_organization_ids);
+                        $scope_organization_ids = $filter_tenant_organization_ids($scope_organization_ids);
 
                         // Default scope for users if not set or invalid
                         if ($role === 'user' && !in_array($ticket_scope, ['organization', 'own', 'all'])) {
@@ -175,7 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     if (!empty($updates)) {
-                        db_update('users', $updates, 'id = ?', [$user_id]);
+                        db_update('users', $updates, 'id = ? AND tenant_id = ?', [$user_id, current_tenant_id()]);
                     }
 
                     // Send welcome email with login credentials
@@ -229,7 +237,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $role = $_POST['role'] ?? 'user';
         $is_active = isset($_POST['is_active']) ? 1 : 0;
         $organization_id = !empty($_POST['organization_id']) ? (int) $_POST['organization_id'] : null;
-        $organization_membership_ids = normalize_organization_ids($_POST['organization_membership_ids'] ?? []);
+        $organization_membership_ids = $filter_tenant_organization_ids($_POST['organization_membership_ids'] ?? []);
+        if ($organization_id && !in_array($organization_id, $valid_organization_ids, true)) {
+            $organization_id = null;
+        }
         $contact_phone = trim($_POST['contact_phone'] ?? '');
         $notes = trim($_POST['notes'] ?? '');
         $cost_rate_input = trim($_POST['cost_rate'] ?? '');
@@ -238,7 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($organization_id && !in_array($organization_id, $organization_membership_ids, true)) {
             $organization_membership_ids[] = $organization_id;
         }
-        $organization_membership_ids = normalize_organization_ids($organization_membership_ids);
+        $organization_membership_ids = $filter_tenant_organization_ids($organization_membership_ids);
         if (!$organization_id && !empty($organization_membership_ids)) {
             $organization_id = (int) $organization_membership_ids[0];
         }
@@ -257,7 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('admin', ['section' => 'users']);
         }
 
-        $target_user = db_fetch_one("SELECT id, role, is_active FROM users WHERE id = ?", [$id]);
+        $target_user = db_fetch_one("SELECT id, role, is_active FROM users WHERE id = ? AND tenant_id = ?", [$id, current_tenant_id()]);
         if (!$target_user) {
             flash(t('User not found.'), 'error');
             redirect('admin', ['section' => 'users']);
@@ -266,7 +277,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $is_currently_active_admin = ($target_user['role'] ?? '') === 'admin' && (int) ($target_user['is_active'] ?? 0) === 1;
         $will_be_active_admin = $role === 'admin' && $is_active === 1;
         if ($is_currently_active_admin && !$will_be_active_admin) {
-            $active_admin_count_row = db_fetch_one("SELECT COUNT(*) AS c FROM users WHERE role = 'admin' AND is_active = 1");
+            $active_admin_count_row = db_fetch_one("SELECT COUNT(*) AS c FROM users WHERE role = 'admin' AND is_active = 1 AND tenant_id = ?", [current_tenant_id()]);
             $active_admin_count = (int) ($active_admin_count_row['c'] ?? 0);
             if ($active_admin_count <= 1) {
                 flash(t('Cannot deactivate or demote the last active admin.'), 'error');
@@ -282,9 +293,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Both agents and users can have multi-org selection
             if (($role === 'agent' || $role === 'user') && $ticket_scope === 'organization' && !empty($_POST['scope_organization_ids'])) {
-                $scope_organization_ids = array_map('intval', (array) $_POST['scope_organization_ids']);
-            }
-            $scope_organization_ids = normalize_organization_ids($scope_organization_ids);
+                    $scope_organization_ids = $filter_tenant_organization_ids($_POST['scope_organization_ids']);
+                }
+            $scope_organization_ids = $filter_tenant_organization_ids($scope_organization_ids);
 
             // Validate user scope - allow 'all' for users too
             if ($role === 'user' && !in_array($ticket_scope, ['organization', 'own', 'all'])) {
@@ -345,7 +356,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user_updates['notes'] = $notes !== '' ? $notes : null;
         }
 
-        db_update('users', $user_updates, 'id = ?', [$id]);
+        db_update('users', $user_updates, 'id = ? AND tenant_id = ?', [$id, current_tenant_id()]);
         if ($id === (int) ($_SESSION['user_id'] ?? 0)) {
             refresh_user_session();
             current_user(true);
@@ -373,7 +384,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Send password reset email from admin
     if (isset($_POST['send_reset_email'])) {
         $id = (int) $_POST['id'];
-        $user = db_fetch_one("SELECT id, first_name, email, is_active FROM users WHERE id = ?", [$id]);
+            $user = db_fetch_one("SELECT id, first_name, email, is_active FROM users WHERE id = ? AND tenant_id = ?", [$id, current_tenant_id()]);
 
         if ($user && $user['is_active']) {
             require_once BASE_PATH . '/includes/mailer.php';
@@ -386,7 +397,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             db_update('users', [
                 'reset_token' => $token_hash,
                 'reset_token_expires' => $expires
-            ], 'id = ?', [$user['id']]);
+            ], 'id = ? AND tenant_id = ?', [$user['id'], current_tenant_id()]);
 
             $reset_link = get_app_url() . '/index.php?page=reset-password&token=' . $token;
             $sent = send_password_reset_email($user['email'], $user['first_name'], $reset_link);
@@ -419,11 +430,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $target_user_sql = "SELECT id, email, role, is_active"
             . ($ai_agent_col ? ", is_ai_agent" : "")
             . ($deleted_at_column_exists ? ", deleted_at" : "")
-            . " FROM users WHERE id = ?";
+            . " FROM users WHERE id = ? AND tenant_id = ?";
+        $target_user_params = [$id, current_tenant_id()];
         if ($deleted_at_column_exists) {
             $target_user_sql .= " AND deleted_at IS NULL";
         }
-        $target_user = db_fetch_one($target_user_sql, [$id]);
+        $target_user = db_fetch_one($target_user_sql, $target_user_params);
         if (!$target_user) {
             flash(t('User not found.'), 'error');
             redirect('admin', ['section' => 'users']);
@@ -442,7 +454,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // Prevent archiving/deleting the last active admin
             if ($target_user['role'] === 'admin' && (int) $target_user['is_active'] === 1) {
-                $active_admin_count_row = db_fetch_one("SELECT COUNT(*) AS c FROM users WHERE role = 'admin' AND is_active = 1");
+                $active_admin_count_row = db_fetch_one("SELECT COUNT(*) AS c FROM users WHERE role = 'admin' AND is_active = 1 AND tenant_id = ?", [current_tenant_id()]);
                 $active_admin_count = (int) ($active_admin_count_row['c'] ?? 0);
                 if ($active_admin_count <= 1) {
                     flash(t('Cannot archive the last active admin.'), 'error');
@@ -454,7 +466,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ((int) $target_user['is_active'] === 0) {
                     flash(t('User is already archived.'), 'info');
                 } else {
-                    db_update('users', ['is_active' => 0], 'id = ?', [$id]);
+                    db_update('users', ['is_active' => 0], 'id = ? AND tenant_id = ?', [$id, current_tenant_id()]);
                     if (function_exists('debug_log')) {
                         debug_log('User archived', [
                             'target_user_id' => $id,
@@ -518,7 +530,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $purge_updates['in_app_sound_enabled'] = 0;
                         }
 
-                        db_update('users', $purge_updates, 'id = ?', [$id]);
+                        db_update('users', $purge_updates, 'id = ? AND tenant_id = ?', [$id, current_tenant_id()]);
                         if (function_exists('debug_log')) {
                             debug_log('Archived user purged', [
                                 'target_user_id' => $id,
@@ -579,11 +591,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 error_log('AI agent create failed: ' . $e->getMessage());
             }
             if ($user_id) {
-                db_update('users', [
-                    'is_ai_agent' => 1,
-                    'ai_model' => $ai_model !== '' ? $ai_model : null,
-                    'cost_rate' => $cost_rate,
-                ], 'id = ?', [$user_id]);
+            db_update('users', [
+                'is_ai_agent' => 1,
+                'ai_model' => $ai_model !== '' ? $ai_model : null,
+                'cost_rate' => $cost_rate,
+            ], 'id = ? AND tenant_id = ?', [$user_id, current_tenant_id()]);
 
                 // Auto-generate API token
                 if (function_exists('generate_api_token')) {
@@ -617,7 +629,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'ai_model' => $ai_model !== '' ? $ai_model : null,
                 'cost_rate' => $cost_rate,
                 'is_active' => $is_active,
-            ], 'id = ? AND is_ai_agent = 1', [$id]);
+            ], 'id = ? AND is_ai_agent = 1 AND tenant_id = ?', [$id, current_tenant_id()]);
             flash(t('Settings saved.'), 'success');
         }
         redirect('admin', ['section' => 'users', 'tab' => 'ai_agents']);
@@ -626,7 +638,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Generate token for AI agent
     if (isset($_POST['generate_agent_token']) && $ai_agent_col_exists) {
         $id = (int) $_POST['id'];
-        $agent = db_fetch_one("SELECT id, first_name, is_ai_agent FROM users WHERE id = ? AND is_ai_agent = 1", [$id]);
+        $agent = db_fetch_one("SELECT id, first_name, is_ai_agent FROM users WHERE id = ? AND is_ai_agent = 1 AND tenant_id = ?", [$id, current_tenant_id()]);
         if ($agent && function_exists('generate_api_token')) {
             $token_result = generate_api_token($id, $agent['first_name']);
             if ($token_result && !empty($token_result['token'])) {
@@ -642,8 +654,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['revoke_agent_token']) && $ai_agent_col_exists) {
         $token_id = (int) $_POST['token_id'];
         if ($token_id > 0 && function_exists('revoke_api_token')) {
-            revoke_api_token($token_id);
-            flash(t('Token revoked.'), 'success');
+            $revoked = revoke_api_token($token_id);
+            flash($revoked ? t('Token revoked.') : t('Token not found.'), $revoked ? 'success' : 'error');
         }
         redirect('admin', ['section' => 'users', 'tab' => 'ai_agents']);
     }
@@ -652,9 +664,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete_ai_agent']) && $ai_agent_col_exists) {
         $id = (int) ($_POST['id'] ?? 0);
         if ($id > 0) {
-            $agent = db_fetch_one("SELECT id, first_name FROM users WHERE id = ? AND is_ai_agent = 1", [$id]);
+            $agent = db_fetch_one("SELECT id, first_name FROM users WHERE id = ? AND is_ai_agent = 1 AND tenant_id = ?", [$id, current_tenant_id()]);
             if ($agent) {
-                db_delete('users', 'id = ?', [$id]);
+                db_delete('users', 'id = ? AND tenant_id = ?', [$id, current_tenant_id()]);
                 flash(t('Agent deleted.'), 'success');
             }
         }
@@ -664,7 +676,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Upload user avatar (admin)
     if (isset($_POST['upload_user_avatar']) && isset($_FILES['user_avatar'])) {
         $target_user_id = (int) $_POST['user_id'];
-        $target_user = db_fetch_one("SELECT * FROM users WHERE id = ?", [$target_user_id]);
+        $target_user = db_fetch_one("SELECT * FROM users WHERE id = ? AND tenant_id = ?", [$target_user_id, current_tenant_id()]);
         if ($target_user && $_FILES['user_avatar']['error'] === UPLOAD_ERR_OK) {
             try {
                 $allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -676,7 +688,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         @unlink($old_path);
                     }
                 }
-                db_update('users', ['avatar' => UPLOAD_DIR . $result['filename']], 'id = ?', [$target_user_id]);
+                db_update('users', ['avatar' => UPLOAD_DIR . $result['filename']], 'id = ? AND tenant_id = ?', [$target_user_id, current_tenant_id()]);
                 if ($target_user_id === (int) ($_SESSION['user_id'] ?? 0)) {
                     refresh_user_session();
                 }
@@ -691,7 +703,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Remove user avatar (admin)
     if (isset($_POST['remove_user_avatar'])) {
         $target_user_id = (int) $_POST['user_id'];
-        $target_user = db_fetch_one("SELECT * FROM users WHERE id = ?", [$target_user_id]);
+        $target_user = db_fetch_one("SELECT * FROM users WHERE id = ? AND tenant_id = ?", [$target_user_id, current_tenant_id()]);
         if ($target_user && !empty($target_user['avatar'])) {
             if (strpos($target_user['avatar'], 'data:') !== 0) {
                 $old_path = BASE_PATH . '/' . UPLOAD_DIR . basename($target_user['avatar']);
@@ -699,7 +711,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     @unlink($old_path);
                 }
             }
-            db_update('users', ['avatar' => null], 'id = ?', [$target_user_id]);
+            db_update('users', ['avatar' => null], 'id = ? AND tenant_id = ?', [$target_user_id, current_tenant_id()]);
             if ($target_user_id === (int) ($_SESSION['user_id'] ?? 0)) {
                 refresh_user_session();
             }
@@ -712,9 +724,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Get users with organization info - sorted by role (users first, then agents, then admins)
 $sql = "SELECT u.*, o.name as organization_name
         FROM users u
-        LEFT JOIN organizations o ON u.organization_id = o.id
+        LEFT JOIN organizations o ON u.organization_id = o.id AND o.tenant_id = u.tenant_id
         WHERE 1=1";
 $params = [];
+$sql .= " AND u.tenant_id = ?";
+$params[] = current_tenant_id();
 // Hide purged users also on old databases without deleted_at.
 $sql .= " AND u.email NOT LIKE 'deleted-user-%@invalid.local'";
 if ($deleted_at_column_exists) {
@@ -757,14 +771,17 @@ $users = db_fetch_all($sql, $params);
 
 if ($time_tracking_available) {
     $dur = sql_timer_duration_minutes();
-    $sql = "SELECT user_id, SUM({$dur}) as total_minutes FROM ticket_time_entries";
-    $params = [];
+    $sql = "SELECT tte.user_id, SUM({$dur}) as total_minutes
+            FROM ticket_time_entries tte
+            JOIN users u ON u.id = tte.user_id
+            WHERE u.tenant_id = ?";
+    $params = [current_tenant_id()];
     if ($range_start && $range_end) {
-        $sql .= " WHERE started_at >= ? AND started_at <= ?";
+        $sql .= " AND tte.started_at >= ? AND tte.started_at <= ?";
         $params[] = $range_start;
         $params[] = $range_end;
     }
-    $sql .= " GROUP BY user_id";
+    $sql .= " GROUP BY tte.user_id";
     $rows = db_fetch_all($sql, $params);
     foreach ($rows as $row) {
         $time_totals[(int) $row['user_id']] = (int) $row['total_minutes'];
@@ -775,12 +792,13 @@ if ($time_tracking_available) {
 $ai_agents = [];
 $ai_agent_tokens = [];
 if ($ai_agent_col_exists) {
-    $ai_sql = "SELECT u.* FROM users u WHERE u.is_ai_agent = 1";
+    $ai_sql = "SELECT u.* FROM users u WHERE u.is_ai_agent = 1 AND u.tenant_id = ?";
+    $ai_params = [current_tenant_id()];
     if ($deleted_at_column_exists) {
         $ai_sql .= " AND u.deleted_at IS NULL";
     }
     $ai_sql .= " ORDER BY u.is_active DESC, u.first_name";
-    $ai_agents = db_fetch_all($ai_sql);
+    $ai_agents = db_fetch_all($ai_sql, $ai_params);
 
     // Fetch tokens for AI agents
     if (!empty($ai_agents)) {
@@ -788,8 +806,8 @@ if ($ai_agent_col_exists) {
         $placeholders = implode(',', array_fill(0, count($ai_ids), '?'));
         try {
             $ai_agent_tokens = db_fetch_all(
-                "SELECT * FROM api_tokens WHERE user_id IN ($placeholders) ORDER BY created_at DESC",
-                $ai_ids
+                "SELECT * FROM api_tokens WHERE tenant_id = ? AND user_id IN ($placeholders) ORDER BY created_at DESC",
+                array_merge([current_tenant_id()], $ai_ids)
             );
         } catch (Throwable $e) {
             $ai_agent_tokens = [];

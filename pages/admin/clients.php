@@ -11,8 +11,8 @@ if (!empty($clients)) {
     $client_ids = array_map('intval', array_column($clients, 'id'));
     $placeholders = implode(',', array_fill(0, count($client_ids), '?'));
     $rows = db_fetch_all(
-        "SELECT user_id, COUNT(*) as count FROM tickets WHERE user_id IN ($placeholders) GROUP BY user_id",
-        $client_ids
+        "SELECT user_id, COUNT(*) as count FROM tickets WHERE tenant_id = ? AND user_id IN ($placeholders) GROUP BY user_id",
+        array_merge([current_tenant_id()], $client_ids)
     );
     foreach ($rows as $row) {
         $ticket_counts[(int) $row['user_id']] = (int) $row['count'];
@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db_update('users', [
             'first_name' => $first_name,
             'last_name' => $last_name
-        ], 'id = ?', [$id]);
+        ], 'id = ? AND role = ? AND tenant_id = ?', [$id, 'user', current_tenant_id()]);
 
         flash(t('Client updated.'), 'success');
         redirect('admin', ['section' => 'clients']);
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($client) {
             $new_status = $client['is_active'] ? 0 : 1;
-            db_update('users', ['is_active' => $new_status], 'id = ?', [$id]);
+            db_update('users', ['is_active' => $new_status], 'id = ? AND role = ? AND tenant_id = ?', [$id, 'user', current_tenant_id()]);
             flash($new_status ? t('Client activated.') : t('Client deactivated.'), 'success');
         }
         redirect('admin', ['section' => 'clients']);

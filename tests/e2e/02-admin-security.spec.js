@@ -25,9 +25,33 @@ test('admin system page renders the simplified layout', async ({ page }) => {
   await login(page);
   await page.goto('/index.php?page=admin&section=settings&tab=system');
   await expect(page.locator('.admin-system')).toBeVisible();
+  await expect(page.locator('.admin-page-nav')).toBeVisible();
+  await expect(page.locator('.admin-page-nav__item.is-active')).toContainText('Settings');
   await expect(page.locator('body')).toContainText('Operations overview');
   await expect(page.locator('body')).toContainText('Backups');
   await expect(page.locator('body')).not.toContainText('System information');
+});
+
+test('customer admin navigation stays compact and stable across sections', async ({ page }) => {
+  await login(page);
+  await page.goto('/index.php?page=admin&section=settings&tab=system');
+
+  const nav = page.locator('.admin-page-nav');
+  await expect(nav).toBeVisible();
+  await expect(nav).toContainText('People');
+  await expect(nav).toContainText('Companies');
+  await expect(nav).toContainText('Workflow');
+  await expect(nav).toContainText('Operations');
+  await expect(nav).toContainText('Reports');
+
+  await nav.getByRole('link', { name: /Users/ }).click();
+  await expect(page).toHaveURL(/section=users/);
+  await expect(page.locator('.admin-page-nav')).toBeVisible();
+  await expect(page.locator('.admin-page-nav__item.is-active')).toContainText('Users');
+
+  await page.locator('.admin-page-nav').getByRole('link', { name: /Settings/ }).click();
+  await expect(page).toHaveURL(/section=settings/);
+  await expect(page.locator('.admin-page-nav__item.is-active')).toContainText('Settings');
 });
 
 test('GET impersonation does not switch user, POST impersonation with CSRF does', async ({ page }) => {
@@ -89,6 +113,123 @@ test('update dismiss API requires auth and CSRF', async ({ page }) => {
   expect(ok.status()).toBe(200);
   await expect(ok).toBeOK();
   expect(await ok.json()).toMatchObject({ success: true, dismissed: true });
+});
+
+test('push subscription API requires CSRF for subscribe and unsubscribe', async ({ page }) => {
+  await login(page);
+  await page.goto('/index.php?page=dashboard');
+
+  const endpoint = `https://push.example.test/e2e/${Date.now()}`;
+  const missingSubscribeCsrf = await page.request.post('/index.php?page=api&action=push-subscribe', {
+    data: { endpoint, p256dh: 'p256dh-e2e', auth: 'auth-e2e' }
+  });
+  expect(missingSubscribeCsrf.status()).toBe(403);
+
+  const csrf = await getCsrf(page);
+  const subscribe = await page.request.post('/index.php?page=api&action=push-subscribe', {
+    headers: {
+      'X-CSRF-TOKEN': csrf,
+      'Content-Type': 'application/json'
+    },
+    data: { endpoint, p256dh: 'p256dh-e2e', auth: 'auth-e2e' }
+  });
+  expect(subscribe.status()).toBe(200);
+  expect(await subscribe.json()).toMatchObject({ success: true });
+
+  const missingUnsubscribeCsrf = await page.request.post('/index.php?page=api&action=push-unsubscribe', {
+    data: { endpoint }
+  });
+  expect(missingUnsubscribeCsrf.status()).toBe(403);
+});
+
+function migrationExtractionProbe(entries, symlinkName = null) {
+  const payload = Buffer.from(JSON.stringify({ entries, symlinkName })).toString('base64');
+  return JSON.parse(php(`
+    require '/var/www/html/includes/migration-functions.php';
+    $payload = json_decode(base64_decode('${payload}'), true);
+    $zip_path = tempnam(sys_get_temp_dir(), 'foxdesk-migration-e2e-') . '.zip';
+    $absolute_marker = '/tmp/foxdesk-migration-absolute-e2e.txt';
+    $traversal_marker = '/tmp/foxdesk-migration-traversal-e2e.txt';
+    @unlink($absolute_marker);
+    @unlink($traversal_marker);
+
+    $zip = new ZipArchive();
+    if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        throw new RuntimeException('Unable to create probe ZIP');
+    }
+    foreach ($payload['entries'] as $entry) {
+        if (!empty($entry['dir'])) {
+            $zip->addEmptyDir($entry['name']);
+        } else {
+            $zip->addFromString($entry['name'], $entry['body']);
+        }
+    }
+    if (!empty($payload['symlinkName'])) {
+        $zip->setExternalAttributesName($payload['symlinkName'], ZipArchive::OPSYS_UNIX, (0120777 << 16));
+    }
+    $zip->close();
+
+    try {
+        [$dir, $manifest, $hash] = migration_extract_package($zip_path);
+        $result = [
+            'ok' => true,
+            'manifest_format' => $manifest['format'] ?? null,
+            'absolute_marker' => file_exists($absolute_marker),
+            'traversal_marker' => file_exists($traversal_marker),
+        ];
+        migration_remove_dir($dir);
+    } catch (Throwable $e) {
+        $result = [
+            'ok' => false,
+            'error' => $e->getMessage(),
+            'absolute_marker' => file_exists($absolute_marker),
+            'traversal_marker' => file_exists($traversal_marker),
+        ];
+    } finally {
+        @unlink($zip_path);
+        @unlink($absolute_marker);
+        @unlink($traversal_marker);
+    }
+
+    echo json_encode($result);
+  `));
+}
+
+test('migration ZIP import rejects absolute paths, traversal, and symlinks before extraction', async () => {
+  const manifest = JSON.stringify({ format: 'foxdesk-cloud-migration' });
+
+  expect(migrationExtractionProbe([
+    { name: 'manifest.json', body: manifest },
+    { name: '/tmp/foxdesk-migration-absolute-e2e.txt', body: 'absolute' }
+  ])).toMatchObject({
+    ok: false,
+    absolute_marker: false
+  });
+
+  expect(migrationExtractionProbe([
+    { name: 'manifest.json', body: manifest },
+    { name: '../foxdesk-migration-traversal-e2e.txt', body: 'traversal' }
+  ])).toMatchObject({
+    ok: false,
+    traversal_marker: false
+  });
+
+  const symlinkResult = migrationExtractionProbe([
+    { name: 'manifest.json', body: manifest },
+    { name: 'files/link', body: '/etc/passwd' }
+  ], 'files/link');
+  expect(symlinkResult.ok).toBe(false);
+  expect(symlinkResult.error).toContain('symlink');
+
+  expect(migrationExtractionProbe([
+    { name: 'manifest.json', body: manifest },
+    { name: 'tables/users.json', body: '[]' }
+  ])).toMatchObject({
+    ok: true,
+    manifest_format: 'foxdesk-cloud-migration',
+    absolute_marker: false,
+    traversal_marker: false
+  });
 });
 
 test('force installer cannot be accessed without a recovery token', async ({ page }) => {

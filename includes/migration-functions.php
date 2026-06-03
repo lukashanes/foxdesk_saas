@@ -27,6 +27,7 @@ function migration_tenant_tables(): array
         'recurring_tasks',
         'report_templates',
         'report_snapshots',
+        'billing_usage_events',
         'ticket_messages',
         'ticket_message_attachments',
         'email_ingest_logs',
@@ -80,6 +81,36 @@ function migration_table_columns(string $table): array
         $columns[] = $row['Field'];
     }
     return $cache[$table] = $columns;
+}
+
+function migration_table_column_meta(string $table, string $column): ?array
+{
+    validate_sql_identifier($table);
+    validate_sql_identifier($column);
+
+    if (!table_exists($table)) {
+        return null;
+    }
+
+    static $cache = [];
+    $key = $table . '.' . $column;
+    if (!array_key_exists($key, $cache)) {
+        $quoted_column = get_db()->quote($column);
+        $row = db_fetch_one("SHOW COLUMNS FROM {$table} LIKE {$quoted_column}");
+        $cache[$key] = $row ?: null;
+    }
+
+    return $cache[$key];
+}
+
+function migration_column_allows_null(string $table, string $column): bool
+{
+    $meta = migration_table_column_meta($table, $column);
+    if (!$meta) {
+        return true;
+    }
+
+    return strtoupper((string) ($meta['Null'] ?? 'YES')) === 'YES';
 }
 
 function migration_select_rows(string $table, int $tenant_id): array
@@ -223,6 +254,116 @@ function migration_download_export_package(): void
     exit;
 }
 
+function migration_normalize_zip_entry_name(string $name): string
+{
+    $name = str_replace('\\', '/', $name);
+
+    if (
+        $name === ''
+        || str_contains($name, "\0")
+        || str_starts_with($name, '/')
+        || preg_match('/^[A-Za-z]:\//', $name)
+        || str_contains($name, '://')
+    ) {
+        throw new RuntimeException('Migration package contains an unsafe path.');
+    }
+
+    $parts = [];
+    foreach (explode('/', $name) as $part) {
+        if ($part === '' || $part === '.') {
+            continue;
+        }
+        if ($part === '..') {
+            throw new RuntimeException('Migration package contains a path traversal entry.');
+        }
+        $parts[] = $part;
+    }
+
+    $normalized = implode('/', $parts);
+    if ($normalized === '') {
+        throw new RuntimeException('Migration package contains an empty path.');
+    }
+
+    return $normalized;
+}
+
+function migration_zip_entry_is_symlink(ZipArchive $zip, int $index): bool
+{
+    if (!method_exists($zip, 'getExternalAttributesIndex')) {
+        return false;
+    }
+
+    $opsys = 0;
+    $attributes = 0;
+    if (!$zip->getExternalAttributesIndex($index, $opsys, $attributes)) {
+        return false;
+    }
+
+    if ($opsys !== ZipArchive::OPSYS_UNIX) {
+        return false;
+    }
+
+    $mode = ($attributes >> 16) & 0170000;
+    return $mode === 0120000;
+}
+
+function migration_safe_extract_target(string $extract_dir, string $entry_name): string
+{
+    $normalized = migration_normalize_zip_entry_name($entry_name);
+    $target = $extract_dir . '/' . $normalized;
+    $parent = dirname($target);
+
+    if (!is_dir($parent) && !mkdir($parent, 0700, true) && !is_dir($parent)) {
+        throw new RuntimeException('Unable to create migration import directory.');
+    }
+
+    $root = realpath($extract_dir);
+    $real_parent = realpath($parent);
+    if ($root === false || $real_parent === false || ($real_parent !== $root && !str_starts_with($real_parent, $root . DIRECTORY_SEPARATOR))) {
+        throw new RuntimeException('Migration package contains an unsafe path.');
+    }
+
+    return $target;
+}
+
+function migration_extract_zip_safely(ZipArchive $zip, string $extract_dir): void
+{
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $stat = $zip->statIndex($i);
+        $name = is_array($stat) ? (string) ($stat['name'] ?? '') : '';
+        if ($name === '') {
+            throw new RuntimeException('Migration package contains an invalid entry.');
+        }
+
+        if (migration_zip_entry_is_symlink($zip, $i)) {
+            throw new RuntimeException('Migration package contains an unsafe symlink entry.');
+        }
+
+        $normalized = migration_normalize_zip_entry_name($name);
+        if (str_ends_with(str_replace('\\', '/', $name), '/')) {
+            migration_safe_extract_target($extract_dir, $normalized . '/.foxdesk-dir-check');
+            continue;
+        }
+
+        $target = migration_safe_extract_target($extract_dir, $normalized);
+        $source = $zip->getStream($name);
+        if ($source === false) {
+            throw new RuntimeException('Unable to read migration package entry.');
+        }
+
+        $destination = fopen($target, 'wb');
+        if ($destination === false) {
+            fclose($source);
+            throw new RuntimeException('Unable to extract migration package entry.');
+        }
+
+        stream_copy_to_stream($source, $destination);
+        fclose($source);
+        fclose($destination);
+        @chmod($target, 0600);
+    }
+}
+
 function migration_extract_package(string $zip_path): array
 {
     if (!class_exists('ZipArchive')) {
@@ -237,18 +378,28 @@ function migration_extract_package(string $zip_path): array
 
     $zip = new ZipArchive();
     if ($zip->open($zip_path) !== true) {
+        migration_remove_dir($extract_dir);
         throw new RuntimeException('Unable to open migration package.');
     }
-    $zip->extractTo($extract_dir);
+
+    try {
+        migration_extract_zip_safely($zip, $extract_dir);
+    } catch (Throwable $e) {
+        $zip->close();
+        migration_remove_dir($extract_dir);
+        throw $e;
+    }
     $zip->close();
 
     $manifest_path = $extract_dir . '/manifest.json';
     if (!is_file($manifest_path)) {
+        migration_remove_dir($extract_dir);
         throw new RuntimeException('Migration package is missing manifest.json.');
     }
 
     $manifest = json_decode((string) file_get_contents($manifest_path), true);
     if (!is_array($manifest) || ($manifest['format'] ?? '') !== 'foxdesk-cloud-migration') {
+        migration_remove_dir($extract_dir);
         throw new RuntimeException('Invalid FoxDesk migration package.');
     }
 
@@ -331,18 +482,23 @@ function migration_import_reference_table(string $extract_dir, string $table, ar
     return $count;
 }
 
-function migration_map_value(array $id_maps, string $table, $value)
+function migration_map_value(array $id_maps, string $target_table, $value, bool &$missing = false)
 {
     if ($value === null || $value === '') {
         return $value;
     }
     $old = (int) $value;
-    return $id_maps[$table][$old] ?? $value;
+    if (isset($id_maps[$target_table][$old])) {
+        return $id_maps[$target_table][$old];
+    }
+
+    $missing = true;
+    return null;
 }
 
-function migration_remap_row(string $table, array $row, int $tenant_id, array $id_maps): array
+function migration_remap_row(string $table, array $row, int $tenant_id, array $id_maps, bool &$skip = false): array
 {
-    if (array_key_exists('tenant_id', $row)) {
+    if (tenant_scoped_table_has_column($table)) {
         $row['tenant_id'] = $tenant_id;
     }
 
@@ -367,7 +523,13 @@ function migration_remap_row(string $table, array $row, int $tenant_id, array $i
 
     foreach ($map as $column => $target_table) {
         if (array_key_exists($column, $row)) {
-            $row[$column] = migration_map_value($id_maps, $target_table, $row[$column]);
+            $missing = false;
+            $mapped = migration_map_value($id_maps, $target_table, $row[$column], $missing);
+            if ($missing && !migration_column_allows_null($table, $column)) {
+                $skip = true;
+                return $row;
+            }
+            $row[$column] = $mapped;
         }
     }
 
@@ -399,7 +561,11 @@ function migration_store_imported_attachment(array $row, array $file_manifest, s
         return $row;
     }
 
-    $source = $extract_dir . '/' . ltrim(str_replace('\\', '/', (string) $file['package_path']), '/');
+    try {
+        $source = migration_safe_extract_target($extract_dir, (string) $file['package_path']);
+    } catch (Throwable $e) {
+        return $row;
+    }
     if (!is_file($source)) {
         return $row;
     }
@@ -442,7 +608,11 @@ function migration_import_table(string $extract_dir, string $table, int $tenant_
 
     foreach ($rows as $row) {
         $old_id = (int) ($row['id'] ?? 0);
-        $row = migration_remap_row($table, $row, $tenant_id, $id_maps);
+        $skip = false;
+        $row = migration_remap_row($table, $row, $tenant_id, $id_maps, $skip);
+        if ($skip) {
+            continue;
+        }
         if ($table === 'attachments') {
             $row = migration_store_imported_attachment($row, is_array($file_manifest) ? $file_manifest : [], $extract_dir, $tenant_id);
         }

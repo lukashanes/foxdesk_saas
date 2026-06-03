@@ -21,23 +21,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Determine sort order based on position
             if ($position === 'start') {
                 // Move all statuses down
-                db_query("UPDATE statuses SET sort_order = sort_order + 1");
+                $shift_params = [];
+                $shift_sql = "UPDATE statuses SET sort_order = sort_order + 1 WHERE 1=1";
+                $shift_sql .= admin_crud_tenant_filter('statuses', $shift_params);
+                db_query($shift_sql, $shift_params);
                 $new_order = 1;
             } elseif (is_numeric($position)) {
                 // Insert at specific position
                 $after_id = (int) $position;
-                $after_status = get_status($after_id);
+                $after_status = admin_crud_fetch_record('statuses', $after_id);
                 if ($after_status) {
                     $new_order = $after_status['sort_order'] + 1;
-                    db_query("UPDATE statuses SET sort_order = sort_order + 1 WHERE sort_order > ?", [$after_status['sort_order']]);
+                    $shift_params = [$after_status['sort_order']];
+                    $shift_sql = "UPDATE statuses SET sort_order = sort_order + 1 WHERE sort_order > ?";
+                    $shift_sql .= admin_crud_tenant_filter('statuses', $shift_params);
+                    db_query($shift_sql, $shift_params);
                 } else {
-                    $max_order = db_fetch_one("SELECT MAX(sort_order) as max_order FROM statuses")['max_order'] ?? 0;
-                    $new_order = $max_order + 1;
+                    $new_order = admin_crud_next_sort_order('statuses');
                 }
             } else {
                 // Add at end
-                $max_order = db_fetch_one("SELECT MAX(sort_order) as max_order FROM statuses")['max_order'] ?? 0;
-                $new_order = $max_order + 1;
+                $new_order = admin_crud_next_sort_order('statuses');
             }
 
             db_insert('statuses', [
@@ -61,11 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $color = $_POST['color'] ?? '#3b82f6';
 
         if (!empty($name) && $id > 0) {
-            db_update('statuses', [
+            admin_crud_update_record('statuses', $id, [
                 'name' => $name,
                 'color' => $color,
                 'is_closed' => isset($_POST['is_closed']) ? 1 : 0
-            ], 'id = ?', [$id]);
+            ]);
 
             flash(t('Status updated.'), 'success');
             redirect('admin', ['section' => 'statuses']);
@@ -77,12 +81,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int) $_POST['id'];
 
         // Check if status is used
-        $count = db_fetch_one("SELECT COUNT(*) as count FROM tickets WHERE status_id = ?", [$id])['count'];
+        $ticket_params = [$id];
+        $ticket_sql = "SELECT COUNT(*) as count FROM tickets WHERE status_id = ?";
+        $ticket_sql .= admin_crud_tenant_filter('tickets', $ticket_params);
+        $count = db_fetch_one($ticket_sql, $ticket_params)['count'];
 
         if ($count > 0) {
             flash(t('Cannot delete a status that is used by tickets.'), 'error');
         } else {
-            db_delete('statuses', 'id = ?', [$id]);
+            admin_crud_delete_record('statuses', $id);
             flash(t('Status deleted.'), 'success');
         }
         redirect('admin', ['section' => 'statuses']);
@@ -92,8 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['set_default'])) {
         $id = (int) $_POST['id'];
 
-        db_query("UPDATE statuses SET is_default = 0");
-        db_update('statuses', ['is_default' => 1], 'id = ?', [$id]);
+        admin_crud_clear_default('statuses');
+        admin_crud_update_record('statuses', $id, ['is_default' => 1]);
 
         flash(t('Default status set.'), 'success');
         redirect('admin', ['section' => 'statuses']);
@@ -109,10 +116,10 @@ $page_header_subtitle = t('Manage ticket statuses and ordering.');
 include BASE_PATH . '/includes/components/page-header.php';
 ?>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+<div class="admin-two-column workflow-admin-page">
     <!-- Statuses List -->
-    <div class="lg:col-span-2">
-        <div class="card">
+    <div class="admin-main-column">
+        <div class="admin-list-card">
             <div class="px-6 py-3 border-b flex items-center justify-between">
                 <h3 class="font-semibold text-gray-800"><?php echo e(t('Ticket statuses')); ?></h3>
                 <span class="text-sm text-gray-500 flex items-center">
@@ -122,7 +129,10 @@ include BASE_PATH . '/includes/components/page-header.php';
 
             <div id="statuses-list" class="divide-y">
                 <?php foreach ($statuses as $index => $status):
-                    $tickets_count = db_fetch_one("SELECT COUNT(*) as c FROM tickets WHERE status_id = ?", [$status['id']]);
+                    $ticket_params = [$status['id']];
+                    $ticket_sql = "SELECT COUNT(*) as c FROM tickets WHERE status_id = ?";
+                    $ticket_sql .= admin_crud_tenant_filter('tickets', $ticket_params);
+                    $tickets_count = db_fetch_one($ticket_sql, $ticket_params);
                 ?>
                     <div class="px-6 py-3 hover:bg-gray-50 status-item flex items-center justify-between" data-id="<?php echo $status['id']; ?>">
                         <div class="flex items-center space-x-4">
@@ -187,7 +197,7 @@ include BASE_PATH . '/includes/components/page-header.php';
     </div>
 
     <!-- Add New Status -->
-    <div>
+    <div class="admin-side-column">
         <div class="card card-body">
             <h3 class="font-semibold text-gray-800 text-sm mb-4 uppercase tracking-wide">
                 <?php echo e(t('Add new status')); ?>
@@ -236,7 +246,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 
 <!-- Edit Status Modal -->
 <div id="editStatusModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-4">
+    <div class="workflow-admin-modal rounded-xl shadow-xl max-w-md w-full mx-4 p-4">
         <h3 class="font-semibold text-gray-800 mb-4"><?php echo e(t('Edit status')); ?></h3>
 
         <form method="post" id="editStatusForm" class="space-y-4">

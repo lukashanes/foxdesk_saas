@@ -158,7 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Get organizations for dropdown
-$organizations = db_fetch_all("SELECT id, name FROM organizations WHERE is_active = 1 ORDER BY name ASC");
+$organizations = db_fetch_all("SELECT id, name FROM organizations WHERE is_active = 1 AND tenant_id = ? ORDER BY name ASC", [current_tenant_id()]);
 
 // Get available languages
 $languages = [
@@ -223,6 +223,21 @@ if ($editing && $_SERVER['REQUEST_METHOD'] !== 'POST') {
         'schedule_day' => isset($schedule_day) ? $schedule_day : (int) ($_POST['schedule_day'] ?? 1),
         'schedule_recipients' => trim((string) ($_POST['schedule_recipients'] ?? '')),
     ];
+}
+if (!$editing && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $prefill_org_id = (int) ($_GET['organization_id'] ?? 0);
+    $prefill_date_from = trim((string) ($_GET['date_from'] ?? ''));
+    $prefill_date_to = trim((string) ($_GET['date_to'] ?? ''));
+
+    if ($prefill_org_id > 0) {
+        $form_values['organization_id'] = $prefill_org_id;
+    }
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $prefill_date_from)) {
+        $form_values['date_from'] = $prefill_date_from;
+    }
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $prefill_date_to)) {
+        $form_values['date_to'] = $prefill_date_to;
+    }
 }
 if (!in_array($form_values['report_language'], $allowed_report_languages, true)) {
     $form_values['report_language'] = 'en';

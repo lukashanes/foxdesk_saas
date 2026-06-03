@@ -234,7 +234,7 @@ function api_org_add_user() {
     }
 
     // Verify user exists
-    $user = db_fetch_one("SELECT id, first_name, last_name, email, role FROM users WHERE id = ?", [$user_id]);
+    $user = db_fetch_one("SELECT id, first_name, last_name, email, role FROM users WHERE id = ? AND tenant_id = ?", [$user_id, current_tenant_id()]);
     if (!$user) {
         api_error('User not found');
     }
@@ -274,7 +274,7 @@ function api_org_remove_user() {
     }
 
     // Verify user exists
-    $user = db_fetch_one("SELECT id FROM users WHERE id = ?", [$user_id]);
+    $user = db_fetch_one("SELECT id FROM users WHERE id = ? AND tenant_id = ?", [$user_id, current_tenant_id()]);
     if (!$user) {
         api_error('User not found');
     }
@@ -345,4 +345,3 @@ function api_save_dashboard_layout() {
 
     api_success(['saved' => true]);
 }
-

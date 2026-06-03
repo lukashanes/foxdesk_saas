@@ -1,0 +1,108 @@
+<?php
+
+$root = dirname(__DIR__);
+
+define('BILLING_TRIAL_GRACE_DAYS', 2);
+define('BILLING_PAST_DUE_GRACE_DAYS', 5);
+define('BILLING_ENABLED', true);
+
+require_once $root . '/includes/billing-functions.php';
+
+$billing = file_get_contents($root . '/includes/billing-functions.php');
+$maintenance = file_get_contents($root . '/bin/run-maintenance.php');
+$cron = file_get_contents($root . '/pages/cron.php');
+$docs = file_get_contents($root . '/docs/STRIPE_BILLING.md');
+
+if ($billing === false || $maintenance === false || $cron === false || $docs === false) {
+    fwrite(STDERR, "Unable to read billing lifecycle files.\n");
+    exit(1);
+}
+
+$assert = static function (bool $condition, string $message): void {
+    if (!$condition) {
+        fwrite(STDERR, $message . "\n");
+        exit(1);
+    }
+};
+
+$assert(billing_trial_grace_days() === 2, 'Trial grace days should be configurable.');
+$assert(billing_past_due_grace_days() === 5, 'Past-due grace days should be configurable.');
+
+$trial_grace = billing_trial_grace_ends_at([
+    'trial_ends_at' => date('Y-m-d H:i:s', time() - 3600),
+]);
+$assert($trial_grace !== null && strtotime($trial_grace) > time(), 'Trial grace should extend access after nominal trial end.');
+
+$past_due_grace = billing_past_due_grace_ends_at([
+    'suspended_at' => date('Y-m-d H:i:s', time() - 86400),
+]);
+$assert($past_due_grace !== null && strtotime($past_due_grace) > time(), 'Past-due grace should be based on suspended_at.');
+
+$assert(str_contains($billing, 'function billing_suspend_past_due_tenants'), 'Past-due suspension helper is missing.');
+$assert(str_contains($billing, "status = 'suspended'"), 'Past-due lifecycle must suspend workspaces after grace.');
+$assert(str_contains($billing, "'past_due_grace'"), 'Workspace access must allow past_due during grace.');
+$assert(str_contains($billing, 'billing_suspend_past_due_tenants((int) $tenant'), 'Access checks must enforce overdue suspension before allowing app pages.');
+$assert(str_contains($billing, 'COALESCE(suspended_at, NOW())'), 'Past-due start time should be preserved or initialized once.');
+$assert(str_contains($billing, "\$updates['suspended_at'] = \$past_due_started_at"), 'Failed invoices must preserve the original past-due start time.');
+$assert(str_contains($maintenance, "'past_due_suspension'"), 'Maintenance JSON must include past-due suspension results.');
+$assert(str_contains($cron, 'billing_suspend_past_due_tenants'), 'Pseudo-cron must run past-due suspension.');
+$assert(str_contains($docs, 'BILLING_PAST_DUE_GRACE_DAYS'), 'Stripe billing docs must document past-due grace.');
+
+foreach (['manual', 'free', 'comped'] as $manual_status) {
+    $manual_action = billing_tenant_billing_action_state([
+        'id' => 1,
+        'status' => 'active',
+        'subscription_status' => $manual_status,
+        'stripe_customer_id' => '',
+        'stripe_subscription_id' => '',
+    ], ['allowed' => true, 'reason' => $manual_status, 'message' => '']);
+    $assert(empty($manual_action['show_checkout']), "{$manual_status} workspaces must not show checkout.");
+    $assert(!empty($manual_action['show_portal']), "{$manual_status} workspaces should allow billing detail management.");
+    $assert(($manual_action['portal_label'] ?? '') === 'Manage billing details', "{$manual_status} portal label should clarify billing details.");
+}
+
+$trial_action = billing_tenant_billing_action_state([
+    'id' => 2,
+    'status' => 'trialing',
+    'subscription_status' => 'trialing',
+    'trial_ends_at' => date('Y-m-d H:i:s', time() + 86400),
+], ['allowed' => true, 'reason' => 'trialing', 'message' => '']);
+$assert(!empty($trial_action['show_checkout']), 'Trial workspaces should show an add billing action.');
+$assert(($trial_action['checkout_label'] ?? '') === 'Add billing', 'Trial checkout label should be Add billing.');
+
+$active_paid_action = billing_tenant_billing_action_state([
+    'id' => 3,
+    'status' => 'active',
+    'subscription_status' => 'active',
+    'stripe_customer_id' => 'cus_test',
+    'stripe_subscription_id' => 'sub_test',
+], ['allowed' => true, 'reason' => 'active', 'message' => '']);
+$assert(empty($active_paid_action['show_checkout']), 'Active paid workspaces must not show checkout.');
+$assert(!empty($active_paid_action['show_portal']), 'Active paid workspaces should show billing portal.');
+
+$past_due_action = billing_tenant_billing_action_state([
+    'id' => 4,
+    'status' => 'past_due',
+    'subscription_status' => 'past_due',
+    'stripe_customer_id' => 'cus_test',
+    'stripe_subscription_id' => 'sub_test',
+], ['allowed' => true, 'reason' => 'past_due_grace', 'message' => '']);
+$assert(empty($past_due_action['show_checkout']), 'Past-due Stripe workspaces should use portal instead of checkout.');
+$assert(!empty($past_due_action['show_portal']), 'Past-due Stripe workspaces should show update payment.');
+$assert(($past_due_action['portal_label'] ?? '') === 'Update payment', 'Past-due portal label should be Update payment.');
+
+$blocked_action = billing_tenant_billing_action_state([
+    'id' => 5,
+    'status' => 'blocked',
+    'subscription_status' => 'blocked',
+], ['allowed' => false, 'reason' => 'blocked', 'message' => '']);
+$assert(empty($blocked_action['show_checkout']), 'Blocked workspaces must not show checkout.');
+$assert(empty($blocked_action['show_portal']), 'Blocked workspaces must not show billing portal.');
+
+$billing_page = file_get_contents($root . '/pages/billing.php');
+$header = file_get_contents($root . '/includes/header.php');
+$assert($billing_page !== false && $header !== false, 'Unable to read billing UI files.');
+$assert(!str_contains($billing_page, 'Start paid subscription'), 'Billing page must not use the old paid subscription CTA.');
+$assert(!str_contains($header, 'Activate FoxDesk'), 'Header must not show the old Activate FoxDesk CTA.');
+
+echo "Billing lifecycle contract OK\n";

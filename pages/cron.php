@@ -43,7 +43,8 @@ if ($now - $last_email >= 300) {
     try {
         require_once BASE_PATH . '/includes/email-ingest-functions.php';
         $cfg = email_ingest_config();
-        $enabled = trim((string) ($cfg['host'] ?? '')) !== ''
+        $enabled = !empty($cfg['enabled'])
+            && trim((string) ($cfg['host'] ?? '')) !== ''
             && trim((string) ($cfg['username'] ?? '')) !== ''
             && trim((string) ($cfg['password'] ?? '')) !== '';
 
@@ -116,6 +117,9 @@ if ($now - $last_trial_expire >= 86400) {
     try {
         if (function_exists('billing_expire_trials')) {
             billing_expire_trials();
+        }
+        if (function_exists('billing_suspend_past_due_tenants')) {
+            billing_suspend_past_due_tenants();
         }
         if (function_exists('billing_send_trial_reminders')) {
             billing_send_trial_reminders();

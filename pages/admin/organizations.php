@@ -91,8 +91,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'contact_phone' => $contact_phone ?: null,
                 'notes' => $notes ?: null,
                 'billable_rate' => $billable_rate
-            ], 'id = ?', [$id]);
-            flash(t('Organization updated.'), 'success');
+            ], 'id = ? AND tenant_id = ?', [$id, current_tenant_id()]);
+            flash(get_organization($id) ? t('Organization updated.') : t('Organization not found.'), get_organization($id) ? 'success' : 'error');
         }
         redirect('admin', ['section' => 'organizations']);
     }
@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $org = get_organization($id);
         if ($org) {
             $new_status = $org['is_active'] ? 0 : 1;
-            db_update('organizations', ['is_active' => $new_status], 'id = ?', [$id]);
+            db_update('organizations', ['is_active' => $new_status], 'id = ? AND tenant_id = ?', [$id, current_tenant_id()]);
             flash($new_status ? t('Organization activated.') : t('Organization deactivated.'), 'success');
         }
         redirect('admin', ['section' => 'organizations']);
@@ -117,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash(t('Organization not found.'), 'error');
             redirect('admin', ['section' => 'organizations']);
         }
-        $users = db_fetch_all("SELECT id FROM users");
+        $users = db_fetch_all("SELECT id FROM users WHERE tenant_id = ?", [current_tenant_id()]);
         $removed_memberships = 0;
         foreach ($users as $u) {
             $uid = (int) ($u['id'] ?? 0);
@@ -132,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        db_query("DELETE FROM organizations WHERE id = ?", [$id]);
+        db_query("DELETE FROM organizations WHERE id = ? AND tenant_id = ?", [$id, current_tenant_id()]);
         if ($removed_memberships > 0) {
             flash(t('Organization deleted. Users were unassigned.'), 'success');
         } else {
@@ -153,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!empty($org['logo']) && file_exists(BASE_PATH . '/' . $org['logo'])) {
                     @unlink(BASE_PATH . '/' . $org['logo']);
                 }
-                db_update('organizations', ['logo' => UPLOAD_DIR . $result['filename']], 'id = ?', [$org_id]);
+                db_update('organizations', ['logo' => UPLOAD_DIR . $result['filename']], 'id = ? AND tenant_id = ?', [$org_id, current_tenant_id()]);
                 flash(t('Logo uploaded.'), 'success');
             } catch (Exception $e) {
                 flash($e->getMessage(), 'error');
@@ -170,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             @unlink(BASE_PATH . '/' . $org['logo']);
         }
         if ($org) {
-            db_update('organizations', ['logo' => null], 'id = ?', [$org_id]);
+            db_update('organizations', ['logo' => null], 'id = ? AND tenant_id = ?', [$org_id, current_tenant_id()]);
         }
         flash(t('Logo removed.'), 'success');
         redirect('admin', ['section' => 'organizations']);
@@ -180,7 +180,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['remove_user'])) {
         $user_id = (int) $_POST['user_id'];
         $org_id = (int) ($_POST['org_id'] ?? 0);
-        if ($user_id > 0 && $org_id > 0) {
+        if ($user_id > 0 && $org_id > 0 && get_user($user_id) && get_organization($org_id)) {
             remove_user_organization_membership($user_id, $org_id);
         }
         flash(t('User removed from organization.'), 'success');
@@ -191,9 +191,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['add_user'])) {
         $org_id = (int) $_POST['org_id'];
         $user_id = (int) $_POST['user_id'];
-        if ($user_id > 0 && $org_id > 0) {
+        if ($user_id > 0 && $org_id > 0 && get_user($user_id) && get_organization($org_id)) {
             add_user_organization_membership($user_id, $org_id);
             flash(t('User added to organization.'), 'success');
+        } else {
+            flash(t('User or organization not found.'), 'error');
         }
         redirect('admin', ['section' => 'organizations']);
     }
@@ -213,12 +215,13 @@ foreach ($organizations as $org) {
 
 $users_sql = "SELECT id, first_name, last_name, email, role, is_active, organization_id, permissions, avatar
               FROM users
-              WHERE email NOT LIKE 'deleted-user-%@invalid.local'";
+              WHERE email NOT LIKE 'deleted-user-%@invalid.local' AND tenant_id = ?";
+$users_params = [current_tenant_id()];
 if (function_exists('users_deleted_at_column_exists') && users_deleted_at_column_exists()) {
     $users_sql .= " AND deleted_at IS NULL";
 }
 $users_sql .= " ORDER BY last_name, first_name";
-$all_users = db_fetch_all($users_sql);
+$all_users = db_fetch_all($users_sql, $users_params);
 
 foreach ($all_users as $u) {
     $uid = (int) ($u['id'] ?? 0);
@@ -285,8 +288,9 @@ if ($time_tracking_available) {
     $sql = "SELECT t.organization_id, SUM({$dur}) as total_minutes
             FROM ticket_time_entries tte
             JOIN tickets t ON tte.ticket_id = t.id
-            WHERE t.organization_id IS NOT NULL";
-    $params = [];
+            WHERE t.organization_id IS NOT NULL
+              AND t.tenant_id = ?";
+    $params = [current_tenant_id()];
     if ($range_start && $range_end) {
         $sql .= " AND tte.started_at >= ? AND tte.started_at <= ?";
         $params[] = $range_start;
@@ -391,7 +395,12 @@ include BASE_PATH . '/includes/components/page-header.php';
                                 <!-- Organization Info -->
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center gap-3">
-                                        <span class="font-medium" style="color: var(--text-primary);"><?php echo e($org['name']); ?></span>
+                                        <a href="<?php echo url('client', ['id' => (int) $org['id']]); ?>"
+                                           class="font-medium hover:underline"
+                                           style="color: var(--text-primary);"
+                                           onclick="event.stopPropagation();">
+                                            <?php echo e($org['name']); ?>
+                                        </a>
                                         <?php if ($org['is_active']): ?>
                                             <span class="badge bg-green-100 text-green-800 text-xs"><?php echo e(t('Active')); ?></span>
                                         <?php else: ?>

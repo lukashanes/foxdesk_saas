@@ -31,7 +31,7 @@ function php(code) {
   return dockerExec(webContainer, ['php', '-r', code]);
 }
 
-async function login(page) {
+async function login(page, email = admin.email, password = admin.password) {
   await page.goto('/index.php?page=login');
   const emailInput = page.locator('input[name="email"]');
   if (!(await emailInput.isVisible({ timeout: 5000 }).catch(() => false))) {
@@ -40,8 +40,8 @@ async function login(page) {
     }
     throw new Error(`Login form not visible at ${page.url()}`);
   }
-  await emailInput.fill(admin.email);
-  await page.locator('input[name="password"]').fill(admin.password);
+  await emailInput.fill(email);
+  await page.locator('input[name="password"]').fill(password);
   await page.locator('button[type="submit"]').click();
   await page.waitForURL(/page=dashboard|dashboard|page=platform/);
 }

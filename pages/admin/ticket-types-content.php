@@ -57,9 +57,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
             if ($is_default) {
                 admin_crud_clear_default('ticket_types');
             }
-            db_update('ticket_types', [
+            admin_crud_update_record('ticket_types', $id, [
                 'name' => $name, 'icon' => $icon, 'color' => $color, 'is_default' => $is_default, 'is_active' => $is_active
-            ], 'id = ?', [$id]);
+            ]);
             flash(t('Ticket type updated.'), 'success');
         }
         redirect('admin', ['section' => 'settings', 'tab' => 'workflow']);
@@ -68,9 +68,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
     // Delete type
     if (isset($_POST['delete_type'])) {
         $id = (int)$_POST['id'];
-        if (!admin_crud_delete_if_unused('ticket_types', $id, "SELECT COUNT(*) as c FROM tickets WHERE type = (SELECT slug FROM ticket_types WHERE id = ?)", [$id])) {
+        $type = admin_crud_fetch_record('ticket_types', $id);
+        $usage_count = 0;
+        if ($type) {
+            $usage_params = [$type['slug']];
+            $usage_sql = "SELECT COUNT(*) as c FROM tickets WHERE type = ?";
+            $usage_sql .= admin_crud_tenant_filter('tickets', $usage_params);
+            $usage_count = (int) (db_fetch_one($usage_sql, $usage_params)['c'] ?? 0);
+        }
+
+        if ($usage_count > 0) {
             flash(t('Cannot delete a type that is used by tickets.'), 'error');
         } else {
+            admin_crud_delete_record('ticket_types', $id);
             flash(t('Ticket type deleted.'), 'success');
         }
         redirect('admin', ['section' => 'settings', 'tab' => 'workflow']);
@@ -80,13 +90,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
     if (isset($_POST['set_default'])) {
         $id = (int)$_POST['id'];
         admin_crud_clear_default('ticket_types');
-        db_update('ticket_types', ['is_default' => 1], 'id = ?', [$id]);
+        admin_crud_update_record('ticket_types', $id, ['is_default' => 1]);
         flash(t('Default type set.'), 'success');
         redirect('admin', ['section' => 'settings', 'tab' => 'workflow']);
     }
 }
 
-$types = db_fetch_all("SELECT * FROM ticket_types ORDER BY sort_order");
+$types = admin_crud_fetch_ordered('ticket_types');
 
 $type_icons = [
     'fa-file-alt' => 'Document', 'fa-coins' => 'Coins', 'fa-question-circle' => 'Question',

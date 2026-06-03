@@ -112,6 +112,109 @@ function dashboard_tenant_filter(string $table, string $alias, array &$params): 
     return " AND {$prefix}tenant_id = ?";
 }
 
+function dashboard_tenant_where(string $table, array &$params, string $alias = ''): string
+{
+    if (!function_exists('tenant_scoped_table_has_column') || !tenant_scoped_table_has_column($table)) {
+        return '';
+    }
+
+    $prefix = $alias !== '' ? $alias . '.' : '';
+    $params[] = function_exists('current_tenant_id') ? current_tenant_id() : (int) ($_SESSION['tenant_id'] ?? 0);
+    return " AND {$prefix}tenant_id = ?";
+}
+
+function dashboard_email_is_configured(array $settings): bool
+{
+    $smtp_ready = trim((string) ($settings['smtp_host'] ?? '')) !== ''
+        && trim((string) ($settings['smtp_from_email'] ?? '')) !== '';
+    $imap_ready = (string) ($settings['imap_enabled'] ?? (defined('IMAP_ENABLED') && IMAP_ENABLED ? '1' : '0')) === '1';
+    $cloudflare_ready = strtolower(trim((string) (defined('MAIL_PROVIDER') ? MAIL_PROVIDER : ''))) === 'cloudflare'
+        && trim((string) (defined('CLOUDFLARE_ACCOUNT_ID') ? CLOUDFLARE_ACCOUNT_ID : '')) !== ''
+        && trim((string) (defined('CLOUDFLARE_EMAIL_API_TOKEN') ? CLOUDFLARE_EMAIL_API_TOKEN : '')) !== ''
+        && trim((string) (defined('CLOUDFLARE_EMAIL_FROM') ? CLOUDFLARE_EMAIL_FROM : '')) !== '';
+
+    return $smtp_ready || $imap_ready || $cloudflare_ready;
+}
+
+function dashboard_get_started_state(array $user): array
+{
+    if (($user['role'] ?? '') !== 'admin') {
+        return ['visible' => false, 'steps' => [], 'completed' => 0, 'total' => 0, 'progress' => 0];
+    }
+
+    $settings = function_exists('get_settings') ? get_settings() : [];
+
+    $ticket_params = [];
+    $ticket_sql = "SELECT COUNT(*) AS c FROM tickets WHERE 1=1";
+    $ticket_sql .= dashboard_tenant_where('tickets', $ticket_params);
+    $ticket_count = (int) (db_fetch_one($ticket_sql, $ticket_params)['c'] ?? 0);
+
+    $staff_params = [];
+    $staff_sql = "SELECT COUNT(*) AS c FROM users WHERE role IN ('admin', 'agent') AND is_active = 1 AND deleted_at IS NULL";
+    $staff_sql .= dashboard_tenant_where('users', $staff_params);
+    $staff_count = (int) (db_fetch_one($staff_sql, $staff_params)['c'] ?? 0);
+
+    $tenant = function_exists('billing_current_tenant') ? billing_current_tenant() : null;
+    $trial_days = function_exists('billing_trial_days_remaining') ? billing_trial_days_remaining($tenant) : null;
+    $tenant_status = (string) ($tenant['status'] ?? '');
+    $subscription_status = (string) ($tenant['subscription_status'] ?? '');
+    $billing_ready = in_array($tenant_status, ['active', 'trialing'], true);
+
+    $steps = [
+        [
+            'key' => 'ticket',
+            'label' => t('Create your first ticket'),
+            'description' => $ticket_count > 0
+                ? t('{count} tickets are already in this workspace.', ['count' => (string) $ticket_count])
+                : t('Add a real or sample request so the team can see the workflow.'),
+            'done' => $ticket_count > 0,
+            'href' => $ticket_count > 0 ? url('tickets') : url('new-ticket'),
+            'cta' => $ticket_count > 0 ? t('View tickets') : t('Create ticket'),
+        ],
+        [
+            'key' => 'email',
+            'label' => t('Set support email'),
+            'description' => dashboard_email_is_configured($settings)
+                ? t('Email delivery is configured for this workspace.')
+                : t('Connect sending or receiving so requests can arrive by email.'),
+            'done' => dashboard_email_is_configured($settings),
+            'href' => url('admin', ['section' => 'settings', 'tab' => 'email']),
+            'cta' => t('Open email settings'),
+        ],
+        [
+            'key' => 'team',
+            'label' => t('Invite teammate'),
+            'description' => $staff_count > 1
+                ? t('{count} staff members can work in this workspace.', ['count' => (string) $staff_count])
+                : t('Add an agent or admin when someone else should handle tickets.'),
+            'done' => $staff_count > 1,
+            'href' => url('admin', ['section' => 'users']),
+            'cta' => t('Manage team'),
+        ],
+        [
+            'key' => 'billing',
+            'label' => t('Review trial and billing'),
+            'description' => $trial_days !== null && $subscription_status === 'trialing'
+                ? t('Trial is active for {days} more days.', ['days' => (string) $trial_days])
+                : t('Check the current plan, storage, and billing status.'),
+            'done' => $billing_ready,
+            'href' => url('billing'),
+            'cta' => t('Open billing'),
+        ],
+    ];
+
+    $completed = count(array_filter($steps, static fn($step) => !empty($step['done'])));
+    $total = count($steps);
+
+    return [
+        'visible' => $completed < $total || isset($_GET['signup']),
+        'steps' => $steps,
+        'completed' => $completed,
+        'total' => $total,
+        'progress' => $total > 0 ? (int) round(($completed / $total) * 100) : 0,
+    ];
+}
+
 function get_dashboard_data($user, $tags = [])
 {
     $is_admin = $user['role'] === 'admin';

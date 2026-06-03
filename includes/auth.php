@@ -165,7 +165,7 @@ function login($email, $password)
 
     if ($user && password_verify($password, $user['password'])) {
         // Clear any stale remember-me cookie from a previous user
-        if (!empty($_COOKIE['foxdesk_remember'])) {
+        if (!empty($_COOKIE[foxdesk_remember_cookie_name()])) {
             clear_remember_cookie();
         }
         session_regenerate_id(true);
@@ -213,6 +213,12 @@ function logout()
 // =============================================================================
 // REMEMBER-ME (PERSISTENT LOGIN)
 // =============================================================================
+
+function foxdesk_remember_cookie_name(): string
+{
+    $context = function_exists('foxdesk_session_context') ? foxdesk_session_context() : 'workspace';
+    return preg_replace('/[^A-Za-z0-9_]/', '_', 'foxdesk_remember_' . $context) ?: 'foxdesk_remember';
+}
 
 /**
  * Remember-me cookies are intentionally disabled for accounts protected by 2FA.
@@ -288,7 +294,7 @@ function set_remember_token($user_id)
     db_update('users', ['remember_token' => $hash], 'id = ?', [$user_id]);
 
     $is_https = foxdesk_request_is_https();
-    setcookie('foxdesk_remember', $token, [
+    setcookie(foxdesk_remember_cookie_name(), $token, [
         'expires'  => time() + (defined('REMEMBER_ME_DURATION') ? REMEMBER_ME_DURATION : 2592000),
         'path'     => '/',
         'httponly'  => true,
@@ -304,10 +310,11 @@ function set_remember_token($user_id)
  */
 function validate_remember_token()
 {
-    if (empty($_COOKIE['foxdesk_remember'])) return false;
+    $cookie_name = foxdesk_remember_cookie_name();
+    if (empty($_COOKIE[$cookie_name])) return false;
     if (!ensure_remember_token_column()) return false;
 
-    $token = $_COOKIE['foxdesk_remember'];
+    $token = $_COOKIE[$cookie_name];
     if (strlen($token) !== 64) {
         clear_remember_cookie();
         return false;
@@ -378,14 +385,15 @@ function clear_remember_token($user_id)
 function clear_remember_cookie()
 {
     $is_https = foxdesk_request_is_https();
-    setcookie('foxdesk_remember', '', [
+    $cookie_name = foxdesk_remember_cookie_name();
+    setcookie($cookie_name, '', [
         'expires'  => time() - 3600,
         'path'     => '/',
         'httponly'  => true,
         'secure'   => $is_https,
         'samesite' => 'Lax',
     ]);
-    unset($_COOKIE['foxdesk_remember']);
+    unset($_COOKIE[$cookie_name]);
 }
 
 /**
@@ -481,7 +489,13 @@ function create_user($email, $password, $first_name, $last_name = '', $role = 'u
 function update_password($user_id, $new_password)
 {
     $hash = password_hash($new_password, PASSWORD_DEFAULT);
-    return db_update('users', ['password' => $hash], 'id = ?', [$user_id]);
+    $where = 'id = ?';
+    $params = [$user_id];
+    if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('users')) {
+        $where .= ' AND tenant_id = ?';
+        $params[] = current_tenant_id();
+    }
+    return db_update('users', ['password' => $hash], $where, $params);
 }
 /**
  * Check if currently impersonating
@@ -500,8 +514,17 @@ function is_impersonating()
  */
 function is_api_token_request()
 {
+    return bearer_token_from_request() !== '';
+}
+
+function bearer_token_from_request(): string
+{
     $header = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
-    return stripos($header, 'Bearer ') === 0;
+    if (stripos($header, 'Bearer ') !== 0) {
+        return '';
+    }
+
+    return trim(substr($header, 7));
 }
 
 /**
@@ -510,6 +533,11 @@ function is_api_token_request()
 function api_tokens_table_exists()
 {
     return table_exists('api_tokens');
+}
+
+function mobile_sessions_table_exists(): bool
+{
+    return table_exists('mobile_sessions');
 }
 
 /**
@@ -527,12 +555,7 @@ function authenticate_api_token()
         return null;
     }
 
-    $header = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
-    if (stripos($header, 'Bearer ') !== 0) {
-        return null;
-    }
-
-    $raw_token = trim(substr($header, 7));
+    $raw_token = bearer_token_from_request();
     if ($raw_token === '' || strlen($raw_token) < 10) {
         return null;
     }
@@ -585,6 +608,70 @@ function authenticate_api_token()
 }
 
 /**
+ * Authenticate a native mobile access token.
+ *
+ * Mobile sessions are separate from long-lived automation API tokens. They are
+ * short-lived, refreshable, and safe for iOS Keychain storage.
+ */
+function authenticate_mobile_session()
+{
+    if (!mobile_sessions_table_exists()) {
+        return null;
+    }
+
+    $raw_token = bearer_token_from_request();
+    if ($raw_token === '' || strlen($raw_token) < 20) {
+        return null;
+    }
+
+    $token_hash = hash('sha256', $raw_token);
+    $now = date('Y-m-d H:i:s');
+    $session = db_fetch_one(
+        "SELECT * FROM mobile_sessions
+         WHERE access_token_hash = ?
+           AND revoked_at IS NULL
+           AND access_expires_at > ?
+         LIMIT 1",
+        [$token_hash, $now]
+    );
+
+    if (!$session) {
+        return null;
+    }
+
+    $sql = "SELECT * FROM users WHERE id = ? AND is_active = 1";
+    $params = [(int) $session['user_id']];
+    if (users_deleted_at_column_exists()) {
+        $sql .= " AND deleted_at IS NULL";
+    }
+    if (!empty($session['tenant_id']) && tenant_scoped_table_has_column('users')) {
+        $sql .= " AND tenant_id = ?";
+        $params[] = (int) $session['tenant_id'];
+    }
+    $user = db_fetch_one($sql, $params);
+    if (!$user) {
+        return null;
+    }
+
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['user_email'] = $user['email'];
+    $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
+    $_SESSION['user_role'] = $user['role'];
+    $_SESSION['mobile_session_id'] = (int) $session['id'];
+    if (function_exists('set_current_tenant_from_user')) {
+        set_current_tenant_from_user($user);
+    }
+
+    try {
+        db_update('mobile_sessions', ['last_used_at' => $now], 'id = ?', [(int) $session['id']]);
+    } catch (Throwable $e) {
+        // Non-critical for auth success.
+    }
+
+    return $user;
+}
+
+/**
  * Update the last_used_at timestamp of an API token.
  */
 function update_token_last_used($token_id)
@@ -628,5 +715,11 @@ function generate_api_token($user_id, $name, $expires_at = null)
  */
 function revoke_api_token($token_id)
 {
-    return db_update('api_tokens', ['is_active' => 0], 'id = ?', [$token_id]);
+    $where = 'id = ?';
+    $params = [$token_id];
+    if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('api_tokens')) {
+        $where .= ' AND tenant_id = ?';
+        $params[] = current_tenant_id();
+    }
+    return db_update('api_tokens', ['is_active' => 0], $where, $params);
 }

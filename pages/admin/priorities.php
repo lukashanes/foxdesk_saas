@@ -11,9 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reorder'])) {
     require_csrf_token();
     $order = json_decode($_POST['order'], true);
     if (is_array($order)) {
-        foreach ($order as $index => $id) {
-            db_update('priorities', ['sort_order' => $index], 'id = ?', [$id]);
-        }
+        reorder_items('priorities', $order);
         echo json_encode(['success' => true]);
         exit;
     }
@@ -32,23 +30,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($name)) {
             flash(t('Priority name is required.'), 'error');
         } else {
-            // Generate slug
-            $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', $name));
-            $slug = trim($slug, '_');
-            
-            // Check if slug exists
-            $existing = db_fetch_one("SELECT id FROM priorities WHERE slug = ?", [$slug]);
-            if ($existing) {
-                $slug .= '_' . time();
-            }
-            
-            // Get max sort_order
-            $max = db_fetch_one("SELECT MAX(sort_order) as max_order FROM priorities");
-            $sort_order = ($max['max_order'] ?? 0) + 1;
+            $slug = admin_crud_unique_slug('priorities', $name);
+            $sort_order = admin_crud_next_sort_order('priorities');
             
             // If this is default, unset others
             if ($is_default) {
-                db_query("UPDATE priorities SET is_default = 0");
+                admin_crud_clear_default('priorities');
             }
             
             db_insert('priorities', [
@@ -78,15 +65,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // If this is default, unset others
             if ($is_default) {
-                db_query("UPDATE priorities SET is_default = 0");
+                admin_crud_clear_default('priorities');
             }
             
-            db_update('priorities', [
+            admin_crud_update_record('priorities', $id, [
                 'name' => $name,
                 'color' => $color,
                 'icon' => $icon,
                 'is_default' => $is_default
-            ], 'id = ?', [$id]);
+            ]);
             flash(t('Priority updated.'), 'success');
         }
         redirect('admin', ['section' => 'priorities']);
@@ -97,11 +84,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int)$_POST['id'];
         
         // Check if priority is used
-        $tickets_count = db_fetch_one("SELECT COUNT(*) as c FROM tickets WHERE priority_id = ?", [$id]);
+        $ticket_params = [$id];
+        $ticket_sql = "SELECT COUNT(*) as c FROM tickets WHERE priority_id = ?";
+        $ticket_sql .= admin_crud_tenant_filter('tickets', $ticket_params);
+        $tickets_count = db_fetch_one($ticket_sql, $ticket_params);
         if ($tickets_count && $tickets_count['c'] > 0) {
             flash(t('Cannot delete a priority that is used by tickets.'), 'error');
         } else {
-            db_query("DELETE FROM priorities WHERE id = ?", [$id]);
+            admin_crud_delete_record('priorities', $id);
             flash(t('Priority deleted.'), 'success');
         }
         redirect('admin', ['section' => 'priorities']);
@@ -112,20 +102,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int)$_POST['id'];
         $direction = $_POST['direction'];
         
-        $priority = get_priority($id);
-        if ($priority) {
-            $current_order = $priority['sort_order'];
-            
-            if ($direction === 'up') {
-                $swap = db_fetch_one("SELECT id, sort_order FROM priorities WHERE sort_order < ? ORDER BY sort_order DESC LIMIT 1", [$current_order]);
-            } else {
-                $swap = db_fetch_one("SELECT id, sort_order FROM priorities WHERE sort_order > ? ORDER BY sort_order ASC LIMIT 1", [$current_order]);
-            }
-            
-            if ($swap) {
-                db_update('priorities', ['sort_order' => $swap['sort_order']], 'id = ?', [$id]);
-                db_update('priorities', ['sort_order' => $current_order], 'id = ?', [$swap['id']]);
-            }
+        if ($direction === 'up') {
+            move_item_up('priorities', $id);
+        } else {
+            move_item_down('priorities', $id);
         }
         redirect('admin', ['section' => 'priorities']);
     }
@@ -163,10 +143,10 @@ $page_header_subtitle = t('Manage priority labels and ordering.');
 include BASE_PATH . '/includes/components/page-header.php';
 ?>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+<div class="admin-two-column workflow-admin-page">
     <!-- Priorities List -->
-    <div class="lg:col-span-2">
-    <div class="card overflow-hidden">
+    <div class="admin-main-column">
+    <div class="admin-list-card overflow-hidden">
         <div class="px-6 py-3 border-b flex items-center justify-between">
             <h3 class="font-semibold text-gray-800"><?php echo e(t('Priority list')); ?></h3>
             <span class="text-sm text-gray-500"><?php echo e(t('Drag to reorder')); ?></span>
@@ -180,7 +160,10 @@ include BASE_PATH . '/includes/components/page-header.php';
         <?php else: ?>
         <ul id="priorities-list" class="divide-y divide-gray-200">
             <?php foreach ($priorities as $index => $priority): 
-                $tickets_count = db_fetch_one("SELECT COUNT(*) as c FROM tickets WHERE priority_id = ?", [$priority['id']]);
+                $ticket_params = [$priority['id']];
+                $ticket_sql = "SELECT COUNT(*) as c FROM tickets WHERE priority_id = ?";
+                $ticket_sql .= admin_crud_tenant_filter('tickets', $ticket_params);
+                $tickets_count = db_fetch_one($ticket_sql, $ticket_params);
             ?>
             <li data-id="<?php echo $priority['id']; ?>" 
                 class="px-6 py-3 flex items-center justify-between bg-white hover:bg-gray-50 cursor-move">
@@ -228,6 +211,7 @@ include BASE_PATH . '/includes/components/page-header.php';
     </div>
 
     <!-- Add Priority Form (Sidebar) -->
+    <div class="admin-side-column">
     <div class="card card-body h-fit">
         <h3 class="font-semibold text-gray-800 mb-4"><?php echo e(t('Add priority')); ?></h3>
 
@@ -274,11 +258,12 @@ include BASE_PATH . '/includes/components/page-header.php';
             </button>
         </form>
     </div>
+    </div>
 </div>
 
 <!-- Edit Priority Modal -->
 <div id="editPriorityModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-4 max-h-[90vh] overflow-y-auto">
+    <div class="workflow-admin-modal rounded-xl shadow-xl max-w-lg w-full mx-4 p-4 max-h-[90vh] overflow-y-auto">
         <h3 class="font-semibold text-gray-800 mb-4"><?php echo e(t('Edit priority')); ?></h3>
 
         <form method="post" id="editPriorityForm" class="space-y-4">

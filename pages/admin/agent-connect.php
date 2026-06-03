@@ -9,7 +9,8 @@
  */
 
 if (!is_admin()) {
-    header('Location: index.php?page=dashboard');
+    $redirect_page = function_exists('foxdesk_authenticated_home_page') ? foxdesk_authenticated_home_page() : 'dashboard';
+    header('Location: index.php?page=' . $redirect_page);
     exit;
 }
 
@@ -19,7 +20,7 @@ $agent_id = (int) ($_GET['id'] ?? 0);
 // Load agent
 $agent = null;
 if ($agent_id > 0) {
-    $agent = db_fetch_one("SELECT * FROM users WHERE id = ? AND is_ai_agent = 1", [$agent_id]);
+    $agent = db_fetch_one("SELECT * FROM users WHERE id = ? AND is_ai_agent = 1 AND tenant_id = ?", [$agent_id, current_tenant_id()]);
 }
 
 if (!$agent) {

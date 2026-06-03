@@ -4,16 +4,19 @@
  *
  * This surface is intentionally separate from the customer helpdesk admin. It is
  * the SaaS control plane for the platform operator: tenants, lifecycle, billing
- * state, migrations, and operational health.
+ * state, billing, and operational health.
  */
 
 require_platform_admin();
+require_once BASE_PATH . '/includes/modules/platform/operator-console.php';
 
 $page_title = 'FoxDesk Cloud Console';
 $page = 'platform';
 $user = current_user();
 $error = '';
 $success = '';
+$operator_link = '';
+$selected_tenant_id = (int) ($_GET['tenant_id'] ?? $_POST['return_tenant_id'] ?? $_POST['tenant_id'] ?? 0);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf_token();
@@ -21,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         if ($action === 'create_workspace') {
-            create_tenant_workspace([
+            $workspace = create_tenant_workspace([
                 'workspace_name' => $_POST['workspace_name'] ?? '',
                 'admin_email' => $_POST['admin_email'] ?? '',
                 'admin_first_name' => $_POST['admin_first_name'] ?? '',
@@ -31,80 +34,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'subscription_status' => $_POST['subscription_status'] ?? 'trialing',
                 'plan' => billing_plan_code(),
             ]);
+            $selected_tenant_id = (int) $workspace['tenant_id'];
             $success = 'Workspace created.';
-        } elseif ($action === 'import_migration') {
-            if (empty($_FILES['migration_package']['tmp_name']) || ($_FILES['migration_package']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-                throw new InvalidArgumentException('Upload a FoxDesk migration ZIP package.');
-            }
-            $name = (string) ($_FILES['migration_package']['name'] ?? '');
-            if (!preg_match('/\.zip$/i', $name)) {
-                throw new InvalidArgumentException('Migration package must be a ZIP file.');
-            }
-
-            $summary = migration_import_package((string) $_FILES['migration_package']['tmp_name'], [
-                'workspace_name' => $_POST['migration_workspace_name'] ?? '',
-                'billing_email' => $_POST['migration_billing_email'] ?? null,
-                'status' => $_POST['migration_status'] ?? 'trialing',
-                'subscription_status' => $_POST['migration_subscription_status'] ?? 'manual',
-            ]);
-            $success = 'Migration imported into workspace #' . (int) $summary['tenant_id'] . '.';
         } elseif ($action === 'update_tenant') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
-            $status = (string) ($_POST['status'] ?? 'active');
-            $subscription_status = trim((string) ($_POST['subscription_status'] ?? 'manual'));
-            $allowed_statuses = ['active', 'trialing', 'past_due', 'trial_expired', 'suspended', 'blocked', 'canceled'];
-            if ($tenant_id <= 0 || !in_array($status, $allowed_statuses, true)) {
-                throw new InvalidArgumentException('Invalid workspace update.');
-            }
-            db_update('tenants', [
-                'status' => $status,
-                'subscription_status' => $subscription_status !== '' ? $subscription_status : 'manual',
-                'plan' => billing_plan_code(),
-                'suspended_at' => in_array($status, ['past_due', 'trial_expired', 'suspended', 'blocked', 'canceled'], true) ? date('Y-m-d H:i:s') : null,
-                'blocked_at' => in_array($status, ['trial_expired', 'blocked', 'canceled'], true) ? date('Y-m-d H:i:s') : null,
-            ], 'id = ?', [$tenant_id]);
+            platform_update_tenant_lifecycle(
+                $tenant_id,
+                (string) ($_POST['status'] ?? 'active'),
+                (string) ($_POST['subscription_status'] ?? 'manual')
+            );
+            $selected_tenant_id = $tenant_id;
             $success = 'Workspace updated.';
         } elseif ($action === 'extend_trial') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
             $days = max(1, min(90, (int) ($_POST['days'] ?? 7)));
-            if ($tenant_id <= 0) {
-                throw new InvalidArgumentException('Invalid workspace.');
-            }
-            db_query(
-                "UPDATE tenants
-                 SET status = 'trialing',
-                     subscription_status = 'trialing',
-                     trial_ends_at = DATE_ADD(GREATEST(COALESCE(trial_ends_at, NOW()), NOW()), INTERVAL {$days} DAY),
-                     suspended_at = NULL,
-                     blocked_at = NULL
-                 WHERE id = ?",
-                [$tenant_id]
-            );
+            platform_extend_trial($tenant_id, $days);
+            $selected_tenant_id = $tenant_id;
             $success = 'Trial extended by ' . $days . ' days.';
         } elseif ($action === 'block_tenant') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
-            if ($tenant_id <= 0) {
-                throw new InvalidArgumentException('Invalid workspace.');
-            }
-            db_update('tenants', [
-                'status' => 'blocked',
-                'subscription_status' => 'blocked',
-                'suspended_at' => date('Y-m-d H:i:s'),
-                'blocked_at' => date('Y-m-d H:i:s'),
-            ], 'id = ?', [$tenant_id]);
+            platform_block_tenant($tenant_id);
+            $selected_tenant_id = $tenant_id;
             $success = 'Workspace blocked.';
         } elseif ($action === 'reactivate_tenant') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
-            if ($tenant_id <= 0) {
-                throw new InvalidArgumentException('Invalid workspace.');
-            }
-            db_update('tenants', [
-                'status' => 'active',
-                'subscription_status' => 'manual',
-                'suspended_at' => null,
-                'blocked_at' => null,
-            ], 'id = ?', [$tenant_id]);
+            platform_reactivate_tenant($tenant_id);
+            $selected_tenant_id = $tenant_id;
             $success = 'Workspace reactivated manually.';
+        } elseif ($action === 'send_owner_reset') {
+            $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
+            $result = platform_send_owner_reset($tenant_id);
+            $selected_tenant_id = $tenant_id;
+            $success = !empty($result['sent'])
+                ? 'Owner reset email sent to ' . (string) ($result['owner']['email'] ?? 'workspace owner') . '.'
+                : 'Owner reset email could not be sent. Use the generated reset link below.';
+            if (empty($result['sent'])) {
+                $operator_link = (string) $result['reset_link'];
+            }
+        } elseif ($action === 'create_owner_reset_link') {
+            $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
+            $owner = platform_find_owner($tenant_id);
+            if (!$owner) {
+                throw new InvalidArgumentException('Workspace owner is missing.');
+            }
+            $result = platform_create_owner_reset($tenant_id, $owner);
+            $selected_tenant_id = $tenant_id;
+            $operator_link = (string) $result['reset_link'];
+            $success = 'Owner reset link generated. It expires in one hour.';
+        } elseif ($action === 'invite_owner') {
+            $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
+            $result = platform_invite_or_set_owner(
+                $tenant_id,
+                (string) ($_POST['owner_email'] ?? ''),
+                (string) ($_POST['owner_first_name'] ?? ''),
+                (string) ($_POST['owner_last_name'] ?? '')
+            );
+            $selected_tenant_id = $tenant_id;
+            $success = !empty($result['sent'])
+                ? 'Owner invite sent to ' . (string) ($result['owner']['email'] ?? 'workspace owner') . '.'
+                : 'Owner account prepared. Email could not be sent, use the generated reset link below.';
+            if (empty($result['sent'])) {
+                $operator_link = (string) $result['reset_link'];
+            }
         }
     } catch (Throwable $e) {
         $error = $e->getMessage();
@@ -117,7 +108,7 @@ $summary = db_fetch_one("
       SUM(status IN ('active','trialing')) AS active_tenants,
       SUM(status = 'past_due') AS past_due_tenants,
       SUM(status IN ('trial_expired','suspended','blocked','canceled')) AS blocked_tenants,
-      SUM(subscription_status IN ('active','trialing')) AS billing_ok,
+      SUM(subscription_status IN ('active','trialing','manual','free')) AS billing_ok,
       (SELECT COUNT(*) FROM users WHERE deleted_at IS NULL) AS users
     FROM tenants
 ");
@@ -137,8 +128,13 @@ $tenants = db_fetch_all("
 ");
 
 $total_storage_bytes = 0;
+$total_local_storage_bytes = 0;
+$total_r2_storage_bytes = 0;
 $total_extra_gb = 0;
 $estimated_storage_overage_cents = 0;
+$total_api_requests = 0;
+$total_inbound_email_total = 0;
+$total_outbound_email_sent = 0;
 $tenant_usage = [];
 $attention_items = [];
 
@@ -147,8 +143,13 @@ foreach ($tenants as $tenant) {
     $usage = billing_tenant_usage($tenant_id);
     $tenant_usage[$tenant_id] = $usage;
     $total_storage_bytes += (int) $usage['storage_bytes'];
+    $total_local_storage_bytes += (int) $usage['storage_local_bytes'];
+    $total_r2_storage_bytes += (int) $usage['storage_r2_bytes'];
     $total_extra_gb += (int) $usage['extra_storage_gb'];
     $estimated_storage_overage_cents += (int) $usage['storage_overage_cents'];
+    $total_api_requests += (int) $usage['api_requests'];
+    $total_inbound_email_total += (int) $usage['inbound_email_total'];
+    $total_outbound_email_sent += (int) $usage['outbound_email_sent'];
 
     if (in_array((string) $tenant['status'], ['past_due', 'trial_expired', 'suspended', 'blocked', 'canceled'], true)) {
         $attention_items[] = [
@@ -167,15 +168,10 @@ foreach ($tenants as $tenant) {
     }
 }
 
-migration_ensure_imports_table();
-$migration_imports = db_fetch_all("
-    SELECT mi.*, t.name AS tenant_name, t.slug AS tenant_slug, u.email AS created_by_email
-    FROM migration_imports mi
-    LEFT JOIN tenants t ON t.id = mi.tenant_id
-    LEFT JOIN users u ON u.id = mi.created_by
-    ORDER BY mi.created_at DESC, mi.id DESC
-    LIMIT 8
-");
+$selected_detail = $selected_tenant_id > 0 ? platform_tenant_detail_context($selected_tenant_id) : null;
+if ($selected_tenant_id > 0 && !$selected_detail && !$error) {
+    $error = 'Workspace detail was not found.';
+}
 
 $operator_name = trim((string) (($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')));
 $operator_initial = strtoupper(substr($operator_name !== '' ? $operator_name : (string) ($user['email'] ?? 'F'), 0, 1));
@@ -612,6 +608,8 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
         }
         .op-pill.active,
         .op-pill.trialing,
+        .op-pill.manual,
+        .op-pill.free,
         .op-pill.good {
             background: rgba(220, 252, 231, .74);
             color: var(--op-green);
@@ -671,6 +669,48 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 12px;
+        }
+        .op-detail {
+            margin-bottom: 12px;
+        }
+        .op-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            padding: 12px;
+        }
+        .op-detail-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(300px, .45fr);
+            gap: 12px;
+            padding: 0 12px 12px;
+        }
+        .op-mini-card {
+            min-width: 0;
+            border: 1px solid var(--op-line);
+            border-radius: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, .42);
+        }
+        [data-theme="dark"] .op-mini-card {
+            background: rgba(255, 255, 255, .04);
+        }
+        .op-mini-card strong {
+            display: block;
+            margin-top: 5px;
+            font-size: 16px;
+            line-height: 1.15;
+        }
+        .op-reset-code {
+            display: block;
+            margin-top: 6px;
+            padding: 8px;
+            border-radius: 8px;
+            background: var(--op-panel-solid);
+            color: var(--op-ink);
+            font-size: 11px;
+            line-height: 1.4;
+            overflow-wrap: anywhere;
         }
         .op-panel-body {
             padding: 12px;
@@ -734,8 +774,12 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             }
         }
         @media (max-width: 960px) {
-            .op-stack {
+            .op-stack,
+            .op-detail-layout {
                 grid-template-columns: 1fr;
+            }
+            .op-detail-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
         @media (max-width: 720px) {
@@ -764,6 +808,9 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             }
             .op-search {
                 width: 100%;
+            }
+            .op-detail-grid {
+                grid-template-columns: 1fr;
             }
             .op-section-head {
                 display: grid;
@@ -819,9 +866,8 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
             <a href="#overview" class="active"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 13h7V4H4v9Zm9 7h7V4h-7v16ZM4 20h7v-5H4v5Z"/></svg>Overview</a>
             <a href="#workspaces"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Workspaces</a>
             <a href="#workspaces"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 7h10v10H7zM4 4l3 3M20 4l-3 3M4 20l3-3M20 20l-3-3"/></svg>Lifecycle</a>
-            <a href="#migrations"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>Migrations</a>
             <a href="#billing"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 7h16v10H4zM4 10h16M8 15h4"/></svg>Billing</a>
-            <a href="<?php echo e(url('dashboard')); ?>"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H5v13h13v-5M14 5h5v5M13 11l6-6"/></svg>Open helpdesk</a>
+            <a href="<?php echo e(url('work')); ?>"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H5v13h13v-5M14 5h5v5M13 11l6-6"/></svg>Open helpdesk</a>
         </nav>
         <div class="op-sidebar-bottom">
             <button type="button" class="op-btn" onclick="togglePlatformTheme()">Toggle theme</button>
@@ -851,6 +897,12 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
 
         <?php if ($error): ?><div class="op-alert error"><?php echo e($error); ?></div><?php endif; ?>
         <?php if ($success): ?><div class="op-alert success"><?php echo e($success); ?></div><?php endif; ?>
+        <?php if ($operator_link): ?>
+            <div class="op-alert success">
+                Reset link
+                <code class="op-reset-code"><?php echo e($operator_link); ?></code>
+            </div>
+        <?php endif; ?>
 
         <section class="op-overview" id="overview">
             <div class="op-card op-compact-card primary">
@@ -859,18 +911,266 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                     <span class="op-status-dot <?php echo $health_class === 'warn' ? 'warn' : ''; ?>"></span>
                 </div>
                 <strong><?php echo e($health_label); ?></strong>
-                <div class="op-sub"><?php echo $active_tenants; ?> / <?php echo $tenant_count; ?> active or trialing. Past due <?php echo (int) ($summary['past_due_tenants'] ?? 0); ?>, blocked <?php echo (int) ($summary['blocked_tenants'] ?? 0); ?>.</div>
+                <div class="op-sub"><?php echo $active_tenants; ?> / <?php echo $tenant_count; ?> active or trialing. Manual/free billing overrides count as valid access. Past due <?php echo (int) ($summary['past_due_tenants'] ?? 0); ?>, blocked <?php echo (int) ($summary['blocked_tenants'] ?? 0); ?>.</div>
                 <div class="op-actions">
                     <a class="op-btn primary" href="#workspaces">Workspaces</a>
-                    <a class="op-btn" href="#migrations">Import</a>
+                    <a class="op-btn" href="#billing">Billing</a>
                 </div>
             </div>
             <div class="op-card op-compact-card"><span class="op-label">Workspaces</span><strong><?php echo $tenant_count; ?></strong><div class="op-sub">Total tenants</div></div>
-            <div class="op-card op-compact-card"><span class="op-label">Active/trial</span><strong><?php echo $active_tenants; ?></strong><div class="op-sub">With app access</div></div>
+            <div class="op-card op-compact-card"><span class="op-label">App access</span><strong><?php echo $active_tenants; ?></strong><div class="op-sub">Active, trial, manual, or free</div></div>
             <div class="op-card op-compact-card"><span class="op-label">Users</span><strong><?php echo (int) ($summary['users'] ?? 0); ?></strong><div class="op-sub">Across all workspaces</div></div>
-            <div class="op-card op-compact-card"><span class="op-label">Storage</span><strong><?php echo e(format_file_size($total_storage_bytes)); ?></strong><div class="op-sub"><?php echo (int) $total_extra_gb; ?> extra GB</div></div>
+            <div class="op-card op-compact-card"><span class="op-label">Storage</span><strong><?php echo e(format_file_size($total_storage_bytes)); ?></strong><div class="op-sub">Local <?php echo e(format_file_size($total_local_storage_bytes)); ?> · R2 <?php echo e(format_file_size($total_r2_storage_bytes)); ?></div></div>
             <div class="op-card op-compact-card"><span class="op-label">Overage</span><strong><?php echo e(billing_format_money($estimated_storage_overage_cents)); ?></strong><div class="op-sub">Current period estimate</div></div>
+            <div class="op-card op-compact-card"><span class="op-label">Activity</span><strong><?php echo (int) $total_api_requests; ?> API</strong><div class="op-sub"><?php echo (int) $total_inbound_email_total; ?> inbound · <?php echo (int) $total_outbound_email_sent; ?> sent</div></div>
         </section>
+
+        <?php if ($selected_detail): ?>
+            <?php
+                $detail_tenant = $selected_detail['tenant'];
+                $detail_usage = $selected_detail['usage'];
+                $detail_owner = $selected_detail['owner'];
+                $detail_included = max(1, (int) $detail_usage['included_storage_bytes']);
+                $detail_storage_percent = min(100, (int) round(((int) $detail_usage['storage_bytes'] / $detail_included) * 100));
+                $detail_status_class = preg_replace('/[^a-z_]/', '', (string) ($detail_tenant['status'] ?? ''));
+                $detail_owner_name = $detail_owner ? trim((string) (($detail_owner['first_name'] ?? '') . ' ' . ($detail_owner['last_name'] ?? ''))) : '';
+            ?>
+            <section class="op-card op-detail" id="tenant-detail">
+                <div class="op-section-head">
+                    <div>
+                        <h2><?php echo e($detail_tenant['name']); ?></h2>
+                        <p>Tenant detail, billing state, owner access, and current-period usage.</p>
+                    </div>
+                    <div class="op-actions">
+                        <span class="op-pill <?php echo e($detail_status_class); ?>"><?php echo e($detail_tenant['status']); ?></span>
+                        <a class="op-btn" href="<?php echo e(url('billing', ['tenant_id' => (int) $detail_tenant['id']])); ?>">Billing detail</a>
+                        <a class="op-btn" href="<?php echo e(url('platform')); ?>#workspaces">Close detail</a>
+                    </div>
+                </div>
+
+                <div class="op-detail-grid">
+                    <div class="op-mini-card">
+                        <span class="op-label">Workspace</span>
+                        <strong>/<?php echo e($detail_tenant['slug']); ?></strong>
+                        <div class="op-sub">ID <?php echo (int) $detail_tenant['id']; ?> · created <?php echo e(substr((string) $detail_tenant['created_at'], 0, 10)); ?></div>
+                    </div>
+                    <div class="op-mini-card">
+                        <span class="op-label">Subscription</span>
+                        <strong><?php echo e($detail_tenant['subscription_status'] ?? 'manual'); ?></strong>
+                        <div class="op-sub"><?php echo e(billing_plan_name()); ?> · <?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/mo</div>
+                    </div>
+                    <div class="op-mini-card">
+                        <span class="op-label">Storage</span>
+                        <strong><?php echo e(format_file_size((int) $detail_usage['storage_bytes'])); ?></strong>
+                        <div class="op-sub">Local <?php echo e(format_file_size((int) $detail_usage['storage_local_bytes'])); ?> · R2 <?php echo e(format_file_size((int) $detail_usage['storage_r2_bytes'])); ?></div>
+                        <div class="op-bar mt-2"><span style="width: <?php echo $detail_storage_percent; ?>%;"></span></div>
+                    </div>
+                    <div class="op-mini-card">
+                        <span class="op-label">Activity</span>
+                        <strong><?php echo (int) $detail_usage['api_requests']; ?> API</strong>
+                        <div class="op-sub"><?php echo (int) $detail_usage['inbound_email_total']; ?> inbound · <?php echo (int) $detail_usage['outbound_email_sent']; ?> sent this month</div>
+                    </div>
+                </div>
+
+                <div class="op-detail-layout">
+                    <div class="op-stack">
+                        <section class="op-card">
+                            <div class="op-section-head">
+                                <div>
+                                    <h2>Lifecycle control</h2>
+                                    <p>Manual override for support, billing, and emergency access decisions.</p>
+                                </div>
+                            </div>
+                            <div class="op-panel-body">
+                                <form method="post" class="op-form">
+                                    <?php echo csrf_field(); ?>
+                                    <input type="hidden" name="platform_action" value="update_tenant">
+                                    <input type="hidden" name="tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                    <input type="hidden" name="return_tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                    <div class="op-field-row">
+                                        <div class="op-field">
+                                            <label>Status</label>
+                                            <select class="op-select" name="status">
+                                                <?php foreach (platform_allowed_tenant_statuses() as $status): ?>
+                                                    <option value="<?php echo $status; ?>" <?php echo ($detail_tenant['status'] ?? '') === $status ? 'selected' : ''; ?>><?php echo $status; ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                        <div class="op-field">
+                                            <label>Subscription status</label>
+                                            <select class="op-select" name="subscription_status">
+                                                <?php foreach (platform_allowed_subscription_statuses() as $subscription_status): ?>
+                                                    <option value="<?php echo e($subscription_status); ?>" <?php echo ($detail_tenant['subscription_status'] ?? 'manual') === $subscription_status ? 'selected' : ''; ?>><?php echo e($subscription_status); ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button class="op-btn primary" type="submit">Save lifecycle</button>
+                                </form>
+                                <div class="op-actions mt-2 justify-start">
+                                    <form method="post">
+                                        <?php echo csrf_field(); ?>
+                                        <input type="hidden" name="platform_action" value="extend_trial">
+                                        <input type="hidden" name="tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                        <input type="hidden" name="return_tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                        <input class="op-input" style="width: 84px;" type="number" name="days" value="7" min="1" max="90" aria-label="Trial extension days">
+                                        <button class="op-btn" type="submit">Extend trial</button>
+                                    </form>
+                                    <?php if (($detail_tenant['status'] ?? '') === 'blocked'): ?>
+                                        <form method="post">
+                                            <?php echo csrf_field(); ?>
+                                            <input type="hidden" name="platform_action" value="reactivate_tenant">
+                                            <input type="hidden" name="tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                            <input type="hidden" name="return_tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                            <button class="op-btn primary" type="submit">Reactivate</button>
+                                        </form>
+                                    <?php else: ?>
+                                        <form method="post">
+                                            <?php echo csrf_field(); ?>
+                                            <input type="hidden" name="platform_action" value="block_tenant">
+                                            <input type="hidden" name="tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                            <input type="hidden" name="return_tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                            <button class="op-btn danger" type="submit">Block workspace</button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="op-card">
+                            <div class="op-section-head">
+                                <div>
+                                    <h2>Owner access</h2>
+                                    <p>Reset current owner access or invite a replacement owner.</p>
+                                </div>
+                            </div>
+                            <div class="op-panel-body">
+                                <div class="op-list mb-3">
+                                    <div class="op-list-row">
+                                        <span>
+                                            <span class="op-label">Current owner</span>
+                                            <div class="op-name"><?php echo e($detail_owner_name !== '' ? $detail_owner_name : 'No owner'); ?></div>
+                                            <div class="op-sub"><?php echo e($detail_owner['email'] ?? ''); ?></div>
+                                        </span>
+                                        <?php if ($detail_owner): ?>
+                                            <span class="op-pill good">admin</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <div class="op-actions justify-start mb-3">
+                                    <form method="post">
+                                        <?php echo csrf_field(); ?>
+                                        <input type="hidden" name="platform_action" value="send_owner_reset">
+                                        <input type="hidden" name="tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                        <input type="hidden" name="return_tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                        <button class="op-btn" type="submit">Send reset email</button>
+                                    </form>
+                                    <form method="post">
+                                        <?php echo csrf_field(); ?>
+                                        <input type="hidden" name="platform_action" value="create_owner_reset_link">
+                                        <input type="hidden" name="tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                        <input type="hidden" name="return_tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                        <button class="op-btn" type="submit">Generate reset link</button>
+                                    </form>
+                                </div>
+                                <form method="post" class="op-form">
+                                    <?php echo csrf_field(); ?>
+                                    <input type="hidden" name="platform_action" value="invite_owner">
+                                    <input type="hidden" name="tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                    <input type="hidden" name="return_tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                    <div class="op-field">
+                                        <label>New owner email</label>
+                                        <input class="op-input" type="email" name="owner_email" placeholder="owner@example.com" required>
+                                    </div>
+                                    <div class="op-field-row">
+                                        <div class="op-field">
+                                            <label>First name</label>
+                                            <input class="op-input" name="owner_first_name" required>
+                                        </div>
+                                        <div class="op-field">
+                                            <label>Last name</label>
+                                            <input class="op-input" name="owner_last_name">
+                                        </div>
+                                    </div>
+                                    <button class="op-btn primary" type="submit">Invite owner</button>
+                                </form>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div class="op-stack" style="grid-template-columns: 1fr;">
+                        <section class="op-card">
+                            <div class="op-section-head">
+                                <div>
+                                    <h2>Subscription history</h2>
+                                    <p>Stripe events, local usage reports, and trial emails.</p>
+                                </div>
+                            </div>
+                            <div class="op-panel-body op-list">
+                                <?php if (empty($selected_detail['history'])): ?>
+                                    <div class="op-empty">No subscription history yet.</div>
+                                <?php endif; ?>
+                                <?php foreach ($selected_detail['history'] as $item): ?>
+                                    <div class="op-list-row">
+                                        <span>
+                                            <span class="op-label"><?php echo e($item['kind']); ?></span>
+                                            <div class="op-name"><?php echo e($item['title']); ?></div>
+                                            <div class="op-sub"><?php echo e($item['created_at']); ?><?php echo $item['detail'] !== '' ? ' · ' . e($item['detail']) : ''; ?></div>
+                                        </span>
+                                        <span class="op-pill <?php echo e($item['status'] === 'failed' ? 'risk' : 'good'); ?>"><?php echo e($item['status']); ?></span>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </section>
+
+                        <section class="op-card">
+                            <div class="op-section-head">
+                                <div>
+                                    <h2>Usage overview</h2>
+                                    <p>Current month usage signals for support and abuse review.</p>
+                                </div>
+                            </div>
+                            <div class="op-panel-body op-list">
+                                <div class="op-list-row"><span><span class="op-label">Users / clients / tickets</span><div class="op-sub">Workspace scale</div></span><strong><?php echo (int) $detail_usage['users']; ?> / <?php echo (int) $detail_usage['clients']; ?> / <?php echo (int) $detail_usage['tickets']; ?></strong></div>
+                                <div class="op-list-row"><span><span class="op-label">Extra storage</span><div class="op-sub"><?php echo e(format_file_size((int) $detail_usage['extra_storage_bytes'])); ?> billable overage</div></span><strong><?php echo (int) $detail_usage['extra_storage_gb']; ?> GB</strong></div>
+                                <div class="op-list-row"><span><span class="op-label">Estimated overage</span><div class="op-sub">Current period estimate</div></span><strong><?php echo e(billing_format_money((int) $detail_usage['storage_overage_cents'])); ?></strong></div>
+                                <?php foreach ($selected_detail['usage_events'] as $event): ?>
+                                    <div class="op-list-row">
+                                        <span>
+                                            <span class="op-label">Usage event</span>
+                                            <div class="op-name"><?php echo e($event['event_type']); ?></div>
+                                            <div class="op-sub">Latest <?php echo e($event['latest_at']); ?></div>
+                                        </span>
+                                        <strong><?php echo (int) $event['quantity']; ?></strong>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </section>
+
+                        <section class="op-card">
+                            <div class="op-section-head">
+                                <div>
+                                    <h2>Team snapshot</h2>
+                                    <p>First users in this workspace.</p>
+                                </div>
+                            </div>
+                            <div class="op-panel-body op-list">
+                                <?php foreach ($selected_detail['users'] as $tenant_user): ?>
+                                    <div class="op-list-row">
+                                        <span>
+                                            <span class="op-label"><?php echo e($tenant_user['role']); ?></span>
+                                            <div class="op-name"><?php echo e(trim((string) (($tenant_user['first_name'] ?? '') . ' ' . ($tenant_user['last_name'] ?? '')))); ?></div>
+                                            <div class="op-sub"><?php echo e($tenant_user['email']); ?></div>
+                                        </span>
+                                        <span class="op-pill <?php echo (int) $tenant_user['is_active'] === 1 ? 'good' : 'risk'; ?>"><?php echo (int) $tenant_user['is_active'] === 1 ? 'active' : 'inactive'; ?></span>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </section>
+        <?php endif; ?>
 
         <div class="op-grid">
             <section class="op-card" id="workspaces">
@@ -910,6 +1210,9 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                         <div class="op-name"><?php echo e($tenant['name']); ?></div>
                                         <div class="op-sub">/<?php echo e($tenant['slug']); ?> · ID <?php echo $tenant_id; ?></div>
                                         <div class="op-sub">Created <?php echo e(substr((string) $tenant['created_at'], 0, 10)); ?></div>
+                                        <div class="op-actions mt-2 justify-start">
+                                            <a class="op-pill" href="<?php echo e(url('platform', ['tenant_id' => $tenant_id])); ?>#tenant-detail">Open detail</a>
+                                        </div>
                                     </td>
                                     <td data-label="Owner">
                                         <div class="op-name"><?php echo e($owner_name !== '' ? $owner_name : 'No owner'); ?></div>
@@ -920,7 +1223,9 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                         <div class="op-meter">
                                             <div class="op-sub"><?php echo e(format_file_size((int) $usage['storage_bytes'])); ?> / <?php echo e(format_file_size($included)); ?></div>
                                             <div class="op-bar"><span style="width: <?php echo $storage_percent; ?>%;"></span></div>
+                                            <div class="op-sub">Local <?php echo e(format_file_size((int) $usage['storage_local_bytes'])); ?> · R2 <?php echo e(format_file_size((int) $usage['storage_r2_bytes'])); ?></div>
                                             <div class="op-sub"><?php echo (int) $usage['tickets']; ?> tickets · latest <?php echo e($tenant['last_ticket_at'] ? substr((string) $tenant['last_ticket_at'], 0, 10) : 'none'); ?></div>
+                                            <div class="op-sub"><?php echo (int) $usage['api_requests']; ?> API · <?php echo (int) $usage['inbound_email_total']; ?> inbound · <?php echo (int) $usage['outbound_email_sent']; ?> sent</div>
                                         </div>
                                     </td>
                                     <td data-label="Billing">
@@ -938,11 +1243,16 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                                     <option value="<?php echo $status; ?>" <?php echo ($tenant['status'] ?? '') === $status ? 'selected' : ''; ?>><?php echo $status; ?></option>
                                                 <?php endforeach; ?>
                                             </select>
-                                            <input class="op-input" name="subscription_status" value="<?php echo e($tenant['subscription_status'] ?? 'manual'); ?>" aria-label="Billing status">
+                                            <select class="op-select" name="subscription_status" aria-label="Billing status">
+                                                <?php foreach (platform_allowed_subscription_statuses() as $subscription_status): ?>
+                                                    <option value="<?php echo e($subscription_status); ?>" <?php echo ($tenant['subscription_status'] ?? 'manual') === $subscription_status ? 'selected' : ''; ?>><?php echo e($subscription_status); ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
                                             <button class="op-btn" type="submit">Save</button>
                                         </form>
                                         <div class="op-actions mt-2 justify-start">
                                             <span class="op-pill <?php echo e($status_class); ?>"><?php echo e($tenant['status']); ?></span>
+                                            <a class="op-pill" href="<?php echo e(url('platform', ['tenant_id' => $tenant_id])); ?>#tenant-detail">Detail</a>
                                             <a class="op-pill" href="<?php echo e(url('billing', ['tenant_id' => $tenant_id])); ?>">Billing detail</a>
                                             <form method="post">
                                                 <?php echo csrf_field(); ?>
@@ -1023,55 +1333,11 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                         <option value="trialing">trialing</option>
                                         <option value="active">active</option>
                                         <option value="manual">manual</option>
+                                        <option value="free">free</option>
                                     </select>
                                 </div>
                             </div>
                             <button class="op-btn primary" type="submit">Create workspace</button>
-                        </form>
-                    </div>
-                </section>
-
-                <section class="op-card" id="migrations">
-                    <div class="op-section-head">
-                        <div>
-                            <h2>Migration import</h2>
-                            <p>Bring an existing self-hosted FoxDesk into Cloud.</p>
-                        </div>
-                    </div>
-                    <div class="op-panel-body">
-                        <form method="post" enctype="multipart/form-data" class="op-form">
-                            <?php echo csrf_field(); ?>
-                            <input type="hidden" name="platform_action" value="import_migration">
-                            <div class="op-field">
-                                <label>Migration ZIP</label>
-                                <input class="op-input" type="file" name="migration_package" accept=".zip,application/zip" required>
-                            </div>
-                            <div class="op-field">
-                                <label>New workspace name</label>
-                                <input class="op-input" name="migration_workspace_name" placeholder="Imported FoxDesk" required>
-                            </div>
-                            <div class="op-field">
-                                <label>Billing email override</label>
-                                <input class="op-input" type="email" name="migration_billing_email" placeholder="billing@example.com">
-                            </div>
-                            <div class="op-field-row">
-                                <div class="op-field">
-                                    <label>Workspace status</label>
-                                    <select class="op-select" name="migration_status">
-                                        <option value="trialing">trialing</option>
-                                        <option value="active">active</option>
-                                    </select>
-                                </div>
-                                <div class="op-field">
-                                    <label>Billing status</label>
-                                    <select class="op-select" name="migration_subscription_status">
-                                        <option value="manual">manual</option>
-                                        <option value="trialing">trialing</option>
-                                        <option value="active">active</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <button class="op-btn primary" type="submit">Import migration</button>
                         </form>
                     </div>
                 </section>
@@ -1114,29 +1380,6 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                     </div>
                 </section>
 
-                <section class="op-card">
-                    <div class="op-section-head">
-                        <div>
-                            <h2>Recent imports</h2>
-                            <p>Latest self-hosted migration packages.</p>
-                        </div>
-                    </div>
-                    <div class="op-panel-body op-list">
-                        <?php if (!$migration_imports): ?>
-                            <div class="op-empty">No migrations imported yet.</div>
-                        <?php endif; ?>
-                        <?php foreach ($migration_imports as $import): ?>
-                            <div class="op-list-row">
-                                <span>
-                                    <span class="op-label"><?php echo e($import['status']); ?></span>
-                                    <div class="op-name"><?php echo e($import['tenant_name'] ?: 'Import without tenant'); ?></div>
-                                    <div class="op-sub"><?php echo e($import['created_at']); ?> · <?php echo e($import['created_by_email'] ?: 'system'); ?></div>
-                                </span>
-                                <span class="op-pill <?php echo e($import['status'] === 'completed' ? 'good' : 'notice'); ?>"><?php echo e($import['imported_tickets']); ?> tickets</span>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </section>
             </aside>
         </div>
     </main>

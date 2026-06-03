@@ -21,12 +21,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf_token();
     if (isset($_POST['clear_old'])) {
         $days = max(7, (int) ($_POST['days'] ?? 90));
-        db_query("DELETE FROM page_views WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)", [$days]);
+        db_query("DELETE FROM page_views WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY) AND tenant_id = ?", [$days, current_tenant_id()]);
         flash(t('Deleted activity data older than {days} days.', ['days' => $days]), 'success');
         redirect('admin', ['section' => 'activity']);
     }
     if (isset($_POST['clear_all'])) {
-        db_query("TRUNCATE TABLE page_views");
+        db_query("DELETE FROM page_views WHERE tenant_id = ?", [current_tenant_id()]);
         flash(t('All activity data cleared.'), 'success');
         redirect('admin', ['section' => 'activity']);
     }
@@ -88,16 +88,16 @@ function pv_page_icon($pg) {
 
 // ── Fetch data ───────────────────────────────────────────────────────
 // Total counts
-$total_views = (int) (db_fetch_one("SELECT COUNT(*) as c FROM page_views WHERE created_at >= ?", [$range_date])['c'] ?? 0);
-$total_users = (int) (db_fetch_one("SELECT COUNT(DISTINCT user_id) as c FROM page_views WHERE created_at >= ?", [$range_date])['c'] ?? 0);
-$today_views = (int) (db_fetch_one("SELECT COUNT(*) as c FROM page_views WHERE created_at >= CURDATE()")['c'] ?? 0);
+$total_views = (int) (db_fetch_one("SELECT COUNT(*) as c FROM page_views WHERE created_at >= ? AND tenant_id = ?", [$range_date, current_tenant_id()])['c'] ?? 0);
+$total_users = (int) (db_fetch_one("SELECT COUNT(DISTINCT user_id) as c FROM page_views WHERE created_at >= ? AND tenant_id = ?", [$range_date, current_tenant_id()])['c'] ?? 0);
+$today_views = (int) (db_fetch_one("SELECT COUNT(*) as c FROM page_views WHERE created_at >= CURDATE() AND tenant_id = ?", [current_tenant_id()])['c'] ?? 0);
 
 // Page popularity
 $popular_pages = db_fetch_all("
     SELECT page, section, COUNT(*) as views, COUNT(DISTINCT user_id) as users
-    FROM page_views WHERE created_at >= ?
+    FROM page_views WHERE created_at >= ? AND tenant_id = ?
     GROUP BY page, section ORDER BY views DESC LIMIT 15
-", [$range_date]);
+", [$range_date, current_tenant_id()]);
 
 // User activity
 $user_activity = db_fetch_all("
@@ -105,17 +105,17 @@ $user_activity = db_fetch_all("
            COUNT(*) as views, MAX(pv.created_at) as last_active,
            COUNT(DISTINCT pv.page) as pages_used
     FROM page_views pv
-    JOIN users u ON pv.user_id = u.id
-    WHERE pv.created_at >= ?
+    JOIN users u ON pv.user_id = u.id AND u.tenant_id = pv.tenant_id
+    WHERE pv.created_at >= ? AND pv.tenant_id = ?
     GROUP BY pv.user_id ORDER BY views DESC
-", [$range_date]);
+", [$range_date, current_tenant_id()]);
 
 // Daily views for sparkline (last N days)
 $daily_views = db_fetch_all("
     SELECT DATE(created_at) as day, COUNT(*) as views
-    FROM page_views WHERE created_at >= ?
+    FROM page_views WHERE created_at >= ? AND tenant_id = ?
     GROUP BY DATE(created_at) ORDER BY day ASC
-", [$range_date]);
+", [$range_date, current_tenant_id()]);
 
 require_once BASE_PATH . '/includes/header.php';
 ?>
@@ -322,7 +322,7 @@ require_once BASE_PATH . '/includes/header.php';
     <!-- ═══════════════ USER DETAIL ═══════════════ -->
     <?php
     $uid = (int) $_GET['uid'];
-    $detail_user = db_fetch_one("SELECT id, first_name, last_name, email, role, avatar FROM users WHERE id = ?", [$uid]);
+    $detail_user = db_fetch_one("SELECT id, first_name, last_name, email, role, avatar FROM users WHERE id = ? AND tenant_id = ?", [$uid, current_tenant_id()]);
 
     if (!$detail_user):
         echo '<div class="act-card text-center py-8" style="color:var(--text-muted);">' . e(t('User not found.')) . '</div>';
@@ -333,17 +333,17 @@ require_once BASE_PATH . '/includes/header.php';
 
         $du_pages = db_fetch_all("
             SELECT page, section, COUNT(*) as views
-            FROM page_views WHERE user_id = ? AND created_at >= ?
+            FROM page_views WHERE user_id = ? AND created_at >= ? AND tenant_id = ?
             GROUP BY page, section ORDER BY views DESC
-        ", [$uid, $range_date]);
+        ", [$uid, $range_date, current_tenant_id()]);
 
         $du_recent = db_fetch_all("
             SELECT page, section, created_at
-            FROM page_views WHERE user_id = ?
+            FROM page_views WHERE user_id = ? AND tenant_id = ?
             ORDER BY created_at DESC LIMIT 30
-        ", [$uid]);
+        ", [$uid, current_tenant_id()]);
 
-        $du_total = (int) (db_fetch_one("SELECT COUNT(*) as c FROM page_views WHERE user_id = ? AND created_at >= ?", [$uid, $range_date])['c'] ?? 0);
+        $du_total = (int) (db_fetch_one("SELECT COUNT(*) as c FROM page_views WHERE user_id = ? AND created_at >= ? AND tenant_id = ?", [$uid, $range_date, current_tenant_id()])['c'] ?? 0);
     ?>
     <a href="<?php echo url('admin', ['section' => 'activity', 'range' => $range]); ?>"
        class="inline-flex items-center gap-1 text-sm mb-3" style="color: var(--primary); text-decoration: none;">
@@ -445,8 +445,8 @@ require_once BASE_PATH . '/includes/header.php';
     $per_page = 50;
     $log_offset = ($page_num - 1) * $per_page;
 
-    $where = ["pv.created_at >= ?"];
-    $params = [$range_date];
+    $where = ["pv.created_at >= ?", "pv.tenant_id = ?"];
+    $params = [$range_date, current_tenant_id()];
     if ($log_user) {
         $where[] = "pv.user_id = ?";
         $params[] = $log_user;
@@ -463,7 +463,7 @@ require_once BASE_PATH . '/includes/header.php';
     $log_entries = db_fetch_all("
         SELECT pv.*, u.first_name, u.last_name, u.email, u.role
         FROM page_views pv
-        LEFT JOIN users u ON pv.user_id = u.id
+        LEFT JOIN users u ON pv.user_id = u.id AND u.tenant_id = pv.tenant_id
         WHERE $where_sql
         ORDER BY pv.created_at DESC
         LIMIT ? OFFSET ?
@@ -472,12 +472,12 @@ require_once BASE_PATH . '/includes/header.php';
     // Available users and pages for filter dropdowns
     $filter_users = db_fetch_all("
         SELECT DISTINCT pv.user_id, u.first_name, u.last_name
-        FROM page_views pv JOIN users u ON pv.user_id = u.id
-        WHERE pv.created_at >= ? ORDER BY u.first_name
-    ", [$range_date]);
+        FROM page_views pv JOIN users u ON pv.user_id = u.id AND u.tenant_id = pv.tenant_id
+        WHERE pv.created_at >= ? AND pv.tenant_id = ? ORDER BY u.first_name
+    ", [$range_date, current_tenant_id()]);
     $filter_pages_list = db_fetch_all("
-        SELECT DISTINCT page FROM page_views WHERE created_at >= ? ORDER BY page
-    ", [$range_date]);
+        SELECT DISTINCT page FROM page_views WHERE created_at >= ? AND tenant_id = ? ORDER BY page
+    ", [$range_date, current_tenant_id()]);
     ?>
 
     <!-- Filters -->
@@ -590,8 +590,8 @@ require_once BASE_PATH . '/includes/header.php';
     <?php elseif ($tab === 'manage'): ?>
     <!-- ═══════════════ MANAGE ═══════════════ -->
     <?php
-    $total_all = (int) (db_fetch_one("SELECT COUNT(*) as c FROM page_views")['c'] ?? 0);
-    $oldest = db_fetch_one("SELECT MIN(created_at) as oldest FROM page_views");
+    $total_all = (int) (db_fetch_one("SELECT COUNT(*) as c FROM page_views WHERE tenant_id = ?", [current_tenant_id()])['c'] ?? 0);
+    $oldest = db_fetch_one("SELECT MIN(created_at) as oldest FROM page_views WHERE tenant_id = ?", [current_tenant_id()]);
     $oldest_date = $oldest['oldest'] ?? null;
     ?>
     <div class="act-card" style="max-width: 500px;">

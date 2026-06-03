@@ -4,7 +4,7 @@
  */
 
 $user = current_user();
-$is_archive = isset($_GET['archived']) && $_GET['archived'] === '1';
+$is_archive = (isset($_GET['archived']) && $_GET['archived'] === '1') || (($_GET['work_view'] ?? '') === 'archived');
 
 // Strict Access Control: Only admins can view Archive
 if ($is_archive && !is_admin()) {
@@ -17,7 +17,7 @@ $page = 'tickets';
 
 // Preserve current filter params for redirects after bulk actions
 $_redirect_params = [];
-foreach (['archived', 'status', 'priority', 'assignee', 'type', 'search', 'sort', 'view', 'tag', 'organization'] as $_fk) {
+foreach (['archived', 'work_view', 'status', 'priority', 'assignee', 'type', 'search', 'sort', 'view', 'tag', 'organization'] as $_fk) {
     if (isset($_GET[$_fk]) && $_GET[$_fk] !== '') $_redirect_params[$_fk] = $_GET[$_fk];
 }
 
@@ -339,6 +339,19 @@ if ($staff_scope) {
     $filters['assigned_to_staff'] = true;
 }
 
+$ticket_list_include_archive = is_admin();
+$ticket_list_view = ticket_list_view_from_request($_GET, $is_archive, $ticket_list_include_archive);
+$ticket_list_view_definitions = ticket_list_view_definitions($ticket_list_include_archive);
+$ticket_show_all_url = $is_archive
+    ? url('tickets', ['archived' => '1'])
+    : ticket_list_view_url('all', [], $ticket_list_include_archive);
+$ticket_clear_url = $is_archive
+    ? url('tickets', ['archived' => '1'])
+    : ticket_list_view_url($ticket_list_view, [], $ticket_list_include_archive);
+$ticket_list_count_filters = $filters;
+$ticket_list_view_counts = ticket_list_view_counts($ticket_list_count_filters, $ticket_list_include_archive);
+$filters = ticket_list_view_apply_filters($filters, $ticket_list_view);
+
 $total_tickets = get_tickets_count($filters);
 
 $tickets = get_tickets($filters);
@@ -398,7 +411,8 @@ $assignable_agents = [];
 if (is_agent()) {
     try {
         $assignable_agents = db_fetch_all(
-            "SELECT id, first_name, last_name FROM users WHERE role IN ('agent', 'admin') AND is_active = 1 ORDER BY first_name"
+            "SELECT id, first_name, last_name FROM users WHERE role IN ('agent', 'admin') AND is_active = 1 AND tenant_id = ? ORDER BY first_name",
+            [current_tenant_id()]
         ) ?: [];
     } catch (Exception $e) {
         $assignable_agents = [];
@@ -601,6 +615,52 @@ include BASE_PATH . '/includes/components/page-header.php';
 ?>
 
 <style>
+.ticket-view-tabs {
+    display: flex;
+    gap: 0.375rem;
+    overflow-x: auto;
+    padding: 0 0.25rem 0.75rem;
+    margin-top: -0.25rem;
+    -webkit-overflow-scrolling: touch;
+}
+.ticket-view-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border-light);
+    border-radius: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--surface-primary);
+    text-decoration: none;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.ticket-view-tab:hover {
+    color: var(--text-primary);
+    background: var(--surface-secondary);
+}
+.ticket-view-tab.is-active {
+    color: var(--primary);
+    border-color: color-mix(in srgb, var(--primary) 35%, var(--border-light));
+    background: var(--primary-soft);
+}
+.ticket-view-tab__count {
+    min-width: 1.55rem;
+    padding: 0.125rem 0.4rem;
+    border-radius: 999px;
+    background: var(--surface-secondary);
+    color: var(--text-muted);
+    text-align: center;
+    font-size: 0.6875rem;
+    font-weight: 800;
+}
+.ticket-view-tab.is-active .ticket-view-tab__count {
+    background: var(--surface-primary);
+    color: var(--primary);
+}
 /* Ticket ID — plain text, no pill */
 .ticket-code {
     font-size: 0.75rem;
@@ -1237,11 +1297,12 @@ foreach ($statuses as $status_item) {
         $is_closed_filter_active = true;
     }
 }
+$show_closed_tickets_inline = ticket_list_view_shows_closed_inline($ticket_list_view, $is_closed_filter_active);
 
 $active_statuses = [];
 $closed_statuses = [];
 foreach ($statuses as $status_item) {
-    if (!$is_closed_filter_active && !empty($status_item['is_closed'])) {
+    if (!$show_closed_tickets_inline && !empty($status_item['is_closed'])) {
         $closed_statuses[] = $status_item;
     } else {
         $active_statuses[] = $status_item;
@@ -1252,7 +1313,7 @@ $active_tickets = [];
 $closed_tickets = [];
 foreach ($tickets as $ticket_item) {
     $ticket_status = $statuses_by_id[(int) ($ticket_item['status_id'] ?? 0)] ?? null;
-    if (!$is_closed_filter_active && !empty($ticket_status['is_closed'])) {
+    if (!$show_closed_tickets_inline && !empty($ticket_status['is_closed'])) {
         $closed_tickets[] = $ticket_item;
     } else {
         $active_tickets[] = $ticket_item;
@@ -1308,7 +1369,7 @@ foreach ($tickets as $ticket_item) {
     $ticket_status = $statuses_by_id[$status_key] ?? null;
     $ticket_is_closed = !empty($ticket_item['is_closed']) || !empty($ticket_status['is_closed']);
 
-    if (!$is_closed_filter_active
+    if (!$show_closed_tickets_inline
         && $ticket_is_closed
         && function_exists('should_hide_closed_ticket_in_board')
         && should_hide_closed_ticket_in_board($ticket_item, $kanban_hide_closed_after_days)
@@ -1344,6 +1405,23 @@ foreach ($board_closed_statuses as $status_item) {
 ?>
 
 <!-- Tickets Table/List with Inline Filters -->
+<nav class="ticket-view-tabs" aria-label="<?php echo e(t('Ticket views')); ?>">
+    <?php foreach ($ticket_list_view_definitions as $view_key => $view_definition): ?>
+        <?php
+        $view_url = ticket_list_view_url($view_key, $_GET, $ticket_list_include_archive);
+        $is_active_view = $ticket_list_view === $view_key;
+        $view_count = (int) ($ticket_list_view_counts[$view_key] ?? 0);
+        ?>
+        <a href="<?php echo e($view_url); ?>"
+           class="ticket-view-tab <?php echo $is_active_view ? 'is-active' : ''; ?>"
+           aria-current="<?php echo $is_active_view ? 'page' : 'false'; ?>"
+           title="<?php echo e(t($view_definition['description'])); ?>">
+            <span><?php echo e(t($view_definition['label'])); ?></span>
+            <span class="ticket-view-tab__count"><?php echo e((string) $view_count); ?></span>
+        </a>
+    <?php endforeach; ?>
+</nav>
+
 <div class="card overflow-hidden <?php echo $ticket_view === 'board' ? 'kanban-board-wrapper' : ''; ?>">
     <?php if (empty($tickets)): ?>
         <?php
@@ -1360,8 +1438,8 @@ foreach ($board_closed_statuses as $status_item) {
         ?>
         <?php if ($empty_has_filters): ?>
             <div class="text-center mt-4">
-                <a href="<?php echo url('tickets', $is_archive ? ['archived' => '1'] : []); ?>"
-                   class="btn btn-outline btn-sm inline-flex items-center gap-1.5">
+                                <a href="<?php echo e($ticket_show_all_url); ?>"
+                                   class="btn btn-outline btn-sm inline-flex items-center gap-1.5">
                     <?php echo get_icon('list', 'w-4 h-4'); ?>
                     <?php echo e(t('Show all tickets')); ?>
                 </a>
@@ -1557,6 +1635,9 @@ foreach ($board_closed_statuses as $status_item) {
         <div class="block lg:hidden border-b px-4 py-3 glass" style="border-color: var(--border-light);">
             <form method="get" action="index.php" class="flex flex-wrap items-center gap-2">
                 <input type="hidden" name="page" value="tickets">
+                <?php if (!$is_archive && $ticket_list_view !== 'open'): ?>
+                    <input type="hidden" name="work_view" value="<?php echo e($ticket_list_view); ?>">
+                <?php endif; ?>
                 <?php if ($is_archive): ?>
                     <input type="hidden" name="archived" value="1">
                 <?php endif; ?>
@@ -1599,7 +1680,7 @@ foreach ($board_closed_statuses as $status_item) {
                 </select>
                 <button type="submit" class="btn btn-primary btn-xs"><?php echo get_icon('search', 'w-3 h-3'); ?></button>
                 <?php if ($has_filters): ?>
-                <a href="<?php echo url('tickets', $is_archive ? ['archived' => '1'] : []); ?>" class="btn btn-secondary btn-xs">
+                <a href="<?php echo e($ticket_clear_url); ?>" class="btn btn-secondary btn-xs">
                     <?php echo get_icon('x', 'w-3 h-3'); ?>
                 </a>
                 <?php endif; ?>
@@ -1733,6 +1814,9 @@ foreach ($board_closed_statuses as $status_item) {
         <!-- Desktop Table View with Inline Filters -->
         <form method="get" action="index.php" id="filter-form">
                 <input type="hidden" name="page" value="tickets">
+                <?php if (!$is_archive && $ticket_list_view !== 'open'): ?>
+                    <input type="hidden" name="work_view" value="<?php echo e($ticket_list_view); ?>">
+                <?php endif; ?>
                 <?php if ($is_archive): ?>
                     <input type="hidden" name="archived" value="1">
                 <?php endif; ?>
@@ -1761,7 +1845,7 @@ foreach ($board_closed_statuses as $status_item) {
                                         <div class="ticket-search-suggestions" id="ticket-search-suggestions"></div>
                                     </div>
                                     <?php if ($has_filters): ?>
-                                    <a href="<?php echo url('tickets', $is_archive ? ['archived' => '1'] : []); ?>"
+                                    <a href="<?php echo e($ticket_clear_url); ?>"
                                        class="inline-flex items-center justify-center w-6 h-6 rounded hover:text-red-500 hover:bg-red-50 transition-colors" style="color: var(--text-muted);" title="<?php echo e(t('Clear')); ?>">
                                         <?php echo get_icon('x', 'w-3.5 h-3.5'); ?>
                                     </a>

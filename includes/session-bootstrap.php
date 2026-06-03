@@ -99,6 +99,122 @@ if (!function_exists('foxdesk_request_host')) {
     }
 }
 
+if (!function_exists('foxdesk_host_without_port')) {
+    function foxdesk_host_without_port(string $host): string
+    {
+        $host = strtolower(foxdesk_sanitize_request_host($host));
+        if (preg_match('/^\[[0-9a-f:.]+\](?::[0-9]{1,5})?$/i', $host) === 1) {
+            return preg_replace('/:\d+$/', '', $host) ?: $host;
+        }
+
+        return preg_replace('/:\d+$/', '', $host) ?: $host;
+    }
+}
+
+if (!function_exists('foxdesk_env_value')) {
+    function foxdesk_env_value(string $name, string $default = ''): string
+    {
+        $value = getenv($name);
+        return $value !== false && trim((string) $value) !== '' ? trim((string) $value) : $default;
+    }
+}
+
+if (!function_exists('foxdesk_configured_host')) {
+    function foxdesk_configured_host(string $constant_name, string $env_name, string $default = ''): string
+    {
+        $value = '';
+        if (defined($constant_name)) {
+            $value = (string) constant($constant_name);
+        }
+        if ($value === '') {
+            $value = foxdesk_env_value($env_name, $default);
+        }
+        if ($value === '' && $constant_name === 'APP_HOST' && defined('APP_URL')) {
+            $value = (string) parse_url((string) APP_URL, PHP_URL_HOST);
+        }
+
+        return foxdesk_host_without_port($value);
+    }
+}
+
+if (!function_exists('foxdesk_workspace_host')) {
+    function foxdesk_workspace_host(): string
+    {
+        return foxdesk_configured_host('APP_HOST', 'APP_HOST', 'app.foxdesk.net');
+    }
+}
+
+if (!function_exists('foxdesk_platform_host')) {
+    function foxdesk_platform_host(): string
+    {
+        return foxdesk_configured_host('PLATFORM_HOST', 'PLATFORM_HOST', 'platform.foxdesk.net');
+    }
+}
+
+if (!function_exists('foxdesk_marketing_host')) {
+    function foxdesk_marketing_host(): string
+    {
+        return foxdesk_configured_host('APP_MARKETING_HOST', 'APP_MARKETING_HOST', 'foxdesk.net');
+    }
+}
+
+if (!function_exists('foxdesk_request_host_matches')) {
+    function foxdesk_request_host_matches(string $host): bool
+    {
+        return foxdesk_host_without_port(foxdesk_request_host()) === foxdesk_host_without_port($host);
+    }
+}
+
+if (!function_exists('foxdesk_is_platform_host')) {
+    function foxdesk_is_platform_host(): bool
+    {
+        return foxdesk_request_host_matches(foxdesk_platform_host());
+    }
+}
+
+if (!function_exists('foxdesk_is_workspace_host')) {
+    function foxdesk_is_workspace_host(): bool
+    {
+        $host = foxdesk_host_without_port(foxdesk_request_host());
+        return in_array($host, array_filter([
+            foxdesk_workspace_host(),
+            'app.foxdesk.org',
+            'app.foxdesk.net',
+            'localhost',
+            '127.0.0.1',
+        ]), true);
+    }
+}
+
+if (!function_exists('foxdesk_session_context')) {
+    function foxdesk_session_context(): string
+    {
+        if (foxdesk_is_platform_host()) {
+            return 'platform';
+        }
+        if (foxdesk_is_workspace_host()) {
+            return 'workspace';
+        }
+
+        return 'public';
+    }
+}
+
+if (!function_exists('foxdesk_session_cookie_name')) {
+    function foxdesk_session_cookie_name(): string
+    {
+        if (defined('FOXDESK_SESSION_COOKIE_NAME') && (string) FOXDESK_SESSION_COOKIE_NAME !== '') {
+            return preg_replace('/[^A-Za-z0-9_]/', '_', (string) FOXDESK_SESSION_COOKIE_NAME) ?: 'FOXDESKSESSID';
+        }
+
+        return match (foxdesk_session_context()) {
+            'platform' => 'FOXDESKPLATFORM',
+            'workspace' => 'FOXDESKWORKSPACE',
+            default => 'FOXDESKPUBLIC',
+        };
+    }
+}
+
 if (!function_exists('foxdesk_sanitize_request_host')) {
     function foxdesk_sanitize_request_host(string $host): string
     {
@@ -185,6 +301,7 @@ if (!function_exists('foxdesk_configure_session_cookie')) {
 
         $is_https = foxdesk_request_is_https();
         $session_lifetime = foxdesk_get_session_lifetime();
+        session_name(foxdesk_session_cookie_name());
 
         ini_set('session.use_strict_mode', '1');
         ini_set('session.use_only_cookies', '1');

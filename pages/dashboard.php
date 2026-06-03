@@ -33,6 +33,7 @@ if (!empty($_GET['tags'])) {
 
 $dashboard_data = get_dashboard_data($user, $dashboard_tags);
 extract($dashboard_data);
+$get_started = dashboard_get_started_state($user);
 
 // Max items displayed per widget list (default 5). "View all" shown when exceeded.
 $db_list_limit = 5;
@@ -130,6 +131,190 @@ require_once BASE_PATH . '/includes/header.php';
 ?>
 
 <style>
+    .db-onboarding {
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        background: var(--surface-primary);
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+        margin-bottom: 16px;
+        overflow: hidden;
+    }
+
+    .db-onboarding__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 20px 14px;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .db-onboarding__eyebrow {
+        color: var(--text-muted);
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+
+    .db-onboarding__title {
+        color: var(--text-primary);
+        font-size: 1.15rem;
+        font-weight: 800;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .db-onboarding__subtitle {
+        color: var(--text-secondary);
+        font-size: .875rem;
+        margin-top: 6px;
+        max-width: 54rem;
+    }
+
+    .db-onboarding__progress {
+        min-width: 138px;
+        text-align: right;
+        color: var(--text-secondary);
+        font-size: .8rem;
+        font-weight: 700;
+    }
+
+    .db-onboarding__bar {
+        width: 138px;
+        height: 7px;
+        margin-top: 8px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: var(--surface-tertiary, #e5e7eb);
+    }
+
+    .db-onboarding__bar span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--primary);
+    }
+
+    .db-onboarding__steps {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .db-onboarding__step {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        padding: 16px 18px;
+        border-right: 1px solid var(--border-light);
+    }
+
+    .db-onboarding__step:last-child {
+        border-right: 0;
+    }
+
+    .db-onboarding__status {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--primary) 12%, transparent);
+        color: var(--primary);
+        flex: 0 0 auto;
+    }
+
+    .db-onboarding__status.is-done {
+        background: rgba(16, 185, 129, .14);
+        color: #059669;
+    }
+
+    .db-onboarding__step-title {
+        color: var(--text-primary);
+        font-size: .95rem;
+        font-weight: 750;
+        line-height: 1.25;
+        margin: 0;
+    }
+
+    .db-onboarding__step-text {
+        color: var(--text-muted);
+        font-size: .8rem;
+        line-height: 1.45;
+        min-height: 38px;
+    }
+
+    .db-onboarding__link {
+        color: var(--primary);
+        font-size: .8rem;
+        font-weight: 750;
+        text-decoration: none;
+        margin-top: auto;
+    }
+
+    .db-onboarding__link:hover {
+        text-decoration: underline;
+    }
+
+    .db-onboarding__dismiss {
+        border: 0;
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: .8rem;
+        font-weight: 700;
+        padding: 0;
+    }
+
+    .db-onboarding__dismiss:hover {
+        color: var(--text-primary);
+    }
+
+    @media (max-width: 1100px) {
+        .db-onboarding__steps {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .db-onboarding__step:nth-child(2) {
+            border-right: 0;
+        }
+
+        .db-onboarding__step:nth-child(-n + 2) {
+            border-bottom: 1px solid var(--border-light);
+        }
+    }
+
+    @media (max-width: 640px) {
+        .db-onboarding__head {
+            display: grid;
+        }
+
+        .db-onboarding__progress {
+            min-width: 0;
+            text-align: left;
+        }
+
+        .db-onboarding__bar {
+            width: 100%;
+        }
+
+        .db-onboarding__steps {
+            grid-template-columns: 1fr;
+        }
+
+        .db-onboarding__step {
+            border-right: 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .db-onboarding__step:last-child {
+            border-bottom: 0;
+        }
+    }
+
     /* ─── Dashboard v2 — Grid Design System (3-col equal) ──────────────── */
     .db-grid {
         display: grid;
@@ -1031,6 +1216,51 @@ require_once BASE_PATH . '/includes/header.php';
         </div>
     </div>
 </div>
+
+<?php if (!empty($get_started['visible'])): ?>
+    <section class="db-onboarding" id="get-started" data-onboarding>
+        <div class="db-onboarding__head">
+            <div>
+                <div class="db-onboarding__eyebrow"><?php echo e(t('Get started')); ?></div>
+                <h2 class="db-onboarding__title"><?php echo e(t('Set up your FoxDesk workspace')); ?></h2>
+                <p class="db-onboarding__subtitle">
+                    <?php echo e(t('Finish the essentials first: ticket flow, email, team access, and billing state.')); ?>
+                </p>
+            </div>
+            <div class="db-onboarding__progress">
+                <button type="button" class="db-onboarding__dismiss" onclick="dismissGetStarted()" aria-label="<?php echo e(t('Hide get started')); ?>">
+                    <?php echo e(t('Hide')); ?>
+                </button>
+                <div class="mt-2">
+                    <?php echo e(t('{completed} of {total} done', [
+                        'completed' => (string) ($get_started['completed'] ?? 0),
+                        'total' => (string) ($get_started['total'] ?? 0),
+                    ])); ?>
+                </div>
+                <div class="db-onboarding__bar" aria-hidden="true">
+                    <span style="width: <?php echo (int) ($get_started['progress'] ?? 0); ?>%;"></span>
+                </div>
+            </div>
+        </div>
+        <div class="db-onboarding__steps">
+            <?php foreach (($get_started['steps'] ?? []) as $step): ?>
+                <?php $step_done = !empty($step['done']); ?>
+                <article class="db-onboarding__step" data-step="<?php echo e($step['key'] ?? ''); ?>">
+                    <div class="db-onboarding__status <?php echo $step_done ? 'is-done' : ''; ?>" aria-hidden="true">
+                        <?php echo $step_done ? get_icon('check', 'w-4 h-4') : get_icon('chevron-right', 'w-4 h-4'); ?>
+                    </div>
+                    <div>
+                        <h3 class="db-onboarding__step-title"><?php echo e($step['label'] ?? ''); ?></h3>
+                        <p class="db-onboarding__step-text"><?php echo e($step['description'] ?? ''); ?></p>
+                    </div>
+                    <a class="db-onboarding__link" href="<?php echo e($step['href'] ?? url('dashboard')); ?>">
+                        <?php echo e($step['cta'] ?? t('Open')); ?>
+                    </a>
+                </article>
+            <?php endforeach; ?>
+        </div>
+    </section>
+<?php endif; ?>
 
 <?php if ($is_admin && $_foxdesk_update_info): ?>
     <!-- Update Available Card -->
@@ -2346,6 +2576,25 @@ require_once BASE_PATH . '/includes/header.php';
             body: JSON.stringify({ layout: { order: order, hidden: hidden, sizes: sizes } })
         }).catch(function () { });
     }
+
+    window.dismissGetStarted = function() {
+        var panel = document.querySelector('[data-onboarding]');
+        if (panel) panel.style.display = 'none';
+        try {
+            localStorage.setItem('foxdesk_get_started_hidden', '1');
+        } catch (e) {}
+    };
+
+    (function() {
+        var panel = document.querySelector('[data-onboarding]');
+        if (!panel) return;
+        var forceShow = new URLSearchParams(window.location.search).has('signup');
+        try {
+            if (!forceShow && localStorage.getItem('foxdesk_get_started_hidden') === '1') {
+                panel.style.display = 'none';
+            }
+        } catch (e) {}
+    })();
 
     /* ─── Dashboard Notifications — mark-read, mark-all, filter ─── */
     window.dbNotifMarkRead = function(id) {

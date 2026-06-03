@@ -22,6 +22,10 @@ http://{$APP_HOST} {
     import foxdesk_proxy
 }
 
+http://{$PLATFORM_HOST} {
+    import foxdesk_proxy
+}
+
 http://{$APP_MARKETING_HOST} {
     import foxdesk_proxy
 }

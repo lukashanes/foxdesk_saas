@@ -821,17 +821,19 @@ if ($tab === 'email') {
     }
 
     // Load allowed senders for the allowlist UI
-    try {
-        $allowed_senders = db_fetch_all(
-            "SELECT s.*, CONCAT(u.first_name, ' ', u.last_name) AS user_name
-             FROM allowed_senders s
-             LEFT JOIN users u ON s.user_id = u.id
-             ORDER BY s.type, s.value"
-        );
-    } catch (Throwable $e) {
-        $allowed_senders = [];
-    }
-    $all_users = db_fetch_all("SELECT id, first_name, last_name, email FROM users WHERE is_active = 1 ORDER BY first_name, last_name");
+	    try {
+	        $allowed_senders = db_fetch_all(
+	            "SELECT s.*, CONCAT(u.first_name, ' ', u.last_name) AS user_name
+	             FROM allowed_senders s
+	             LEFT JOIN users u ON s.user_id = u.id AND u.tenant_id = s.tenant_id
+	             WHERE s.tenant_id = ?
+	             ORDER BY s.type, s.value",
+	            [current_tenant_id()]
+	        );
+	    } catch (Throwable $e) {
+	        $allowed_senders = [];
+	    }
+	    $all_users = db_fetch_all("SELECT id, first_name, last_name, email FROM users WHERE is_active = 1 AND tenant_id = ? ORDER BY first_name, last_name", [current_tenant_id()]);
 }
 
 // Get template language
@@ -1937,8 +1939,8 @@ include BASE_PATH . '/includes/components/page-header.php';
         );
         $health = ($show_health && function_exists('post_update_health_check')) ? post_update_health_check() : null;
         $mysql_version = db_fetch_one("SELECT VERSION() as v")['v'] ?? '-';
-        $user_count = db_fetch_one("SELECT COUNT(*) as c FROM users")['c'] ?? 0;
-        $ticket_count = db_fetch_one("SELECT COUNT(*) as c FROM tickets")['c'] ?? 0;
+        $user_count = db_fetch_one("SELECT COUNT(*) as c FROM users WHERE tenant_id = ?", [current_tenant_id()])['c'] ?? 0;
+        $ticket_count = db_fetch_one("SELECT COUNT(*) as c FROM tickets WHERE tenant_id = ?", [current_tenant_id()])['c'] ?? 0;
         $managed_update_channel = function_exists('is_managed_update_channel') && is_managed_update_channel();
         $remote_update = $managed_update_channel ? false : get_cached_update_info();
         $last_check = get_last_update_check_time();
@@ -1956,8 +1958,8 @@ include BASE_PATH . '/includes/components/page-header.php';
         if (!empty($backup_creator_ids)) {
             $creator_placeholders = implode(',', array_fill(0, count($backup_creator_ids), '?'));
             $creator_rows = db_fetch_all(
-                "SELECT id, first_name, last_name, email FROM users WHERE id IN ($creator_placeholders)",
-                array_values($backup_creator_ids)
+                "SELECT id, first_name, last_name, email FROM users WHERE tenant_id = ? AND id IN ($creator_placeholders)",
+                array_merge([current_tenant_id()], array_values($backup_creator_ids))
             );
             foreach ($creator_rows as $creator_row) {
                 $creator_name = trim((string) (($creator_row['first_name'] ?? '') . ' ' . ($creator_row['last_name'] ?? '')));
@@ -2580,8 +2582,8 @@ include BASE_PATH . '/includes/components/page-header.php';
         // Count users per role and their 2FA status
         $tfa_counts = [];
         foreach (['admin', 'agent', 'user'] as $_r) {
-            $total = (int) (db_fetch_one("SELECT COUNT(*) as c FROM users WHERE role = ? AND deleted_at IS NULL", [$_r])['c'] ?? 0);
-            $enabled = (int) (db_fetch_one("SELECT COUNT(*) as c FROM users WHERE role = ? AND totp_enabled = 1 AND deleted_at IS NULL", [$_r])['c'] ?? 0);
+            $total = (int) (db_fetch_one("SELECT COUNT(*) as c FROM users WHERE role = ? AND tenant_id = ? AND deleted_at IS NULL", [$_r, current_tenant_id()])['c'] ?? 0);
+            $enabled = (int) (db_fetch_one("SELECT COUNT(*) as c FROM users WHERE role = ? AND tenant_id = ? AND totp_enabled = 1 AND deleted_at IS NULL", [$_r, current_tenant_id()])['c'] ?? 0);
             $tfa_counts[$_r] = ['total' => $total, 'enabled' => $enabled, 'without' => $total - $enabled];
         }
         ?>

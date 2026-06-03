@@ -4,7 +4,10 @@
  */
 
 if (is_logged_in()) {
-    header('Location: index.php?page=' . (is_platform_admin() ? 'platform' : 'dashboard'));
+    $redirect_page = function_exists('foxdesk_authenticated_home_page')
+        ? foxdesk_authenticated_home_page()
+        : (is_platform_admin() ? 'platform' : 'dashboard');
+    header('Location: index.php?page=' . $redirect_page);
     exit;
 }
 
@@ -45,7 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 if (login($values['admin_email'], $password)) {
                     flash('Your 14-day FoxDesk trial is ready. No payment is needed until the trial ends.', 'success');
-                    header('Location: index.php?page=dashboard&signup=trial');
+                    $redirect_page = function_exists('foxdesk_authenticated_home_page') ? foxdesk_authenticated_home_page() : 'dashboard';
+                    header('Location: index.php?page=' . $redirect_page . '&signup=trial');
                     exit;
                 }
 

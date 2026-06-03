@@ -27,7 +27,13 @@ BILLING_CURRENCY=EUR
 BILLING_CLOUD_BASE_PRICE_CENTS=990
 BILLING_STORAGE_OVERAGE_PRICE_CENTS=190
 BILLING_INCLUDED_STORAGE_BYTES=1073741824
+BILLING_TRIAL_DAYS=14
+BILLING_TRIAL_GRACE_DAYS=3
+BILLING_PAST_DUE_GRACE_DAYS=7
 STRIPE_STORAGE_METER_EVENT_NAME=foxdesk_storage_extra_gb
+STRIPE_TAX_ENABLED=true
+STRIPE_TAX_ID_COLLECTION_ENABLED=true
+STRIPE_TAX_ID_COLLECTION_REQUIRED=
 STORAGE_DRIVER=r2
 R2_BUCKET=foxdesk-production
 ```
@@ -78,16 +84,20 @@ Required in Stripe live mode:
 - `STRIPE_WEBHOOK_SECRET`
 - `STRIPE_PRICE_CLOUD_BASE`
 - `STRIPE_PRICE_STORAGE_OVERAGE`
+- `STRIPE_TAX_ENABLED=true`
+- `STRIPE_TAX_ID_COLLECTION_ENABLED=true`
 
 Where:
 
 1. Stripe Dashboard.
 2. Developers -> API keys: copy live secret key.
 3. Product catalog: create `FoxDesk Cloud`.
-4. Add recurring base price: EUR 9.90/month launch price.
-5. Add recurring metered storage price: EUR 1.90 per extra GB/month.
+4. Add recurring base price: EUR 9.90/month launch price with tax behavior `exclusive`.
+5. Add recurring metered storage price: EUR 1.90 per extra GB/month with tax behavior `exclusive`.
 6. Developers -> Webhooks: endpoint `https://app.foxdesk.net/index.php?page=stripe-webhook`.
 7. Copy webhook signing secret.
+
+For EU VAT payers, enable Stripe Tax, set the product tax code to SaaS business use, and allow Tax ID updates in the Customer Portal. With exclusive tax behavior, VAT is added only when due; valid EU VAT IDs are handled as reverse charge/zero-rate where applicable.
 
 ## Still Optional For First Private Beta
 

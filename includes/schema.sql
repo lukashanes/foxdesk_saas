@@ -41,6 +41,33 @@ CREATE TABLE IF NOT EXISTS billing_trial_email_events (
     INDEX idx_trial_email_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS billing_stripe_events (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    event_id VARCHAR(255) NOT NULL,
+    event_type VARCHAR(120) NOT NULL,
+    tenant_id INT NULL,
+    status ENUM('pending', 'processed', 'ignored', 'failed') NOT NULL DEFAULT 'pending',
+    error_message TEXT NULL,
+    processed_at DATETIME NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_billing_stripe_event_id (event_id),
+    INDEX idx_billing_stripe_events_tenant (tenant_id),
+    INDEX idx_billing_stripe_events_status (status),
+    INDEX idx_billing_stripe_events_type (event_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS billing_usage_events (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
+    event_type VARCHAR(80) NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    metadata_json TEXT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_billing_usage_events_tenant_created (tenant_id, created_at),
+    INDEX idx_billing_usage_events_type_created (event_type, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Organizations table
 CREATE TABLE IF NOT EXISTS organizations (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -239,6 +266,26 @@ CREATE TABLE IF NOT EXISTS ticket_time_entries (
     INDEX idx_started (started_at),
     INDEX idx_ended (ended_at),
     INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Per-agent/client billable rate overrides for time reports
+CREATE TABLE IF NOT EXISTS agent_client_billable_rates (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
+    organization_id INT NOT NULL,
+    user_id INT NOT NULL,
+    billable_rate DECIMAL(10,2) NOT NULL DEFAULT 0,
+    notes TEXT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_agent_client_rate (tenant_id, organization_id, user_id),
+    INDEX idx_tenant_id (tenant_id),
+    INDEX idx_organization (organization_id),
+    INDEX idx_user (user_id),
+    INDEX idx_active (is_active),
+    FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Attachments table
@@ -585,6 +632,9 @@ CREATE TABLE IF NOT EXISTS email_ingest_logs (
     mailbox VARCHAR(120) NOT NULL,
     uid INT NOT NULL,
     message_id VARCHAR(255) NULL,
+    sender_email VARCHAR(255) NULL,
+    subject VARCHAR(255) NULL,
+    ticket_id INT NULL,
     status ENUM('processed','skipped','failed') NOT NULL,
     reason VARCHAR(100) NULL,
     error TEXT NULL,
@@ -592,6 +642,8 @@ CREATE TABLE IF NOT EXISTS email_ingest_logs (
     UNIQUE KEY uniq_mailbox_uid (mailbox, uid),
     INDEX idx_tenant_id (tenant_id),
     INDEX idx_message_id (message_id),
+    INDEX idx_sender_email (sender_email),
+    INDEX idx_ticket_id (ticket_id),
     INDEX idx_status_created (status, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -619,6 +671,78 @@ CREATE TABLE IF NOT EXISTS api_tokens (
     INDEX idx_user (user_id),
     INDEX idx_active (is_active),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Native mobile login challenges for TOTP verification
+CREATE TABLE IF NOT EXISTS mobile_auth_challenges (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
+    user_id INT NOT NULL,
+    challenge_hash CHAR(64) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    consumed_at DATETIME NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_mobile_challenge_hash (challenge_hash),
+    INDEX idx_tenant_id (tenant_id),
+    INDEX idx_user (user_id),
+    INDEX idx_expires (expires_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Native mobile sessions for iOS and future mobile clients
+CREATE TABLE IF NOT EXISTS mobile_sessions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
+    user_id INT NOT NULL,
+    platform VARCHAR(20) NOT NULL DEFAULT 'ios',
+    device_id VARCHAR(191) NULL,
+    device_name VARCHAR(255) NULL,
+    app_version VARCHAR(50) NULL,
+    access_token_hash CHAR(64) NOT NULL,
+    refresh_token_hash CHAR(64) NOT NULL,
+    token_prefix VARCHAR(16) NOT NULL,
+    access_expires_at DATETIME NOT NULL,
+    refresh_expires_at DATETIME NOT NULL,
+    revoked_at DATETIME NULL,
+    last_used_at DATETIME NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_mobile_access_token_hash (access_token_hash),
+    UNIQUE KEY uniq_mobile_refresh_token_hash (refresh_token_hash),
+    INDEX idx_tenant_id (tenant_id),
+    INDEX idx_user (user_id),
+    INDEX idx_device (device_id),
+    INDEX idx_access_expires (access_expires_at),
+    INDEX idx_refresh_expires (refresh_expires_at),
+    INDEX idx_revoked (revoked_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Native mobile device records for APNs registration
+CREATE TABLE IF NOT EXISTS mobile_devices (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
+    user_id INT NOT NULL,
+    mobile_session_id INT NULL,
+    platform VARCHAR(20) NOT NULL DEFAULT 'ios',
+    device_id VARCHAR(191) NULL,
+    device_name VARCHAR(255) NULL,
+    app_version VARCHAR(50) NULL,
+    apns_environment ENUM('sandbox', 'production') NOT NULL DEFAULT 'sandbox',
+    apns_token TEXT NOT NULL,
+    apns_token_hash CHAR(64) NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    last_registered_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_mobile_apns_token_hash (apns_token_hash),
+    INDEX idx_tenant_id (tenant_id),
+    INDEX idx_user (user_id),
+    INDEX idx_session (mobile_session_id),
+    INDEX idx_device (device_id),
+    INDEX idx_active (is_active),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (mobile_session_id) REFERENCES mobile_sessions(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Notifications table

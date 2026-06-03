@@ -42,6 +42,7 @@ $result = [
     'email_ingest' => null,
     'update_check' => null,
     'trial_expiration' => null,
+    'past_due_suspension' => null,
     'billing_usage' => null,
     'errors' => [],
 ];
@@ -106,6 +107,7 @@ try {
 // --- Stripe metered storage usage ---
 try {
     $result['trial_expiration'] = billing_expire_trials();
+    $result['past_due_suspension'] = billing_suspend_past_due_tenants();
     $result['trial_emails'] = billing_send_trial_reminders();
 } catch (Throwable $e) {
     $result['ok'] = false;
@@ -155,6 +157,9 @@ if (is_array($result['billing_usage'])) {
 if (is_array($result['trial_expiration'])) {
     echo '[maintenance] trial_expired=' . (int) ($result['trial_expiration']['expired'] ?? 0) . PHP_EOL;
 }
+if (is_array($result['past_due_suspension'])) {
+    echo '[maintenance] past_due_suspended=' . (int) ($result['past_due_suspension']['suspended'] ?? 0) . PHP_EOL;
+}
 
 if (!$result['ok']) {
     cli_scheduler_log('scheduler', 'error', 'Maintenance run failed', [
@@ -172,5 +177,6 @@ cli_scheduler_log('scheduler', 'info', 'Maintenance run completed', [
     'recurring_processed' => (int) $result['recurring_processed'],
     'email_ingest' => $result['email_ingest'],
     'update_check' => $result['update_check'],
+    'past_due_suspension' => $result['past_due_suspension'],
     'billing_usage' => $result['billing_usage'],
 ]);

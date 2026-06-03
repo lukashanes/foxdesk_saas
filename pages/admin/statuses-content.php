@@ -18,14 +18,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
 
         if (!empty($name)) {
             if ($position === 'start') {
-                db_query("UPDATE statuses SET sort_order = sort_order + 1");
+                $shift_params = [];
+                $shift_sql = "UPDATE statuses SET sort_order = sort_order + 1 WHERE 1=1";
+                $shift_sql .= admin_crud_tenant_filter('statuses', $shift_params);
+                db_query($shift_sql, $shift_params);
                 $new_order = 1;
             } elseif (is_numeric($position)) {
                 $after_id = (int) $position;
-                $after_status = get_status($after_id);
+                $after_status = admin_crud_fetch_record('statuses', $after_id);
                 if ($after_status) {
                     $new_order = $after_status['sort_order'] + 1;
-                    db_query("UPDATE statuses SET sort_order = sort_order + 1 WHERE sort_order > ?", [$after_status['sort_order']]);
+                    $shift_params = [$after_status['sort_order']];
+                    $shift_sql = "UPDATE statuses SET sort_order = sort_order + 1 WHERE sort_order > ?";
+                    $shift_sql .= admin_crud_tenant_filter('statuses', $shift_params);
+                    db_query($shift_sql, $shift_params);
                 } else {
                     $new_order = admin_crud_next_sort_order('statuses');
                 }
@@ -54,11 +60,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
         $color = $_POST['color'] ?? '#3b82f6';
 
         if (!empty($name) && $id > 0) {
-            db_update('statuses', [
+            admin_crud_update_record('statuses', $id, [
                 'name' => $name,
                 'color' => $color,
                 'is_closed' => isset($_POST['is_closed']) ? 1 : 0
-            ], 'id = ?', [$id]);
+            ]);
 
             flash(t('Status updated.'), 'success');
             redirect('admin', ['section' => 'settings', 'tab' => 'workflow']);
@@ -69,7 +75,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
     if (isset($_POST['delete_status'])) {
         $id = (int) $_POST['id'];
 
-        if (!admin_crud_delete_if_unused('statuses', $id, "SELECT COUNT(*) as count FROM tickets WHERE status_id = ?", [$id])) {
+        $usage_params = [$id];
+        $usage_sql = "SELECT COUNT(*) as count FROM tickets WHERE status_id = ?";
+        $usage_sql .= admin_crud_tenant_filter('tickets', $usage_params);
+
+        if (!admin_crud_delete_if_unused('statuses', $id, $usage_sql, $usage_params)) {
             flash(t('Cannot delete a status that is used by tickets.'), 'error');
         } else {
             flash(t('Status deleted.'), 'success');
@@ -81,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
     if (isset($_POST['set_default'])) {
         $id = (int) $_POST['id'];
         admin_crud_clear_default('statuses');
-        db_update('statuses', ['is_default' => 1], 'id = ?', [$id]);
+        admin_crud_update_record('statuses', $id, ['is_default' => 1]);
         flash(t('Default status set.'), 'success');
         redirect('admin', ['section' => 'settings', 'tab' => 'workflow']);
     }

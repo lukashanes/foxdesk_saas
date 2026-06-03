@@ -19,18 +19,57 @@ require_once __DIR__ . '/update-api.php';
 require_once __DIR__ . '/notification-handler.php';
 require_once __DIR__ . '/allowed-senders-handler.php';
 require_once __DIR__ . '/push-handler.php';
+require_once __DIR__ . '/app-handler.php';
+require_once __DIR__ . '/mobile-handler.php';
+
+/**
+ * Record tenant-level API volume for abuse monitoring.
+ */
+function api_record_usage_request($action) {
+    if (!function_exists('billing_record_usage_event') || !function_exists('is_logged_in') || !is_logged_in()) {
+        return;
+    }
+
+    try {
+        $user = function_exists('current_user') ? current_user() : null;
+        $tenant_id = (int) ($user['tenant_id'] ?? ($_SESSION['tenant_id'] ?? 0));
+        if ($tenant_id <= 0) {
+            return;
+        }
+
+        $auth = 'session';
+        if (!empty($GLOBALS['is_mobile_token_auth'])) {
+            $auth = 'mobile';
+        } elseif (!empty($GLOBALS['is_api_token_auth'])) {
+            $auth = 'api_token';
+        }
+
+        billing_record_usage_event($tenant_id, 'api.request', 1, [
+            'action' => (string) $action,
+            'method' => $_SERVER['REQUEST_METHOD'] ?? 'GET',
+            'auth' => $auth,
+        ]);
+    } catch (Throwable $e) {
+        error_log('api_record_usage_request failed: ' . $e->getMessage());
+    }
+}
 
 /**
  * Route API requests to appropriate handlers
  */
 function route_api_request($action) {
     // Define public actions that don't require authentication
-    $public_actions = [];
+    $public_actions = [
+        'mobile-login',
+        'mobile-verify-2fa',
+        'mobile-refresh',
+    ];
 
     // --- Bearer token authentication (for agent/external API access) ---
     // Token auth always takes priority for agent-* endpoints, even if a browser session exists.
     // This ensures API calls are attributed to the token owner (e.g. AI agent), not the logged-in admin.
     $GLOBALS['is_api_token_auth'] = false;
+    $GLOBALS['is_mobile_token_auth'] = false;
 
     if (is_api_token_request()) {
         $is_agent_endpoint = str_starts_with($action, 'agent-');
@@ -38,6 +77,12 @@ function route_api_request($action) {
             $token_user = authenticate_api_token();
             if ($token_user) {
                 $GLOBALS['is_api_token_auth'] = true;
+            } elseif (!$is_agent_endpoint && function_exists('authenticate_mobile_session')) {
+                $mobile_user = authenticate_mobile_session();
+                if ($mobile_user) {
+                    $GLOBALS['is_api_token_auth'] = true;
+                    $GLOBALS['is_mobile_token_auth'] = true;
+                }
             }
         }
     }
@@ -46,6 +91,8 @@ function route_api_request($action) {
     if (!in_array($action, $public_actions) && !is_logged_in()) {
         api_error('Unauthorized', 401);
     }
+
+    api_record_usage_request($action);
 
     // Route to appropriate handler
     $routes = [
@@ -102,6 +149,22 @@ function route_api_request($action) {
 
         // Search (command palette)
         'search-tickets' => 'api_search_tickets',
+        'global-search' => 'api_global_search',
+
+        // App shell contract for web/native clients
+        'app-shell' => 'api_app_shell',
+        'app-home' => 'api_app_home',
+        'app-ticket-detail' => 'api_app_ticket_detail',
+        'app-add-comment' => 'api_app_add_comment',
+
+        // Native mobile app auth and device registration
+        'mobile-login' => 'api_mobile_login',
+        'mobile-verify-2fa' => 'api_mobile_verify_2fa',
+        'mobile-refresh' => 'api_mobile_refresh',
+        'mobile-me' => 'api_mobile_me',
+        'mobile-logout' => 'api_mobile_logout',
+        'mobile-register-device' => 'api_mobile_register_device',
+        'mobile-unregister-device' => 'api_mobile_unregister_device',
 
         // Dashboard layout
         'save-dashboard-layout' => 'api_save_dashboard_layout',
@@ -159,4 +222,3 @@ function route_api_request($action) {
 
     api_error('Unknown action', 404);
 }
-
