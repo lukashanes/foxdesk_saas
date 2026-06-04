@@ -208,7 +208,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo e(t('Sign in')); ?> - <?php echo e($login_brand_name); ?></title>
     <link href="tailwind.min.css" rel="stylesheet">
-    <link href="theme.css" rel="stylesheet">
+    <link href="theme.css?v=<?php echo e((string) (@filemtime(BASE_PATH . '/theme.css') ?: APP_VERSION)); ?>" rel="stylesheet">
     <script>
         // Apply theme immediately to prevent flash
         (function () {
@@ -216,92 +216,26 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
             document.documentElement.setAttribute('data-theme', saved);
         })();
     </script>
-    <style>
-        .login-bg {
-            position: fixed;
-            inset: 0;
-            background: linear-gradient(135deg, var(--corp-slate-100) 0%, var(--corp-slate-50) 50%, #f0f4ff 100%);
-        }
-
-        [data-theme="dark"] .login-bg {
-            background: linear-gradient(135deg, var(--corp-slate-950) 0%, var(--corp-slate-900) 50%, #0c1929 100%);
-        }
-
-        .login-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            box-shadow:
-                0 25px 50px -12px rgba(0, 0, 0, 0.15),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        }
-
-        .login-logo {
-            background: linear-gradient(135deg, var(--corp-blue-500) 0%, var(--corp-blue-600) 100%);
-            box-shadow: 0 10px 40px -10px rgba(59, 130, 246, 0.5);
-        }
-
-        /* Modern Split Layout Fixes */
-        .split-layout {
-            display: flex;
-            min-height: 100vh;
-            margin: 0;
-            width: 100%;
-        }
-
-        .split-left {
-            display: none;
-        }
-
-        .split-right {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            position: relative;
-            background-color: var(--surface-primary);
-        }
-
-        @media (min-width: 1024px) {
-            .split-left {
-                display: flex;
-                width: 50%;
-                align-items: center;
-                justify-content: center;
-                position: relative;
-                overflow: hidden;
-                background-color: var(--corp-slate-900);
-                border-right: 1px solid var(--border-light);
-            }
-
-            .split-right {
-                width: 50%;
-            }
-        }
-    </style>
 </head>
 
 <body class="split-layout">
     <!-- Left Half: Dark Brand Area -->
-    <div class="split-left">
-        <div class="absolute inset-0 z-0">
-            <div class="absolute inset-0 bg-gradient-to-br from-[#3c50e0] to-[#1c2434] opacity-90"></div>
+    <div class="split-left login-brand-panel">
+        <div class="login-brand-bg">
+            <div class="login-brand-gradient"></div>
         </div>
-        <div class="relative z-10 text-center text-white p-12 max-w-lg">
+        <div class="login-brand-content">
             <?php $app_logo = get_setting('app_logo', ''); ?>
             <?php if ($app_logo): ?>
                 <img src="<?php echo e(upload_url($app_logo)); ?>" alt="<?php echo e($login_brand_name); ?>"
-                    class="w-24 h-24 rounded-full object-cover mx-auto mb-8 shadow-2xl ring-4 ring-white/10">
+                    class="login-logo-image">
             <?php else: ?>
-                <div
-                    class="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl bg-[#3c50e0] ring-4 ring-white/10">
-                    <span class="text-white text-4xl font-bold">F</span>
+                <div class="login-logo-fallback">
+                    <span>F</span>
                 </div>
             <?php endif; ?>
-            <h1 class="text-4xl font-bold mb-4"><?php echo e(t('Welcome to {app}', ['app' => $login_brand_name])); ?></h1>
-            <p class="text-slate-300 text-lg">
+            <h1 class="login-brand-title"><?php echo e(t('Welcome to {app}', ['app' => $login_brand_name])); ?></h1>
+            <p class="login-brand-subtitle">
                 <?php echo (function_exists('foxdesk_is_platform_host') && foxdesk_is_platform_host())
                     ? e('Sign in to operate hosted FoxDesk workspaces.')
                     : (foxdesk_is_app_host()
@@ -312,11 +246,10 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
     </div>
 
     <!-- Right Half: Form Area -->
-    <div class="split-right" style="position: relative;">
+    <div class="split-right login-form-panel">
         <!-- Theme Toggle -->
         <button onclick="toggleTheme()"
-            class="theme-toggle p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors bg-white shadow-sm border border-slate-200 lg:bg-transparent lg:shadow-none lg:border-transparent"
-            style="position: absolute; top: 1.5rem; right: 1.5rem; z-index: 50;"
+            class="theme-toggle login-theme-toggle"
             title="<?php echo e(t('Toggle theme')); ?>">
             <svg class="theme-toggle__icon theme-toggle__icon--light w-5 h-5 text-slate-500" fill="none"
                 stroke="currentColor" viewBox="0 0 24 24">
@@ -331,7 +264,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
             </svg>
         </button>
 
-        <div class="w-full max-w-sm animate-fade-in">
+        <div class="login-form-wrap animate-fade-in">
 
             <?php if (!empty($show_2fa_form) && !empty($_SESSION['2fa_pending'])): ?>
                 <?php
@@ -346,18 +279,18 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                 <!-- ═══ 2FA Code Entry Form ═══ -->
                 <div class="text-left mb-8">
                     <div class="flex items-center gap-3 mb-3">
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: var(--surface-secondary);">
-                            <svg class="w-5 h-5" style="color: var(--primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="login-icon-shell">
+                            <svg class="login-icon-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                             </svg>
                         </div>
                         <div>
-                            <h2 class="text-2xl font-bold" style="color: var(--text-primary);">
+                            <h2 class="login-form-title login-form-title--compact">
                                 <?php echo e(t('Two-factor authentication')); ?>
                             </h2>
                         </div>
                     </div>
-                    <p class="text-sm" style="color: var(--text-muted);">
+                    <p class="login-form-copy text-sm">
                         <?php echo e(t('Enter the 6-digit code from your authenticator app.')); ?>
                     </p>
                 </div>
@@ -372,28 +305,28 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                     <?php echo csrf_field(); ?>
                     <div class="space-y-5">
                         <div>
-                            <label class="block text-sm font-medium mb-1.5" style="color: var(--text-primary);">
+                            <label class="login-label block text-sm font-medium mb-1.5">
                                 <?php echo e(t('Verification code')); ?>
                             </label>
                             <input type="text" name="code" maxlength="9" pattern="[a-zA-Z0-9\-]{6,9}"
                                 inputmode="numeric" autocomplete="one-time-code"
-                                class="form-input w-full rounded-lg border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 text-center text-2xl tracking-[0.3em] font-mono focus:border-[#3c50e0] focus:ring-1 focus:ring-[#3c50e0]"
+                                class="form-input login-field w-full rounded-lg border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 text-center text-2xl tracking-[0.3em] font-mono focus:border-[#3c50e0] focus:ring-1 focus:ring-[#3c50e0]"
                                 placeholder="000000" required autofocus>
-                            <p class="text-xs mt-1.5" style="color: var(--text-muted);">
+                            <p class="login-form-copy text-xs mt-1.5">
                                 <?php echo e(t('Or enter a backup code (e.g. xxxx-xxxx)')); ?>
                             </p>
                         </div>
                     </div>
 
                     <button type="submit" name="verify_2fa" value="1"
-                        class="btn btn-primary w-full mt-6 py-2.5 text-base rounded-lg transition-transform active:scale-[0.98]">
+                        class="btn btn-primary login-submit w-full mt-6 py-2.5 text-base rounded-lg transition-transform active:scale-[0.98]">
                         <?php echo e(t('Verify')); ?>
                     </button>
                 </form>
 
                 <div class="flex items-center justify-center mt-6">
                     <a href="<?php echo url('login', ['cancel2fa' => '1']); ?>"
-                        class="text-sm transition-colors" style="color: var(--text-muted);">
+                        class="login-muted-link text-sm transition-colors">
                         &larr; <?php echo e(t('Back to sign in')); ?>
                     </a>
                 </div>
@@ -401,9 +334,9 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
             <?php else: ?>
                 <!-- ═══ Standard Login Form ═══ -->
                 <div class="text-left mb-8">
-                    <h2 class="text-3xl font-bold mb-2" style="color: var(--text-primary);"><?php echo e(t('Sign in')); ?>
+                    <h2 class="login-form-title text-3xl font-bold mb-2"><?php echo e(t('Sign in')); ?>
                     </h2>
-                    <p style="color: var(--text-muted);"><?php echo e((function_exists('foxdesk_is_platform_host') && foxdesk_is_platform_host()) ? 'Use your FoxDesk platform admin account.' : (foxdesk_is_app_host() ? 'Use the account from your FoxDesk workspace.' : t('Sign in to your account'))); ?></p>
+                    <p class="login-form-copy"><?php echo e((function_exists('foxdesk_is_platform_host') && foxdesk_is_platform_host()) ? 'Use your FoxDesk platform admin account.' : (foxdesk_is_app_host() ? 'Use the account from your FoxDesk workspace.' : t('Sign in to your account'))); ?></p>
                 </div>
 
                 <?php if ($error): ?>
@@ -431,17 +364,15 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                     <?php echo csrf_field(); ?>
                     <div class="space-y-5">
                         <div>
-                            <label class="block text-sm font-medium mb-1.5"
-                                style="color: var(--text-primary);"><?php echo e(t('Email')); ?></label>
+                            <label class="login-label block text-sm font-medium mb-1.5"><?php echo e(t('Email')); ?></label>
                             <input type="email" name="email" value="<?php echo e($_POST['email'] ?? ''); ?>"
-                                class="form-input w-full rounded-lg border-slate-300 dark:border-slate-700 bg-transparent px-4 py-2.5 focus:border-[#3c50e0] focus:ring-1 focus:ring-[#3c50e0]"
+                                class="form-input login-field w-full rounded-lg border-slate-300 dark:border-slate-700 bg-transparent px-4 py-2.5 focus:border-[#3c50e0] focus:ring-1 focus:ring-[#3c50e0]"
                                 autocomplete="username" inputmode="email" autocapitalize="none" required autofocus>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium mb-1.5"
-                                style="color: var(--text-primary);"><?php echo e(t('Password')); ?></label>
+                            <label class="login-label block text-sm font-medium mb-1.5"><?php echo e(t('Password')); ?></label>
                             <input type="password" name="password"
-                                class="form-input w-full rounded-lg border-slate-300 dark:border-slate-700 bg-transparent px-4 py-2.5 focus:border-[#3c50e0] focus:ring-1 focus:ring-[#3c50e0]"
+                                class="form-input login-field w-full rounded-lg border-slate-300 dark:border-slate-700 bg-transparent px-4 py-2.5 focus:border-[#3c50e0] focus:ring-1 focus:ring-[#3c50e0]"
                                 autocomplete="current-password" required>
                         </div>
                     </div>
@@ -449,37 +380,36 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                     <div class="flex items-center justify-between mt-4">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" name="remember_me" value="1" checked
-                                class="form-checkbox rounded" style="width: 16px; height: 16px;">
-                            <span class="text-sm" style="color: var(--text-secondary);"><?php echo e(t('Remember me')); ?></span>
+                                class="form-checkbox login-checkbox rounded">
+                            <span class="login-form-secondary text-sm"><?php echo e(t('Remember me')); ?></span>
                         </label>
                         <a href="<?php echo url('forgot-password', ['lang' => $current_lang]); ?>"
-                            class="text-sm font-medium transition-colors hover:text-[#3243bd]"
-                            style="color: var(--primary);">
+                            class="login-link text-sm font-medium transition-colors hover:text-[#3243bd]">
                             <?php echo e(t('Forgot password?')); ?>
                         </a>
                     </div>
 
                     <button type="submit"
-                        class="btn btn-primary w-full mt-6 py-2.5 text-base rounded-lg transition-transform active:scale-[0.98]">
+                        class="btn btn-primary login-submit w-full mt-6 py-2.5 text-base rounded-lg transition-transform active:scale-[0.98]">
                         <?php echo e(t('Sign in')); ?>
                     </button>
                 </form>
 
-                <div class="text-center text-sm mt-5" style="color: var(--text-muted);">
+                <div class="login-form-copy text-center text-sm mt-5">
                     Need a new FoxDesk?
-                    <a href="<?php echo url('cloud'); ?>#pricing" class="font-medium" style="color: var(--primary);">View Cloud plan</a>
+                    <a href="<?php echo url('cloud'); ?>#pricing" class="login-link font-medium">View Cloud plan</a>
                 </div>
 
-                <form method="get" class="flex flex-col items-center justify-center gap-2 mt-8">
+                <form method="get" class="login-language-form flex flex-col items-center justify-center gap-2 mt-8">
                     <?php foreach ($lang_params as $key => $value): ?>
                         <input type="hidden" name="<?php echo e($key); ?>" value="<?php echo e($value); ?>">
                     <?php endforeach; ?>
                     <div class="flex items-center justify-center gap-3 px-3 py-1.5 mt-4 mx-auto max-w-[fit-content]">
-                        <div class="text-[11px] uppercase tracking-wider font-semibold" style="color: var(--text-muted);">
+                        <div class="login-language-label text-[11px] uppercase tracking-wider font-semibold">
                             <?php echo e(t('Language')); ?></div>
                         <select id="lang-select" name="lang"
-                            class="bg-transparent text-sm border-none shadow-none focus:ring-0 cursor-pointer p-0 font-medium text-slate-700 dark:text-slate-300"
-                            style="min-width: 100px; padding-right: 0; outline: none;" onchange="this.form.submit()">
+                            class="login-language-select bg-transparent text-sm border-none shadow-none focus:ring-0 cursor-pointer p-0 font-medium text-slate-700 dark:text-slate-300"
+                            onchange="this.form.submit()">
                             <?php foreach ($lang_options as $code => $label): ?>
                                 <option value="<?php echo e($code); ?>" <?php echo $code === $current_lang ? 'selected' : ''; ?>>
                                     <?php echo e($label); ?>
@@ -490,7 +420,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                 </form>
             <?php endif; ?>
 
-            <p class="text-center text-xs mt-8" style="color: var(--text-muted);">
+            <p class="login-footer text-center text-xs mt-8">
                 &copy; <?php echo date('Y'); ?> <?php echo e($login_brand_name); ?>
             </p>
         </div>

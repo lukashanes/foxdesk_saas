@@ -2224,6 +2224,214 @@ min-height: 48px;
 border-radius: var(--radius-lg);
 font-size: 1rem;
 }
+
+/* CSP-safe login layout. Production blocks inline styles, so all critical
+   positioning, colors, and split-panel behavior must live in this stylesheet. */
+body.split-layout {
+display: flex !important;
+width: 100%;
+min-height: 100vh;
+margin: 0;
+padding: 0;
+overflow-x: hidden;
+background: var(--surface-primary);
+animation: none !important;
+transform: none !important;
+letter-spacing: 0;
+}
+.split-left {
+display: none;
+}
+.split-right {
+position: relative;
+display: flex;
+align-items: center;
+justify-content: center;
+width: 100%;
+min-height: 100vh;
+padding: clamp(1.25rem, 4vw, 2rem);
+background: var(--surface-primary);
+}
+.login-brand-panel {
+background: var(--corp-slate-950);
+color: #fff;
+overflow: hidden;
+}
+.login-brand-bg {
+position: absolute;
+inset: 0;
+z-index: 0;
+}
+.login-brand-gradient {
+position: absolute;
+inset: 0;
+background:
+radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.55), transparent 36%),
+linear-gradient(135deg, #3c50e0 0%, #1c2434 68%, #0f172a 100%);
+opacity: 0.95;
+}
+.login-brand-content {
+position: relative;
+z-index: 1;
+width: min(100%, 32rem);
+padding: clamp(2rem, 6vw, 3rem);
+text-align: center;
+color: #fff;
+}
+.login-logo-image,
+.login-logo-fallback {
+width: 6rem;
+height: 6rem;
+margin: 0 auto 2rem;
+border-radius: 999px;
+box-shadow: 0 24px 60px -24px rgba(15, 23, 42, 0.75);
+}
+.login-logo-image {
+display: block;
+object-fit: cover;
+border: 4px solid rgba(255, 255, 255, 0.12);
+}
+.login-logo-fallback {
+display: flex;
+align-items: center;
+justify-content: center;
+background: linear-gradient(135deg, var(--corp-blue-500) 0%, var(--corp-blue-600) 100%);
+border: 4px solid rgba(255, 255, 255, 0.12);
+}
+.login-logo-fallback span {
+color: #fff;
+font-size: 2.25rem;
+font-weight: 800;
+line-height: 1;
+}
+.login-brand-title {
+margin: 0 0 1rem;
+font-size: clamp(2rem, 4vw, 3rem);
+font-weight: 800;
+line-height: 1.08;
+letter-spacing: 0;
+color: #fff;
+}
+.login-brand-subtitle {
+margin: 0;
+font-size: 1.125rem;
+line-height: 1.7;
+color: rgba(226, 232, 240, 0.9);
+}
+.login-form-wrap {
+width: min(100%, 24rem);
+max-width: 24rem;
+}
+.login-form-title {
+color: var(--text-primary);
+letter-spacing: 0;
+}
+.login-form-title--compact {
+font-size: 1.5rem;
+font-weight: 800;
+line-height: 1.2;
+}
+.login-form-copy,
+.login-form-secondary,
+.login-footer,
+.login-language-label {
+color: var(--text-muted);
+}
+.login-form-secondary {
+color: var(--text-secondary);
+}
+.login-label {
+color: var(--text-primary);
+}
+.login-link {
+color: var(--primary);
+}
+.login-link:hover {
+color: var(--primary-hover);
+}
+.login-muted-link {
+color: var(--text-muted);
+}
+.login-muted-link:hover {
+color: var(--text-primary);
+}
+.login-field.form-input {
+min-height: 3rem !important;
+background: var(--surface-primary);
+color: var(--text-primary);
+}
+.login-checkbox {
+width: 1rem;
+height: 1rem;
+}
+.login-submit.btn {
+min-height: 3rem !important;
+}
+.login-language-select {
+min-width: 100px;
+padding-right: 0;
+outline: none;
+color: var(--text-primary);
+}
+.login-icon-shell {
+display: flex;
+align-items: center;
+justify-content: center;
+width: 2.5rem;
+height: 2.5rem;
+border-radius: 999px;
+background: var(--surface-secondary);
+}
+.login-icon-primary {
+width: 1.25rem;
+height: 1.25rem;
+color: var(--primary);
+}
+.login-theme-toggle {
+position: absolute;
+top: 1.5rem;
+right: 1.5rem;
+z-index: 50;
+display: inline-flex;
+align-items: center;
+justify-content: center;
+width: 2.75rem;
+height: 2.75rem;
+padding: 0;
+border: 1px solid var(--border-light);
+border-radius: 999px;
+background: var(--surface-primary);
+box-shadow: var(--shadow-sm);
+color: var(--text-secondary);
+overflow: hidden;
+}
+[data-theme="dark"] .login-theme-toggle {
+background: var(--surface-secondary);
+border-color: var(--border-light);
+}
+@media (min-width: 1024px) {
+.split-left {
+display: flex;
+position: relative;
+align-items: center;
+justify-content: center;
+width: 50%;
+min-height: 100vh;
+border-right: 1px solid var(--border-light);
+}
+.split-right {
+width: 50%;
+}
+}
+@media (max-width: 1023px) {
+body.split-layout {
+display: block !important;
+min-height: 100vh;
+}
+.split-right {
+min-height: 100vh;
+}
+}
 .page-header {
 border-bottom: 1px solid var(--border-light);
 padding-bottom: 0.5rem;

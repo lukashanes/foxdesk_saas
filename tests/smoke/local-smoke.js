@@ -14,6 +14,45 @@ async function expectText(page, text) {
   }
 }
 
+async function expectLoginLayout(page) {
+  const layout = await page.evaluate(() => {
+    const body = document.body;
+    const left = document.querySelector('.split-left');
+    const right = document.querySelector('.split-right');
+    const form = document.querySelector('.login-form-wrap');
+    const email = document.querySelector('input[name="email"]');
+    const rect = (element) => {
+      const bounds = element.getBoundingClientRect();
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+    };
+
+    return {
+      viewportWidth: window.innerWidth,
+      bodyDisplay: getComputedStyle(body).display,
+      leftDisplay: left ? getComputedStyle(left).display : null,
+      rightDisplay: right ? getComputedStyle(right).display : null,
+      formRect: form ? rect(form) : null,
+      emailRect: email ? rect(email) : null
+    };
+  });
+
+  if (layout.bodyDisplay !== 'flex') {
+    throw new Error(`Login body layout is broken: expected flex, got ${layout.bodyDisplay}`);
+  }
+  if (layout.viewportWidth >= 1024 && layout.leftDisplay !== 'flex') {
+    throw new Error(`Desktop login brand panel is hidden or unstyled: ${layout.leftDisplay}`);
+  }
+  if (layout.rightDisplay !== 'flex') {
+    throw new Error(`Login form panel is not centered with flex: ${layout.rightDisplay}`);
+  }
+  if (!layout.formRect || layout.formRect.x < layout.viewportWidth * 0.55) {
+    throw new Error(`Login form is not in the right panel: ${JSON.stringify(layout.formRect)}`);
+  }
+  if (!layout.emailRect || layout.emailRect.width < 300 || layout.emailRect.height < 40) {
+    throw new Error(`Login email field is not usable: ${JSON.stringify(layout.emailRect)}`);
+  }
+}
+
 (async () => {
   const health = await fetch(`${baseURL}/index.php?page=health`);
   if (!health.ok) throw new Error(`Health check failed: ${health.status}`);
@@ -26,11 +65,19 @@ async function expectText(page, text) {
   const page = await browser.newPage({ baseURL, acceptDownloads: true });
 
   await page.goto('/index.php?page=login');
+  await expectLoginLayout(page);
   await page.locator('input[name="email"]').fill(email);
   await page.locator('input[name="password"]').fill(password);
   await page.locator('button[type="submit"]').click();
-  await page.waitForURL(/page=platform|page=dashboard|dashboard/);
-  await expectText(page, page.url().includes('page=platform') ? 'Workspace catalog' : 'Dashboard');
+  await page.waitForURL(/page=platform|page=work|page=dashboard|dashboard/);
+  const signedInUrl = page.url();
+  if (signedInUrl.includes('page=platform')) {
+    await expectText(page, 'Workspace catalog');
+  } else if (signedInUrl.includes('page=work')) {
+    await expectText(page, 'Work queues');
+  } else {
+    await expectText(page, 'Dashboard');
+  }
 
   const attachmentPath = path.join(os.tmpdir(), 'foxdesk-local-smoke.txt');
   fs.writeFileSync(attachmentPath, 'hello from local smoke\n');
