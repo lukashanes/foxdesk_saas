@@ -4,9 +4,24 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const baseURL = process.env.FOXDESK_LOCAL_URL || 'http://127.0.0.1:8090';
-const email = process.env.FOXDESK_LOCAL_ADMIN_EMAIL || 'admin@example.test';
-const password = process.env.FOXDESK_LOCAL_ADMIN_PASSWORD || 'AdminPass123!';
+const mode = process.env.FOXDESK_CUTOVER_MODE || 'local';
+const isLocalMode = mode === 'local';
+const isProductionMode = mode === 'production';
+const baseURL = process.env.FOXDESK_CUTOVER_BASE_URL ||
+  process.env.FOXDESK_LOCAL_URL ||
+  (isProductionMode ? 'https://app.foxdesk.net' : 'http://127.0.0.1:8090');
+const email = process.env.FOXDESK_CUTOVER_ADMIN_EMAIL ||
+  process.env.FOXDESK_LOCAL_ADMIN_EMAIL ||
+  (isLocalMode ? 'admin@example.test' : '');
+const password = process.env.FOXDESK_CUTOVER_ADMIN_PASSWORD ||
+  process.env.FOXDESK_LOCAL_ADMIN_PASSWORD ||
+  (isLocalMode ? 'AdminPass123!' : '');
+const allowMutation = isLocalMode || process.env.FOXDESK_CUTOVER_ALLOW_MUTATION === '1';
+const prepareFixtures = isLocalMode && process.env.FOXDESK_CUTOVER_PREPARE_FIXTURES !== '0';
+const requireSearchCounts = prepareFixtures || process.env.FOXDESK_CUTOVER_REQUIRE_SEARCH_COUNTS === '1';
+const searchQuery = process.env.FOXDESK_CUTOVER_SEARCH_QUERY ||
+  (prepareFixtures ? 'Cutover searchable' : '');
+const reportTimeRange = process.env.FOXDESK_CUTOVER_REPORT_TIME_RANGE || 'last_month';
 const screenshotRoot = process.env.FOXDESK_CUTOVER_SCREENSHOT_DIR ||
   path.join(os.tmpdir(), `foxdesk-cutover-gate-${new Date().toISOString().replace(/[:.]/g, '-')}`);
 
@@ -22,6 +37,18 @@ function record(name) {
   checks.push(name);
 }
 
+function validateConfig() {
+  if (!['local', 'production'].includes(mode)) {
+    throw new Error(`FOXDESK_CUTOVER_MODE must be "local" or "production"; got "${mode}"`);
+  }
+  if (!email || !password) {
+    throw new Error('Set FOXDESK_CUTOVER_ADMIN_EMAIL and FOXDESK_CUTOVER_ADMIN_PASSWORD for this cutover gate run.');
+  }
+  if (!searchQuery) {
+    throw new Error('Set FOXDESK_CUTOVER_SEARCH_QUERY to a term that should be searchable in the target workspace.');
+  }
+}
+
 function runDockerPhp(code) {
   return execFileSync('docker', ['exec', 'foxdesk-saas-local-app', 'php', '-r', code], {
     encoding: 'utf8',
@@ -29,7 +56,7 @@ function runDockerPhp(code) {
   });
 }
 
-async function waitForLocalHealth() {
+async function waitForHealth() {
   const started = Date.now();
   while (Date.now() - started < 60_000) {
     try {
@@ -44,7 +71,7 @@ async function waitForLocalHealth() {
     } catch (_) {}
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
-  throw new Error(`Local FoxDesk health check did not pass at ${baseURL}`);
+  throw new Error(`FoxDesk health check did not pass at ${baseURL}`);
 }
 
 function ensureSearchFixtures() {
@@ -356,21 +383,29 @@ async function expectNewTicketFlow(page) {
 }
 
 async function expectGlobalSearch(page) {
-  const response = await page.request.get('/index.php?page=api&action=global-search&q=Cutover%20searchable&limit=8');
+  const response = await page.request.get(`/index.php?page=api&action=global-search&q=${encodeURIComponent(searchQuery)}&limit=8`);
   if (!response.ok()) {
     throw new Error(`Global search API failed: HTTP ${response.status()}`);
   }
   const json = await response.json();
   const sections = json.sections || {};
+  const expectedSections = ['open_tickets', 'done_tickets', 'archived_tickets', 'clients', 'contacts', 'reports'];
+  const missingSections = expectedSections.filter(section => !Object.prototype.hasOwnProperty.call(sections, section));
   const counts = {
     open: sections.open_tickets?.items?.length || 0,
     done: sections.done_tickets?.items?.length || 0,
     archived: sections.archived_tickets?.items?.length || 0,
+    clients: sections.clients?.items?.length || 0,
+    contacts: sections.contacts?.items?.length || 0,
+    reports: sections.reports?.items?.length || 0,
   };
-  if (json.success !== true || counts.open < 1 || counts.done < 1 || counts.archived < 1) {
-    throw new Error(`Global search did not return open/done/archived fixtures: ${JSON.stringify({ success: json.success, counts, keys: Object.keys(sections) })}`);
+  if (json.success !== true || missingSections.length > 0) {
+    throw new Error(`Global search response is incomplete: ${JSON.stringify({ success: json.success, counts, missingSections, keys: Object.keys(sections) })}`);
   }
-  record(`global search ${JSON.stringify(counts)}`);
+  if (requireSearchCounts && (counts.open < 1 || counts.done < 1 || counts.archived < 1)) {
+    throw new Error(`Global search did not return open/done/archived matches for "${searchQuery}": ${JSON.stringify({ counts, keys: Object.keys(sections) })}`);
+  }
+  record(`global search "${searchQuery}" ${JSON.stringify(counts)}`);
 }
 
 async function expectReports(page) {
@@ -386,7 +421,11 @@ async function expectReports(page) {
     throw new Error('Reports billing review has no client option.');
   }
   await page.locator('.reporting-flow-card select[name="organizations[]"]').selectOption(orgOption);
-  await page.locator('.reporting-flow-card select[name="time_range"]').selectOption('last_month');
+  const rangeSelect = page.locator('.reporting-flow-card select[name="time_range"]');
+  const hasRequestedRange = await rangeSelect.locator(`option[value="${reportTimeRange}"]`).count();
+  if (hasRequestedRange) {
+    await rangeSelect.selectOption(reportTimeRange);
+  }
   await Promise.all([
     page.waitForURL(/tab=detailed/),
     page.locator('.reporting-flow-card button[type="submit"]').click(),
@@ -452,7 +491,11 @@ async function runViewport(browser, viewport) {
   await expectTicketDetail(page, viewport.name);
   await expectSettings(page, viewport.name);
   if (!viewport.isMobile) {
-    await expectNewTicketFlow(page);
+    if (allowMutation) {
+      await expectNewTicketFlow(page);
+    } else {
+      record('new ticket create/upload/download skipped in read-only mode');
+    }
     await expectGlobalSearch(page);
     await expectReports(page);
   }
@@ -461,8 +504,13 @@ async function runViewport(browser, viewport) {
 }
 
 (async () => {
-  await waitForLocalHealth();
-  ensureSearchFixtures();
+  validateConfig();
+  await waitForHealth();
+  if (prepareFixtures) {
+    ensureSearchFixtures();
+  } else {
+    record('fixture preparation skipped');
+  }
 
   const browser = await chromium.launch();
   try {
@@ -475,7 +523,13 @@ async function runViewport(browser, viewport) {
 
   console.log(JSON.stringify({
     status: 'passed',
+    mode,
     baseURL,
+    allowMutation,
+    prepareFixtures,
+    requireSearchCounts,
+    searchQuery,
+    reportTimeRange,
     checks,
     screenshots,
   }, null, 2));

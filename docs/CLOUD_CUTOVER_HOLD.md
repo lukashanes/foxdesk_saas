@@ -64,6 +64,38 @@ screenshots under `/tmp/foxdesk-cutover-gate-*`.
 This gate does not lift the hold by itself. The hold is lifted only after the
 same checklist also passes against the real production workspace.
 
+## Milestone 3 Production Cutover Gate
+
+Run the same logged-in gate against the production SaaS workspace before
+redirecting any live self-hosted domain:
+
+```bash
+FOXDESK_CUTOVER_ADMIN_EMAIL="operator@example.com" \
+FOXDESK_CUTOVER_ADMIN_PASSWORD="..." \
+FOXDESK_CUTOVER_SEARCH_QUERY="A real ticket/client/report term" \
+npm run prod:cutover:gate
+```
+
+Production mode is read-only by default. It verifies health, login, Work, Inbox,
+ticket list, ticket detail, settings, global search, and report review without
+creating a ticket or uploading an attachment.
+
+Run the full production gate only when a real workspace can safely receive a QA
+ticket and attachment:
+
+```bash
+FOXDESK_CUTOVER_ADMIN_EMAIL="operator@example.com" \
+FOXDESK_CUTOVER_ADMIN_PASSWORD="..." \
+FOXDESK_CUTOVER_SEARCH_QUERY="A real ticket/client/report term" \
+FOXDESK_CUTOVER_ALLOW_MUTATION=1 \
+npm run prod:cutover:gate
+```
+
+The hold can be lifted only after the production gate passes with
+`FOXDESK_CUTOVER_ALLOW_MUTATION=1`, the captured screenshots are reviewed, and
+the imported workspace still has correct users, clients, tickets, attachments,
+reports, billing state, and email settings.
+
 ## Explicit Non-Goals During Hold
 
 - Do not redirect `helpdesk.aenze.com` to SaaS.
