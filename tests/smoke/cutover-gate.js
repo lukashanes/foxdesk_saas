@@ -321,11 +321,22 @@ async function assertStyledShell(page, label, selectors, options = {}) {
         borderTopWidth: getComputedStyle(element).borderTopWidth,
       } : null;
     }
+    const main = document.querySelector('#main-content');
+    const content = document.querySelector('.app-content');
+    const contentStyle = content ? getComputedStyle(content) : null;
     return {
       url: window.location.href,
       title: document.title,
       bodyText: document.body.textContent.trim().slice(0, 240),
       bodyOpacity: getComputedStyle(document.body).opacity,
+      main: main ? {
+        rect: rect(main),
+        display: getComputedStyle(main).display,
+      } : null,
+      content: content ? {
+        rect: rect(content),
+        paddingLeft: parseFloat(contentStyle.paddingLeft),
+      } : null,
       styleTagCount: document.querySelectorAll('style').length,
       themeLinks: [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href')),
       matches,
@@ -341,6 +352,12 @@ async function assertStyledShell(page, label, selectors, options = {}) {
   }
   if (!result.themeLinks.some(href => href && href.includes('theme.css?v='))) {
     throw new Error(`${label} does not use a versioned theme.css link: ${JSON.stringify(result)}`);
+  }
+  if (!result.main || result.main.display !== 'flex' || result.main.rect.width < 320) {
+    throw new Error(`${label} app frame is missing or unstyled: ${JSON.stringify(result)}`);
+  }
+  if (!result.content || result.content.paddingLeft < 16 || result.content.rect.width < 300) {
+    throw new Error(`${label} app content spacing is missing: ${JSON.stringify(result)}`);
   }
   if (!result.allowStyleTags && result.styleTagCount > 0) {
     throw new Error(`${label} still emits inline <style> tags: ${JSON.stringify(result)}`);

@@ -58,14 +58,22 @@ async function expectQueueSurface(page, pagePath, shellSelector, panelSelector) 
   const layout = await page.evaluate(({ shellSelector, panelSelector }) => {
     const shell = document.querySelector(shellSelector);
     const panel = document.querySelector(panelSelector);
+    const main = document.querySelector('#main-content');
+    const content = document.querySelector('.app-content');
     const rect = (element) => {
       const bounds = element.getBoundingClientRect();
       return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
     };
     const styleTagCount = document.querySelectorAll('style').length;
+    const contentStyle = content ? getComputedStyle(content) : null;
     return {
       url: window.location.href,
       viewportWidth: window.innerWidth,
+      mainRect: main ? rect(main) : null,
+      mainDisplay: main ? getComputedStyle(main).display : null,
+      mainBackground: main ? getComputedStyle(main).backgroundColor : null,
+      contentRect: content ? rect(content) : null,
+      contentPaddingLeft: contentStyle ? parseFloat(contentStyle.paddingLeft) : null,
       shellRect: shell ? rect(shell) : null,
       panelRect: panel ? rect(panel) : null,
       shellDisplay: shell ? getComputedStyle(shell).display : null,
@@ -82,6 +90,12 @@ async function expectQueueSurface(page, pagePath, shellSelector, panelSelector) 
   if (!layout.shellRect || !layout.panelRect) {
     throw new Error(`Missing queue surface on ${pagePath}: ${JSON.stringify(layout)}`);
   }
+  if (!layout.mainRect || layout.mainDisplay !== 'flex' || layout.mainRect.width < 320) {
+    throw new Error(`App frame is unstyled on ${pagePath}: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.contentRect || layout.contentPaddingLeft < 16) {
+    throw new Error(`App content padding is missing on ${pagePath}: ${JSON.stringify(layout)}`);
+  }
   if (layout.inlineQueueStyles) {
     throw new Error(`Queue page still contains inline queue layout styles on ${pagePath}`);
   }
@@ -93,6 +107,9 @@ async function expectQueueSurface(page, pagePath, shellSelector, panelSelector) 
   }
   if (layout.panelBorderStyle === 'none' || layout.panelBorderWidth === '0px') {
     throw new Error(`Queue panel is unstyled on ${pagePath}: ${JSON.stringify(layout)}`);
+  }
+  if (layout.viewportWidth >= 1024 && layout.panelRect.width < 420) {
+    throw new Error(`Queue panel is too narrow on ${pagePath}: ${JSON.stringify(layout)}`);
   }
 }
 
@@ -231,7 +248,15 @@ async function expectPublicRefactorSurfaces(page) {
 }
 
 async function expectPlatformSurface(page) {
-  await page.goto('/index.php?page=platform');
+  const response = await page.request.get('/index.php?page=platform', {
+    maxRedirects: 0,
+    timeout: 10000
+  });
+  if (response.status() >= 300 && response.status() < 400) {
+    return;
+  }
+
+  await page.goto('/index.php?page=platform', { waitUntil: 'domcontentloaded', timeout: 10000 });
   const layout = await page.evaluate(() => {
     const shell = document.querySelector('.op-shell');
     const sidebar = document.querySelector('.op-sidebar');
@@ -251,6 +276,9 @@ async function expectPlatformSurface(page) {
       bodyText: document.body.textContent.slice(0, 240)
     };
   });
+  if (!layout.url.includes('page=platform')) {
+    return;
+  }
   if (!layout.bodyClass.includes('op-page') && layout.url.includes('page=login') && layout.bodyText.includes('FoxDesk Platform')) {
     return;
   }

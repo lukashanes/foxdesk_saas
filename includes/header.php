@@ -121,7 +121,8 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
 
     <link href="tailwind.min.css?v=<?php echo APP_VERSION; ?>" rel="stylesheet">
 
-    <link href="theme.css?v=<?php echo APP_VERSION; ?>" rel="stylesheet">
+    <?php $theme_asset_version = (string) APP_VERSION . '-' . (string) (@filemtime(BASE_PATH . '/theme.css') ?: '0'); ?>
+    <link href="theme.css?v=<?php echo e($theme_asset_version); ?>" rel="stylesheet">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
     <script defer src="assets/js/app-header.js?v=<?php echo APP_VERSION; ?>"></script>
     <script defer src="assets/js/shortcuts.js?v=<?php echo APP_VERSION; ?>"></script>
@@ -1267,6 +1268,6 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
         <?php endif; ?>
 
         <!-- Page Content -->
-        <div class="p-2 lg:p-3 xl:p-4">
+        <div class="app-content">
 
             <!-- JS moved to assets/js/app-header.js (defer) -->
