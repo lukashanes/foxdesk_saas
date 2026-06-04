@@ -24,6 +24,7 @@ const searchQuery = process.env.FOXDESK_CUTOVER_SEARCH_QUERY ||
 const reportTimeRange = process.env.FOXDESK_CUTOVER_REPORT_TIME_RANGE || 'last_month';
 const screenshotRoot = process.env.FOXDESK_CUTOVER_SCREENSHOT_DIR ||
   path.join(os.tmpdir(), `foxdesk-cutover-gate-${new Date().toISOString().replace(/[:.]/g, '-')}`);
+const startedAt = new Date();
 
 const viewports = [
   { name: 'desktop', width: 1440, height: 900, isMobile: false },
@@ -32,9 +33,128 @@ const viewports = [
 
 const screenshots = [];
 const checks = [];
+const gateChecklist = [
+  ['Work queue desktop/mobile', ['desktop work', 'mobile work']],
+  ['Inbox triage desktop/mobile', ['desktop inbox', 'mobile inbox']],
+  ['Ticket list desktop/mobile', ['desktop tickets', 'mobile tickets']],
+  ['Ticket detail desktop/mobile', ['desktop ticket detail', 'mobile ticket detail']],
+  ['New ticket and attachment flow', ['new ticket create/upload/download']],
+  ['Global search API', ['global search']],
+  ['Reports detail rows and totals', ['reports detail rows and totals']],
+  ['Admin/settings page desktop/mobile', ['desktop settings', 'mobile settings']],
+];
 
 function record(name) {
   checks.push(name);
+}
+
+function hasCheck(needle) {
+  return checks.some(check => {
+    if (/\bskipped\b/i.test(check)) {
+      return false;
+    }
+    return check === needle || check.startsWith(`${needle} `);
+  });
+}
+
+function checklistEvidence() {
+  return gateChecklist.map(([label, required]) => ({
+    label,
+    passed: required.every(hasCheck),
+    required,
+  }));
+}
+
+function buildResult(status, error = null) {
+  const endedAt = new Date();
+  const canLiftHold = status === 'passed' && isProductionMode && allowMutation;
+  return {
+    status,
+    mode,
+    baseURL,
+    adminEmail: email,
+    allowMutation,
+    prepareFixtures,
+    requireSearchCounts,
+    searchQuery,
+    reportTimeRange,
+    startedAt: startedAt.toISOString(),
+    endedAt: endedAt.toISOString(),
+    durationMs: endedAt.getTime() - startedAt.getTime(),
+    canLiftHold,
+    holdDecision: canLiftHold
+      ? 'eligible_for_manual_cutover_review'
+      : 'hold_remains_active',
+    checks,
+    checklist: checklistEvidence(),
+    screenshots,
+    evidenceDir: screenshotRoot,
+    error: error ? {
+      message: error.message,
+      stack: error.stack,
+    } : null,
+  };
+}
+
+function renderMarkdown(result) {
+  const lines = [
+    '# FoxDesk Cutover Gate Report',
+    '',
+    `Status: ${result.status}`,
+    `Mode: ${result.mode}`,
+    `Target: ${result.baseURL}`,
+    `Started: ${result.startedAt}`,
+    `Ended: ${result.endedAt}`,
+    `Duration: ${Math.round(result.durationMs / 1000)}s`,
+    `Mutation enabled: ${result.allowMutation ? 'yes' : 'no'}`,
+    `Fixture preparation: ${result.prepareFixtures ? 'yes' : 'no'}`,
+    `Search query: ${result.searchQuery}`,
+    `Hold decision: ${result.holdDecision}`,
+    '',
+    '## Verdict',
+    '',
+  ];
+
+  if (result.canLiftHold) {
+    lines.push('This run passed in production mode with mutation enabled. The cutover hold is eligible for manual review after the screenshots and imported workspace data are checked.');
+  } else if (result.status === 'passed') {
+    lines.push('This run passed, but it does not lift the cutover hold. A hold-lifting run must pass in production mode with mutation enabled.');
+  } else {
+    lines.push('This run failed. Keep the cutover hold active and fix the reported issue before another cutover attempt.');
+  }
+
+  lines.push('', '## Checklist', '');
+  for (const item of result.checklist) {
+    lines.push(`- ${item.passed ? '[x]' : '[ ]'} ${item.label}`);
+  }
+
+  lines.push('', '## Checks', '');
+  for (const check of result.checks) {
+    lines.push(`- ${check}`);
+  }
+
+  if (result.screenshots.length > 0) {
+    lines.push('', '## Screenshots', '');
+    for (const file of result.screenshots) {
+      const name = path.basename(file);
+      lines.push(`![${name}](${name})`);
+    }
+  }
+
+  if (result.error) {
+    lines.push('', '## Error', '', '```text', result.error.stack || result.error.message, '```');
+  }
+
+  return `${lines.join('\n')}\n`;
+}
+
+function writeEvidence(result) {
+  fs.mkdirSync(screenshotRoot, { recursive: true });
+  const resultPath = path.join(screenshotRoot, 'result.json');
+  const reportPath = path.join(screenshotRoot, 'report.md');
+  fs.writeFileSync(resultPath, `${JSON.stringify(result, null, 2)}\n`);
+  fs.writeFileSync(reportPath, renderMarkdown(result));
+  return { resultPath, reportPath };
 }
 
 function validateConfig() {
@@ -503,7 +623,7 @@ async function runViewport(browser, viewport) {
   await context.close();
 }
 
-(async () => {
+async function main() {
   validateConfig();
   await waitForHealth();
   if (prepareFixtures) {
@@ -521,19 +641,15 @@ async function runViewport(browser, viewport) {
     await browser.close();
   }
 
-  console.log(JSON.stringify({
-    status: 'passed',
-    mode,
-    baseURL,
-    allowMutation,
-    prepareFixtures,
-    requireSearchCounts,
-    searchQuery,
-    reportTimeRange,
-    checks,
-    screenshots,
-  }, null, 2));
-})().catch(error => {
+  const result = buildResult('passed');
+  const evidence = writeEvidence(result);
+  console.log(JSON.stringify({ ...result, evidence }, null, 2));
+}
+
+main().catch(error => {
+  const result = buildResult('failed', error);
+  const evidence = writeEvidence(result);
   console.error(error);
+  console.error(`Cutover evidence written to ${evidence.reportPath}`);
   process.exit(1);
 });

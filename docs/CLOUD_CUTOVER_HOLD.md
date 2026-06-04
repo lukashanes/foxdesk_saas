@@ -96,6 +96,27 @@ The hold can be lifted only after the production gate passes with
 the imported workspace still has correct users, clients, tickets, attachments,
 reports, billing state, and email settings.
 
+## Milestone 4 Cutover Evidence Pack
+
+Every cutover gate run writes durable evidence into the screenshot directory:
+
+- `result.json` for automation and audit history.
+- `report.md` for manual review.
+- Desktop and mobile screenshots for the checked logged-in screens.
+
+The report includes the target URL, run mode, mutation state, searched term,
+checklist coverage, raw checks, screenshots, and a cutover hold verdict.
+
+Only this combination can mark the run as eligible for manual cutover review:
+
+- `status` is `passed`
+- `mode` is `production`
+- `FOXDESK_CUTOVER_ALLOW_MUTATION=1`
+
+All other successful runs keep the hold active. This includes local runs,
+production read-only runs, and any run that skipped the ticket/attachment
+mutation check.
+
 ## Explicit Non-Goals During Hold
 
 - Do not redirect `helpdesk.aenze.com` to SaaS.
