@@ -48,10 +48,25 @@ The hold can be removed only after all of these pass:
 - Production smoke tests pass against `https://app.foxdesk.net`.
 - QA screenshots are captured for desktop and mobile logged-in flows.
 
+## Milestone 2 Cutover Gate
+
+Run the local logged-in cutover gate before any production cutover decision:
+
+```bash
+npm run cutover:gate
+```
+
+The gate verifies the cloud app workflow on desktop and mobile, creates a
+ticket with an attachment, downloads that attachment, checks global search
+against open/done/archived fixtures, reviews billing report rows, and captures
+screenshots under `/tmp/foxdesk-cutover-gate-*`.
+
+This gate does not lift the hold by itself. The hold is lifted only after the
+same checklist also passes against the real production workspace.
+
 ## Explicit Non-Goals During Hold
 
 - Do not redirect `helpdesk.aenze.com` to SaaS.
 - Do not disable self-hosted IMAP ingest on `helpdesk.aenze.com`.
 - Do not disable self-hosted notifications on `helpdesk.aenze.com`.
 - Do not treat the imported SaaS workspace as the production system.
-

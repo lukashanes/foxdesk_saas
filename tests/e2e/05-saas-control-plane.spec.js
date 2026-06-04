@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const { test, expect } = require('@playwright/test');
 const { dbQuery, dockerExec, login } = require('./helpers');
-const { baseURL, webContainer } = require('./env');
+const { baseURL, platformBaseURL, webContainer } = require('./env');
 
 function sqlString(value) {
   return `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "''")}'`;
@@ -61,7 +61,7 @@ async function createWorkspaceViaUi(browser, {
   await page.locator('input[name="password"]').fill(ownerPassword);
   await page.locator('input[name="password_confirm"]').fill(ownerPassword);
   await page.locator('button[type="submit"]').click();
-  await page.waitForURL(/page=dashboard|dashboard/);
+  await page.waitForURL(/page=work|page=dashboard|dashboard/);
   return { context, page };
 }
 
@@ -76,15 +76,17 @@ test('public signup creates an isolated FoxDesk workspace and platform admin can
     ownerEmail,
     ownerPassword
   });
+  await expect(signupPage.locator('body')).toContainText('Work');
+  await signupPage.goto('/index.php?page=dashboard');
   await expect(signupPage.locator('body')).toContainText('Dashboard');
   await expect(signupPage.locator('#get-started')).toContainText('Create your first ticket');
   await expect(signupPage.locator('#get-started')).toContainText('Review trial and billing');
 
   await signupPage.goto('/index.php?page=platform');
-  await expect(signupPage).toHaveURL(/page=dashboard|dashboard/);
+  await expect(signupPage).toHaveURL(/platform\.localhost.*page=login/);
   await signupContext.close();
 
-  const platformContext = await browser.newContext({ baseURL });
+  const platformContext = await browser.newContext({ baseURL: platformBaseURL });
   const platformPage = await platformContext.newPage();
   await login(platformPage);
   await platformPage.goto('/index.php?page=platform');
@@ -473,7 +475,7 @@ test('trial lifecycle emails, expiry, and operator extension work end to end', a
   await expect(page.locator('body')).toContainText('trial has ended');
   await ownerContext.close();
 
-  const platformContext = await browser.newContext({ baseURL });
+  const platformContext = await browser.newContext({ baseURL: platformBaseURL });
   const platformPage = await platformContext.newPage();
   await login(platformPage);
   await platformPage.goto('/index.php?page=platform');

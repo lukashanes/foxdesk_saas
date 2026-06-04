@@ -11,6 +11,7 @@ const {
   phpImage,
   port,
   baseURL,
+  platformBaseURL,
   admin
 } = require('./env');
 
@@ -106,6 +107,8 @@ define('DB_PASS', 'foxpass');
 define('SECRET_KEY', 'e2e_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef');
 define('APP_NAME', 'FoxDesk E2E');
 define('APP_URL', '${baseURL}');
+define('PLATFORM_HOST', 'platform.localhost');
+define('PLATFORM_URL', '${platformBaseURL}');
 define('APP_DEBUG', true);
 define('BILLING_ENABLED', false);
 define('STRIPE_SECRET_KEY', 'sk_test_e2e');
@@ -370,7 +373,7 @@ async function saveAdminStorageState() {
   await page.locator('input[name="email"]').fill(admin.email);
   await page.locator('input[name="password"]').fill(admin.password);
   await page.locator('button[type="submit"]').click();
-  await page.waitForURL(/page=dashboard|dashboard|page=platform/);
+  await page.waitForURL(/page=work|page=dashboard|dashboard|page=platform/);
   await page.context().storageState({ path: path.join(authDir, 'admin.json') });
   await browser.close();
 }

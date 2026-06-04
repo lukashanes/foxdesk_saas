@@ -650,8 +650,11 @@ include BASE_PATH . '/includes/components/page-header.php';
         document.getElementById(inputId).value = value;
     }
 
+    let ticketUploadPreview = null;
+    const fileInput = document.getElementById('file-input');
+    const fileUploadErrors = document.getElementById('file-upload-errors');
     const initTicketUploadZones = function () {
-        window.FoxDeskUploadPreview && window.FoxDeskUploadPreview.init({
+        ticketUploadPreview = window.FoxDeskUploadPreview && window.FoxDeskUploadPreview.init({
             zoneId: 'upload-zone',
             inputId: 'file-input',
             previewId: 'file-preview',
@@ -689,11 +692,10 @@ include BASE_PATH . '/includes/components/page-header.php';
 
         newTicketForm.addEventListener('submit', function(event) {
             const hadRenderedUploadErrors = fileUploadErrors && !fileUploadErrors.classList.contains('hidden');
-            const validation = enforceUploadLimits();
+            const validation = ticketUploadPreview
+                ? ticketUploadPreview.updatePreview()
+                : { hadErrors: false, messages: [] };
             const shouldKeepRenderedUploadErrors = hadRenderedUploadErrors && fileInput && fileInput.files.length === 0 && validation.messages.length === 0;
-            if (!shouldKeepRenderedUploadErrors) {
-                renderUploadErrors(validation.messages);
-            }
             const hasBlockingUploadError = hadRenderedUploadErrors || (fileUploadErrors && !fileUploadErrors.classList.contains('hidden'));
             if ((validation.hadErrors && fileInput && fileInput.files.length === 0) || (hasBlockingUploadError && fileInput && fileInput.files.length === 0)) {
                 const submitBtn = this.querySelector('[type=submit]');
