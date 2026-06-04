@@ -136,6 +136,27 @@ This command is the preflight gate for manual cutover approval. Do not switch
 single-active until `cutover:verify` passes against the latest production
 evidence pack.
 
+## Milestone 6 Final Cutover Preflight
+
+After `cutover:verify` passes, run the final preflight:
+
+```bash
+npm run cutover:preflight -- /path/to/foxdesk-cutover-gate/result.json
+```
+
+This command verifies the evidence pack again, runs production smoke checks
+against `app.foxdesk.net` and the public site, then writes:
+
+- `cutover-preflight.json`
+- `cutover-preflight.md`
+
+The preflight is approved only when both the production evidence and production
+smoke checks pass. It still does not change DNS, disable IMAP, stop
+notifications, or mark the migration as cut over. It is the final written
+go/no-go artifact before a human operator performs those actions.
+
+If the command exits non-zero, the cutover hold remains active.
+
 ## Explicit Non-Goals During Hold
 
 - Do not redirect `helpdesk.aenze.com` to SaaS.
