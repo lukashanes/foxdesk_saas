@@ -53,6 +53,49 @@ async function expectLoginLayout(page) {
   }
 }
 
+async function expectQueueSurface(page, pagePath, shellSelector, panelSelector) {
+  await page.goto(pagePath);
+  const layout = await page.evaluate(({ shellSelector, panelSelector }) => {
+    const shell = document.querySelector(shellSelector);
+    const panel = document.querySelector(panelSelector);
+    const rect = (element) => {
+      const bounds = element.getBoundingClientRect();
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+    };
+    const styleTagCount = document.querySelectorAll('style').length;
+    return {
+      url: window.location.href,
+      viewportWidth: window.innerWidth,
+      shellRect: shell ? rect(shell) : null,
+      panelRect: panel ? rect(panel) : null,
+      shellDisplay: shell ? getComputedStyle(shell).display : null,
+      shellGridTemplateColumns: shell ? getComputedStyle(shell).gridTemplateColumns : null,
+      panelBorderStyle: panel ? getComputedStyle(panel).borderTopStyle : null,
+      panelBorderWidth: panel ? getComputedStyle(panel).borderTopWidth : null,
+      styleTagCount,
+      inlineQueueStyles: [...document.querySelectorAll('style')]
+        .some(style => style.textContent.includes(shellSelector.replace('.', ''))),
+      bodyText: document.body.textContent.slice(0, 300)
+    };
+  }, { shellSelector, panelSelector });
+
+  if (!layout.shellRect || !layout.panelRect) {
+    throw new Error(`Missing queue surface on ${pagePath}: ${JSON.stringify(layout)}`);
+  }
+  if (layout.inlineQueueStyles) {
+    throw new Error(`Queue page still contains inline queue layout styles on ${pagePath}`);
+  }
+  if (layout.shellDisplay !== 'grid') {
+    throw new Error(`Queue shell is not a grid on ${pagePath}: ${JSON.stringify(layout)}`);
+  }
+  if (layout.viewportWidth >= 1024 && !layout.shellGridTemplateColumns.includes('px')) {
+    throw new Error(`Queue shell columns are not styled on ${pagePath}: ${JSON.stringify(layout)}`);
+  }
+  if (layout.panelBorderStyle === 'none' || layout.panelBorderWidth === '0px') {
+    throw new Error(`Queue panel is unstyled on ${pagePath}: ${JSON.stringify(layout)}`);
+  }
+}
+
 (async () => {
   const health = await fetch(`${baseURL}/index.php?page=health`);
   if (!health.ok) throw new Error(`Health check failed: ${health.status}`);
@@ -78,6 +121,8 @@ async function expectLoginLayout(page) {
   } else {
     await expectText(page, 'Dashboard');
   }
+  await expectQueueSurface(page, '/index.php?page=work', '.work-shell', '.work-panel');
+  await expectQueueSurface(page, '/index.php?page=inbox', '.inbox-shell', '.inbox-panel');
 
   const attachmentPath = path.join(os.tmpdir(), 'foxdesk-local-smoke.txt');
   fs.writeFileSync(attachmentPath, 'hello from local smoke\n');

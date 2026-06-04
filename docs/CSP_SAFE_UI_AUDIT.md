@@ -35,14 +35,23 @@ Files:
 - `tests/csp-ui-baseline.test.js`: fails when a file adds more inline/page
   styling than the baseline allows.
 
-Current baseline:
+Current baseline after Work/Inbox refactor:
 
 - Affected files: 48
-- `<style>` blocks: 29
-- Inline `style=""` attributes: 1443
+- `<style>` blocks: 27
+- Inline `style=""` attributes: 1433
 - Unversioned `theme.css` links: 5
 - Unversioned `tailwind.min.css` links: 8
 - Priority files affected: 15
+
+Completed in milestone 3a:
+
+- `pages/work.php`: page-level `<style>` removed, queue layout moved to
+  `theme.css`.
+- `pages/inbox.php`: page-level `<style>` removed, queue layout moved to
+  `theme.css`.
+- `tests/smoke/local-smoke.js`: now checks that Work and Inbox render as styled
+  queue surfaces after login.
 
 ## Priority Order
 
@@ -50,11 +59,14 @@ Current baseline:
 
 These pages can look broken under production CSP and must be converted first:
 
-1. `pages/work.php`
-2. `pages/inbox.php`
-3. `pages/tickets.php`
-4. `pages/ticket-detail.php`
-5. `pages/new-ticket.php`
+1. `pages/tickets.php`
+2. `pages/ticket-detail.php`
+3. `pages/new-ticket.php`
+
+Already converted:
+
+- `pages/work.php`
+- `pages/inbox.php`
 
 Done means:
 
@@ -124,4 +136,3 @@ In addition, browser QA must capture desktop and mobile screenshots for:
 - New ticket
 - Reports
 - Admin/settings
-

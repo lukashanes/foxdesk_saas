@@ -2225,6 +2225,213 @@ border-radius: var(--radius-lg);
 font-size: 1rem;
 }
 
+/* Queue surfaces: Work and Inbox */
+.queue-page-kicker,
+.queue-panel-eyebrow {
+color: var(--text-muted);
+font-size: 0.75rem;
+font-weight: 800;
+letter-spacing: 0.08em;
+text-transform: uppercase;
+}
+.queue-page-title {
+margin-top: 0.25rem;
+color: var(--text-primary);
+font-size: 1.5rem;
+font-weight: 800;
+line-height: 1.2;
+letter-spacing: 0;
+}
+.queue-page-copy,
+.queue-panel-copy {
+margin-top: 0.25rem;
+color: var(--text-secondary);
+font-size: 0.875rem;
+line-height: 1.45;
+}
+.queue-empty-title {
+color: var(--text-primary);
+font-weight: 800;
+}
+.work-shell,
+.inbox-shell {
+display: grid;
+grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+gap: 1rem;
+}
+.inbox-shell {
+grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
+}
+.work-queue-list,
+.work-panel,
+.inbox-list,
+.inbox-panel {
+border: 1px solid var(--border-light);
+border-radius: 0.75rem;
+background: var(--surface-primary);
+overflow: hidden;
+}
+.work-queue-list,
+.inbox-list {
+align-self: start;
+}
+.work-queue-link,
+.inbox-queue {
+display: flex;
+align-items: center;
+gap: 0.75rem;
+width: 100%;
+padding: 0.75rem 0.875rem;
+color: var(--text-secondary);
+text-decoration: none;
+border-bottom: 1px solid var(--border-light);
+}
+.inbox-queue {
+padding: 0.8rem 0.9rem;
+}
+.work-queue-link:last-child,
+.inbox-queue:last-child {
+border-bottom: 0;
+}
+.work-queue-link:hover,
+.work-queue-link.is-active,
+.inbox-queue:hover,
+.inbox-queue.is-active {
+background: var(--surface-secondary);
+color: var(--text-primary);
+}
+.work-queue-link.is-active,
+.inbox-queue.is-active {
+box-shadow: inset 3px 0 0 var(--primary);
+}
+.work-queue-title,
+.inbox-queue__title {
+font-weight: 800;
+font-size: 0.9rem;
+}
+.work-queue-desc,
+.inbox-queue__desc {
+margin-top: 0.125rem;
+font-size: 0.75rem;
+color: var(--text-muted);
+}
+.work-queue-count,
+.inbox-queue__count {
+margin-left: auto;
+min-width: 2rem;
+padding: 0.2rem 0.5rem;
+border-radius: 999px;
+background: var(--surface-tertiary, #eef2f7);
+color: var(--text-secondary);
+text-align: center;
+font-weight: 800;
+font-size: 0.75rem;
+}
+.inbox-queue__count {
+padding: 0.18rem 0.5rem;
+}
+.work-panel__head,
+.inbox-panel__head {
+display: flex;
+align-items: flex-start;
+justify-content: space-between;
+gap: 1rem;
+padding: 1rem;
+border-bottom: 1px solid var(--border-light);
+}
+.work-panel__eyebrow,
+.inbox-panel__eyebrow {
+color: var(--text-muted);
+font-size: 0.7rem;
+font-weight: 800;
+letter-spacing: 0.08em;
+text-transform: uppercase;
+}
+.work-panel__title,
+.inbox-panel__title {
+margin-top: 0.15rem;
+color: var(--text-primary);
+font-size: 1.25rem;
+font-weight: 850;
+}
+.work-ticket-list {
+display: grid;
+}
+.work-ticket,
+.inbox-ticket {
+display: grid;
+grid-template-columns: minmax(0, 1fr) auto;
+gap: 0.75rem;
+padding: 0.875rem 1rem;
+border-bottom: 1px solid var(--border-light);
+color: inherit;
+text-decoration: none;
+}
+.inbox-ticket {
+padding: 0.9rem 1rem;
+}
+.work-ticket:last-child,
+.inbox-ticket:last-child {
+border-bottom: 0;
+}
+.work-ticket:hover,
+.inbox-ticket:hover {
+background: var(--surface-secondary);
+}
+.work-ticket__meta,
+.inbox-ticket__meta {
+display: flex;
+flex-wrap: wrap;
+align-items: center;
+gap: 0.45rem;
+margin-bottom: 0.3rem;
+color: var(--text-muted);
+font-size: 0.72rem;
+}
+.work-ticket__dot,
+.inbox-ticket__dot {
+width: 0.5rem;
+height: 0.5rem;
+border-radius: 999px;
+}
+.work-ticket__title,
+.inbox-ticket__title {
+color: var(--text-primary);
+font-weight: 750;
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+}
+.work-ticket__side,
+.inbox-ticket__side {
+text-align: right;
+color: var(--text-muted);
+font-size: 0.75rem;
+white-space: nowrap;
+}
+.work-empty,
+.inbox-empty {
+padding: 2rem;
+text-align: center;
+color: var(--text-muted);
+}
+@media (max-width: 900px) {
+.work-shell,
+.inbox-shell {
+grid-template-columns: 1fr;
+}
+.work-panel__head,
+.inbox-panel__head,
+.work-ticket,
+.inbox-ticket {
+grid-template-columns: 1fr;
+}
+.work-ticket__side,
+.inbox-ticket__side {
+text-align: left;
+}
+}
+
 /* CSP-safe login layout. Production blocks inline styles, so all critical
    positioning, colors, and split-panel behavior must live in this stylesheet. */
 body.split-layout {

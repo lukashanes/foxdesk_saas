@@ -42,143 +42,12 @@ $inbox_ticket_list_url = static function (string $key): string {
 require_once BASE_PATH . '/includes/header.php';
 ?>
 
-<style>
-.inbox-shell {
-    display: grid;
-    grid-template-columns: minmax(230px, 300px) minmax(0, 1fr);
-    gap: 1rem;
-}
-.inbox-list,
-.inbox-panel {
-    border: 1px solid var(--border-light);
-    border-radius: 0.75rem;
-    background: var(--surface-primary);
-    overflow: hidden;
-}
-.inbox-list {
-    align-self: start;
-}
-.inbox-queue {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.8rem 0.9rem;
-    border-bottom: 1px solid var(--border-light);
-    color: var(--text-secondary);
-    text-decoration: none;
-}
-.inbox-queue:last-child {
-    border-bottom: 0;
-}
-.inbox-queue:hover,
-.inbox-queue.is-active {
-    background: var(--surface-secondary);
-    color: var(--text-primary);
-}
-.inbox-queue.is-active {
-    box-shadow: inset 3px 0 0 var(--primary);
-}
-.inbox-queue__title {
-    font-size: 0.9rem;
-    font-weight: 800;
-}
-.inbox-queue__desc {
-    margin-top: 0.125rem;
-    color: var(--text-muted);
-    font-size: 0.75rem;
-}
-.inbox-queue__count {
-    margin-left: auto;
-    min-width: 2rem;
-    padding: 0.18rem 0.5rem;
-    border-radius: 999px;
-    background: var(--surface-tertiary, #eef2f7);
-    color: var(--text-secondary);
-    text-align: center;
-    font-size: 0.75rem;
-    font-weight: 800;
-}
-.inbox-panel__head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1rem;
-    border-bottom: 1px solid var(--border-light);
-}
-.inbox-panel__eyebrow {
-    color: var(--text-muted);
-    font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-.inbox-panel__title {
-    margin-top: 0.125rem;
-    color: var(--text-primary);
-    font-size: 1.25rem;
-    font-weight: 850;
-}
-.inbox-ticket {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.75rem;
-    padding: 0.9rem 1rem;
-    border-bottom: 1px solid var(--border-light);
-    color: inherit;
-    text-decoration: none;
-}
-.inbox-ticket:last-child {
-    border-bottom: 0;
-}
-.inbox-ticket:hover {
-    background: var(--surface-secondary);
-}
-.inbox-ticket__meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.45rem;
-    margin-bottom: 0.3rem;
-    color: var(--text-muted);
-    font-size: 0.72rem;
-}
-.inbox-ticket__dot {
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 999px;
-}
-.inbox-ticket__title {
-    color: var(--text-primary);
-    font-weight: 750;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.inbox-ticket__side {
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    text-align: right;
-    white-space: nowrap;
-}
-.inbox-empty {
-    padding: 2rem;
-    text-align: center;
-    color: var(--text-muted);
-}
-@media (max-width: 900px) {
-    .inbox-shell {
-        grid-template-columns: 1fr;
-    }
-}
-</style>
-
 <div class="space-y-4">
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
-            <div class="text-xs font-bold uppercase tracking-wider" style="color: var(--text-muted);"><?php echo e(t('Triage')); ?></div>
-            <h1 class="text-2xl font-extrabold mt-1" style="color: var(--text-primary);"><?php echo e(t('Inbox')); ?></h1>
-            <p class="text-sm mt-1" style="color: var(--text-secondary);"><?php echo e(t('Decide what should be assigned, started, merged, or closed.')); ?></p>
+            <div class="queue-page-kicker"><?php echo e(t('Triage')); ?></div>
+            <h1 class="queue-page-title"><?php echo e(t('Inbox')); ?></h1>
+            <p class="queue-page-copy"><?php echo e(t('Decide what should be assigned, started, merged, or closed.')); ?></p>
         </div>
         <a href="<?php echo e(url('new-ticket')); ?>" class="btn btn-primary btn-sm">
             <?php echo get_icon('plus', 'w-4 h-4 mr-1'); ?><?php echo e(t('New ticket')); ?>
@@ -204,14 +73,14 @@ require_once BASE_PATH . '/includes/header.php';
                 <div>
                     <div class="inbox-panel__eyebrow"><?php echo e(t('Current inbox')); ?></div>
                     <div class="inbox-panel__title"><?php echo e(t($active_queue['definition']['label'] ?? 'Triage')); ?></div>
-                    <div class="text-sm mt-1" style="color: var(--text-secondary);"><?php echo e(t($active_queue['definition']['description'] ?? 'New or unassigned tickets that need a decision.')); ?></div>
+                    <div class="queue-panel-copy"><?php echo e(t($active_queue['definition']['description'] ?? 'New or unassigned tickets that need a decision.')); ?></div>
                 </div>
                 <a href="<?php echo e($inbox_ticket_list_url($queue_key)); ?>" class="btn btn-secondary btn-sm"><?php echo e(t('View all')); ?></a>
             </div>
 
             <?php if (empty($active_items)): ?>
                 <div class="inbox-empty">
-                    <div class="font-bold" style="color: var(--text-primary);"><?php echo e(t('Inbox is clear')); ?></div>
+                    <div class="queue-empty-title"><?php echo e(t('Inbox is clear')); ?></div>
                     <div class="text-sm mt-1"><?php echo e(t('No ticket needs triage in this queue.')); ?></div>
                 </div>
             <?php else: ?>
