@@ -323,6 +323,103 @@ async function expectBillingSurface(page) {
   }
 }
 
+async function expectClientSurface(page) {
+  await page.goto('/index.php?page=admin&section=organizations');
+  const clientHref = await page.evaluate(() => {
+    const links = [...document.querySelectorAll('a[href*="page=client&id="]')];
+    const visibleLink = links.find(link => {
+      const bounds = link.getBoundingClientRect();
+      return bounds.width > 0 && bounds.height > 0;
+    });
+    return (visibleLink || links[0])?.getAttribute('href') || '';
+  });
+
+  if (!clientHref) {
+    throw new Error('No client detail link was found on the organization admin page.');
+  }
+
+  const clientPath = clientHref.startsWith('http') || clientHref.startsWith('/')
+    ? clientHref
+    : `/${clientHref}`;
+
+  await page.goto(clientPath);
+  const layout = await page.evaluate(() => {
+    const shell = document.querySelector('.client-center');
+    const hero = document.querySelector('.client-hero');
+    const stats = document.querySelector('.client-stats');
+    const grid = document.querySelector('.client-grid');
+    const tabs = document.querySelector('.client-tabs');
+    const profile = document.querySelector('.client-profile-list');
+    const ticket = document.querySelector('.client-ticket');
+    const status = document.querySelector('.client-ticket-status');
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const scopedInlineStyles = shell ? [...shell.querySelectorAll('[style]')].map(node => ({
+      className: node.className,
+      style: node.getAttribute('style')
+    })) : [];
+    const rect = (element) => {
+      const bounds = element.getBoundingClientRect();
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+    };
+
+    return {
+      url: window.location.href,
+      heading: document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : '',
+      shellRect: shell ? rect(shell) : null,
+      heroDisplay: hero ? getComputedStyle(hero).display : null,
+      statsDisplay: stats ? getComputedStyle(stats).display : null,
+      gridDisplay: grid ? getComputedStyle(grid).display : null,
+      tabsDisplay: tabs ? getComputedStyle(tabs).display : null,
+      profileDisplay: profile ? getComputedStyle(profile).display : null,
+      ticketDisplay: ticket ? getComputedStyle(ticket).display : null,
+      statusBackground: status ? getComputedStyle(status).backgroundColor : null,
+      bodyOpacity: getComputedStyle(document.body).opacity,
+      themeLinks,
+      scopedInlineStyles,
+      inlineClientStyles: [...document.querySelectorAll('style')].some(style =>
+        style.textContent.includes('.client-center') ||
+        style.textContent.includes('.client-ticket') ||
+        style.textContent.includes('.client-profile')
+      )
+    };
+  });
+
+  if (!layout.shellRect || layout.shellRect.width < 320 || !layout.heading) {
+    throw new Error(`Client detail did not render: ${JSON.stringify(layout)}`);
+  }
+  if (layout.inlineClientStyles) {
+    throw new Error(`Client detail still contains page-level layout styles: ${JSON.stringify(layout)}`);
+  }
+  if (layout.heroDisplay !== 'flex' || layout.statsDisplay !== 'grid' || layout.gridDisplay !== 'grid') {
+    throw new Error(`Client detail layout is unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (layout.tabsDisplay !== 'flex') {
+    throw new Error(`Client tabs are unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (layout.profileDisplay !== 'grid') {
+    throw new Error(`Client profile is unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (layout.ticketDisplay !== null && layout.ticketDisplay !== 'grid') {
+    throw new Error(`Client ticket rows are unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (layout.scopedInlineStyles.some(item => !String(item.style || '').includes('--client-status-color'))) {
+    throw new Error(`Client detail has unexpected scoped inline styles: ${JSON.stringify(layout)}`);
+  }
+  if (layout.bodyOpacity !== '1') {
+    throw new Error(`Client detail shell is not fully visible: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
+    throw new Error(`Client detail does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  }
+
+  await page.locator('.client-tab[href*="work_view=all"]').click();
+  await page.waitForURL(/work_view=all/);
+  const activeTab = await page.locator('.client-tab.is-active').textContent();
+  if (!activeTab || !activeTab.includes('All')) {
+    throw new Error(`Client ticket tab did not switch to All: ${activeTab}`);
+  }
+}
+
 async function expectTicketDetailSurface(page) {
   const layout = await page.evaluate(() => {
     const editor = document.querySelector('.editor-wrapper');
@@ -447,6 +544,7 @@ async function expectTicketDetailSurface(page) {
   await expectQueueSurface(page, '/index.php?page=inbox', '.inbox-shell', '.inbox-panel');
   await expectReportsSurface(page);
   await expectBillingSurface(page);
+  await expectClientSurface(page);
 
   const attachmentPath = path.join(os.tmpdir(), 'foxdesk-local-smoke.txt');
   fs.writeFileSync(attachmentPath, 'hello from local smoke\n');

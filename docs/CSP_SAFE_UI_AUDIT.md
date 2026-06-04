@@ -35,11 +35,11 @@ Files:
 - `tests/csp-ui-baseline.test.js`: fails when a file adds more inline/page
   styling than the baseline allows.
 
-Current baseline after Work/Inbox/Tickets/Ticket detail/New ticket/Reports/Billing refactor:
+Current baseline after Work/Inbox/Tickets/Ticket detail/New ticket/Reports/Billing/Client refactor:
 
 - Affected files: 47
-- `<style>` blocks: 20
-- Inline `style=""` attributes: 1401
+- `<style>` blocks: 19
+- Inline `style=""` attributes: 1382
 - Unversioned `theme.css` links: 5
 - Unversioned `tailwind.min.css` links: 8
 - Priority files affected: 14
@@ -97,6 +97,15 @@ Completed in milestone 8a:
   card, uses versioned `theme.css`, has a valid storage progress control, keeps
   visible page body opacity, and has no scoped billing inline styles.
 
+Completed in milestone 9a:
+
+- `pages/client.php`: removed the page-level `<style>` block and moved client
+  detail layout, stats, ticket list, profile, and contact styles to
+  `theme.css`.
+- `tests/smoke/local-smoke.js`: now opens a real client detail through the
+  organization admin page, verifies the external CSS layout, allows only the
+  dynamic ticket status color CSS variable, and checks ticket tab switching.
+
 ## Priority Order
 
 ### P0 - Blocks Cloud Usability
@@ -121,9 +130,8 @@ Done means:
 
 ### P1 - Blocks Daily Admin/Reporting
 
-1. `pages/client.php`
-2. `pages/dashboard.php`
-3. `pages/admin/settings.php`
+1. `pages/dashboard.php`
+2. `pages/admin/settings.php`
 
 Done means:
 
@@ -136,6 +144,7 @@ Already converted:
 
 - `pages/admin/reports.php`
 - `pages/billing.php`
+- `pages/client.php`
 
 ### P2 - Platform And Auth Polish
 
