@@ -1094,7 +1094,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                     <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
 
                     <!-- Row 1: All filter fields on one horizontal line -->
-                    <div style="display: flex; align-items: flex-end; gap: 0.75rem; flex-wrap: nowrap;">
+                    <div class="report-filter-grid" style="display: flex; align-items: flex-end; gap: 0.75rem; flex-wrap: nowrap;">
                         <div style="flex: 1; min-width: 0;">
                             <label class="block text-xs mb-1 font-medium" style="color: var(--text-secondary);"><?php echo e(t('Clients')); ?></label>
                             <div class="chip-select" id="cs-orgs">
@@ -1178,7 +1178,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                     </div>
 
                     <!-- Row 2: Date hint, presets, show amounts, apply -->
-                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                    <div class="report-filter-actions" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
                         <?php if ($range_start && $range_end && $time_range !== 'custom' && $time_range !== 'all'): ?>
                         <span id="report-range-hint" style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.6875rem; color: var(--text-muted);">
                             <?php echo get_icon('calendar', 'w-3 h-3 inline-block'); ?>
@@ -1194,7 +1194,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                         <?php endif; ?>
 
                         <!-- Quick range presets -->
-                        <div style="display: flex; gap: 3px; margin-left: auto;">
+                        <div class="report-preset-list" style="display: flex; gap: 3px; margin-left: auto;">
                             <?php
                             $quick_presets = [
                                 'today' => t('Today'),
@@ -1249,7 +1249,7 @@ include BASE_PATH . '/includes/components/page-header.php';
         <?php endif; ?>
 
         <?php if ($tab === 'summary'): ?>
-            <div style="display: flex; border: 1px solid var(--border-light); border-radius: 8px; margin-bottom: 0.75rem; overflow: hidden; background: var(--surface-primary);">
+            <div class="report-summary-strip" style="display: flex; border: 1px solid var(--border-light); border-radius: 8px; margin-bottom: 0.75rem; overflow: hidden; background: var(--surface-primary);">
                 <div style="flex: 1; padding: 8px 14px;">
                     <div style="font-size: 0.5625rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 2px;"><?php echo e(is_admin() ? t('Total time') : t('My time')); ?></div>
                     <div style="font-size: 1.125rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em;"><?php echo e(format_duration_minutes($totals['minutes'])); ?></div>
@@ -1281,7 +1281,7 @@ include BASE_PATH . '/includes/components/page-header.php';
             $ai_min = $totals['ai_minutes'] ?? 0;
             if ($human_min > 0 && $ai_min > 0):
             ?>
-            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <div class="report-source-strip" style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
                 <div style="flex: 1; padding: 6px 12px; border-left: 3px solid #60a5fa; border-radius: 6px; background: var(--surface-secondary);">
                     <div style="font-size: 0.6875rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
                         <?php echo get_icon('user', 'w-3 h-3'); ?>
@@ -2887,126 +2887,5 @@ include BASE_PATH . '/includes/components/page-header.php';
     })();
 </script>
 
-<!-- Print-friendly styles -->
-<style>
-@media print {
-    /* Hide non-essential UI elements */
-    aside, .sidebar,
-    .mobile-header,
-    header,
-    .toast-stack,
-    #notification-panel,
-    .foxdesk-update-bar,
-    #app-toast-stack,
-    .flash-inline-wrapper,
-    #col-picker-wrap,
-    .report-confirm,
-    #report-apply-btn,
-    form[method="get"],
-    .range-preset-btn,
-    #report-range-hint,
-    .btn-primary, .btn-secondary, .btn-sm,
-    [onclick*="print"],
-    [href*="export=csv"],
-    .chip-select,
-    #entryModal,
-    footer,
-    .help-panel {
-        display: none !important;
-    }
-
-    /* Reset page layout */
-    body {
-        background: #fff !important;
-        color: #000 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .main-content {
-        margin-left: 0 !important;
-        padding: 0 !important;
-    }
-
-    .space-y-3 > * {
-        break-inside: avoid;
-    }
-
-    /* Card styling for print */
-    .card {
-        border: 1px solid #e5e7eb !important;
-        box-shadow: none !important;
-        break-inside: avoid;
-    }
-
-    .card-body {
-        padding: 12px !important;
-    }
-
-    /* Table print styles */
-    table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-        font-size: 11px !important;
-    }
-
-    th, td {
-        padding: 6px 8px !important;
-        border-bottom: 1px solid #e5e7eb !important;
-    }
-
-    th {
-        background: #f9fafb !important;
-        font-weight: 600 !important;
-    }
-
-    /* KPI cards grid - force horizontal layout */
-    .grid {
-        display: grid !important;
-    }
-
-    /* Summary card values */
-    .text-xl {
-        font-size: 16px !important;
-    }
-
-    /* Tab bar: show active tab name only */
-    .flex.items-center.gap-2 a:not([style*="background: var(--primary)"]) {
-        display: none !important;
-    }
-
-    /* Client Reports banner */
-    [style*="linear-gradient"] {
-        display: none !important;
-    }
-
-    /* Page header */
-    .page-header {
-        margin-bottom: 8px !important;
-    }
-
-    /* Add report title for print */
-    .space-y-3::before {
-        content: "Time Report";
-        display: block;
-        font-size: 18px;
-        font-weight: 700;
-        margin-bottom: 8px;
-        color: #000;
-    }
-
-    /* Remove links styling */
-    a {
-        color: #000 !important;
-        text-decoration: none !important;
-    }
-
-    /* Page margins */
-    @page {
-        margin: 1.5cm;
-        size: A4 landscape;
-    }
-}
-</style>
 
 <?php require_once BASE_PATH . '/includes/footer.php';

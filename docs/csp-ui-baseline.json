@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-04T07:44:10.051Z",
+  "generatedAt": "2026-06-04T07:53:46.392Z",
   "scanRoots": [
     "pages",
     "includes"
@@ -23,14 +23,14 @@
   ],
   "totals": {
     "files": 48,
-    "styleBlocks": 21,
+    "styleBlocks": 20,
     "inlineStyles": 1421,
     "unversionedThemeLinks": 5,
     "unversionedTailwindLinks": 8,
     "priorityFiles": 15,
     "risk": {
-      "critical": 18,
-      "high": 7,
+      "critical": 17,
+      "high": 8,
       "medium": 22,
       "low": 1
     }
@@ -39,12 +39,6 @@
     "pages/admin/settings.php": {
       "styleBlocks": 2,
       "inlineStyles": 168,
-      "unversionedThemeLinks": 0,
-      "unversionedTailwindLinks": 0
-    },
-    "pages/admin/reports.php": {
-      "styleBlocks": 1,
-      "inlineStyles": 190,
       "unversionedThemeLinks": 0,
       "unversionedTailwindLinks": 0
     },
@@ -141,6 +135,12 @@
     "pages/legal.php": {
       "styleBlocks": 1,
       "inlineStyles": 0,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/reports.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 190,
       "unversionedThemeLinks": 0,
       "unversionedTailwindLinks": 0
     },

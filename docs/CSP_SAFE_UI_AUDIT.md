@@ -35,10 +35,10 @@ Files:
 - `tests/csp-ui-baseline.test.js`: fails when a file adds more inline/page
   styling than the baseline allows.
 
-Current baseline after Work/Inbox/Tickets/Ticket detail/New ticket refactor:
+Current baseline after Work/Inbox/Tickets/Ticket detail/New ticket/Reports refactor:
 
 - Affected files: 48
-- `<style>` blocks: 21
+- `<style>` blocks: 20
 - Inline `style=""` attributes: 1421
 - Unversioned `theme.css` links: 5
 - Unversioned `tailwind.min.css` links: 8
@@ -78,6 +78,16 @@ Completed in milestone 6a:
   card, uses an external versioned `theme.css`, shows a styled editor and
   upload zone, renders option pills, and previews selected attachments.
 
+Completed in milestone 7a:
+
+- `pages/admin/reports.php`: print-only page-level `<style>` block moved to
+  `theme.css`.
+- `theme.css`: removed the global `body` fade-in animation so app pages do not
+  render temporarily washed out or hidden during reloads and viewport changes.
+- `tests/smoke/local-smoke.js`: now checks that Reports renders the admin
+  shell, tabs, cards, versioned `theme.css`, a fully visible page body, and no
+  page-level report styles.
+
 ## Priority Order
 
 ### P0 - Blocks Cloud Usability
@@ -102,11 +112,10 @@ Done means:
 
 ### P1 - Blocks Daily Admin/Reporting
 
-6. `pages/admin/reports.php`
-7. `pages/billing.php`
-8. `pages/client.php`
-9. `pages/dashboard.php`
-10. `pages/admin/settings.php`
+1. `pages/billing.php`
+2. `pages/client.php`
+3. `pages/dashboard.php`
+4. `pages/admin/settings.php`
 
 Done means:
 
@@ -114,6 +123,10 @@ Done means:
 - admin pages keep compact SaaS layout
 - dynamic billable-row editing still works
 - no new inline style debt is introduced
+
+Already converted:
+
+- `pages/admin/reports.php`
 
 ### P2 - Platform And Auth Polish
 

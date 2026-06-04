@@ -204,6 +204,66 @@ async function expectNewTicketSurface(page) {
   }
 }
 
+async function expectReportsSurface(page) {
+  await page.goto('/index.php?page=admin&section=reports');
+  const layout = await page.evaluate(() => {
+    const shell = document.querySelector('.admin-legacy-page');
+    const tabs = document.querySelector('.admin-tabs');
+    const flowCard = document.querySelector('.reporting-flow-card');
+    const filterCard = document.querySelector('#report-filters');
+    const card = document.querySelector('.card');
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const rect = (element) => {
+      const bounds = element.getBoundingClientRect();
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+    };
+
+    return {
+      url: window.location.href,
+      heading: document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : '',
+      shellRect: shell ? rect(shell) : null,
+      tabsRect: tabs ? rect(tabs) : null,
+      tabsDisplay: tabs ? getComputedStyle(tabs).display : null,
+      flowCardRect: flowCard ? rect(flowCard) : null,
+      filterCardRect: filterCard ? rect(filterCard) : null,
+      cardBorderStyle: card ? getComputedStyle(card).borderTopStyle : null,
+      cardBorderWidth: card ? getComputedStyle(card).borderTopWidth : null,
+      bodyOpacity: getComputedStyle(document.body).opacity,
+      themeLinks,
+      inlineReportStyles: [...document.querySelectorAll('style')].some(style =>
+        style.textContent.includes('@media print') ||
+        style.textContent.includes('Time Report') ||
+        style.textContent.includes('#report-apply-btn')
+      )
+    };
+  });
+
+  if (!layout.shellRect || layout.shellRect.width < 320) {
+    throw new Error(`Reports shell is missing or collapsed: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.tabsRect || !['flex', 'inline-flex'].includes(layout.tabsDisplay)) {
+    throw new Error(`Reports tabs are unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (layout.flowCardRect && layout.flowCardRect.width < 320) {
+    throw new Error(`Reports billing review flow is collapsed: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.filterCardRect && !layout.cardBorderStyle) {
+    throw new Error(`Reports content cards are missing: ${JSON.stringify(layout)}`);
+  }
+  if (layout.cardBorderStyle === 'none' || layout.cardBorderWidth === '0px') {
+    throw new Error(`Reports card styling is missing: ${JSON.stringify(layout)}`);
+  }
+  if (layout.bodyOpacity !== '1') {
+    throw new Error(`Reports page shell is not fully visible: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
+    throw new Error(`Reports page does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  }
+  if (layout.inlineReportStyles) {
+    throw new Error(`Reports page still contains page-level print styles: ${JSON.stringify(layout)}`);
+  }
+}
+
 async function expectTicketDetailSurface(page) {
   const layout = await page.evaluate(() => {
     const editor = document.querySelector('.editor-wrapper');
@@ -326,6 +386,7 @@ async function expectTicketDetailSurface(page) {
   }
   await expectQueueSurface(page, '/index.php?page=work', '.work-shell', '.work-panel');
   await expectQueueSurface(page, '/index.php?page=inbox', '.inbox-shell', '.inbox-panel');
+  await expectReportsSurface(page);
 
   const attachmentPath = path.join(os.tmpdir(), 'foxdesk-local-smoke.txt');
   fs.writeFileSync(attachmentPath, 'hello from local smoke\n');
