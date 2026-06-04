@@ -224,6 +224,24 @@ The manifest records file sizes, SHA-256 checksums, missing core files, lifecycl
 decisions, screenshot count, and a manifest-level SHA-256. Keep this manifest
 with the migration archive so the reviewed cutover evidence can be audited later.
 
+## Milestone 10 Cutover Archive
+
+After the manifest is generated, package the cutover evidence directory:
+
+```bash
+npm run cutover:archive -- --dir=/path/to/foxdesk-cutover-gate
+```
+
+The archive command refreshes the manifest, refuses incomplete core artifacts by
+default, and writes:
+
+- `foxdesk-cutover-*.tar.gz`
+- `foxdesk-cutover-*.tar.gz.sha256`
+
+Store this archive outside the application server with the migration records.
+Use `--allow-missing-core` only for an intentionally partial diagnostic archive,
+not for final cutover evidence.
+
 ## Explicit Non-Goals During Hold
 
 - Do not redirect `helpdesk.aenze.com` to SaaS.
