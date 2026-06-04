@@ -178,6 +178,33 @@ The cutover is considered confirmed only when the postcheck decision is
 `cutover_confirmed`. If the command exits non-zero, treat cutover as incomplete
 and keep rollback or hold actions available.
 
+## Milestone 8 Cutover Status Summary
+
+At any point during the migration, generate one lifecycle summary from the
+available artifacts:
+
+```bash
+npm run cutover:status -- --dir=/path/to/foxdesk-cutover-gate
+```
+
+The status command reads `result.json`, `cutover-preflight.json`, and
+`cutover-postcheck.json` when present, then writes:
+
+- `cutover-status.json`
+- `cutover-status.md`
+
+The summary reports the current phase:
+
+- `hold_active`
+- `evidence_ready`
+- `preflight_approved`
+- `preflight_blocked`
+- `postcheck_failed`
+- `cutover_confirmed`
+
+Use this report as the operator-facing cutover state instead of manually
+inspecting several JSON files.
+
 ## Explicit Non-Goals During Hold
 
 - Do not redirect `helpdesk.aenze.com` to SaaS.
