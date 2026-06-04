@@ -88,10 +88,10 @@ $storage_percent = $usage['included_storage_bytes'] > 0
 require_once BASE_PATH . '/includes/header.php';
 ?>
 
-<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <div class="card card-body">
-        <h1 class="text-2xl font-bold mb-2">Billing</h1>
-        <p class="text-sm mb-6" style="color: var(--text-muted);">Manage subscription and access for <?php echo e($tenant['name']); ?>.</p>
+<div class="billing-page">
+    <div class="card card-body billing-card">
+        <h1 class="billing-title">Billing</h1>
+        <p class="billing-muted billing-intro">Manage subscription and access for <?php echo e($tenant['name']); ?>.</p>
 
         <?php if ($checkout_state === 'success'): ?>
             <div class="alert alert-success mb-5">Payment setup is complete. Stripe will confirm the subscription shortly.</div>
@@ -105,15 +105,15 @@ require_once BASE_PATH . '/includes/header.php';
             <div class="alert alert-warning mb-5">Payment is past due. Update billing before <?php echo e(format_date($past_due_grace_ends_at)); ?> to avoid suspension.</div>
         <?php endif; ?>
 
-        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div><dt class="text-xs uppercase" style="color: var(--text-muted);">Plan</dt><dd class="font-semibold"><?php echo e(billing_plan_name()); ?></dd></div>
-            <div><dt class="text-xs uppercase" style="color: var(--text-muted);">Workspace status</dt><dd class="font-semibold"><?php echo e($tenant['status']); ?></dd></div>
-            <div><dt class="text-xs uppercase" style="color: var(--text-muted);">Subscription</dt><dd class="font-semibold"><?php echo e($tenant['subscription_status'] ?? 'manual'); ?></dd></div>
-            <div><dt class="text-xs uppercase" style="color: var(--text-muted);">Billing email</dt><dd class="font-semibold"><?php echo e($tenant['billing_email'] ?? ''); ?></dd></div>
+        <dl class="billing-summary-grid">
+            <div class="billing-fact"><dt>Plan</dt><dd><?php echo e(billing_plan_name()); ?></dd></div>
+            <div class="billing-fact"><dt>Workspace status</dt><dd><?php echo e($tenant['status']); ?></dd></div>
+            <div class="billing-fact"><dt>Subscription</dt><dd><?php echo e($tenant['subscription_status'] ?? 'manual'); ?></dd></div>
+            <div class="billing-fact"><dt>Billing email</dt><dd><?php echo e($tenant['billing_email'] ?? ''); ?></dd></div>
             <?php if ((string) ($tenant['subscription_status'] ?? '') === 'trialing' && $trial_days_remaining !== null): ?>
-                <div>
-                    <dt class="text-xs uppercase" style="color: var(--text-muted);">Trial</dt>
-                    <dd class="font-semibold">
+                <div class="billing-fact">
+                    <dt>Trial</dt>
+                    <dd>
                         <?php if ($trial_days_remaining > 0): ?>
                             <?php echo $trial_days_remaining; ?> day<?php echo $trial_days_remaining === 1 ? '' : 's'; ?> remaining
                         <?php elseif ($trial_grace_ends_at): ?>
@@ -125,47 +125,45 @@ require_once BASE_PATH . '/includes/header.php';
                 </div>
             <?php endif; ?>
             <?php if ((string) ($tenant['status'] ?? '') === 'past_due' && $past_due_grace_ends_at): ?>
-                <div><dt class="text-xs uppercase" style="color: var(--text-muted);">Payment grace</dt><dd class="font-semibold">Until <?php echo e(format_date($past_due_grace_ends_at)); ?></dd></div>
+                <div class="billing-fact"><dt>Payment grace</dt><dd>Until <?php echo e(format_date($past_due_grace_ends_at)); ?></dd></div>
             <?php endif; ?>
         </dl>
 
-        <div class="rounded-xl border p-4 mb-6" style="border-color: var(--border-light); background: var(--surface-secondary);">
-            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+        <section class="billing-plan-panel">
+            <div class="billing-plan-head">
                 <div>
-                    <h2 class="font-semibold"><?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/month</h2>
-                    <p class="text-sm" style="color: var(--text-muted);">Unlimited users, clients, agents, and tickets. <?php echo e(format_file_size($usage['included_storage_bytes'])); ?> storage included.</p>
+                    <h2><?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/month</h2>
+                    <p class="billing-muted">Unlimited users, clients, agents, and tickets. <?php echo e(format_file_size($usage['included_storage_bytes'])); ?> storage included.</p>
                 </div>
-                <div class="text-sm sm:text-right">
+                <div class="billing-overage-price">
                     <strong><?php echo e(billing_format_money(billing_storage_overage_price_cents())); ?>/extra GB</strong>
-                    <div style="color: var(--text-muted);">metered monthly</div>
+                    <div>metered monthly</div>
                 </div>
             </div>
 
-            <div class="mb-3">
-                <div class="flex items-center justify-between text-sm mb-1">
+            <div class="billing-storage">
+                <div class="billing-storage-row">
                     <span>Storage used</span>
                     <span><?php echo e(format_file_size($usage['storage_bytes'])); ?> / <?php echo e(format_file_size($usage['included_storage_bytes'])); ?></span>
                 </div>
-                <div class="h-2 rounded-full overflow-hidden" style="background: var(--border-light);">
-                    <div class="h-full" style="width: <?php echo $storage_percent; ?>%; background: var(--primary);"></div>
-                </div>
+                <progress class="billing-storage-progress" value="<?php echo (int) $storage_percent; ?>" max="100"></progress>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                <div><span style="color: var(--text-muted);">Users</span><strong class="block"><?php echo (int) $usage['users']; ?></strong></div>
-                <div><span style="color: var(--text-muted);">Clients</span><strong class="block"><?php echo (int) $usage['clients']; ?></strong></div>
-                <div><span style="color: var(--text-muted);">Agents</span><strong class="block"><?php echo (int) $usage['agents']; ?></strong></div>
-                <div><span style="color: var(--text-muted);">Extra storage</span><strong class="block"><?php echo (int) $usage['extra_storage_gb']; ?> GB</strong></div>
-                <div><span style="color: var(--text-muted);">Local storage</span><strong class="block"><?php echo e(format_file_size((int) $usage['storage_local_bytes'])); ?></strong></div>
-                <div><span style="color: var(--text-muted);">R2 storage</span><strong class="block"><?php echo e(format_file_size((int) $usage['storage_r2_bytes'])); ?></strong></div>
-                <div><span style="color: var(--text-muted);">API requests</span><strong class="block"><?php echo (int) $usage['api_requests']; ?></strong></div>
-                <div><span style="color: var(--text-muted);">Email volume</span><strong class="block"><?php echo (int) $usage['inbound_email_total']; ?> in / <?php echo (int) $usage['outbound_email_sent']; ?> out</strong></div>
+            <div class="billing-usage-grid">
+                <div class="billing-usage-stat"><span>Users</span><strong><?php echo (int) $usage['users']; ?></strong></div>
+                <div class="billing-usage-stat"><span>Clients</span><strong><?php echo (int) $usage['clients']; ?></strong></div>
+                <div class="billing-usage-stat"><span>Agents</span><strong><?php echo (int) $usage['agents']; ?></strong></div>
+                <div class="billing-usage-stat"><span>Extra storage</span><strong><?php echo (int) $usage['extra_storage_gb']; ?> GB</strong></div>
+                <div class="billing-usage-stat"><span>Local storage</span><strong><?php echo e(format_file_size((int) $usage['storage_local_bytes'])); ?></strong></div>
+                <div class="billing-usage-stat"><span>R2 storage</span><strong><?php echo e(format_file_size((int) $usage['storage_r2_bytes'])); ?></strong></div>
+                <div class="billing-usage-stat"><span>API requests</span><strong><?php echo (int) $usage['api_requests']; ?></strong></div>
+                <div class="billing-usage-stat"><span>Email volume</span><strong><?php echo (int) $usage['inbound_email_total']; ?> in / <?php echo (int) $usage['outbound_email_sent']; ?> out</strong></div>
             </div>
 
             <?php if ($usage['extra_storage_gb'] > 0): ?>
                 <div class="alert alert-info mt-4 mb-0">Estimated storage overage this month: <?php echo e(billing_format_money($usage['storage_overage_cents'])); ?>.</div>
             <?php endif; ?>
-        </div>
+        </section>
 
         <?php if (!billing_enabled()): ?>
             <div class="alert alert-info mb-5">Billing is prepared but not enabled. Configure Stripe keys and set BILLING_ENABLED=true.</div>
@@ -186,7 +184,7 @@ require_once BASE_PATH . '/includes/header.php';
             </div>
         <?php endif; ?>
 
-        <div class="flex flex-col sm:flex-row gap-3">
+        <div class="billing-actions">
             <?php if (!empty($billing_action_state['show_checkout'])): ?>
                 <form method="post" action="<?php echo url('billing', ['action' => 'checkout', 'tenant_id' => (int) $tenant['id']]); ?>">
                     <?php echo csrf_field(); ?>

@@ -35,14 +35,14 @@ Files:
 - `tests/csp-ui-baseline.test.js`: fails when a file adds more inline/page
   styling than the baseline allows.
 
-Current baseline after Work/Inbox/Tickets/Ticket detail/New ticket/Reports refactor:
+Current baseline after Work/Inbox/Tickets/Ticket detail/New ticket/Reports/Billing refactor:
 
-- Affected files: 48
+- Affected files: 47
 - `<style>` blocks: 20
-- Inline `style=""` attributes: 1421
+- Inline `style=""` attributes: 1401
 - Unversioned `theme.css` links: 5
 - Unversioned `tailwind.min.css` links: 8
-- Priority files affected: 15
+- Priority files affected: 14
 
 Completed in milestone 3a:
 
@@ -88,6 +88,15 @@ Completed in milestone 7a:
   shell, tabs, cards, versioned `theme.css`, a fully visible page body, and no
   page-level report styles.
 
+Completed in milestone 8a:
+
+- `pages/billing.php`: removed all scoped inline `style=""` attributes from the
+  billing content and moved plan, usage, storage progress, and action layout to
+  `theme.css`.
+- `tests/smoke/local-smoke.js`: now checks that Billing renders as a styled
+  card, uses versioned `theme.css`, has a valid storage progress control, keeps
+  visible page body opacity, and has no scoped billing inline styles.
+
 ## Priority Order
 
 ### P0 - Blocks Cloud Usability
@@ -112,10 +121,9 @@ Done means:
 
 ### P1 - Blocks Daily Admin/Reporting
 
-1. `pages/billing.php`
-2. `pages/client.php`
-3. `pages/dashboard.php`
-4. `pages/admin/settings.php`
+1. `pages/client.php`
+2. `pages/dashboard.php`
+3. `pages/admin/settings.php`
 
 Done means:
 
@@ -127,6 +135,7 @@ Done means:
 Already converted:
 
 - `pages/admin/reports.php`
+- `pages/billing.php`
 
 ### P2 - Platform And Auth Polish
 

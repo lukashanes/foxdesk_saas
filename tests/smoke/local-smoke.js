@@ -264,6 +264,65 @@ async function expectReportsSurface(page) {
   }
 }
 
+async function expectBillingSurface(page) {
+  await page.goto('/index.php?page=billing');
+  const layout = await page.evaluate(() => {
+    const shell = document.querySelector('.billing-page');
+    const card = document.querySelector('.billing-card');
+    const plan = document.querySelector('.billing-plan-panel');
+    const summary = document.querySelector('.billing-summary-grid');
+    const storage = document.querySelector('.billing-storage-progress');
+    const actions = document.querySelector('.billing-actions');
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const rect = (element) => {
+      const bounds = element.getBoundingClientRect();
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+    };
+
+    return {
+      url: window.location.href,
+      heading: document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : '',
+      shellRect: shell ? rect(shell) : null,
+      cardRect: card ? rect(card) : null,
+      planRect: plan ? rect(plan) : null,
+      summaryDisplay: summary ? getComputedStyle(summary).display : null,
+      storageValue: storage ? Number(storage.getAttribute('value')) : null,
+      storageMax: storage ? Number(storage.getAttribute('max')) : null,
+      actionsDisplay: actions ? getComputedStyle(actions).display : null,
+      cardBorderStyle: card ? getComputedStyle(card).borderTopStyle : null,
+      cardBorderWidth: card ? getComputedStyle(card).borderTopWidth : null,
+      bodyOpacity: getComputedStyle(document.body).opacity,
+      scopedInlineStyles: shell ? shell.querySelectorAll('[style]').length : null,
+      themeLinks
+    };
+  });
+
+  if (!layout.shellRect || !layout.cardRect || layout.heading !== 'Billing') {
+    throw new Error(`Billing page did not render: ${JSON.stringify(layout)}`);
+  }
+  if (layout.cardBorderStyle === 'none' || layout.cardBorderWidth === '0px') {
+    throw new Error(`Billing card styling is missing: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.planRect || layout.summaryDisplay !== 'grid') {
+    throw new Error(`Billing plan/summary layout is unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (layout.storageMax !== 100 || layout.storageValue === null || layout.storageValue < 0 || layout.storageValue > 100) {
+    throw new Error(`Billing storage progress is invalid: ${JSON.stringify(layout)}`);
+  }
+  if (layout.actionsDisplay !== 'flex') {
+    throw new Error(`Billing actions are unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (layout.bodyOpacity !== '1') {
+    throw new Error(`Billing page shell is not fully visible: ${JSON.stringify(layout)}`);
+  }
+  if (layout.scopedInlineStyles !== 0) {
+    throw new Error(`Billing page still has scoped inline styles: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
+    throw new Error(`Billing page does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  }
+}
+
 async function expectTicketDetailSurface(page) {
   const layout = await page.evaluate(() => {
     const editor = document.querySelector('.editor-wrapper');
@@ -387,6 +446,7 @@ async function expectTicketDetailSurface(page) {
   await expectQueueSurface(page, '/index.php?page=work', '.work-shell', '.work-panel');
   await expectQueueSurface(page, '/index.php?page=inbox', '.inbox-shell', '.inbox-panel');
   await expectReportsSurface(page);
+  await expectBillingSurface(page);
 
   const attachmentPath = path.join(os.tmpdir(), 'foxdesk-local-smoke.txt');
   fs.writeFileSync(attachmentPath, 'hello from local smoke\n');

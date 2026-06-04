@@ -2084,6 +2084,156 @@ max-width: 6rem;
 font-size: 0.75rem;
 color: var(--text-muted);
 }
+
+/* Billing workspace console */
+.billing-page {
+width: 100%;
+max-width: 56rem;
+margin: 0 auto;
+padding: 2rem 1rem;
+}
+.billing-card {
+display: flex;
+flex-direction: column;
+gap: 1.25rem;
+}
+.billing-title {
+margin: 0;
+font-size: 1.5rem;
+line-height: 1.2;
+font-weight: 750;
+color: var(--text-primary);
+}
+.billing-muted {
+color: var(--text-muted);
+}
+.billing-intro {
+margin: -0.875rem 0 0;
+font-size: 0.875rem;
+}
+.billing-summary-grid {
+display: grid;
+grid-template-columns: repeat(2, minmax(0, 1fr));
+gap: 1rem;
+margin: 0;
+}
+.billing-fact {
+min-width: 0;
+}
+.billing-fact dt,
+.billing-usage-stat span {
+display: block;
+font-size: 0.6875rem;
+font-weight: 700;
+letter-spacing: 0;
+line-height: 1.2;
+text-transform: uppercase;
+color: var(--text-muted);
+}
+.billing-fact dd {
+margin: 0.25rem 0 0;
+font-weight: 700;
+color: var(--text-primary);
+overflow-wrap: anywhere;
+}
+.billing-plan-panel {
+padding: 1rem;
+border: 1px solid var(--border-light);
+border-radius: 8px;
+background: var(--surface-secondary);
+}
+.billing-plan-head {
+display: flex;
+align-items: flex-start;
+justify-content: space-between;
+gap: 1rem;
+margin-bottom: 1rem;
+}
+.billing-plan-head h2 {
+margin: 0;
+font-size: 1rem;
+font-weight: 750;
+color: var(--text-primary);
+}
+.billing-plan-head p {
+margin: 0.25rem 0 0;
+font-size: 0.875rem;
+}
+.billing-overage-price {
+font-size: 0.875rem;
+text-align: right;
+color: var(--text-primary);
+}
+.billing-overage-price strong {
+display: block;
+font-weight: 750;
+}
+.billing-overage-price div {
+color: var(--text-muted);
+}
+.billing-storage {
+margin-bottom: 1rem;
+}
+.billing-storage-row {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 0.75rem;
+margin-bottom: 0.375rem;
+font-size: 0.875rem;
+color: var(--text-primary);
+}
+.billing-storage-row span:last-child {
+text-align: right;
+color: var(--text-secondary);
+}
+.billing-storage-progress {
+display: block;
+width: 100%;
+height: 0.5rem;
+border: 0;
+border-radius: 999px;
+overflow: hidden;
+appearance: none;
+background: var(--border-light);
+}
+.billing-storage-progress::-webkit-progress-bar {
+border-radius: 999px;
+background: var(--border-light);
+}
+.billing-storage-progress::-webkit-progress-value {
+border-radius: 999px;
+background: var(--primary);
+}
+.billing-storage-progress::-moz-progress-bar {
+border-radius: 999px;
+background: var(--primary);
+}
+.billing-usage-grid {
+display: grid;
+grid-template-columns: repeat(4, minmax(0, 1fr));
+gap: 0.75rem;
+font-size: 0.875rem;
+}
+.billing-usage-stat {
+min-width: 0;
+}
+.billing-usage-stat strong {
+display: block;
+margin-top: 0.125rem;
+font-weight: 750;
+color: var(--text-primary);
+overflow-wrap: anywhere;
+}
+.billing-actions {
+display: flex;
+align-items: center;
+gap: 0.75rem;
+flex-wrap: wrap;
+}
+.billing-actions form {
+margin: 0;
+}
 @media (max-width: 1180px) {
 .admin-metric-grid {
 grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2197,6 +2347,32 @@ grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .admin-form-grid {
 grid-template-columns: 1fr;
+}
+.billing-page {
+padding: 1rem;
+}
+.billing-card {
+gap: 1rem;
+}
+.billing-summary-grid {
+grid-template-columns: 1fr;
+}
+.billing-usage-grid {
+grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.billing-plan-head,
+.billing-actions {
+align-items: stretch;
+flex-direction: column;
+}
+.billing-overage-price {
+text-align: left;
+}
+.billing-actions .btn,
+.billing-actions form,
+.billing-actions button {
+width: 100%;
+justify-content: center;
 }
 }
 .badge {
