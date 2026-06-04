@@ -15,6 +15,7 @@
     "local:seed": "node scripts/local/seed.js",
     "local:smoke": "node tests/smoke/local-smoke.js",
     "cutover:gate": "node tests/smoke/cutover-gate.js",
+    "cutover:verify": "node bin/verify-cutover-evidence.js",
     "prod:cutover:gate": "FOXDESK_CUTOVER_MODE=production FOXDESK_CUTOVER_BASE_URL=${PROD_BASE_URL:-https://app.foxdesk.net} node tests/smoke/cutover-gate.js",
     "prod:smoke": "node tests/smoke/production-smoke.js",
     "audit:csp-ui": "node bin/audit-csp-ui.js",

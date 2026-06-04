@@ -117,6 +117,25 @@ All other successful runs keep the hold active. This includes local runs,
 production read-only runs, and any run that skipped the ticket/attachment
 mutation check.
 
+## Milestone 5 Cutover Evidence Verification
+
+Before final DNS or self-hosted cutover, verify the production evidence pack
+with:
+
+```bash
+npm run cutover:verify -- /path/to/foxdesk-cutover-gate/result.json
+```
+
+The verifier fails unless the evidence is fresh, passed in production mode, used
+`FOXDESK_CUTOVER_ALLOW_MUTATION=1`, has `canLiftHold=true`, has every checklist
+item passing, points at a non-local production URL, and contains non-empty
+screenshot files.
+
+This command is the preflight gate for manual cutover approval. Do not switch
+`helpdesk.aenze.com`, disable self-hosted ingest, or mark the migration as
+single-active until `cutover:verify` passes against the latest production
+evidence pack.
+
 ## Explicit Non-Goals During Hold
 
 - Do not redirect `helpdesk.aenze.com` to SaaS.
