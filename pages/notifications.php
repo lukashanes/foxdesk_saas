@@ -218,13 +218,13 @@ function render_child_card(array $notif): void
 
     <!-- Notification list -->
     <div id="notif-list">
-        <div id="notif-page-loading" class="text-center py-8 text-sm" style="color: var(--text-muted);">
+        <div id="notif-page-loading" class="text-center py-8 text-sm text-theme-muted">
             <?php echo e(t('Loading...')); ?>
         </div>
         <noscript>
             <div class="notif-empty">
                 <?php echo get_icon('bell', 'w-12 h-12 notif-empty-icon'); ?>
-                <p class="text-base font-medium" style="color: var(--text-secondary);"><?php echo e(t('Notifications require JavaScript to load on this page.')); ?></p>
+                <p class="text-base font-medium text-theme-secondary"><?php echo e(t('Notifications require JavaScript to load on this page.')); ?></p>
             </div>
         </noscript>
     </div>
@@ -477,7 +477,7 @@ function render_child_card(array $notif): void
     function renderEmptyState() {
         return '<div class="notif-empty">'
             + <?php echo json_encode(get_icon('bell', 'w-12 h-12 notif-empty-icon')); ?>
-            + '<p class="text-base font-medium" style="color: var(--text-secondary);">' + esc(<?php echo json_encode(t('No notifications')); ?>) + '</p>'
+            + '<p class="text-base font-medium text-theme-secondary">' + esc(<?php echo json_encode(t('No notifications')); ?>) + '</p>'
             + '<p class="text-sm mt-1">' + esc(<?php echo json_encode(t('Activity on your tickets will appear here')); ?>) + '</p>'
             + '</div>';
     }

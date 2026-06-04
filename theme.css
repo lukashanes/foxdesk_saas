@@ -8333,12 +8333,198 @@ img.db-avatar {
     }
 }
 
+/* Public report pages */
+body.report-public-page {
+    --report-theme-color: #3b82f6;
+    --report-theme-color-dark: #2563eb;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.report-public-page * {
+    box-sizing: border-box;
+}
+
+.report-theme-text {
+    color: var(--report-theme-color);
+}
+
+.report-chart-shell {
+    height: 300px;
+}
+
+.report-public-page .kpi-card,
+.report-public-page .kpi-card-alt-1,
+.report-public-page .kpi-card-alt-2,
+.report-public-page .kpi-card-alt-3 {
+    transform: translateY(0);
+    transition: transform .3s ease, box-shadow .3s ease;
+}
+
+.report-public-page .kpi-card {
+    background: linear-gradient(135deg, var(--report-theme-color) 0%, var(--report-theme-color-dark) 100%);
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, .2);
+}
+
+.report-public-page .kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 40px -5px rgba(0, 0, 0, .15);
+}
+
+.report-public-page .kpi-card-alt-1 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 10px 30px -5px rgba(102, 126, 234, .3);
+}
+
+.report-public-page .kpi-card-alt-1:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 40px -5px rgba(102, 126, 234, .4);
+}
+
+.report-public-page .kpi-card-alt-2 {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    box-shadow: 0 10px 30px -5px rgba(99, 102, 241, .3);
+}
+
+.report-public-page .kpi-card-alt-2:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 40px -5px rgba(99, 102, 241, .4);
+}
+
+.report-public-page .kpi-card-alt-3 {
+    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+    box-shadow: 0 10px 30px -5px rgba(59, 130, 246, .3);
+}
+
+.report-public-page .kpi-card-alt-3:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 40px -5px rgba(59, 130, 246, .4);
+}
+
+.report-public-page table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.report-public-page thead th {
+    background-color: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #6b7280;
+}
+
+.report-public-page tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #374151;
+    font-size: 14px;
+}
+
+.report-public-page tbody tr:hover {
+    background-color: #f9fafb;
+}
+
+.report-public-page tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.report-public-error-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: start center;
+    padding: 100px 20px 48px;
+    background: #f8fafc;
+    color: #111827;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.report-public-error-card {
+    width: min(100%, 600px);
+    text-align: center;
+}
+
+.report-public-error-card h1 {
+    margin: 0 0 16px;
+    color: #dc2626;
+    font-size: 24px;
+    line-height: 1.2;
+}
+
+.report-public-error-card p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.report-public-error-meta {
+    margin-top: 24px !important;
+    color: #9ca3af !important;
+    font-size: 14px !important;
+}
+
+@media print {
+    body.report-public-page {
+        font-size: 10pt;
+    }
+
+    .report-public-page .no-print {
+        display: none !important;
+    }
+
+    .report-public-page .page-break {
+        page-break-before: always;
+    }
+
+    .report-public-page a[href]::after {
+        content: none !important;
+    }
+}
+
 .text-theme-muted {
     color: var(--text-muted);
 }
 
 .text-theme-secondary {
     color: var(--text-secondary);
+}
+
+.text-theme-primary {
+    color: var(--text-primary);
+}
+
+.text-theme-border-light {
+    color: var(--border-light);
+}
+
+.border-theme-light {
+    border-color: var(--border-light);
+}
+
+.bg-theme-primary {
+    background: var(--surface-primary);
+}
+
+.bg-theme-secondary {
+    background: var(--surface-secondary);
+}
+
+.bg-theme-tertiary {
+    background: var(--surface-tertiary);
+}
+
+.bg-theme-border-light {
+    background: var(--border-light);
+}
+
+.bg-theme-app {
+    background: var(--bg-primary);
 }
 
 .link-theme-primary {

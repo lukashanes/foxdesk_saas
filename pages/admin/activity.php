@@ -11,7 +11,7 @@ $page = 'admin';
 
 if (!ensure_page_views_table()) {
     require_once BASE_PATH . '/includes/header.php';
-    echo '<div class="p-8 text-center" style="color:var(--text-muted);">' . e(t('Activity tracking table is not available.')) . '</div>';
+    echo '<div class="p-8 text-center text-theme-muted">' . e(t('Activity tracking table is not available.')) . '</div>';
     require_once BASE_PATH . '/includes/footer.php';
     return;
 }
@@ -180,7 +180,7 @@ require_once BASE_PATH . '/includes/header.php';
                     <?php endforeach; ?>
                 </div>
             <?php else: ?>
-                <div class="text-xs" style="color: var(--text-muted);">—</div>
+                <div class="text-xs text-theme-muted">—</div>
             <?php endif; ?>
         </div>
     </div>
@@ -188,11 +188,11 @@ require_once BASE_PATH . '/includes/header.php';
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <!-- Popular pages -->
         <div class="act-card">
-            <h3 class="text-xs font-semibold uppercase tracking-wider mb-3" style="color: var(--text-muted);">
+            <h3 class="text-xs font-semibold uppercase tracking-wider mb-3 text-theme-muted">
                 <?php echo e(t('Most Visited Pages')); ?>
             </h3>
             <?php if (empty($popular_pages)): ?>
-                <div class="text-sm" style="color: var(--text-muted);"><?php echo e(t('No data yet.')); ?></div>
+                <div class="text-sm text-theme-muted"><?php echo e(t('No data yet.')); ?></div>
             <?php else:
                 $max_views = $popular_pages[0]['views'] ?? 1;
             ?>
@@ -204,7 +204,7 @@ require_once BASE_PATH . '/includes/header.php';
                                     <?php echo get_icon(pv_page_icon($pp['page']), 'w-3 h-3'); ?>
                                     <?php echo e(pv_page_label($pp['page'], $pp['section'], $page_labels, $section_labels)); ?>
                                 </span>
-                                <span class="text-xs tabular-nums" style="color: var(--text-muted);">
+                                <span class="text-xs tabular-nums text-theme-muted">
                                     <?php echo number_format($pp['views']); ?>
                                     <span class="ml-1">(<?php echo $pp['users']; ?> <?php echo e(t('users')); ?>)</span>
                                 </span>
@@ -221,12 +221,12 @@ require_once BASE_PATH . '/includes/header.php';
         <!-- User activity -->
         <div class="act-card" style="overflow: hidden; padding: 0;">
             <div class="px-5 pt-4 pb-2">
-                <h3 class="text-xs font-semibold uppercase tracking-wider" style="color: var(--text-muted);">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-theme-muted">
                     <?php echo e(t('User Activity')); ?>
                 </h3>
             </div>
             <?php if (empty($user_activity)): ?>
-                <div class="px-5 pb-4 text-sm" style="color: var(--text-muted);"><?php echo e(t('No data yet.')); ?></div>
+                <div class="px-5 pb-4 text-sm text-theme-muted"><?php echo e(t('No data yet.')); ?></div>
             <?php else: ?>
                 <div style="overflow-x: auto;">
                     <table class="act-table">
@@ -259,7 +259,7 @@ require_once BASE_PATH . '/includes/header.php';
                                             </div>
                                             <div>
                                                 <div class="font-medium text-sm"><?php echo e($ua_name); ?></div>
-                                                <div class="text-xs" style="color: var(--text-muted);"><?php echo e($ua['email']); ?></div>
+                                                <div class="text-xs text-theme-muted"><?php echo e($ua['email']); ?></div>
                                             </div>
                                         </a>
                                     </td>
@@ -285,7 +285,7 @@ require_once BASE_PATH . '/includes/header.php';
     $detail_user = db_fetch_one("SELECT id, first_name, last_name, email, role, avatar FROM users WHERE id = ? AND tenant_id = ?", [$uid, current_tenant_id()]);
 
     if (!$detail_user):
-        echo '<div class="act-card text-center py-8" style="color:var(--text-muted);">' . e(t('User not found.')) . '</div>';
+        echo '<div class="act-card text-center py-8 text-theme-muted">' . e(t('User not found.')) . '</div>';
     else:
         $du_name = trim(($detail_user['first_name'] ?? '') . ' ' . ($detail_user['last_name'] ?? ''));
         $du_initials = mb_strtoupper(mb_substr($detail_user['first_name'] ?? '?', 0, 1));
@@ -320,8 +320,8 @@ require_once BASE_PATH . '/includes/header.php';
                 <?php endif; ?>
             </div>
             <div>
-                <div class="font-bold text-base" style="color: var(--text-primary);"><?php echo e($du_name); ?></div>
-                <div class="text-xs" style="color: var(--text-muted);">
+                <div class="font-bold text-base text-theme-primary"><?php echo e($du_name); ?></div>
+                <div class="text-xs text-theme-muted">
                     <?php echo e($detail_user['email']); ?> ·
                     <span class="act-role-badge act-role-<?php echo e($detail_user['role']); ?>"><?php echo e($detail_user['role']); ?></span> ·
                     <?php echo number_format($du_total); ?> <?php echo e(t('views in {days}d', ['days' => $range_days])); ?>
@@ -333,11 +333,11 @@ require_once BASE_PATH . '/includes/header.php';
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <!-- Pages used -->
         <div class="act-card">
-            <h3 class="text-xs font-semibold uppercase tracking-wider mb-3" style="color: var(--text-muted);">
+            <h3 class="text-xs font-semibold uppercase tracking-wider mb-3 text-theme-muted">
                 <?php echo e(t('Pages Used')); ?>
             </h3>
             <?php if (empty($du_pages)): ?>
-                <div class="text-sm" style="color: var(--text-muted);"><?php echo e(t('No data.')); ?></div>
+                <div class="text-sm text-theme-muted"><?php echo e(t('No data.')); ?></div>
             <?php else:
                 $du_max = $du_pages[0]['views'] ?? 1;
             ?>
@@ -349,7 +349,7 @@ require_once BASE_PATH . '/includes/header.php';
                                     <?php echo get_icon(pv_page_icon($dp['page']), 'w-3 h-3'); ?>
                                     <?php echo e(pv_page_label($dp['page'], $dp['section'], $page_labels, $section_labels)); ?>
                                 </span>
-                                <span class="text-xs tabular-nums" style="color: var(--text-muted);"><?php echo number_format($dp['views']); ?></span>
+                                <span class="text-xs tabular-nums text-theme-muted"><?php echo number_format($dp['views']); ?></span>
                             </div>
                             <div class="act-bar-bg">
                                 <div class="act-bar" style="width: <?php echo round(100 * $dp['views'] / $du_max); ?>%;"></div>
@@ -363,7 +363,7 @@ require_once BASE_PATH . '/includes/header.php';
         <!-- Recent activity -->
         <div class="act-card" style="overflow: hidden; padding: 0;">
             <div class="px-5 pt-4 pb-2">
-                <h3 class="text-xs font-semibold uppercase tracking-wider" style="color: var(--text-muted);">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-theme-muted">
                     <?php echo e(t('Recent Activity')); ?>
                 </h3>
             </div>
@@ -448,8 +448,7 @@ require_once BASE_PATH . '/includes/header.php';
             <input type="hidden" name="tab" value="log">
             <input type="hidden" name="range" value="<?php echo $range_days; ?>">
 
-            <select name="uid" class="text-sm rounded-lg border px-3 py-1.5"
-                    style="background: var(--surface-primary); border-color: var(--border-light); color: var(--text-primary);">
+            <select name="uid" class="text-sm rounded-lg border px-3 py-1.5 bg-theme-primary border-theme-light text-theme-primary">
                 <option value=""><?php echo e(t('All users')); ?></option>
                 <?php foreach ($filter_users as $fu): ?>
                     <option value="<?php echo $fu['user_id']; ?>" <?php echo $log_user == $fu['user_id'] ? 'selected' : ''; ?>>
@@ -458,8 +457,7 @@ require_once BASE_PATH . '/includes/header.php';
                 <?php endforeach; ?>
             </select>
 
-            <select name="fp" class="text-sm rounded-lg border px-3 py-1.5"
-                    style="background: var(--surface-primary); border-color: var(--border-light); color: var(--text-primary);">
+            <select name="fp" class="text-sm rounded-lg border px-3 py-1.5 bg-theme-primary border-theme-light text-theme-primary">
                 <option value=""><?php echo e(t('All pages')); ?></option>
                 <?php foreach ($filter_pages_list as $fp): ?>
                     <option value="<?php echo e($fp['page']); ?>" <?php echo $log_page_filter === $fp['page'] ? 'selected' : ''; ?>>
@@ -475,7 +473,7 @@ require_once BASE_PATH . '/includes/header.php';
                    class="text-sm" style="color: var(--text-muted);"><?php echo e(t('Clear')); ?></a>
             <?php endif; ?>
 
-            <span class="text-xs ml-auto" style="color: var(--text-muted);">
+            <span class="text-xs ml-auto text-theme-muted">
                 <?php echo number_format($log_total); ?> <?php echo e(t('entries')); ?>
             </span>
         </form>
@@ -495,7 +493,7 @@ require_once BASE_PATH . '/includes/header.php';
                 </thead>
                 <tbody>
                     <?php if (empty($log_entries)): ?>
-                        <tr><td colspan="4" class="text-center py-6" style="color: var(--text-muted);"><?php echo e(t('No entries found.')); ?></td></tr>
+                        <tr><td colspan="4" class="text-center py-6 text-theme-muted"><?php echo e(t('No entries found.')); ?></td></tr>
                     <?php else: ?>
                         <?php foreach ($log_entries as $le): ?>
                             <tr>
@@ -523,8 +521,8 @@ require_once BASE_PATH . '/includes/header.php';
         </div>
 
         <?php if ($log_pages > 1): ?>
-            <div class="flex items-center justify-between px-4 py-3 border-t" style="border-color: var(--border-light);">
-                <div class="text-xs" style="color: var(--text-muted);">
+            <div class="flex items-center justify-between px-4 py-3 border-t border-theme-light">
+                <div class="text-xs text-theme-muted">
                     <?php echo e(t('Page {current} of {total}', ['current' => $page_num, 'total' => $log_pages])); ?>
                 </div>
                 <div class="flex gap-1">
@@ -555,10 +553,10 @@ require_once BASE_PATH . '/includes/header.php';
     $oldest_date = $oldest['oldest'] ?? null;
     ?>
     <div class="act-card" style="max-width: 500px;">
-        <h3 class="text-sm font-semibold mb-3" style="color: var(--text-primary);">
+        <h3 class="text-sm font-semibold mb-3 text-theme-primary">
             <?php echo e(t('Data Management')); ?>
         </h3>
-        <p class="text-xs mb-4" style="color: var(--text-muted);">
+        <p class="text-xs mb-4 text-theme-muted">
             <?php echo e(t('Total records: {count}', ['count' => number_format($total_all)])); ?>
             <?php if ($oldest_date): ?>
                 · <?php echo e(t('Since: {date}', ['date' => date('d.m.Y', strtotime($oldest_date))])); ?>
@@ -568,12 +566,10 @@ require_once BASE_PATH . '/includes/header.php';
         <form method="post" class="space-y-3" onsubmit="return confirm('<?php echo e(t('Are you sure?')); ?>');">
             <?php echo csrf_field(); ?>
             <div class="flex items-center gap-2">
-                <button type="submit" name="clear_old" class="text-sm font-medium px-3 py-1.5 rounded-lg border"
-                        style="border-color: var(--border-light); color: var(--text-secondary);">
+                <button type="submit" name="clear_old" class="text-sm font-medium px-3 py-1.5 rounded-lg border border-theme-light text-theme-secondary">
                     <?php echo e(t('Delete older than')); ?>
                 </button>
-                <select name="days" class="text-sm rounded-lg border px-2 py-1.5"
-                        style="background: var(--surface-primary); border-color: var(--border-light); color: var(--text-primary);">
+                <select name="days" class="text-sm rounded-lg border px-2 py-1.5 bg-theme-primary border-theme-light text-theme-primary">
                     <option value="7">7 <?php echo e(t('days')); ?></option>
                     <option value="30">30 <?php echo e(t('days')); ?></option>
                     <option value="90" selected>90 <?php echo e(t('days')); ?></option>

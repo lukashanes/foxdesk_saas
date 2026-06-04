@@ -137,20 +137,20 @@ include BASE_PATH . '/includes/components/page-header.php';
     <!-- Clients List -->
     <div class="admin-main-column">
         <div class="admin-list-card">
-            <div class="px-6 py-3 border-b flex items-center justify-between" style="border-color: var(--border-light);">
-                <h3 class="font-semibold" style="color: var(--text-primary);"><?php echo e(t('Clients')); ?> (<?php echo count($clients); ?>)
+            <div class="px-6 py-3 border-b flex items-center justify-between border-theme-light">
+                <h3 class="font-semibold text-theme-primary"><?php echo e(t('Clients')); ?> (<?php echo count($clients); ?>)
                 </h3>
             </div>
 
             <?php if (empty($clients)): ?>
-                <div class="p-8 text-center" style="color: var(--text-muted);">
+                <div class="p-8 text-center text-theme-muted">
                     <?php echo get_icon('users', 'text-4xl mb-4 opacity-50'); ?>
                     <p><?php echo e(t('No clients yet.')); ?></p>
                 </div>
             <?php else: ?>
                 <div class="overflow-x-auto">
                     <table class="w-full">
-                        <thead class="border-b" style="background: var(--surface-secondary); border-color: var(--border-light);">
+                        <thead class="border-b bg-theme-secondary border-theme-light">
                             <tr>
                                 <th class="px-6 py-3 text-left th-label">
                                     <?php echo e(t('Name')); ?>
@@ -179,16 +179,16 @@ include BASE_PATH . '/includes/components/page-header.php';
                                                 <img src="<?php echo e(upload_url($client['avatar'])); ?>" alt=""
                                                     class="w-8 h-8 rounded-full object-cover">
                                             <?php else: ?>
-                                                <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background: var(--surface-tertiary); color: var(--text-secondary);">
+                                                <div class="w-8 h-8 rounded-full flex items-center justify-center bg-theme-tertiary text-theme-secondary">
                                                     <span
                                                         class="text-sm font-medium"><?php echo strtoupper(substr($client['first_name'], 0, 1)); ?></span>
                                                 </div>
                                             <?php endif; ?>
                                             <span
-                                                class="font-medium" style="color: var(--text-primary);"><?php echo e($client['first_name'] . ' ' . $client['last_name']); ?></span>
+                                                class="font-medium text-theme-primary"><?php echo e($client['first_name'] . ' ' . $client['last_name']); ?></span>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 text-sm" style="color: var(--text-muted);"><?php echo e($client['email']); ?></td>
+                                    <td class="px-6 py-4 text-sm text-theme-muted"><?php echo e($client['email']); ?></td>
                                     <td class="px-6 py-4">
                                         <?php if ($client['is_active']): ?>
                                             <span
@@ -198,7 +198,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                                 class="badge text-xs bg-red-100 text-red-600"><?php echo e(t('Inactive')); ?></span>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="px-6 py-4 text-sm" style="color: var(--text-muted);">
+                                    <td class="px-6 py-4 text-sm text-theme-muted">
                                         <?php echo $ticket_count; ?>
                                     </td>
                                     <td class="px-6 py-4 text-right">
@@ -232,33 +232,33 @@ include BASE_PATH . '/includes/components/page-header.php';
     <!-- Add New Client -->
     <div class="admin-side-column">
         <div class="card card-body">
-            <h3 class="font-semibold mb-4" style="color: var(--text-primary);"><?php echo e(t('Add client')); ?></h3>
+            <h3 class="font-semibold mb-4 text-theme-primary"><?php echo e(t('Add client')); ?></h3>
 
             <form method="post" class="space-y-4">
                 <?php echo csrf_field(); ?>
                 <div>
-                    <label class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('Email')); ?> *</label>
+                    <label class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Email')); ?> *</label>
                     <input type="email" name="email" required class="form-input">
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('First name')); ?>
+                        <label class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('First name')); ?>
                             *</label>
                         <input type="text" name="first_name" required class="form-input">
                     </div>
                     <div>
                         <label
-                            class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('Last name')); ?></label>
+                            class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Last name')); ?></label>
                         <input type="text" name="last_name" class="form-input">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('Password')); ?>
+                    <label class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Password')); ?>
                         *</label>
                     <input type="password" name="password" required minlength="12" class="form-input">
-                    <p class="text-xs mt-1" style="color: var(--text-muted);"><?php echo e(t('Minimum 12 characters')); ?></p>
+                    <p class="text-xs mt-1 text-theme-muted"><?php echo e(t('Minimum 12 characters')); ?></p>
                 </div>
 
                 <button type="submit" name="add_client" class="btn btn-primary w-full">
@@ -271,8 +271,8 @@ include BASE_PATH . '/includes/components/page-header.php';
 
 <!-- Edit Client Modal -->
 <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="rounded-xl shadow-xl max-w-md w-full mx-4 p-4" style="background: var(--bg-primary);">
-        <h3 class="font-semibold mb-4" style="color: var(--text-primary);"><?php echo e(t('Edit client')); ?></h3>
+    <div class="rounded-xl shadow-xl max-w-md w-full mx-4 p-4 bg-theme-app">
+        <h3 class="font-semibold mb-4 text-theme-primary"><?php echo e(t('Edit client')); ?></h3>
         <form method="post" id="editForm" class="space-y-4">
             <?php echo csrf_field(); ?>
             <input type="hidden" name="id" id="edit_id">
@@ -280,18 +280,18 @@ include BASE_PATH . '/includes/components/page-header.php';
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label
-                        class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('First name')); ?></label>
+                        class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('First name')); ?></label>
                     <input type="text" name="first_name" id="edit_first_name" class="form-input">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('Last name')); ?></label>
+                    <label class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Last name')); ?></label>
                     <input type="text" name="last_name" id="edit_last_name" class="form-input">
                 </div>
             </div>
 
             <div>
-                <label class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('Email')); ?></label>
-                <input type="email" id="edit_email" disabled class="form-input" style="background: var(--surface-secondary); color: var(--text-muted);">
+                <label class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Email')); ?></label>
+                <input type="email" id="edit_email" disabled class="form-input bg-theme-secondary text-theme-muted">
             </div>
 
             <div class="flex space-x-3">
@@ -304,9 +304,9 @@ include BASE_PATH . '/includes/components/page-header.php';
             </div>
         </form>
 
-        <hr class="my-4 border-t" style="border-color: var(--border-light);">
+        <hr class="my-4 border-t border-theme-light">
 
-        <h4 class="font-medium mb-3" style="color: var(--text-secondary);"><?php echo e(t('Change password')); ?></h4>
+        <h4 class="font-medium mb-3 text-theme-secondary"><?php echo e(t('Change password')); ?></h4>
 
         <form method="post" class="space-y-3">
             <?php echo csrf_field(); ?>
@@ -314,7 +314,7 @@ include BASE_PATH . '/includes/components/page-header.php';
             <div class="flex items-end space-x-3">
                 <div class="flex-1">
                     <label
-                        class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('New password')); ?></label>
+                        class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('New password')); ?></label>
                     <input type="password" name="new_password" minlength="12" class="form-input">
                 </div>
                 <button type="submit" name="reset_password" class="btn btn-warning">
@@ -360,4 +360,4 @@ include BASE_PATH . '/includes/components/page-header.php';
     });
 </script>
 
-<?php require_once BASE_PATH . '/includes/footer.php'; 
+<?php require_once BASE_PATH . '/includes/footer.php';

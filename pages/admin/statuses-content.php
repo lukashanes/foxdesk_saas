@@ -105,8 +105,7 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
 
 <div class="flex flex-col h-full">
     <!-- Add New Status Button -->
-    <button type="button" class="mb-3 w-full px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-colors"
-        style="background: var(--surface-secondary); color: var(--text-primary);"
+    <button type="button" class="mb-3 w-full px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-colors bg-theme-secondary text-theme-primary"
         onclick="document.getElementById('add-status-form').classList.toggle('hidden')">
         <?php echo get_icon('plus', 'w-3.5 h-3.5'); ?>
         <?php echo e(t('Add Status')); ?>
@@ -115,24 +114,24 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
     <!-- Add Form (Glassmorphic) -->
     <form method="post" id="add-status-form" class="hidden mb-3 p-3 rounded-lg glass-form" style="background: rgba(255, 255, 255, 0.7);">
         <?php echo csrf_field(); ?>
-        <h4 class="text-xs font-semibold mb-2" style="color: var(--text-primary);">
+        <h4 class="text-xs font-semibold mb-2 text-theme-primary">
             <?php echo e(t('Add New Status')); ?>
         </h4>
         <div class="space-y-2">
             <div>
-                <label class="block text-xs mb-1" style="color: var(--text-secondary);">
+                <label class="block text-xs mb-1 text-theme-secondary">
                     <?php echo e(t('Name')); ?> *
                 </label>
                 <input type="text" name="name" required class="form-input w-full text-xs" placeholder="<?php echo e(t('Open, In Progress, Done...')); ?>">
             </div>
             <div>
-                <label class="block text-xs mb-1" style="color: var(--text-secondary);">
+                <label class="block text-xs mb-1 text-theme-secondary">
                     <?php echo e(t('Color')); ?>
                 </label>
                 <input type="color" name="color" value="#3b82f6" class="w-full h-8 rounded cursor-pointer" style="border: 1px solid var(--border-light);">
             </div>
             <div>
-                <label class="block text-xs mb-1" style="color: var(--text-secondary);">
+                <label class="block text-xs mb-1 text-theme-secondary">
                     <?php echo e(t('Position')); ?>
                 </label>
                 <select name="position" class="form-select w-full text-xs">
@@ -145,7 +144,7 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
                     <?php endforeach; ?>
                 </select>
             </div>
-            <label class="flex items-center gap-2 text-xs cursor-pointer" style="color: var(--text-secondary);">
+            <label class="flex items-center gap-2 text-xs cursor-pointer text-theme-secondary">
                 <input type="checkbox" name="is_closed" class="rounded w-3.5 h-3.5">
                 <?php echo e(t('Mark as closed')); ?>
             </label>
@@ -153,8 +152,7 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
                 <button type="submit" name="add_status" class="flex-1 btn btn-primary btn-sm text-xs">
                     <?php echo e(t('Create')); ?>
                 </button>
-                <button type="button" class="flex-1 px-2 py-1 rounded text-xs transition-colors"
-                    style="background: var(--border-light); color: var(--text-secondary);"
+                <button type="button" class="flex-1 px-2 py-1 rounded text-xs transition-colors bg-theme-border-light text-theme-secondary"
                     onclick="document.getElementById('add-status-form').classList.add('hidden')">
                     <?php echo e(t('Cancel')); ?>
                 </button>
@@ -165,7 +163,7 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
     <!-- Statuses List -->
     <div id="statuses-list" class="status-list">
         <?php if (empty($statuses)): ?>
-            <div class="text-center py-6" style="color: var(--text-muted);">
+            <div class="text-center py-6 text-theme-muted">
                 <p class="text-xs"><?php echo e(t('No statuses yet.')); ?></p>
             </div>
         <?php else: ?>
@@ -188,7 +186,7 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
 
                     <!-- Name and Status -->
                     <div class="flex-1 min-w-0">
-                        <div class="text-xs font-medium" style="color: var(--text-primary);">
+                        <div class="text-xs font-medium text-theme-primary">
                             <?php echo e($status['name']); ?>
                         </div>
                         <?php if ($status['is_closed']): ?>
@@ -222,7 +220,7 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
 
                         <div class="space-y-2">
                             <div>
-                                <label class="block text-xs mb-1" style="color: var(--text-secondary);">
+                                <label class="block text-xs mb-1 text-theme-secondary">
                                     <?php echo e(t('Name')); ?> *
                                 </label>
                                 <input type="text" name="name" value="<?php echo e($status['name']); ?>" required class="form-input w-full text-xs"
@@ -230,24 +228,24 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
                             </div>
 
                             <div>
-                                <label class="block text-xs mb-1" style="color: var(--text-secondary);">
+                                <label class="block text-xs mb-1 text-theme-secondary">
                                     <?php echo e(t('Color')); ?>
                                 </label>
                                 <input type="color" name="color" value="<?php echo e($status['color']); ?>" class="w-full h-8 rounded cursor-pointer"
                                     style="border: 1px solid var(--border-light);">
                             </div>
 
-                            <label class="flex items-center gap-2 text-xs cursor-pointer" style="color: var(--text-secondary);">
+                            <label class="flex items-center gap-2 text-xs cursor-pointer text-theme-secondary">
                                 <input type="checkbox" name="is_closed" class="rounded w-3.5 h-3.5" <?php echo $status['is_closed'] ? 'checked' : ''; ?>>
                                 <?php echo e(t('Mark as closed')); ?>
                             </label>
 
-                            <div class="pt-2 border-t" style="border-color: var(--border-light);">
+                            <div class="pt-2 border-t border-theme-light">
                                 <div class="flex gap-2 mb-2">
                                     <button type="submit" name="update_status" class="flex-1 btn btn-primary btn-sm text-xs">
                                         <?php echo e(t('Save')); ?>
                                     </button>
-                                    <button type="submit" name="set_default" class="flex-1 btn btn-sm text-xs" style="background: var(--border-light); color: var(--text-secondary);">
+                                    <button type="submit" name="set_default" class="flex-1 btn btn-sm text-xs bg-theme-border-light text-theme-secondary">
                                         <?php echo e(t('Set Default')); ?>
                                     </button>
                                 </div>

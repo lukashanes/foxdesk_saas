@@ -19,8 +19,8 @@ function render_report_share_message($app_name, $title, $message)
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title><?php echo e($title); ?> - <?php echo e($app_name); ?></title>
-        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-        <link href="theme.css" rel="stylesheet">
+        <link href="tailwind.min.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
+        <link href="theme.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
     </head>
 
     <body class="bg-gray-100 min-h-screen">
@@ -102,8 +102,8 @@ $expires_label = !empty($share['expires_at']) ? format_date($share['expires_at']
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo e(t('Time report')); ?> - <?php echo e($app_name); ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="theme.css" rel="stylesheet">
+    <link href="tailwind.min.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
+    <link href="theme.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
 </head>
 
 <body class="bg-gray-100 min-h-screen">

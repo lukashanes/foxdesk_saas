@@ -299,14 +299,14 @@ include BASE_PATH . '/includes/components/page-header.php';
 
         <!-- Avatar -->
         <div class="card card-body">
-            <h3 class="text-sm font-semibold uppercase tracking-wider mb-4" style="color: var(--text-muted);"><?php echo e(t('Profile picture')); ?></h3>
+            <h3 class="text-sm font-semibold uppercase tracking-wider mb-4 text-theme-muted"><?php echo e(t('Profile picture')); ?></h3>
 
             <div class="flex flex-col items-center text-center">
                 <?php if (!empty($user['avatar'])): ?>
                     <img src="<?php echo e(upload_url($user['avatar'])); ?>" alt="Avatar"
                         class="w-20 h-20 rounded-full object-cover border-2 mb-3" style="border-color: var(--border-light);">
                 <?php else: ?>
-                    <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center border-2 mb-3" style="border-color: var(--border-light);">
+                    <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center border-2 mb-3 border-theme-light">
                         <span class="text-blue-600 text-2xl font-bold"><?php echo strtoupper(substr($user['first_name'], 0, 1)); ?></span>
                     </div>
                 <?php endif; ?>
@@ -316,7 +316,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                     <?php echo csrf_field(); ?>
                     <div id="avatar-upload-zone" class="upload-zone-compact p-2.5 cursor-pointer">
                         <input type="file" name="avatar" id="avatar-file-input" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden">
-                        <div class="flex items-center justify-center gap-2 text-xs" style="color: var(--text-secondary);">
+                        <div class="flex items-center justify-center gap-2 text-xs text-theme-secondary">
                             <?php echo get_icon('cloud-upload-alt', 'w-3.5 h-3.5 flex-shrink-0'); ?>
                             <span>
                                 <span class="text-blue-500 font-medium"><?php echo e(t('Click')); ?></span>
@@ -324,12 +324,12 @@ include BASE_PATH . '/includes/components/page-header.php';
                             </span>
                         </div>
                     </div>
-                    <p id="avatar-file-name" class="hidden text-xs" style="color: var(--text-muted);"></p>
+                    <p id="avatar-file-name" class="hidden text-xs text-theme-muted"></p>
                     <button type="submit" name="upload_avatar" class="btn btn-primary btn-sm w-full">
                         <?php echo e(t('Upload')); ?>
                     </button>
                 </form>
-                <p class="text-xs mt-1" style="color: var(--text-muted);"><?php echo e(t('JPG, PNG, GIF, or WebP. Max 2MB.')); ?></p>
+                <p class="text-xs mt-1 text-theme-muted"><?php echo e(t('JPG, PNG, GIF, or WebP. Max 2MB.')); ?></p>
 
                 <div class="flex items-center justify-center gap-2 mt-3 w-full">
                     <form method="post" class="inline">
@@ -355,26 +355,26 @@ include BASE_PATH . '/includes/components/page-header.php';
         <?php if ($notification_preferences_available): ?>
         <!-- Notification Preferences -->
         <div class="card card-body">
-            <h3 class="text-sm font-semibold uppercase tracking-wider mb-4" style="color: var(--text-muted);"><?php echo e(t('Notification settings')); ?></h3>
+            <h3 class="text-sm font-semibold uppercase tracking-wider mb-4 text-theme-muted"><?php echo e(t('Notification settings')); ?></h3>
 
             <form method="post" class="space-y-3">
                 <?php echo csrf_field(); ?>
 
                 <?php if (in_array($user['role'], ['user', 'agent'], true)): ?>
-                <label class="flex items-center gap-2 text-sm cursor-pointer" style="color: var(--text-secondary);">
+                <label class="flex items-center gap-2 text-sm cursor-pointer text-theme-secondary">
                     <input type="checkbox" name="email_notifications_enabled" class="rounded"
                         <?php echo (int) ($user['email_notifications_enabled'] ?? 1) === 1 ? 'checked' : ''; ?>>
                     <?php echo e(t('Email notifications')); ?>
                 </label>
                 <?php endif; ?>
 
-                <label class="flex items-center gap-2 text-sm cursor-pointer" style="color: var(--text-secondary);">
+                <label class="flex items-center gap-2 text-sm cursor-pointer text-theme-secondary">
                     <input type="checkbox" name="in_app_notifications_enabled" id="profile_in_app_notifications_enabled"
                         class="rounded" <?php echo (int) ($user['in_app_notifications_enabled'] ?? 1) === 1 ? 'checked' : ''; ?>>
                     <?php echo e(t('In-app notifications')); ?>
                 </label>
 
-                <label class="flex items-center gap-2 text-sm cursor-pointer ml-5" style="color: var(--text-secondary);">
+                <label class="flex items-center gap-2 text-sm cursor-pointer ml-5 text-theme-secondary">
                     <input type="checkbox" name="in_app_sound_enabled" id="profile_in_app_sound_enabled"
                         class="rounded" <?php echo (int) ($user['in_app_sound_enabled'] ?? 0) === 1 ? 'checked' : ''; ?>>
                     <?php echo e(t('Play sound')); ?>
@@ -398,13 +398,13 @@ include BASE_PATH . '/includes/components/page-header.php';
                 : array_fill_keys(array_keys($notif_type_labels), true);
         ?>
         <div class="card card-body">
-            <h3 class="text-sm font-semibold uppercase tracking-wider mb-4" style="color: var(--text-muted);"><?php echo e(t('Notification types')); ?></h3>
-            <p class="text-xs mb-3" style="color: var(--text-muted);"><?php echo e(t('Choose which notification types you want to receive.')); ?></p>
+            <h3 class="text-sm font-semibold uppercase tracking-wider mb-4 text-theme-muted"><?php echo e(t('Notification types')); ?></h3>
+            <p class="text-xs mb-3 text-theme-muted"><?php echo e(t('Choose which notification types you want to receive.')); ?></p>
 
             <form method="post" class="space-y-2">
                 <?php echo csrf_field(); ?>
                 <?php foreach ($notif_type_labels as $type_key => $type_label): ?>
-                <label class="flex items-center gap-2 text-sm cursor-pointer" style="color: var(--text-secondary);">
+                <label class="flex items-center gap-2 text-sm cursor-pointer text-theme-secondary">
                     <input type="checkbox" name="notif_type_<?php echo e($type_key); ?>" class="rounded"
                         <?php echo !empty($notif_prefs[$type_key]) ? 'checked' : ''; ?>>
                     <?php echo e($type_label); ?>
@@ -425,19 +425,19 @@ include BASE_PATH . '/includes/components/page-header.php';
 
         <!-- Personal Information -->
         <div class="card card-body">
-            <h3 class="text-sm font-semibold uppercase tracking-wider mb-4" style="color: var(--text-muted);"><?php echo e(t('Personal information')); ?></h3>
+            <h3 class="text-sm font-semibold uppercase tracking-wider mb-4 text-theme-muted"><?php echo e(t('Personal information')); ?></h3>
 
             <form method="post" class="space-y-4">
                 <?php echo csrf_field(); ?>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label for="profile-first-name"
-                            class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('First name')); ?></label>
+                            class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('First name')); ?></label>
                         <input type="text" name="first_name" id="profile-first-name" value="<?php echo e($user['first_name']); ?>" required aria-required="true"
                             autocomplete="given-name" class="form-input">
                     </div>
                     <div>
-                        <label for="profile-last-name" class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('Last name')); ?></label>
+                        <label for="profile-last-name" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Last name')); ?></label>
                         <input type="text" name="last_name" id="profile-last-name" value="<?php echo e($user['last_name']); ?>"
                             autocomplete="family-name" class="form-input">
                     </div>
@@ -445,7 +445,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 
                 <?php if ($contact_phone_column_exists): ?>
                     <div>
-                        <label for="profile-phone" class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('Phone')); ?></label>
+                        <label for="profile-phone" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Phone')); ?></label>
                         <input type="text" name="contact_phone" id="profile-phone" value="<?php echo e($user['contact_phone'] ?? ''); ?>"
                             autocomplete="tel" class="form-input">
                     </div>
@@ -453,13 +453,13 @@ include BASE_PATH . '/includes/components/page-header.php';
 
                 <?php if ($notes_column_exists): ?>
                     <div>
-                        <label for="profile-notes" class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('Notes')); ?></label>
+                        <label for="profile-notes" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Notes')); ?></label>
                         <textarea name="notes" id="profile-notes" rows="3" class="form-textarea"><?php echo e($user['notes'] ?? ''); ?></textarea>
                     </div>
                 <?php endif; ?>
 
                 <div>
-                    <label for="profile-language" class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('Language')); ?></label>
+                    <label for="profile-language" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Language')); ?></label>
                     <select name="language" id="profile-language" class="form-select w-full sm:w-1/2">
                         <option value="en" <?php echo ($user['language'] ?? 'en') === 'en' ? 'selected' : ''; ?>><?php echo e(t('English')); ?></option>
                         <option value="cs" <?php echo ($user['language'] ?? '') === 'cs' ? 'selected' : ''; ?>><?php echo e(t('Czech')); ?></option>
@@ -467,7 +467,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                         <option value="it" <?php echo ($user['language'] ?? '') === 'it' ? 'selected' : ''; ?>><?php echo e(t('Italian')); ?></option>
                         <option value="es" <?php echo ($user['language'] ?? '') === 'es' ? 'selected' : ''; ?>><?php echo e(t('Spanish')); ?></option>
                     </select>
-                    <p class="text-xs mt-1" style="color: var(--text-muted);"><?php echo e(t('Changes the language of the entire application interface.')); ?></p>
+                    <p class="text-xs mt-1 text-theme-muted"><?php echo e(t('Changes the language of the entire application interface.')); ?></p>
                 </div>
 
                 <button type="submit" name="update_profile" class="btn btn-primary">
@@ -478,18 +478,18 @@ include BASE_PATH . '/includes/components/page-header.php';
 
         <!-- Change Email -->
         <div class="card card-body">
-            <h3 class="text-sm font-semibold uppercase tracking-wider mb-4" style="color: var(--text-muted);"><?php echo e(t('Change email')); ?></h3>
+            <h3 class="text-sm font-semibold uppercase tracking-wider mb-4 text-theme-muted"><?php echo e(t('Change email')); ?></h3>
 
             <form method="post" class="space-y-4">
                 <?php echo csrf_field(); ?>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('Current email')); ?></label>
+                        <label class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Current email')); ?></label>
                         <input type="email" value="<?php echo e($user['email']); ?>" disabled autocomplete="email"
                             inputmode="email" autocapitalize="none" class="form-input" style="background: var(--surface-secondary); color: var(--text-muted);">
                     </div>
                     <div>
-                        <label for="profile-new-email" class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('New email')); ?></label>
+                        <label for="profile-new-email" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('New email')); ?></label>
                         <input type="email" name="new_email" id="profile-new-email" required aria-required="true" autocomplete="email" inputmode="email"
                             autocapitalize="none" class="form-input">
                     </div>
@@ -497,10 +497,10 @@ include BASE_PATH . '/includes/components/page-header.php';
 
                 <div class="sm:w-1/2">
                     <label for="profile-email-password"
-                        class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('Password for verification')); ?></label>
+                        class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Password for verification')); ?></label>
                     <input type="password" name="email_password" id="profile-email-password" required aria-required="true" autocomplete="current-password"
                         class="form-input">
-                    <p class="text-xs mt-1" style="color: var(--text-muted);">
+                    <p class="text-xs mt-1 text-theme-muted">
                         <?php echo e(t('Enter your current password to change email.')); ?></p>
                 </div>
 
@@ -512,26 +512,26 @@ include BASE_PATH . '/includes/components/page-header.php';
 
         <!-- Change Password -->
         <div class="card card-body">
-            <h3 class="text-sm font-semibold uppercase tracking-wider mb-4" style="color: var(--text-muted);"><?php echo e(t('Change password')); ?></h3>
+            <h3 class="text-sm font-semibold uppercase tracking-wider mb-4 text-theme-muted"><?php echo e(t('Change password')); ?></h3>
 
             <form method="post" class="space-y-4">
                 <?php echo csrf_field(); ?>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                         <label for="profile-current-password"
-                            class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('Current password')); ?></label>
+                            class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Current password')); ?></label>
                         <input type="password" name="current_password" id="profile-current-password" required aria-required="true" autocomplete="current-password"
                             class="form-input">
                     </div>
                     <div>
-                        <label for="profile-new-password" class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('New password')); ?></label>
+                        <label for="profile-new-password" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('New password')); ?></label>
                         <input type="password" name="new_password" id="profile-new-password" required aria-required="true" minlength="6" autocomplete="new-password"
                             class="form-input">
-                        <p class="text-xs mt-1" style="color: var(--text-muted);"><?php echo e(t('Minimum 6 characters')); ?></p>
+                        <p class="text-xs mt-1 text-theme-muted"><?php echo e(t('Minimum 6 characters')); ?></p>
                     </div>
                     <div>
                         <label for="profile-confirm-password"
-                            class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('Confirm password')); ?></label>
+                            class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Confirm password')); ?></label>
                         <input type="password" name="confirm_password" id="profile-confirm-password" required aria-required="true" autocomplete="new-password" class="form-input">
                     </div>
                 </div>
@@ -552,7 +552,7 @@ include BASE_PATH . '/includes/components/page-header.php';
         ?>
         <div class="card card-body" id="two-factor-section">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-sm font-semibold uppercase tracking-wider" style="color: var(--text-muted);"><?php echo e(t('Two-factor authentication')); ?></h3>
+                <h3 class="text-sm font-semibold uppercase tracking-wider text-theme-muted"><?php echo e(t('Two-factor authentication')); ?></h3>
                 <?php if ($totp_enabled): ?>
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
                         <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
@@ -578,9 +578,9 @@ include BASE_PATH . '/includes/components/page-header.php';
                         <?php echo e(t('Save these backup codes in a safe place. Each code can only be used once. This is the only time they will be shown.')); ?>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2 p-4 rounded-lg font-mono text-sm" style="background: var(--surface-secondary);" id="backup-codes-list">
+                    <div class="grid grid-cols-2 gap-2 p-4 rounded-lg font-mono text-sm bg-theme-secondary" id="backup-codes-list">
                         <?php foreach ($backup_codes as $code): ?>
-                            <div class="py-1 px-2 text-center" style="color: var(--text-primary);"><?php echo e($code); ?></div>
+                            <div class="py-1 px-2 text-center text-theme-primary"><?php echo e($code); ?></div>
                         <?php endforeach; ?>
                     </div>
 
@@ -629,7 +629,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                 $otpauth_uri = totp_get_uri($setup_secret, $user['email'], $app_name);
                 ?>
                 <div class="space-y-5">
-                    <p class="text-sm" style="color: var(--text-secondary);">
+                    <p class="text-sm text-theme-secondary">
                         <?php echo e(t('Scan the QR code below with your authenticator app (Google Authenticator, Authy, 1Password, etc.), then enter the 6-digit code to verify.')); ?>
                     </p>
 
@@ -639,8 +639,8 @@ include BASE_PATH . '/includes/components/page-header.php';
                             <canvas id="totp-qr-code"></canvas>
                         </div>
                         <details class="w-full">
-                            <summary class="text-xs cursor-pointer" style="color: var(--text-muted);"><?php echo e(t("Can't scan? Enter code manually")); ?></summary>
-                            <div class="mt-2 p-3 rounded-lg font-mono text-sm text-center tracking-wider break-all" style="background: var(--surface-secondary); color: var(--text-primary);">
+                            <summary class="text-xs cursor-pointer text-theme-muted"><?php echo e(t("Can't scan? Enter code manually")); ?></summary>
+                            <div class="mt-2 p-3 rounded-lg font-mono text-sm text-center tracking-wider break-all bg-theme-secondary text-theme-primary">
                                 <?php echo e(format_totp_secret($setup_secret)); ?>
                             </div>
                         </details>
@@ -650,7 +650,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                     <form method="post" class="space-y-3">
                         <?php echo csrf_field(); ?>
                         <div>
-                            <label for="setup-code" class="block text-sm font-medium mb-1" style="color: var(--text-secondary);"><?php echo e(t('Verification code')); ?></label>
+                            <label for="setup-code" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Verification code')); ?></label>
                             <input type="text" name="setup_code" id="setup-code"
                                 maxlength="6" inputmode="numeric" autocomplete="one-time-code"
                                 pattern="[0-9]{6}" required aria-required="true"
@@ -688,13 +688,13 @@ include BASE_PATH . '/includes/components/page-header.php';
             <?php elseif ($totp_enabled): ?>
                 <!-- ═══ 2FA is enabled — show status ═══ -->
                 <div class="space-y-4">
-                    <p class="text-sm" style="color: var(--text-secondary);">
+                    <p class="text-sm text-theme-secondary">
                         <?php echo get_icon('check-circle', 'w-4 h-4 inline mr-1 text-green-500'); ?>
                         <?php echo e(t('Your account is protected with two-factor authentication.')); ?>
                     </p>
 
                     <?php $remaining = count_backup_codes($user); ?>
-                    <p class="text-xs" style="color: var(--text-muted);">
+                    <p class="text-xs text-theme-muted">
                         <?php echo e(t('Backup codes remaining:')); ?> <strong><?php echo $remaining; ?>/8</strong>
                         <?php if ($remaining <= 2 && $remaining > 0): ?>
                             <span class="text-orange-500 ml-1"><?php echo get_icon('exclamation-triangle', 'w-3 h-3 inline'); ?> <?php echo e(t('Running low')); ?></span>
@@ -718,9 +718,9 @@ include BASE_PATH . '/includes/components/page-header.php';
 
                 <!-- Disable 2FA modal -->
                 <div id="disable-2fa-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.5);">
-                    <div class="rounded-xl shadow-xl w-full max-w-sm p-6" style="background: var(--surface-primary);">
-                        <h4 class="text-base font-semibold mb-2" style="color: var(--text-primary);"><?php echo e(t('Disable two-factor authentication')); ?></h4>
-                        <p class="text-sm mb-4" style="color: var(--text-secondary);"><?php echo e(t('Enter your password to confirm.')); ?></p>
+                    <div class="rounded-xl shadow-xl w-full max-w-sm p-6 bg-theme-primary">
+                        <h4 class="text-base font-semibold mb-2 text-theme-primary"><?php echo e(t('Disable two-factor authentication')); ?></h4>
+                        <p class="text-sm mb-4 text-theme-secondary"><?php echo e(t('Enter your password to confirm.')); ?></p>
                         <form method="post" class="space-y-3">
                             <?php echo csrf_field(); ?>
                             <input type="password" name="disable_2fa_password" required autocomplete="current-password"
@@ -735,9 +735,9 @@ include BASE_PATH . '/includes/components/page-header.php';
 
                 <!-- Regenerate backup codes modal -->
                 <div id="regen-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.5);">
-                    <div class="rounded-xl shadow-xl w-full max-w-sm p-6" style="background: var(--surface-primary);">
-                        <h4 class="text-base font-semibold mb-2" style="color: var(--text-primary);"><?php echo e(t('Regenerate backup codes')); ?></h4>
-                        <p class="text-sm mb-4" style="color: var(--text-secondary);"><?php echo e(t('This will invalidate all existing backup codes. Enter your password to confirm.')); ?></p>
+                    <div class="rounded-xl shadow-xl w-full max-w-sm p-6 bg-theme-primary">
+                        <h4 class="text-base font-semibold mb-2 text-theme-primary"><?php echo e(t('Regenerate backup codes')); ?></h4>
+                        <p class="text-sm mb-4 text-theme-secondary"><?php echo e(t('This will invalidate all existing backup codes. Enter your password to confirm.')); ?></p>
                         <form method="post" class="space-y-3">
                             <?php echo csrf_field(); ?>
                             <input type="password" name="regen_password" required autocomplete="current-password"
@@ -753,7 +753,7 @@ include BASE_PATH . '/includes/components/page-header.php';
             <?php else: ?>
                 <!-- ═══ 2FA is off — show enable button ═══ -->
                 <div class="space-y-3">
-                    <p class="text-sm" style="color: var(--text-secondary);">
+                    <p class="text-sm text-theme-secondary">
                         <?php echo e(t('Add an extra layer of security to your account using an authenticator app.')); ?>
                     </p>
                     <form method="post">

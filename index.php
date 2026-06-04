@@ -15,7 +15,7 @@ define('REMEMBER_ME_DURATION', 30 * 86400); // 30 days
 
 require_once BASE_PATH . '/includes/session-bootstrap.php';
 
-define('APP_VERSION', '0.3.139');
+define('APP_VERSION', '0.3.140');
 
 // Check if installed
 if (!file_exists(BASE_PATH . '/config.php')) {
@@ -132,10 +132,10 @@ if (!in_array($page, ['cron', 'api', 'health', 'stripe-webhook'], true) && file_
 }
 
 // Pages that don't require login
-$public_pages = ['cloud', 'legal', 'login', 'logout', 'signup', 'forgot-password', 'reset-password', 'ticket-share', 'report-share', 'report-public', 'stripe-webhook', 'api', 'health', 'cron'];
+$public_pages = ['cloud', 'legal', 'login', 'logout', 'signup', 'forgot-password', 'reset-password', 'ticket-share', 'report-share', 'report-public', 'report-theme', 'stripe-webhook', 'api', 'health', 'cron'];
 
 if (foxdesk_is_platform_host()) {
-    $platform_pages = ['platform', 'profile', 'login', 'logout', 'forgot-password', 'reset-password', 'health'];
+    $platform_pages = ['platform', 'profile', 'login', 'logout', 'forgot-password', 'reset-password', 'report-theme', 'health'];
     if (!in_array($page, $platform_pages, true)) {
         header('Location: ' . url(is_logged_in() ? 'platform' : 'login'));
         exit;
@@ -207,7 +207,7 @@ if ($page === 'dashboard' && foxdesk_is_platform_host()) {
 // Live 2FA enforcement: check on every page load whether user's role requires 2FA
 // Handles both: (a) flag already set from login, (b) admin enabling requirement while user is logged in
 // Also clears the flag if admin removes the requirement or user completes setup
-if (!empty($_SESSION['user_id']) && $page !== 'login' && $page !== 'logout' && $page !== 'api' && $page !== 'cron' && $page !== 'health') {
+if (!empty($_SESSION['user_id']) && $page !== 'login' && $page !== 'logout' && $page !== 'api' && $page !== 'cron' && $page !== 'health' && $page !== 'report-theme') {
     require_once BASE_PATH . '/includes/totp.php';
     ensure_totp_columns();
     $role = $_SESSION['user_role'] ?? '';
@@ -257,6 +257,13 @@ if ($page === 'cron') {
     exit;
 }
 
+// Public report theme stylesheet. Kept as a first-party CSS response so
+// report-specific colors do not require inline styles under strict CSP.
+if ($page === 'report-theme') {
+    require_once BASE_PATH . '/pages/report-theme.php';
+    exit;
+}
+
 // API endpoints
 if ($page === 'api') {
     header('Content-Type: application/json');
@@ -280,7 +287,7 @@ if (is_logged_in() && function_exists('page_views_table_exists')) {
 }
 
 // Billing access guard: expired/unpaid workspaces can only reach billing/profile/logout.
-if (is_logged_in() && !in_array($page, ['billing', 'profile', 'logout', 'stripe-webhook', 'health', 'cron'], true)) {
+if (is_logged_in() && !in_array($page, ['billing', 'profile', 'logout', 'stripe-webhook', 'health', 'cron', 'report-theme'], true)) {
     $tenant = function_exists('billing_current_tenant') ? billing_current_tenant() : null;
     $access_state = function_exists('billing_workspace_access_state')
         ? billing_workspace_access_state($tenant)

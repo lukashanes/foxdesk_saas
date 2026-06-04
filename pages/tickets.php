@@ -280,7 +280,7 @@ if (!is_admin()) {
                 // The query builder handles 'organization' scope for agents by looking up permissions
                 // We just need to signal the scope.
                 $filters['current_user'] = $user;
-                $filters['scope'] = 'organization'; 
+                $filters['scope'] = 'organization';
                 // Note: ticket-query-functions needs to handle this correctly for agents again
                 break;
             case 'all':
@@ -290,7 +290,7 @@ if (!is_admin()) {
                 $filters['agent_id'] = $user['id'];
                 break;
         }
-    } 
+    }
     // 2. REGULAR USERS
     else {
         switch ($scope) {
@@ -499,7 +499,7 @@ if (!is_admin() && !is_agent() && isset($scope) && $scope === 'organization' && 
     // Remove p=page to reset pagination when switching
     $params_mine = $_GET; unset($params_mine['p']); $params_mine['view_mode'] = 'mine';
     $params_comp = $_GET; unset($params_comp['p']); $params_comp['view_mode'] = 'company';
-    
+
     $mine_url = url('tickets', $params_mine);
     $company_url = url('tickets', $params_comp);
 
@@ -959,7 +959,7 @@ foreach ($board_closed_statuses as $status_item) {
         ?>
 
         <!-- Mobile Filter Bar -->
-        <div class="block lg:hidden border-b px-4 py-3 glass" style="border-color: var(--border-light);">
+        <div class="block lg:hidden border-b px-4 py-3 glass border-theme-light">
             <form method="get" action="index.php" class="flex flex-wrap items-center gap-2">
                 <input type="hidden" name="page" value="tickets">
                 <input type="hidden" name="search_scope" value="all">
@@ -1027,7 +1027,7 @@ foreach ($board_closed_statuses as $status_item) {
             $clear_tags_url = url('tickets', $clear_tags_params);
             ?>
             <div class="border-b px-4 py-2.5 flex flex-wrap items-center gap-2" style="border-color: var(--border-light); background: var(--surface-secondary);">
-                <span class="text-xs font-medium" style="color: var(--text-secondary);"><?php echo e(t('Tags')); ?>:</span>
+                <span class="text-xs font-medium text-theme-secondary"><?php echo e(t('Tags')); ?>:</span>
                 <?php foreach ($tag_filters as $active_tag): ?>
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs" style="background: var(--primary-soft); color: var(--primary);">
                         #<?php echo e($active_tag); ?>
@@ -1046,7 +1046,7 @@ foreach ($board_closed_statuses as $status_item) {
         <div class="block lg:hidden">
             <?php foreach ($ticket_groups as $group): ?>
                 <?php if ($group['name'] === 'closed'): ?>
-                    <div class="p-3 text-center border-t cursor-pointer text-xs font-medium text-gray-500 hover:text-gray-700" style="background: var(--surface-secondary);" onclick="document.getElementById('closed-tickets-mobile').classList.toggle('hidden')">
+                    <div class="p-3 text-center border-t cursor-pointer text-xs font-medium text-gray-500 hover:text-gray-700 bg-theme-secondary" onclick="document.getElementById('closed-tickets-mobile').classList.toggle('hidden')">
                         <?php echo e($group['label']); ?>
                     </div>
                     <div id="closed-tickets-mobile" class="hidden divide-y">
@@ -1065,7 +1065,7 @@ foreach ($board_closed_statuses as $status_item) {
                                 class="bulk-checkbox hidden mt-1 rounded" form="bulk-actions-form" onclick="event.stopPropagation()">
                         <?php endif; ?>
                             <a href="<?php echo ticket_url($ticket); ?>" class="flex-1 min-w-0">
-                                <div class="flex items-center gap-2 text-xs mb-1" style="color: var(--text-muted);">
+                                <div class="flex items-center gap-2 text-xs mb-1 text-theme-muted">
                                     <span class="w-2 h-2 rounded-full"
                                         style="background-color: <?php echo e($ticket['status_color']); ?>"></span>
                                     <span><?php echo e($ticket['status_name']); ?></span>
@@ -1073,8 +1073,8 @@ foreach ($board_closed_statuses as $status_item) {
                                         <?php echo e(get_ticket_code($ticket['id'])); ?>
                                     </span>
                                 </div>
-                                <div class="font-medium truncate" style="color: var(--text-primary);"><?php echo e($ticket['title']); ?></div>
-                                <div class="text-sm mt-1 flex flex-wrap items-center gap-2" style="color: var(--text-muted);">
+                                <div class="font-medium truncate text-theme-primary"><?php echo e($ticket['title']); ?></div>
+                                <div class="text-sm mt-1 flex flex-wrap items-center gap-2 text-theme-muted">
                                     <span><?php echo format_date($ticket['created_at'], 'd.m.Y'); ?></span>
                                     <?php if (!empty($ticket['due_date'])): ?>
                                         <?php
@@ -1094,7 +1094,7 @@ foreach ($board_closed_statuses as $status_item) {
                                         <?php echo e($priority_name); ?>
                                     </span>
                                     <?php if (is_admin() && !empty($ticket['organization_name'])): ?>
-                                        <span class="text-xs" style="color: var(--text-muted);"><?php echo e($ticket['organization_name']); ?></span>
+                                        <span class="text-xs text-theme-muted"><?php echo e($ticket['organization_name']); ?></span>
                                     <?php endif; ?>
                                     <?php if ($tags_supported && !empty($ticket['tags'])): ?>
                                         <?php foreach (array_slice(get_ticket_tags_array($ticket['tags']), 0, 3) as $tag): ?>
@@ -1120,7 +1120,7 @@ foreach ($board_closed_statuses as $status_item) {
                                             $running_elapsed = (int) ($first['elapsed_minutes'] ?? 0);
                                         }
                                         ?>
-                                        <span class="text-xs" style="color: var(--text-muted);">
+                                        <span class="text-xs text-theme-muted">
                                             <?php echo get_icon('clock', 'mr-1 w-3 h-3 inline'); ?><?php echo $ticket_total > 0 ? format_duration_minutes($ticket_total) : '-'; ?>
                                         </span>
                                         <?php if (!empty($running_label)): ?>
@@ -1151,18 +1151,18 @@ foreach ($board_closed_statuses as $status_item) {
                 <?php endif; ?>
             <table class="w-full hidden lg:table tickets-table text-xs" style="table-layout: fixed;">
                 <thead>
-                    <tr class="border-b" style="border-color: var(--border-light);">
+                    <tr class="border-b border-theme-light">
                         <th class="px-3 py-2.5 text-left" style="width: 80px;">
                             <div class="flex items-center gap-1">
                                 <?php if ($bulk_actions_enabled): ?>
                                     <input type="checkbox" id="select-all" class="rounded hidden" onchange="toggleAll(this)">
                                 <?php endif; ?>
-                                <span class="text-[10px] font-medium uppercase tracking-wider" style="color: var(--text-muted);"><?php echo e(t('Date')); ?></span>
+                                <span class="text-[10px] font-medium uppercase tracking-wider text-theme-muted"><?php echo e(t('Date')); ?></span>
                             </div>
                         </th>
                         <th class="px-3 py-2.5 text-left" style="min-width: 260px; max-width: 480px; overflow:visible">
                             <div class="flex items-center justify-between gap-2">
-                                <span class="text-[10px] font-medium uppercase tracking-wider" style="color: var(--text-muted);"><?php echo e(t('Subject')); ?></span>
+                                <span class="text-[10px] font-medium uppercase tracking-wider text-theme-muted"><?php echo e(t('Subject')); ?></span>
                                 <div class="flex items-center gap-1.5">
                                     <div class="ticket-search-wrap">
                                         <input type="text" name="search" value="<?php echo e($search_query); ?>"
@@ -1238,7 +1238,7 @@ foreach ($board_closed_statuses as $status_item) {
                                 </select>
                             </th>
                             <th class="px-3 py-2.5 text-left" style="width: 110px;">
-                                <span class="text-[10px] font-medium uppercase tracking-wider" style="color: var(--text-muted);"><?php echo e(t('Time')); ?></span>
+                                <span class="text-[10px] font-medium uppercase tracking-wider text-theme-muted"><?php echo e(t('Time')); ?></span>
                             </th>
                         <?php elseif (is_agent()): ?>
                             <th class="px-2 py-2.5" style="width: 110px;">
@@ -1254,7 +1254,7 @@ foreach ($board_closed_statuses as $status_item) {
                                 </select>
                             </th>
                             <th class="px-3 py-2.5 text-left" style="width: 110px;">
-                                <span class="text-[10px] font-medium uppercase tracking-wider" style="color: var(--text-muted);"><?php echo e(t('Time')); ?></span>
+                                <span class="text-[10px] font-medium uppercase tracking-wider text-theme-muted"><?php echo e(t('Time')); ?></span>
                             </th>
                         <?php endif; ?>
                         <input type="hidden" name="created_date" value="<?php echo e($created_date_value); ?>">
@@ -1338,7 +1338,7 @@ foreach ($board_closed_statuses as $status_item) {
                     <?php if ($group['name'] === 'closed'): ?>
                         </tbody>
                         <tbody class="border-t-2" style="border-top-color: var(--border-light)">
-                            <tr class="cursor-pointer" style="background: var(--surface-secondary);" onclick="document.getElementById('closed-tickets-desktop').classList.toggle('hidden')">
+                            <tr class="cursor-pointer bg-theme-secondary" onclick="document.getElementById('closed-tickets-desktop').classList.toggle('hidden')">
                                 <?php $colspan = is_admin() ? 8 : (is_agent() ? 6 : 5); ?>
                                 <td colspan="<?php echo $colspan; ?>" class="px-3 py-2 font-medium text-xs text-center text-gray-500 hover:text-gray-700">
                                    <?php echo e($group['label']); ?>
@@ -1363,7 +1363,7 @@ foreach ($board_closed_statuses as $status_item) {
                                         <a href="<?php echo ticket_url($ticket); ?>" class="font-medium text-xs" style="color: var(--text-primary);" title="<?php echo e(get_ticket_code($ticket['id'])); ?>">
                                             <?php echo date('d.m.', strtotime($ticket['created_at'])); ?>
                                         </a>
-                                        <div class="text-[10px]" style="color: var(--text-muted);"><?php echo e(get_ticket_code($ticket['id'])); ?></div>
+                                        <div class="text-[10px] text-theme-muted"><?php echo e(get_ticket_code($ticket['id'])); ?></div>
                                     </div>
                                 </div>
                             </td>
@@ -1382,12 +1382,12 @@ foreach ($board_closed_statuses as $status_item) {
                                     </a>
                                     <?php endif; ?>
                                     <?php if (!empty($ticket['attachment_count']) && $ticket['attachment_count'] > 0): ?>
-                                        <span class="flex-shrink-0" style="color: var(--text-muted);" title="<?php echo e(t('Attachments')); ?>: <?php echo $ticket['attachment_count']; ?>">
+                                        <span class="flex-shrink-0 text-theme-muted" title="<?php echo e(t('Attachments')); ?>: <?php echo $ticket['attachment_count']; ?>">
                                             <?php echo get_icon('paperclip', 'w-3 h-3'); ?>
                                         </span>
                                     <?php endif; ?>
                                 </div>
-                                <div class="text-[11px] mt-0.5" style="color: var(--text-muted);">
+                                <div class="text-[11px] mt-0.5 text-theme-muted">
                                     <?php if ((is_agent() || is_admin()) && !empty($ticket_types_list)): ?>
                                         <span class="tl-inline-edit" style="position:relative; display:inline-block;">
                                             <span class="tl-edit-trigger tl-type-trigger"
@@ -1472,7 +1472,7 @@ foreach ($board_closed_statuses as $status_item) {
                                 </span>
                                 <?php endif; ?>
                             </td>
-                            <td class="px-2 py-2.5 whitespace-nowrap align-top text-xs" style="color: var(--text-muted);">
+                            <td class="px-2 py-2.5 whitespace-nowrap align-top text-xs text-theme-muted">
                                 <?php
                                 $_due_ts = !empty($ticket['due_date']) ? strtotime($ticket['due_date']) : null;
                                 $_is_overdue = is_due_date_overdue($ticket['due_date'] ?? null, !empty($ticket['is_closed']));
@@ -1567,7 +1567,7 @@ foreach ($board_closed_statuses as $status_item) {
                                         </span>
                                     </span>
                                 </td>
-                                <td class="px-3 py-2.5 text-xs whitespace-nowrap align-top" style="color: var(--text-muted);">
+                                <td class="px-3 py-2.5 text-xs whitespace-nowrap align-top text-theme-muted">
                                     <?php
                                     $ticket_total = $ticket_time_totals[$ticket['id']] ?? 0;
                                     $running_entries = $ticket_running_entries[$ticket['id']] ?? [];
@@ -1622,7 +1622,7 @@ foreach ($board_closed_statuses as $status_item) {
                                         </span>
                                     </span>
                                 </td>
-                                <td class="px-3 py-2.5 text-xs whitespace-nowrap align-top" style="color: var(--text-muted);">
+                                <td class="px-3 py-2.5 text-xs whitespace-nowrap align-top text-theme-muted">
                                     <?php
                                     $ticket_total = $ticket_time_totals[$ticket['id']] ?? 0;
                                     $running_entries = $ticket_running_entries[$ticket['id']] ?? [];
@@ -1659,11 +1659,10 @@ foreach ($board_closed_statuses as $status_item) {
                     style="<?php echo $bulk_delete_mode ? '' : 'border-color: var(--border-light); background: var(--surface-secondary);'; ?>">
                     <div class="flex items-center justify-between">
                         <div class="inline-flex items-center gap-2 text-sm">
-                            <span class="inline-flex items-center justify-center min-w-[1.75rem] h-7 px-2 rounded-full font-semibold"
-                                style="background: var(--surface-tertiary); color: var(--text-secondary);">
+                            <span class="inline-flex items-center justify-center min-w-[1.75rem] h-7 px-2 rounded-full font-semibold bg-theme-tertiary text-theme-secondary">
                                 <span id="selected-count">0</span>
                             </span>
-                            <span style="color: var(--text-secondary);"><?php echo e(t('selected')); ?></span>
+                            <span class="text-theme-secondary"><?php echo e(t('selected')); ?></span>
                         </div>
                     </div>
 

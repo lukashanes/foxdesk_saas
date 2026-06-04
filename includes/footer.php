@@ -3,7 +3,7 @@
 <!-- Footer -->
 <footer class="px-4 lg:px-8 py-3 text-xs" style="color: var(--text-muted); margin-top: auto;">
     <div class="copyright">
-        <a href="https://foxdesk.org" target="_blank" rel="noopener" style="color: var(--text-muted);">FoxDesk</a>
+        <a href="https://foxdesk.org" target="_blank" rel="noopener" class="text-theme-muted">FoxDesk</a>
     </div>
 </footer>
 </main>

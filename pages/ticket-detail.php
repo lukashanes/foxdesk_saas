@@ -209,8 +209,7 @@ require_once BASE_PATH . '/includes/header.php';
                         <?php echo e($ticket['status_name']); ?>
                     </span>
                     <?php if (!empty($ticket['is_archived'])): ?>
-                        <span class="px-1.5 py-0.5 rounded text-[11px] font-medium"
-                            style="background: var(--surface-tertiary); color: var(--text-secondary);"><?php echo e(t('Archived')); ?></span>
+                        <span class="px-1.5 py-0.5 rounded text-[11px] font-medium bg-theme-tertiary text-theme-secondary"><?php echo e(t('Archived')); ?></span>
                     <?php endif; ?>
                     <?php if (!empty($ticket['organization_name'])): ?>
                         <span><?php echo e($ticket['organization_name']); ?></span>
@@ -260,21 +259,20 @@ require_once BASE_PATH . '/includes/header.php';
         <?php if (!empty($ticket['description']) || !empty($initial_attachments)): ?>
                 <div class="card card-body">
                     <?php if (!empty($ticket['description'])): ?>
-                            <div class="prose max-w-none rich-content" style="color: var(--text-secondary);">
+                            <div class="prose max-w-none rich-content text-theme-secondary">
                                 <?php echo render_content($ticket['description']); ?>
                             </div>
                     <?php endif; ?>
 
                     <?php if (!empty($initial_attachments)): ?>
                             <div class="<?php echo !empty($ticket['description']) ? 'mt-4 pt-4 border-t' : ''; ?>">
-                                <h4 class="text-sm font-medium mb-1" style="color: var(--text-secondary);">
+                                <h4 class="text-sm font-medium mb-1 text-theme-secondary">
                                     <?php echo e(t('Attachments')); ?></h4>
                                 <?php $component_attachments = $initial_attachments; $component_layout = 'grid'; include BASE_PATH . '/includes/components/attachment-grid.php'; ?>
                             </div>
                     <?php endif; ?>
 
-                    <div class="mt-3 pt-2.5 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs"
-                        style="color: var(--text-muted);">
+                    <div class="mt-3 pt-2.5 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs text-theme-muted">
                         <div class="flex items-center space-x-3">
                             <?php if (!empty($ticket['avatar'])): ?>
                                     <img src="<?php echo e(upload_url($ticket['avatar'])); ?>" alt="" class="w-6 h-6 rounded-full">
@@ -301,7 +299,7 @@ require_once BASE_PATH . '/includes/header.php';
                     if ($can_view_edit_history && !empty($ticket_history)):
                         ?>
                             <details class="mt-4 pt-4 border-t">
-                                <summary class="flex items-center gap-2 cursor-pointer text-sm" style="color: var(--text-muted);">
+                                <summary class="flex items-center gap-2 cursor-pointer text-sm text-theme-muted">
                                     <?php echo get_icon('history', 'w-4 h-4'); ?>
                                     <?php echo e(t('Edit history')); ?> (<?php echo count($ticket_history); ?>)
                                 </summary>
@@ -311,16 +309,15 @@ require_once BASE_PATH . '/includes/header.php';
                                             $is_long_text_change = in_array($history['field_name'], ['description', 'comment_content', 'comment_deleted'], true);
                                             $is_attachment_event = in_array($history['field_name'], ['attachment_added', 'attachment_unlinked'], true);
                                             ?>
-                                            <div class="flex items-start gap-3 text-xs p-2 rounded-lg"
-                                                style="background: var(--surface-secondary);">
+                                            <div class="flex items-start gap-3 text-xs p-2 rounded-lg bg-theme-secondary">
                                                 <div class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center"
                                                     style="background: var(--surface-tertiary);">
-                                                    <span class="font-medium text-xs" style="color: var(--text-secondary);">
+                                                    <span class="font-medium text-xs text-theme-secondary">
                                                         <?php echo strtoupper(substr($history['first_name'] ?? 'U', 0, 1)); ?>
                                                     </span>
                                                 </div>
                                                 <div class="flex-1 min-w-0">
-                                                    <div class="flex flex-wrap items-center gap-1" style="color: var(--text-secondary);">
+                                                    <div class="flex flex-wrap items-center gap-1 text-theme-secondary">
                                                         <strong><?php echo e(($history['first_name'] ?? '') . ' ' . ($history['last_name'] ?? '')); ?></strong>
                                                         <span><?php echo e(t('changed')); ?></span>
                                                         <span
@@ -344,7 +341,7 @@ require_once BASE_PATH . '/includes/header.php';
                                                                 </div>
                                                             </div>
                                                     <?php elseif ($is_attachment_event): ?>
-                                                            <div class="mt-1 flex flex-wrap items-center gap-2" style="color: var(--text-muted);">
+                                                            <div class="mt-1 flex flex-wrap items-center gap-2 text-theme-muted">
                                                                 <?php if ($history['field_name'] === 'attachment_added'): ?>
                                                                         <span
                                                                             class="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">+
@@ -356,15 +353,14 @@ require_once BASE_PATH . '/includes/header.php';
                                                                 <?php endif; ?>
                                                             </div>
                                                     <?php else: ?>
-                                                            <div class="mt-1 flex flex-wrap items-center gap-2" style="color: var(--text-muted);">
+                                                            <div class="mt-1 flex flex-wrap items-center gap-2 text-theme-muted">
                                                                 <span
                                                                     class="line-through"><?php echo format_history_value($history['field_name'], $history['old_value']); ?></span>
                                                                 <span>→</span>
-                                                                <span class="font-medium"
-                                                                    style="color: var(--text-secondary);"><?php echo format_history_value($history['field_name'], $history['new_value']); ?></span>
+                                                                <span class="font-medium text-theme-secondary"><?php echo format_history_value($history['field_name'], $history['new_value']); ?></span>
                                                             </div>
                                                     <?php endif; ?>
-                                                    <div class="mt-1" style="color: var(--text-muted);">
+                                                    <div class="mt-1 text-theme-muted">
                                                         <?php echo format_date($history['created_at']); ?>
                                                     </div>
                                                 </div>
@@ -420,7 +416,7 @@ require_once BASE_PATH . '/includes/header.php';
         <!-- Comments & Time Log Combined -->
         <div class="card">
             <div class="card-header">
-                <h3 class="font-semibold" style="color: var(--text-primary);"><?php echo e(t('Activity')); ?>
+                <h3 class="font-semibold text-theme-primary"><?php echo e(t('Activity')); ?>
                     (<?php echo count($comments); ?> <?php echo e(t('comments')); ?>)</h3>
                 <?php if ($time_tracking_available && $total_time_minutes > 0 && can_view_time($user)): ?>
                         <span
@@ -432,20 +428,19 @@ require_once BASE_PATH . '/includes/header.php';
             </div>
 
             <?php if (empty($timeline_items)): ?>
-                    <div class="p-4 text-center" style="color: var(--text-muted);">
+                    <div class="p-4 text-center text-theme-muted">
                         <?php echo e(t('No comments yet.')); ?>
                     </div>
             <?php else: ?>
-                    <div class="divide-y" style="border-color: var(--border-light);">
+                    <div class="divide-y border-theme-light">
                         <?php foreach ($timeline_items as $timeline_item): ?>
                                 <?php if ($timeline_item['type'] === 'time_entry'): ?>
                                         <?php $entry = $timeline_item['data']; ?>
                                         <?php if (can_view_time($user)): ?>
                                                 <div class="flex justify-center py-2.5">
-                                                    <div class="time-entry-row inline-flex flex-wrap items-center gap-1.5 text-xs px-3 py-1.5 rounded-full"
-                                                        style="background: var(--surface-secondary); color: var(--text-muted);">
+                                                    <div class="time-entry-row inline-flex flex-wrap items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-theme-secondary text-theme-muted">
                                                         <?php echo get_icon('clock', 'w-3.5 h-3.5 flex-shrink-0'); ?>
-                                                        <span class="font-medium" style="color: var(--text-secondary);"><?php
+                                                        <span class="font-medium text-theme-secondary"><?php
                                                         if (empty($entry['ended_at'])) {
                                                             $elapsed = max(0, time() - strtotime($entry['started_at']));
                                                             if (!empty($entry['paused_at'])) {
@@ -462,14 +457,14 @@ require_once BASE_PATH . '/includes/header.php';
                                                             echo format_duration_minutes($entry['duration_minutes']);
                                                         }
                                                         ?></span>
-                                                        <span style="color: var(--border-light);">·</span>
+                                                        <span class="text-theme-border-light">·</span>
                                                         <span><?php echo e(trim($entry['first_name'] . ' ' . $entry['last_name'])); ?></span>
                                                         <?php if (!empty($entry['summary'])): ?>
-                                                                <span style="color: var(--border-light);">·</span>
+                                                                <span class="text-theme-border-light">·</span>
                                                                 <span class="truncate max-w-[200px]"
                                                                     title="<?php echo e($entry['summary']); ?>"><?php echo e($entry['summary']); ?></span>
                                                         <?php endif; ?>
-                                                        <span style="color: var(--border-light);">·</span>
+                                                        <span class="text-theme-border-light">·</span>
                                                         <span><?php echo format_date($entry['started_at']); ?></span>
                                                         <?php $can_edit_this_entry = is_admin() || (is_agent() && (int) $entry['user_id'] === (int) $user['id']); ?>
                                                         <?php if ($can_edit_this_entry): ?>
@@ -486,7 +481,7 @@ require_once BASE_PATH . '/includes/header.php';
                                                                         <?php echo csrf_field(); ?>
                                                                         <input type="hidden" name="entry_id" value="<?php echo $entry['id']; ?>">
                                                                         <button type="submit" name="delete_time_entry"
-                                                                            class="p-0.5 hover:text-red-500 transition" style="color: var(--text-muted);"
+                                                                            class="p-0.5 hover:text-red-500 transition text-theme-muted"
                                                                             title="<?php echo e(t('Delete')); ?>"
                                                                             onclick="return confirm('<?php echo e(t('Delete this time entry?')); ?>')">
                                                                             <?php echo get_icon('trash', 'w-3 h-3'); ?>
@@ -526,7 +521,7 @@ require_once BASE_PATH . '/includes/header.php';
                                                 <div class="flex-1 min-w-0">
                                                     <!-- Header: name + badges + timestamp + actions -->
                                                     <div class="flex items-center gap-2 mb-1">
-                                                        <span class="font-semibold text-sm" style="color: var(--text-primary);">
+                                                        <span class="font-semibold text-sm text-theme-primary">
                                                             <?php echo e($comment['first_name'] . ' ' . $comment['last_name']); ?>
                                                         </span>
                                                         <?php if ($is_own_comment): ?>
@@ -537,11 +532,9 @@ require_once BASE_PATH . '/includes/header.php';
                                                                 <span
                                                                     class="text-xs px-1.5 py-0.5 rounded font-medium bg-amber-50 text-amber-700"><?php echo e(t('Internal')); ?></span>
                                                         <?php endif; ?>
-                                                        <span class="text-xs"
-                                                            style="color: var(--text-muted);"><?php echo format_date($comment['created_at']); ?></span>
+                                                        <span class="text-xs text-theme-muted"><?php echo format_date($comment['created_at']); ?></span>
                                                         <?php if ($can_view_edit_history && !empty($comment['updated_at']) && $comment['updated_at'] !== $comment['created_at']): ?>
-                                                                <span class="text-xs italic"
-                                                                    style="color: var(--text-muted);">(<?php echo e(t('edited')); ?>)</span>
+                                                                <span class="text-xs italic text-theme-muted">(<?php echo e(t('edited')); ?>)</span>
                                                         <?php endif; ?>
 
                                                         <!-- Edit/Delete actions (visible on hover) -->
@@ -584,8 +577,7 @@ require_once BASE_PATH . '/includes/header.php';
                                                     // Show summary badge only if NO detailed entries (fallback for old time_spent)
                                                     $display_time = $comment_linked_time > 0 ? 0 : ($comment['time_spent'] ?? 0);
                                                     if ($display_time > 0 && can_view_time($user)): ?>
-                                                            <div class="mt-2 inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md"
-                                                                style="background: var(--surface-secondary); color: var(--text-muted);">
+                                                            <div class="mt-2 inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-theme-secondary text-theme-muted">
                                                                 <?php echo get_icon('clock', 'w-3 h-3'); ?>
                                                                 <span><?php echo e(format_duration_minutes($display_time)); ?></span>
                                                             </div>
@@ -595,10 +587,9 @@ require_once BASE_PATH . '/includes/header.php';
                                                             <div class="mt-2 space-y-1.5">
                                                                 <?php foreach ($comment_time_entries as $entry): ?>
                                                                         <?php $can_edit_this_entry = is_admin() || (is_agent() && (int) $entry['user_id'] === (int) $user['id']); ?>
-                                                                        <div class="time-entry-row inline-flex flex-wrap items-center gap-1.5 text-xs px-3 py-1.5 rounded-full"
-                                                                            style="background: var(--surface-secondary); color: var(--text-muted);">
+                                                                        <div class="time-entry-row inline-flex flex-wrap items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-theme-secondary text-theme-muted">
                                                                             <?php echo get_icon('clock', 'w-3.5 h-3.5 flex-shrink-0'); ?>
-                                                                            <span class="font-medium" style="color: var(--text-secondary);"><?php
+                                                                            <span class="font-medium text-theme-secondary"><?php
                                                                             if (empty($entry['ended_at'])) {
                                                                                 echo format_duration_minutes(max(0, (int) floor(calculate_timer_elapsed($entry) / 60)));
                                                                                 if (!empty($entry['paused_at'])) {
@@ -610,14 +601,14 @@ require_once BASE_PATH . '/includes/header.php';
                                                                                 echo format_duration_minutes($entry['duration_minutes']);
                                                                             }
                                                                             ?></span>
-                                                                            <span style="color: var(--border-light);">·</span>
+                                                                            <span class="text-theme-border-light">·</span>
                                                                             <span><?php echo e(trim($entry['first_name'] . ' ' . $entry['last_name'])); ?></span>
                                                                             <?php if (!empty($entry['summary'])): ?>
-                                                                                    <span style="color: var(--border-light);">·</span>
+                                                                                    <span class="text-theme-border-light">·</span>
                                                                                     <span class="truncate max-w-[200px]"
                                                                                         title="<?php echo e($entry['summary']); ?>"><?php echo e($entry['summary']); ?></span>
                                                                             <?php endif; ?>
-                                                                            <span style="color: var(--border-light);">·</span>
+                                                                            <span class="text-theme-border-light">·</span>
                                                                             <span><?php echo format_date($entry['started_at']); ?></span>
                                                                             <?php if ($can_edit_this_entry): ?>
                                                                                     <span class="time-entry-actions">
@@ -633,8 +624,7 @@ require_once BASE_PATH . '/includes/header.php';
                                                                                             <?php echo csrf_field(); ?>
                                                                                             <input type="hidden" name="entry_id" value="<?php echo $entry['id']; ?>">
                                                                                             <button type="submit" name="delete_time_entry"
-                                                                                                class="p-0.5 hover:text-red-500 transition"
-                                                                                                style="color: var(--text-muted);"
+                                                                                                class="p-0.5 hover:text-red-500 transition text-theme-muted"
                                                                                                 title="<?php echo e(t('Delete time')); ?>"
                                                                                                 onclick="return confirm('<?php echo e(t('Delete this time entry?')); ?>')">
                                                                                                 <?php echo get_icon('trash', 'w-3 h-3'); ?>
@@ -655,8 +645,8 @@ require_once BASE_PATH . '/includes/header.php';
             <?php endif; ?>
 
             <!-- Add Comment Form -->
-            <form method="post" enctype="multipart/form-data" class="p-3 lg:p-4 border-t"
-                style="background: var(--surface-secondary);" id="comment-form">
+            <form method="post" enctype="multipart/form-data" class="p-3 lg:p-4 border-t bg-theme-secondary"
+                id="comment-form">
                 <?php echo csrf_field(); ?>
                 <?php
                 // Capture referrer for redirect after status change (back to tickets list or dashboard)
@@ -672,8 +662,7 @@ require_once BASE_PATH . '/includes/header.php';
                 <?php if (is_agent()): ?>
                         <!-- Comment Mode Toggle - Primary Choice -->
                         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-                            <div class="inline-flex items-center gap-0.5 rounded-lg p-1"
-                                style="background: var(--surface-secondary);">
+                            <div class="inline-flex items-center gap-0.5 rounded-lg p-1 bg-theme-secondary">
                                 <button type="button"
                                     class="comment-mode-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all"
                                     data-mode="public" title="<?php echo e(t('Public reply')); ?>">
@@ -688,7 +677,7 @@ require_once BASE_PATH . '/includes/header.php';
                                 </button>
                             </div>
                             <input type="checkbox" id="is_internal_toggle" name="is_internal" class="hidden">
-                            <p class="text-xs" style="color: var(--text-muted);" id="comment-mode-hint">
+                            <p class="text-xs text-theme-muted" id="comment-mode-hint">
                                 <?php echo e(t('Visible to customer')); ?></p>
                         </div>
                 <?php endif; ?>
@@ -696,8 +685,7 @@ require_once BASE_PATH . '/includes/header.php';
                 <!-- Public Reply Section -->
                 <div id="public-comment-section">
                     <?php if (!is_agent()): ?>
-                            <label class="block text-sm mb-2"
-                                style="color: var(--text-secondary);"><?php echo e(t('Your reply')); ?>
+                            <label class="block text-sm mb-2 text-theme-secondary"><?php echo e(t('Your reply')); ?>
                                 <span class="text-red-500">*</span></label>
                     <?php endif; ?>
                     <div class="editor-wrapper">
@@ -736,7 +724,7 @@ require_once BASE_PATH . '/includes/header.php';
                                         <input type="file" name="comment_attachments[]" id="comment-file-input" multiple
                                             class="hidden"
                                             accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar">
-                                        <div class="flex items-center justify-center gap-2" style="color: var(--text-muted);">
+                                        <div class="flex items-center justify-center gap-2 text-theme-muted">
                                             <?php echo get_icon('paperclip', 'w-4 h-4'); ?>
                                             <span class="text-sm">
                                                 <span
@@ -751,18 +739,16 @@ require_once BASE_PATH . '/includes/header.php';
                             <!-- Non-agent: attachments only -->
                             <div>
                                 <div id="comment-upload-zone"
-                                    class="upload-zone rounded-lg p-2.5 text-center cursor-pointer border-2 border-dashed hover:border-blue-300 transition-colors"
-                                    style="border-color: var(--border-light);">
+                                    class="upload-zone rounded-lg p-2.5 text-center cursor-pointer border-2 border-dashed hover:border-blue-300 transition-colors border-theme-light">
                                     <input type="file" name="comment_attachments[]" id="comment-file-input" multiple
                                         class="hidden"
                                         accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar">
-                                    <div class="flex items-center justify-center gap-2" style="color: var(--text-muted);">
+                                    <div class="flex items-center justify-center gap-2 text-theme-muted">
                                         <?php echo get_icon('paperclip', 'w-4 h-4'); ?>
                                         <span class="text-sm">
                                             <span
                                                 class="text-blue-500 font-medium"><?php echo e(t('Add attachments')); ?></span>
-                                            <span class="text-xs ml-1"
-                                                style="color: var(--text-muted);">(<?php echo e(t('or drag files')); ?>)</span>
+                                            <span class="text-xs ml-1 text-theme-muted">(<?php echo e(t('or drag files')); ?>)</span>
                                         </span>
                                     </div>
                                 </div>
@@ -771,14 +757,14 @@ require_once BASE_PATH . '/includes/header.php';
                     <?php endif; ?>
                 </div>
                 <?php if (get_request_upload_limit() > 0): ?>
-                <p class="mt-2 text-xs" style="color: var(--text-muted);">
+                <p class="mt-2 text-xs text-theme-muted">
                     <?php echo e(t('Total upload per request is limited to {size}.', ['size' => format_file_size(get_request_upload_limit())])); ?>
                 </p>
                 <?php endif; ?>
 
                 <?php if (is_agent() && $time_tracking_available): ?>
                         <!-- Manual Time Entry (expandable, between attachments and submit row) -->
-                        <div id="manual-entry-row" class="hidden mt-2 pt-2 border-t" style="border-color: var(--border-light);">
+                        <div id="manual-entry-row" class="hidden mt-2 pt-2 border-t border-theme-light">
                             <input type="hidden" name="manual_start_at" id="manual-start-at">
                             <input type="hidden" name="manual_end_at" id="manual-end-at">
                             <div class="grid grid-cols-2 lg:grid-cols-4 gap-2">
@@ -861,14 +847,13 @@ require_once BASE_PATH . '/includes/header.php';
                                     </button>
                                 </div>
                                 <!-- Manual entry toggle -->
-                                <button type="button" id="manual-toggle" class="btn btn-ghost px-2 py-1.5"
-                                    style="color: var(--text-muted);" aria-expanded="false"
+                                <button type="button" id="manual-toggle" class="btn btn-ghost px-2 py-1.5 text-theme-muted"
+                                    aria-expanded="false"
                                     title="<?php echo e(t('Manual entry')); ?>">
                                     <?php echo get_icon('pen', 'w-4 h-4'); ?>
                                 </button>
                         <?php endif; ?>
-                        <label class="flex items-center text-sm cursor-pointer whitespace-nowrap"
-                            style="color: var(--text-secondary);">
+                        <label class="flex items-center text-sm cursor-pointer whitespace-nowrap text-theme-secondary">
                             <input type="checkbox" name="skip_notification" value="1" class="mr-2 rounded">
                             <span><?php echo e(t('Do not send email notification')); ?></span>
                         </label>
@@ -932,7 +917,7 @@ require_once BASE_PATH . '/includes/header.php';
         <div class="card card-body">
             <div class="ticket-side-heading">
                 <span><?php echo e(t('Ticket properties')); ?></span>
-                <span class="font-mono text-xs" style="color: var(--text-muted);"><?php echo get_ticket_code($ticket_id); ?></span>
+                <span class="font-mono text-xs text-theme-muted"><?php echo get_ticket_code($ticket_id); ?></span>
             </div>
             <?php if (!empty($ticket['organization_name'])): ?>
                     <div class="flex items-center gap-2 px-2.5 py-2 -mx-1 mb-2 rounded-lg"
@@ -946,13 +931,13 @@ require_once BASE_PATH . '/includes/header.php';
             <?php endif; ?>
             <dl class="space-y-3">
                 <div class="flex justify-between">
-                    <dt class="text-xs" style="color: var(--text-muted);">ID</dt>
-                    <dd class="text-xs font-mono font-medium" style="color: var(--text-primary);">
+                    <dt class="text-xs text-theme-muted">ID</dt>
+                    <dd class="text-xs font-mono font-medium text-theme-primary">
                         <?php echo get_ticket_code($ticket_id); ?>
                     </dd>
                 </div>
                 <div class="flex justify-between items-center">
-                    <dt class="text-xs" style="color: var(--text-muted);"><?php echo e(t('Status')); ?></dt>
+                    <dt class="text-xs text-theme-muted"><?php echo e(t('Status')); ?></dt>
                     <dd>
                         <span class="badge px-2 py-0.5 text-xs"
                             style="background-color: <?php echo e($ticket['status_color']); ?>20; color: <?php echo e($ticket['status_color']); ?>">
@@ -962,7 +947,7 @@ require_once BASE_PATH . '/includes/header.php';
                 </div>
                 <?php if (is_agent()): ?>
                 <div class="flex justify-between items-center">
-                    <dt class="text-xs" style="color: var(--text-muted);"><?php echo e(t('Assigned')); ?></dt>
+                    <dt class="text-xs text-theme-muted"><?php echo e(t('Assigned')); ?></dt>
                     <dd>
                         <select class="text-xs py-0.5 px-1 rounded border-0 cursor-pointer" style="color: var(--text-primary); background: var(--surface-secondary);" onchange="quickEditField('quick-assign', {assignee_id: this.value})">
                             <option value=""><?php echo e(t('-- Unassigned --')); ?></option>
@@ -976,7 +961,7 @@ require_once BASE_PATH . '/includes/header.php';
                 </div>
                 <?php endif; ?>
                 <div class="flex justify-between items-center">
-                    <dt class="text-xs" style="color: var(--text-muted);"><?php echo e(t('Priority')); ?></dt>
+                    <dt class="text-xs text-theme-muted"><?php echo e(t('Priority')); ?></dt>
                     <dd>
                         <?php if (is_agent()): ?>
                         <select class="text-xs py-0.5 px-1 rounded border-0 cursor-pointer" style="color: var(--text-primary); background: var(--surface-secondary);" onchange="quickEditField('quick-priority', {priority_id: this.value})">
@@ -996,7 +981,7 @@ require_once BASE_PATH . '/includes/header.php';
                     </dd>
                 </div>
                 <div class="flex justify-between items-center">
-                    <dt class="text-xs" style="color: var(--text-muted);"><?php echo e(t('Type')); ?></dt>
+                    <dt class="text-xs text-theme-muted"><?php echo e(t('Type')); ?></dt>
                     <dd>
                         <?php if (is_agent()): ?>
                         <select class="text-xs py-0.5 px-1 rounded border-0 cursor-pointer" style="color: var(--text-primary); background: var(--surface-secondary);" onchange="quickEditField('quick-type', {type: this.value})">
@@ -1008,13 +993,13 @@ require_once BASE_PATH . '/includes/header.php';
                             <?php endforeach; ?>
                         </select>
                         <?php else: ?>
-                        <span class="text-xs" style="color: var(--text-primary);"><?php echo e(get_type_label($ticket['type'])); ?></span>
+                        <span class="text-xs text-theme-primary"><?php echo e(get_type_label($ticket['type'])); ?></span>
                         <?php endif; ?>
                     </dd>
                 </div>
                 <?php if ($tags_supported): ?>
                 <div class="space-y-1" id="sidebar-tags-section">
-                    <dt class="text-xs flex items-center justify-between" style="color: var(--text-muted);">
+                    <dt class="text-xs flex items-center justify-between text-theme-muted">
                         <?php echo e(t('Tags')); ?>
                         <?php if (can_edit_ticket($ticket, $user)): ?>
                             <button type="button" id="sidebar-tags-edit-btn"
@@ -1033,7 +1018,7 @@ require_once BASE_PATH . '/includes/header.php';
                                 </a>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <span class="text-xs" style="color: var(--text-muted);">—</span>
+                            <span class="text-xs text-theme-muted">—</span>
                         <?php endif; ?>
                     </dd>
                     <!-- Edit mode -->
@@ -1061,13 +1046,13 @@ require_once BASE_PATH . '/includes/header.php';
                 </div>
                 <?php endif; ?>
                 <div class="flex justify-between">
-                    <dt class="text-xs" style="color: var(--text-muted);"><?php echo e(t('Created')); ?></dt>
-                    <dd class="text-xs" style="color: var(--text-primary);">
+                    <dt class="text-xs text-theme-muted"><?php echo e(t('Created')); ?></dt>
+                    <dd class="text-xs text-theme-primary">
                         <?php echo format_date($ticket['created_at']); ?></dd>
                 </div>
                 <?php if (!empty($ticket['due_date'])): ?>
                         <div class="flex justify-between">
-                            <dt class="text-xs" style="color: var(--text-muted);"><?php echo e(t('Due date')); ?></dt>
+                            <dt class="text-xs text-theme-muted"><?php echo e(t('Due date')); ?></dt>
                             <dd class="text-xs">
                                 <?php
                                 $is_overdue = is_due_date_overdue($ticket['due_date'], !empty($ticket['is_closed']));
@@ -1081,22 +1066,22 @@ require_once BASE_PATH . '/includes/header.php';
                 <?php endif; ?>
                 <?php if (!empty($attachment_list)): ?>
                         <div class="flex justify-between">
-                            <dt class="text-xs" style="color: var(--text-muted);"><?php echo e(t('Attachments')); ?></dt>
-                            <dd class="text-xs" style="color: var(--text-primary);"><?php echo count($attachment_list); ?>
+                            <dt class="text-xs text-theme-muted"><?php echo e(t('Attachments')); ?></dt>
+                            <dd class="text-xs text-theme-primary"><?php echo count($attachment_list); ?>
                                 <?php echo e(t('files')); ?>
                             </dd>
                         </div>
                 <?php endif; ?>
                 <?php if ($time_tracking_available && can_view_time($user)): ?>
                         <div class="flex justify-between items-center">
-                            <dt class="text-xs" style="color: var(--text-muted);"><?php echo e(t('Logged time')); ?></dt>
+                            <dt class="text-xs text-theme-muted"><?php echo e(t('Logged time')); ?></dt>
                             <dd>
                                 <?php if ($total_time_minutes > 0): ?>
                                         <span class="badge-inline bg-blue-50 text-blue-700">
                                             <?php echo get_icon('clock', 'mr-1'); ?>                <?php echo e(format_duration_minutes($total_time_minutes)); ?>
                                         </span>
                                 <?php else: ?>
-                                        <span class="text-xs" style="color: var(--text-muted);">-</span>
+                                        <span class="text-xs text-theme-muted">-</span>
                                 <?php endif; ?>
                             </dd>
                         </div>
@@ -1114,8 +1099,8 @@ require_once BASE_PATH . '/includes/header.php';
                 <?php endif; ?>
                 <?php if (is_admin()): ?>
                         <div class="flex justify-between items-center">
-                            <dt class="text-xs" style="color: var(--text-muted);"><?php echo e(t('Billable rate')); ?></dt>
-                            <dd class="text-xs font-medium" style="color: var(--text-primary);">
+                            <dt class="text-xs text-theme-muted"><?php echo e(t('Billable rate')); ?></dt>
+                            <dd class="text-xs font-medium text-theme-primary">
                                 <?php echo format_money($ticket_effective_billable_rate); ?>
                             </dd>
                         </div>
@@ -1139,7 +1124,7 @@ require_once BASE_PATH . '/includes/header.php';
 
         <?php if (!empty($attachment_list)): ?>
                 <div class="card card-body">
-                    <h3 class="font-semibold text-sm mb-2" style="color: var(--text-primary);">
+                    <h3 class="font-semibold text-sm mb-2 text-theme-primary">
                         <?php echo e(t('All attachments')); ?></h3>
                     <div class="space-y-1">
                         <?php foreach ($attachment_list as $attachment): ?>
@@ -1175,7 +1160,7 @@ require_once BASE_PATH . '/includes/header.php';
                                                 <?php echo e($attachment['original_name']); ?>
                                             </a>
                                         <?php endif; ?>
-                                        <div class="text-xs flex items-center gap-1" style="color: var(--text-muted);">
+                                        <div class="text-xs flex items-center gap-1 text-theme-muted">
                                             <?php echo format_file_size($attachment['file_size']); ?>
                                             <?php if (!empty($uploader_name)): ?>
                                                     &middot; <?php echo e($uploader_name); ?>
@@ -1193,8 +1178,7 @@ require_once BASE_PATH . '/includes/header.php';
                 <div class="card card-body">
                     <!-- Collapsible Options (collapsed by default) -->
                     <details class="group">
-                        <summary class="flex items-center justify-between cursor-pointer py-1 text-xs"
-                            style="color: var(--text-muted);">
+                        <summary class="flex items-center justify-between cursor-pointer py-1 text-xs text-theme-muted">
                             <span class="flex items-center gap-1.5">
                                 <?php echo get_icon('cog', 'w-3.5 h-3.5'); ?>
                                 <?php echo e(t('More options')); ?>
@@ -1266,7 +1250,7 @@ require_once BASE_PATH . '/includes/header.php';
                                                     class="form-input text-sm py-1.5 w-full"
                                                     value="<?php echo e($ticket_custom_billable_rate !== null ? number_format((float) $ticket_custom_billable_rate, 2, '.', '') : ''); ?>"
                                                     placeholder="<?php echo e(t('Leave empty to use the company default')); ?>">
-                                                <p class="text-xs" style="color: var(--text-muted);">
+                                                <p class="text-xs text-theme-muted">
                                                     <?php echo e(t('Company default rate: {rate}', ['rate' => format_money($org_billable_rate)])); ?>
                                                 </p>
                                                 <button type="submit" name="update_ticket_billing_rate" class="btn btn-primary btn-xs w-full justify-center">
@@ -1283,7 +1267,7 @@ require_once BASE_PATH . '/includes/header.php';
                             <div>
                                 <label class="form-label-sm mb-1.5">
                                     <?php echo get_icon('users', 'w-3 h-3 inline mr-1'); ?>        <?php echo e(t('Ticket access')); ?>
-                                    <span style="color: var(--border-light);">(<?php echo count($shared_users); ?>)</span>
+                                    <span class="text-theme-border-light">(<?php echo count($shared_users); ?>)</span>
                                 </label>
                                 <?php if (!empty($shared_users)): ?>
                                         <div class="flex flex-wrap gap-1 mb-2">
@@ -1370,14 +1354,13 @@ require_once BASE_PATH . '/includes/header.php';
 
                             <?php if (is_admin() || (is_agent() && can_archive_tickets())): ?>
                                     <!-- Archive -->
-                                    <div class="pt-2 border-t" style="border-color: var(--border-light);">
+                                    <div class="pt-2 border-t border-theme-light">
                                         <?php if (empty($ticket['is_archived'])): ?>
                                                 <form method="post"
                                                     onsubmit="return confirm('<?php echo e(t('Are you sure you want to move this ticket to the archive?')); ?>')">
                                                     <?php echo csrf_field(); ?>
                                                     <button type="submit" name="archive_ticket"
-                                                        class="btn btn-ghost btn-sm w-full justify-center hover:text-orange-600 hover:bg-orange-50"
-                                                        style="color: var(--text-muted);">
+                                                        class="btn btn-ghost btn-sm w-full justify-center hover:text-orange-600 hover:bg-orange-50 text-theme-muted">
                                                         <?php echo get_icon('archive', 'w-4 h-4 mr-1.5'); ?>                        <?php echo e(t('Archive')); ?>
                                                     </button>
                                                 </form>
@@ -1408,7 +1391,7 @@ require_once BASE_PATH . '/includes/header.php';
                 <form method="post" id="edit-ticket-form">
                     <?php echo csrf_field(); ?>
                     <div class="modal-panel-body">
-                        <h3 class="text-base font-semibold mb-4 flex items-center gap-2" style="color: var(--text-primary);"
+                        <h3 class="text-base font-semibold mb-4 flex items-center gap-2 text-theme-primary"
                             id="edit-ticket-title">
                             <?php echo get_icon('edit', 'w-5 h-5 td-text-muted'); ?>
                             <?php echo e(t('Edit ticket')); ?>
@@ -1416,15 +1399,13 @@ require_once BASE_PATH . '/includes/header.php';
 
                         <div class="space-y-3">
                             <div>
-                                <label class="block text-xs font-medium mb-1"
-                                    style="color: var(--text-muted);"><?php echo e(t('Subject')); ?> *</label>
+                                <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('Subject')); ?> *</label>
                                 <input type="text" name="edit_title" id="edit-ticket-title-input"
                                     value="<?php echo e($ticket['title']); ?>" class="form-input w-full" required>
                             </div>
 
                             <div>
-                                <label class="block text-xs font-medium mb-1"
-                                    style="color: var(--text-muted);"><?php echo e(t('Description')); ?></label>
+                                <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('Description')); ?></label>
                                 <div class="editor-wrapper">
                                     <div id="edit-description-editor"></div>
                                 </div>
@@ -1434,8 +1415,7 @@ require_once BASE_PATH . '/includes/header.php';
 
                             <?php if ($tags_supported): ?>
                                     <div>
-                                        <label class="block text-xs font-medium mb-1"
-                                            style="color: var(--text-muted);"><?php echo e(t('Tags')); ?></label>
+                                        <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('Tags')); ?></label>
                                         <input type="text" name="edit_tags" id="edit-ticket-tags-input"
                                             value="<?php echo e($ticket['tags'] ?? ''); ?>" class="form-input w-full"
                                             placeholder="<?php echo e(t('Comma separated tags')); ?>">
@@ -1444,8 +1424,7 @@ require_once BASE_PATH . '/includes/header.php';
 
                             <?php if (is_agent()): ?>
                                     <div>
-                                        <label class="block text-xs font-medium mb-1"
-                                            style="color: var(--text-muted);"><?php echo e(t('Company')); ?></label>
+                                        <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('Company')); ?></label>
                                         <select name="edit_organization_id" class="form-select w-full">
                                             <option value=""><?php echo e(t('-- No organization --')); ?></option>
                                             <?php foreach ($organizations as $org): ?>
@@ -1459,13 +1438,12 @@ require_once BASE_PATH . '/includes/header.php';
 
                             <?php if (is_admin()): ?>
                                     <div>
-                                        <label class="block text-xs font-medium mb-1"
-                                            style="color: var(--text-muted);"><?php echo e(t('Custom billable rate (per hour)')); ?></label>
+                                        <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('Custom billable rate (per hour)')); ?></label>
                                         <input type="number" name="edit_custom_billable_rate" step="0.01" min="0"
                                             value="<?php echo e($ticket_custom_billable_rate !== null ? number_format((float) $ticket_custom_billable_rate, 2, '.', '') : ''); ?>"
                                             class="form-input w-full"
                                             placeholder="<?php echo e(t('Leave empty to use the company default')); ?>">
-                                        <p class="mt-1 text-xs" style="color: var(--text-muted);">
+                                        <p class="mt-1 text-xs text-theme-muted">
                                             <?php echo e(t('Company default rate: {rate}', ['rate' => format_money($org_billable_rate)])); ?>
                                         </p>
                                     </div>
@@ -1490,7 +1468,7 @@ require_once BASE_PATH . '/includes/header.php';
             <div class="modal-panel max-w-lg">
                 <form id="edit-comment-form" onsubmit="submitEditComment(event)">
                     <div class="modal-panel-body">
-                        <h3 class="text-lg font-medium mb-4" id="modal-title" style="color: var(--text-primary);">
+                        <h3 class="text-lg font-medium mb-4 text-theme-primary" id="modal-title">
                             <?php echo e(t('Edit comment')); ?></h3>
                         <input type="hidden" name="comment_id" id="edit-comment-id">
                         <div class="editor-wrapper">
@@ -1518,7 +1496,7 @@ require_once BASE_PATH . '/includes/header.php';
                     <input type="hidden" name="entry_id" id="edit-time-id">
                     <input type="hidden" name="edit_time_date" id="edit-time-date">
                     <div class="modal-panel-body">
-                        <h3 class="text-base font-semibold mb-4 flex items-center gap-2" style="color: var(--text-primary);"
+                        <h3 class="text-base font-semibold mb-4 flex items-center gap-2 text-theme-primary"
                             id="time-modal-title">
                             <?php echo get_icon('clock', 'w-5 h-5 td-text-muted'); ?>
                             <?php echo e(t('Edit time entry')); ?>
@@ -1528,19 +1506,16 @@ require_once BASE_PATH . '/includes/header.php';
                             <!-- Date + Start + End on one row -->
                             <div class="grid grid-cols-[1fr_auto_auto] gap-2 items-end">
                                 <div>
-                                    <label class="block text-xs font-medium mb-1"
-                                        style="color: var(--text-muted);"><?php echo e(t('Date')); ?></label>
+                                    <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('Date')); ?></label>
                                     <input type="date" id="edit-time-date-picker" class="form-input w-full text-sm h-9"
                                         required>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium mb-1"
-                                        style="color: var(--text-muted);"><?php echo e(t('Start')); ?></label>
+                                    <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('Start')); ?></label>
                                     <input type="time" id="edit-time-start-time" class="form-input w-full text-sm h-9" required>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-medium mb-1"
-                                        style="color: var(--text-muted);"><?php echo e(t('End')); ?></label>
+                                    <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('End')); ?></label>
                                     <input type="time" id="edit-time-end-time" class="form-input w-full text-sm h-9" required>
                                 </div>
                             </div>
@@ -1549,14 +1524,12 @@ require_once BASE_PATH . '/includes/header.php';
                             <input type="hidden" name="ended_at" id="edit-time-end">
 
                             <div class="flex items-center gap-2">
-                                <span class="text-xs font-medium"
-                                    style="color: var(--text-muted);"><?php echo e(t('Duration')); ?>:</span>
+                                <span class="text-xs font-medium text-theme-muted"><?php echo e(t('Duration')); ?>:</span>
                                 <span id="edit-time-duration" class="text-sm font-semibold text-blue-600">-</span>
                             </div>
 
                             <div>
-                                <label class="block text-xs font-medium mb-1"
-                                    style="color: var(--text-muted);"><?php echo e(t('Summary')); ?></label>
+                                <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('Summary')); ?></label>
                                 <textarea name="summary" id="edit-time-summary" rows="2" class="form-textarea w-full text-sm"
                                     placeholder="<?php echo e(t('Optional work description...')); ?>"></textarea>
                             </div>
@@ -1565,8 +1538,7 @@ require_once BASE_PATH . '/includes/header.php';
                                 <label class="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" name="is_billable" id="edit-time-billable" value="1"
                                         class="rounded text-blue-600 focus:ring-blue-500">
-                                    <span class="text-sm"
-                                        style="color: var(--text-secondary);"><?php echo e(t('Billable')); ?></span>
+                                    <span class="text-sm text-theme-secondary"><?php echo e(t('Billable')); ?></span>
                                 </label>
                             </div>
                         </div>
@@ -2853,7 +2825,7 @@ require_once BASE_PATH . '/includes/header.php';
                           + '" class="ticket-tag-pill" title="' + _escHtml(<?php echo json_encode(t('Filter by this tag')); ?>) + '">'
                           + '#' + _escHtml(tag) + '</a>';
                 });
-                if (!html) html = '<span class="text-xs" style="color: var(--text-muted);">—</span>';
+                if (!html) html = '<span class="text-xs text-theme-muted">—</span>';
                 display.innerHTML = html;
                 hideEditor();
             }

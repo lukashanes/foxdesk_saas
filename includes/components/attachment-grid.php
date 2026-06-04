@@ -59,7 +59,7 @@ foreach ($component_attachments as $_att) {
            style="background: var(--surface-secondary); color: var(--text-secondary); border: 1px solid var(--border-light);">
             <?php echo get_icon(get_file_icon($_f['mime_type']), 'w-3.5 h-3.5 flex-shrink-0'); ?>
             <span class="truncate max-w-[140px]"><?php echo e($_f['original_name']); ?></span>
-            <span class="text-xs" style="color: var(--text-muted);"><?php echo format_file_size($_f['file_size']); ?></span>
+            <span class="text-xs text-theme-muted"><?php echo format_file_size($_f['file_size']); ?></span>
         </a>
     <?php endforeach; ?>
 </div>

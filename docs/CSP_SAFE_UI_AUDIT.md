@@ -35,14 +35,24 @@ Files:
 - `tests/csp-ui-baseline.test.js`: fails when a file adds more inline/page
   styling than the baseline allows.
 
-Current baseline after Work/Inbox/Tickets/Ticket detail/New ticket/Reports/Billing/Client/Dashboard/Admin/Auth refactor:
+Current baseline after the CSP cleanup milestone:
 
-- Affected files: 39
-- `<style>` blocks: 1
-- Inline `style=""` attributes: 1341
-- Unversioned `theme.css` links: 2
-- Unversioned `tailwind.min.css` links: 4
-- Priority files affected: 11
+- Affected files: 34
+- `<style>` blocks: 0
+- Inline `style=""` attributes: 434
+- Unversioned `theme.css` links: 0
+- Unversioned `tailwind.min.css` links: 0
+- Priority files affected: 10
+
+Completed in milestone 1 cleanup:
+
+- `pages/report-public.php`: final page-level `<style>` block removed.
+- `pages/report-theme.php`: public first-party stylesheet endpoint added for
+  report-specific theme colors without inline styles.
+- `pages/report-share.php`, `pages/ticket-share.php`, and `pages/login.php`:
+  public CSS links now use local versioned assets.
+- Static repeated inline colors/backgrounds were converted to shared utility
+  classes in `theme.css`, reducing inline style attributes from 1341 to 434.
 
 Completed in milestone 3a:
 
@@ -194,7 +204,6 @@ Already converted:
 Remaining:
 
 - `includes/footer.php`
-- `pages/report-public.php` dynamic report theme CSS
 - remaining dynamic inline styles in `includes/header.php`,
   `pages/admin/settings.php`, `pages/admin/reports.php`, `pages/tickets.php`,
   and `pages/ticket-detail.php`
