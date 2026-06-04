@@ -21,6 +21,10 @@ $assert = static function (bool $condition, string $message): void {
 $assert(str_contains($module, 'function platform_tenant_detail_context'), 'Tenant detail context helper is missing.');
 $assert(str_contains($module, 'function platform_send_owner_reset'), 'Owner reset email helper is missing.');
 $assert(str_contains($module, 'function platform_invite_or_set_owner'), 'Owner invite helper is missing.');
+$assert(str_contains($module, 'function platform_grant_free_access'), 'Free platform override helper is missing.');
+$assert(str_contains($module, "'subscription_status' => 'free'"), 'Free platform override must set subscription_status=free.');
+$assert(str_contains($module, "'status' => 'active'"), 'Free platform override must keep the workspace active.');
+$assert(str_contains($module, "'blocked_at' => null"), 'Free platform override must clear blocked_at.');
 $assert(str_contains($module, 'billing_stripe_events'), 'Subscription history must include Stripe events.');
 $assert(str_contains($module, 'billing_usage_reports'), 'Subscription history must include usage reports.');
 $assert(str_contains($module, 'billing_trial_email_events'), 'Subscription history must include trial email events.');
@@ -31,6 +35,9 @@ $assert(str_contains($platform, 'Owner access'), 'Platform tenant detail must ex
 $assert(str_contains($platform, 'Subscription history'), 'Platform tenant detail must expose subscription history.');
 $assert(str_contains($platform, 'Usage overview'), 'Platform tenant detail must expose usage overview.');
 $assert(str_contains($platform, 'Open detail'), 'Workspace catalog must link to tenant detail.');
+$assert(str_contains($platform, 'name="platform_action" value="grant_free_access"'), 'Platform UI must expose a one-click free access action.');
+$assert(str_contains($platform, 'Free access'), 'Platform UI must label the free access action clearly.');
+$assert(str_contains($platform, 'Platform override'), 'Platform UI must explain manual/free billing overrides.');
 $assert(str_contains($docs, 'operator tenant detail'), 'Next steps docs must mention completed operator detail.');
 
 echo "Platform operator detail contract OK\n";

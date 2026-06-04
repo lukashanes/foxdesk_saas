@@ -1261,17 +1261,20 @@ function billing_tenant_billing_action_state(?array $tenant = null, ?array $acce
         'notice_variant' => 'info',
     ];
 
-    if (!billing_enabled()) {
-        $state['notice_title'] = 'Billing is not enabled';
-        $state['notice_body'] = 'Stripe billing is configured later; no customer action is available right now.';
+    if (billing_subscription_is_manual_access($subscription_status)) {
+        $billing_enabled = billing_enabled();
+        $state['show_portal'] = $billing_enabled;
+        $state['portal_label'] = 'Manage billing details';
+        $state['notice_title'] = 'Workspace active';
+        $state['notice_body'] = $billing_enabled
+            ? 'This workspace is active by platform admin override. No Stripe subscription is required. Billing details, address, and VAT ID can still be managed in Stripe.'
+            : 'This workspace is active by platform admin override. No Stripe subscription is required.';
         return $state;
     }
 
-    if (billing_subscription_is_manual_access($subscription_status)) {
-        $state['show_portal'] = true;
-        $state['portal_label'] = 'Manage billing details';
-        $state['notice_title'] = 'Workspace active';
-        $state['notice_body'] = 'This workspace is active by platform admin override. No Stripe subscription is required. Billing details, address, and VAT ID can still be managed in Stripe.';
+    if (!billing_enabled()) {
+        $state['notice_title'] = 'Billing is not enabled';
+        $state['notice_body'] = 'Stripe billing is configured later; no customer action is available right now.';
         return $state;
     }
 

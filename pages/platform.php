@@ -63,6 +63,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             platform_reactivate_tenant($tenant_id);
             $selected_tenant_id = $tenant_id;
             $success = 'Workspace reactivated manually.';
+        } elseif ($action === 'grant_free_access') {
+            $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
+            platform_grant_free_access($tenant_id);
+            $selected_tenant_id = $tenant_id;
+            $success = 'Workspace marked free by platform override.';
         } elseif ($action === 'send_owner_reset') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
             $result = platform_send_owner_reset($tenant_id);
@@ -307,7 +312,14 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                     <div class="op-mini-card">
                         <span class="op-label">Subscription</span>
                         <strong><?php echo e($detail_tenant['subscription_status'] ?? 'manual'); ?></strong>
-                        <div class="op-sub"><?php echo e(billing_plan_name()); ?> · <?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/mo</div>
+                        <div class="op-sub">
+                            <?php echo e(billing_plan_name()); ?> ·
+                            <?php if (billing_subscription_is_manual_access((string) ($detail_tenant['subscription_status'] ?? 'manual'))): ?>
+                                platform override
+                            <?php else: ?>
+                                <?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/mo
+                            <?php endif; ?>
+                        </div>
                     </div>
                     <div class="op-mini-card">
                         <span class="op-label">Storage</span>
@@ -365,6 +377,13 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                         <input type="hidden" name="return_tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
                                         <input class="op-input" style="width: 84px;" type="number" name="days" value="7" min="1" max="90" aria-label="Trial extension days">
                                         <button class="op-btn" type="submit">Extend trial</button>
+                                    </form>
+                                    <form method="post">
+                                        <?php echo csrf_field(); ?>
+                                        <input type="hidden" name="platform_action" value="grant_free_access">
+                                        <input type="hidden" name="tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                        <input type="hidden" name="return_tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                        <button class="op-btn" type="submit">Free access</button>
                                     </form>
                                     <?php if (($detail_tenant['status'] ?? '') === 'blocked'): ?>
                                         <form method="post">
@@ -618,7 +637,11 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                     </td>
                                     <td data-label="Billing">
                                         <div class="op-name"><?php echo e(billing_plan_name()); ?></div>
-                                        <div class="op-sub"><?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/mo base</div>
+                                        <?php if (billing_subscription_is_manual_access((string) ($tenant['subscription_status'] ?? 'manual'))): ?>
+                                            <div class="op-sub">Platform override · no checkout required</div>
+                                        <?php else: ?>
+                                            <div class="op-sub"><?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/mo base</div>
+                                        <?php endif; ?>
                                         <div class="op-sub"><?php echo (int) $usage['extra_storage_gb']; ?> extra GB · <?php echo e(billing_format_money($usage['storage_overage_cents'])); ?></div>
                                     </td>
                                     <td data-label="Lifecycle">
@@ -648,6 +671,12 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                                 <input type="hidden" name="tenant_id" value="<?php echo $tenant_id; ?>">
                                                 <input type="hidden" name="days" value="7">
                                                 <button class="op-pill" type="submit">+7d trial</button>
+                                            </form>
+                                            <form method="post">
+                                                <?php echo csrf_field(); ?>
+                                                <input type="hidden" name="platform_action" value="grant_free_access">
+                                                <input type="hidden" name="tenant_id" value="<?php echo $tenant_id; ?>">
+                                                <button class="op-pill good" type="submit">Free access</button>
                                             </form>
                                             <?php if (($tenant['status'] ?? '') === 'blocked'): ?>
                                                 <form method="post">

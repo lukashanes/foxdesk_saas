@@ -80,6 +80,21 @@ function platform_reactivate_tenant(int $tenant_id): void
     ], 'id = ?', [$tenant_id]);
 }
 
+function platform_grant_free_access(int $tenant_id): void
+{
+    if ($tenant_id <= 0) {
+        throw new InvalidArgumentException('Invalid workspace.');
+    }
+
+    db_update('tenants', [
+        'status' => 'active',
+        'subscription_status' => 'free',
+        'plan' => billing_plan_code(),
+        'suspended_at' => null,
+        'blocked_at' => null,
+    ], 'id = ?', [$tenant_id]);
+}
+
 function platform_find_owner(int $tenant_id): ?array
 {
     $tenant = db_fetch_one("SELECT owner_user_id FROM tenants WHERE id = ? LIMIT 1", [$tenant_id]);

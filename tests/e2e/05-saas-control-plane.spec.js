@@ -402,6 +402,57 @@ test('blocked tenant admins are redirected to billing instead of app pages', asy
   await ownerContext.close();
 });
 
+test('platform admin can grant free access and restore workspace access', async ({ browser }) => {
+  const stamp = Date.now();
+  const workspaceName = `Free Override ${stamp}`;
+  const ownerEmail = `free.${stamp}@example.test`;
+  const ownerPassword = 'OwnerPass123!';
+
+  const { context: ownerContext, page } = await createWorkspaceViaUi(browser, {
+    workspaceName,
+    ownerEmail,
+    ownerPassword,
+    firstName: 'Free',
+    lastName: 'Owner'
+  });
+
+  const tenantId = tenantIdByOwnerEmail(ownerEmail);
+  expect(tenantId).toBeGreaterThan(0);
+  dbQuery(`UPDATE tenants SET status = 'canceled', subscription_status = 'canceled', blocked_at = NOW(), suspended_at = NOW() WHERE id = ${tenantId};`);
+
+  await page.goto('/index.php?page=tickets');
+  await expect(page).toHaveURL(/page=billing/);
+  await expect(page.locator('body')).toContainText('This subscription has been canceled');
+
+  const platformContext = await browser.newContext({ baseURL: platformBaseURL });
+  const platformPage = await platformContext.newPage();
+  await login(platformPage);
+  await platformPage.goto('/index.php?page=platform');
+  const workspaceRow = platformPage.locator('[data-workspace-row]').filter({ hasText: workspaceName });
+  await expect(workspaceRow).toHaveCount(1);
+  await workspaceRow.getByRole('button', { name: 'Free access' }).click();
+  await expect(platformPage.locator('body')).toContainText('Workspace marked free by platform override.');
+
+  const output = dbQuery(`
+    SELECT status, subscription_status, suspended_at IS NULL AS no_suspended_at, blocked_at IS NULL AS no_blocked_at
+    FROM tenants
+    WHERE id = ${tenantId}
+    LIMIT 1;
+  `);
+  expect(output).toContain('active\tfree\t1\t1');
+
+  await page.goto('/index.php?page=tickets');
+  await expect(page).not.toHaveURL(/page=billing/);
+  await page.goto('/index.php?page=billing');
+  await expect(page.locator('body')).toContainText('platform admin override');
+  await expect(page.getByRole('button', { name: 'Start subscription' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Restart subscription' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add billing' })).toHaveCount(0);
+
+  await platformContext.close();
+  await ownerContext.close();
+});
+
 test('trial lifecycle emails, expiry, and operator extension work end to end', async ({ browser }) => {
   const stamp = Date.now();
   const ownerEmail = `trial.${stamp}@example.test`;
