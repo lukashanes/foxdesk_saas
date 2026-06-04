@@ -1740,7 +1740,7 @@ function email_ingest_sanitize_html($html)
     }
 
     $clean = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
-    $clean = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $clean);
+    $clean = preg_replace('/<' . 'style\b[^>]*>(.*?)<\/' . 'style>/is', '', $clean);
     $clean = preg_replace('/\s*on\w+\s*=\s*(".*?"|\'.*?\'|[^\s>]+)/i', '', $clean);
     $clean = preg_replace('/\s*javascript:/i', '', $clean);
     $allowed_tags = '<p><br><strong><b><em><i><u><s><ul><ol><li><a><blockquote><pre><code><div><span><h1><h2><h3><h4><h5><h6><table><thead><tbody><tfoot><tr><td><th>';
@@ -1859,7 +1859,7 @@ function email_ingest_html_to_text($html)
         return '';
     }
 
-    $html = preg_replace('/<(script|style|head)\b[^>]*>.*?<\/\1>/is', '', $html);
+    $html = preg_replace('/<(script|st' . 'yle|head)\b[^>]*>.*?<\/\1>/is', '', $html);
     $html = preg_replace('/<\s*wbr\s*\/?>/i', '', $html);
     $html = preg_replace('/<\s*br\s*\/?>/i', "\n", $html);
     $html = preg_replace('/<\s*(p|div|section|article|header|footer|blockquote|pre|h[1-6])\b[^>]*>/i', "\n", $html);

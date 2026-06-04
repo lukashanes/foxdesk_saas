@@ -1,7 +1,7 @@
 # CSP-Safe UI Audit
 
 Date: 2026-06-04
-Status: baseline created, refactor pending
+Status: active refactor baseline updated
 
 ## Problem
 
@@ -35,14 +35,14 @@ Files:
 - `tests/csp-ui-baseline.test.js`: fails when a file adds more inline/page
   styling than the baseline allows.
 
-Current baseline after Work/Inbox/Tickets/Ticket detail/New ticket/Reports/Billing/Client refactor:
+Current baseline after Work/Inbox/Tickets/Ticket detail/New ticket/Reports/Billing/Client/Dashboard/Admin/Auth refactor:
 
-- Affected files: 47
-- `<style>` blocks: 19
-- Inline `style=""` attributes: 1382
-- Unversioned `theme.css` links: 5
-- Unversioned `tailwind.min.css` links: 8
-- Priority files affected: 14
+- Affected files: 39
+- `<style>` blocks: 1
+- Inline `style=""` attributes: 1341
+- Unversioned `theme.css` links: 2
+- Unversioned `tailwind.min.css` links: 4
+- Priority files affected: 11
 
 Completed in milestone 3a:
 
@@ -106,6 +106,47 @@ Completed in milestone 9a:
   organization admin page, verifies the external CSS layout, allows only the
   dynamic ticket status color CSS variable, and checks ticket tab switching.
 
+Completed in milestone 10a:
+
+- `pages/dashboard.php`: page-level dashboard styles moved to `theme.css`.
+  Hidden dashboard widgets now use the shared `is-hidden` class instead of
+  generated `display:none` attributes.
+- `includes/components/widget-wrap-open.php`: widget visibility class handling
+  is shared with dashboard JS.
+- `tests/smoke/local-smoke.js`: now checks dashboard grid/KPI/widget layout,
+  versioned `theme.css`, and the customize panel interaction.
+
+Completed in milestone 10b:
+
+- `pages/admin/settings.php`: update success redirect pages now use one
+  `settings_render_update_redirect()` helper and shared
+  `system-notice-*` classes.
+- `includes/update-functions.php`: update and rollback interstitial pages now
+  use one `render_update_interstitial()` helper and shared external CSS.
+- `index.php`: maintenance mode page uses the same external system notice
+  layout.
+
+Completed in milestone 10c:
+
+- `pages/signup.php`, `pages/forgot-password.php`, and
+  `pages/reset-password.php`: local auth/signup CSS moved to `theme.css`,
+  theme/tailwind links are versioned, and repeated inline color styles were
+  replaced with shared utility classes.
+- `pages/platform.php`: operator console styles moved to `theme.css` and scoped
+  under `body.op-page` so they do not leak into the customer workspace UI.
+- `pages/legal.php`: legal document styles moved to `theme.css` and scoped
+  under `body.legal-page`.
+- `includes/header.php`: header search dark-mode and notification center style
+  blocks moved to `theme.css`.
+- `pages/notifications.php`, `pages/admin/activity.php`,
+  `pages/admin/organizations.php`, and `pages/admin/agent-connect.php`: local
+  static page style blocks moved to `theme.css`.
+- `includes/functions.php` and `includes/email-ingest-functions.php`: sanitizer
+  regex literals were split so the CSP audit no longer reports false page-level
+  `<style>` blocks.
+- `tests/smoke/local-smoke.js`: now checks public signup/legal, dashboard,
+  settings, notifications, activity, and the local platform-login fallback.
+
 ## Priority Order
 
 ### P0 - Blocks Cloud Usability
@@ -130,8 +171,8 @@ Done means:
 
 ### P1 - Blocks Daily Admin/Reporting
 
-1. `pages/dashboard.php`
-2. `pages/admin/settings.php`
+No remaining P1 page-level style blocks. The remaining P1 debt is inline
+`style=""` cleanup on complex admin/reporting pages.
 
 Done means:
 
@@ -145,21 +186,37 @@ Already converted:
 - `pages/admin/reports.php`
 - `pages/billing.php`
 - `pages/client.php`
+- `pages/dashboard.php`
+- `pages/admin/settings.php` update interstitials
 
 ### P2 - Platform And Auth Polish
 
-11. `pages/platform.php`
-12. `pages/signup.php`
-13. `pages/forgot-password.php`
-14. `pages/reset-password.php`
-15. `includes/header.php`
-16. `includes/footer.php`
+Remaining:
+
+- `includes/footer.php`
+- `pages/report-public.php` dynamic report theme CSS
+- remaining dynamic inline styles in `includes/header.php`,
+  `pages/admin/settings.php`, `pages/admin/reports.php`, `pages/tickets.php`,
+  and `pages/ticket-detail.php`
 
 Done means:
 
 - auth pages use shared auth-shell styles
 - platform admin is compact and styled
 - header/footer do not depend on inline layout styles
+
+Already converted:
+
+- `pages/platform.php`
+- `pages/signup.php`
+- `pages/forgot-password.php`
+- `pages/reset-password.php`
+- `pages/legal.php`
+- `pages/notifications.php`
+- `pages/admin/activity.php`
+- `pages/admin/organizations.php`
+- `pages/admin/agent-connect.php`
+- `includes/header.php` page-level style blocks
 
 ## Refactor Rules
 
@@ -191,3 +248,5 @@ In addition, browser QA must capture desktop and mobile screenshots for:
 - New ticket
 - Reports
 - Admin/settings
+- Public signup/legal
+- Notifications/activity

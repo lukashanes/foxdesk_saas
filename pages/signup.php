@@ -68,20 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo e($page_title); ?></title>
-    <link rel="stylesheet" href="tailwind.min.css">
-    <link rel="stylesheet" href="theme.css?v=<?php echo APP_VERSION; ?>">
-    <style>
-        body { min-height: 100vh; background: var(--bg-primary); color: var(--text-primary); }
-        .signup-shell { min-height: 100vh; display: grid; grid-template-columns: 1fr; }
-        .signup-brand { display: none; background: #0f172a; color: white; padding: 4rem; align-items: center; }
-        .signup-panel { display: flex; align-items: center; justify-content: center; padding: 2rem; }
-        .signup-card { width: 100%; max-width: 440px; }
-        .signup-logo { width: 3.5rem; height: 3.5rem; border-radius: 1rem; background: #4f63f1; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; margin-bottom: 2rem; }
-        .signup-input { width: 100%; border: 1px solid var(--border-light); border-radius: .65rem; padding: .7rem .9rem; background: var(--surface-primary); color: var(--text-primary); }
-        @media (min-width: 960px) { .signup-shell { grid-template-columns: 1fr 1fr; } .signup-brand { display: flex; } }
-    </style>
+    <link rel="stylesheet" href="tailwind.min.css?v=<?php echo e((string) APP_VERSION); ?>">
+    <link rel="stylesheet" href="theme.css?v=<?php echo e((string) APP_VERSION); ?>">
 </head>
-<body>
+<body class="signup-page">
     <main class="signup-shell">
         <section class="signup-brand">
             <div class="max-w-md">
@@ -94,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="signup-card">
                 <div class="mb-7">
                     <h2 class="text-3xl font-bold mb-2">Create workspace</h2>
-                    <p style="color: var(--text-muted);">Start a 14-day trial. No card required.</p>
+                    <p class="text-theme-muted">Start a 14-day trial. No card required.</p>
                 </div>
 
                 <?php if ($error): ?>
@@ -130,19 +120,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <input class="signup-input" type="password" name="password_confirm" minlength="12" required>
                     </div>
                     <button type="submit" class="btn btn-primary w-full py-2.5">Start 14-day free trial</button>
-                    <p class="text-xs leading-5" style="color: var(--text-muted);">
+                    <p class="text-xs leading-5 text-theme-muted">
                         By creating a workspace you agree to the
-                        <a href="<?php echo e(url('legal', ['type' => 'terms'])); ?>" target="_blank" rel="noopener" style="color: var(--primary);">Terms</a>
+                        <a class="link-theme-primary" href="<?php echo e(url('legal', ['type' => 'terms'])); ?>" target="_blank" rel="noopener">Terms</a>
                         and
-                        <a href="<?php echo e(url('legal', ['type' => 'privacy'])); ?>" target="_blank" rel="noopener" style="color: var(--primary);">Privacy Policy</a>.
+                        <a class="link-theme-primary" href="<?php echo e(url('legal', ['type' => 'privacy'])); ?>" target="_blank" rel="noopener">Privacy Policy</a>.
                         Billing is covered by the
-                        <a href="<?php echo e(url('legal', ['type' => 'refunds'])); ?>" target="_blank" rel="noopener" style="color: var(--primary);">Refund and Cancellation Policy</a>.
+                        <a class="link-theme-primary" href="<?php echo e(url('legal', ['type' => 'refunds'])); ?>" target="_blank" rel="noopener">Refund and Cancellation Policy</a>.
                     </p>
                 </form>
 
-                <p class="text-center text-sm mt-6" style="color: var(--text-muted);">
+                <p class="text-center text-sm mt-6 text-theme-muted">
                     Already have an account?
-                    <a href="<?php echo url('login'); ?>" style="color: var(--primary);" class="font-medium">Sign in</a>
+                    <a href="<?php echo url('login'); ?>" class="font-medium link-theme-primary">Sign in</a>
                 </p>
             </div>
         </section>

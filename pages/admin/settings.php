@@ -23,6 +23,26 @@ $settings_audit = function ($event_type, $context = [], $level = 'info') {
     }
 };
 
+function settings_render_update_redirect(string $redirect_url): void
+{
+    $theme_version = defined('APP_VERSION') ? (string) APP_VERSION : (string) time();
+    $safe_redirect_url = htmlspecialchars($redirect_url, ENT_QUOTES, 'UTF-8');
+    $safe_theme_version = htmlspecialchars($theme_version, ENT_QUOTES, 'UTF-8');
+
+    echo '<!DOCTYPE html><html><head><meta charset="utf-8">';
+    echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
+    echo '<meta http-equiv="refresh" content="2;url=' . $safe_redirect_url . '">';
+    echo '<title>' . e(t('Updating...')) . '</title>';
+    echo '<link href="theme.css?v=' . $safe_theme_version . '" rel="stylesheet">';
+    echo '</head><body class="system-notice-page">';
+    echo '<main class="system-notice-card" role="status" aria-live="polite">';
+    echo '<div class="system-notice-spinner" aria-hidden="true"></div>';
+    echo '<h1 class="system-notice-title">' . e(t('Update complete')) . '</h1>';
+    echo '<p class="system-notice-copy">' . e(t('Redirecting...')) . '</p>';
+    echo '</main></body></html>';
+    exit;
+}
+
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_csrf_token();
@@ -192,17 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 session_write_close();
             }
             $redirect_url = url('admin', ['section' => 'settings', 'tab' => 'system']);
-            echo '<!DOCTYPE html><html><head><meta charset="utf-8">';
-            echo '<meta http-equiv="refresh" content="2;url=' . htmlspecialchars($redirect_url) . '">';
-            echo '<title>' . e(t('Updating...')) . '</title>';
-            echo '<style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc;color:#334155}';
-            echo '.box{text-align:center;padding:2rem}.spinner{width:24px;height:24px;border:3px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin .6s linear infinite;margin:0 auto 1rem}';
-            echo '@keyframes spin{to{transform:rotate(360deg)}}</style></head>';
-            echo '<body><div class="box"><div class="spinner"></div>';
-            echo '<div style="font-weight:600;font-size:1.1rem">' . e(t('Update complete')) . '</div>';
-            echo '<div style="color:#64748b;margin-top:.5rem;font-size:.875rem">' . e(t('Redirecting...')) . '</div>';
-            echo '</div></body></html>';
-            exit;
+            settings_render_update_redirect($redirect_url);
         } else {
             $settings_audit('update_apply_failed_from_settings', [
                 'error' => $result['error'] ?? '',
@@ -362,17 +372,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // NOTE: Newer apply_update() exits before reaching here.
                 // This is a safety net for older update-functions.php versions.
                 $redirect_url = url('admin', ['section' => 'settings', 'tab' => 'system']);
-                echo '<!DOCTYPE html><html><head><meta charset="utf-8">';
-                echo '<meta http-equiv="refresh" content="2;url=' . htmlspecialchars($redirect_url) . '">';
-                echo '<title>' . e(t('Updating...')) . '</title>';
-                echo '<style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc;color:#334155}';
-                echo '.box{text-align:center;padding:2rem}.spinner{width:24px;height:24px;border:3px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin .6s linear infinite;margin:0 auto 1rem}';
-                echo '@keyframes spin{to{transform:rotate(360deg)}}</style></head>';
-                echo '<body><div class="box"><div class="spinner"></div>';
-                echo '<div style="font-weight:600;font-size:1.1rem">' . e(t('Update complete')) . '</div>';
-                echo '<div style="color:#64748b;margin-top:.5rem;font-size:.875rem">' . e(t('Redirecting...')) . '</div>';
-                echo '</div></body></html>';
-                exit;
+                settings_render_update_redirect($redirect_url);
             } else {
                 $settings_audit('update_apply_failed_from_settings', [
                     'error' => $result['error'] ?? '',

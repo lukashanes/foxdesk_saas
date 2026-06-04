@@ -15,7 +15,7 @@ define('REMEMBER_ME_DURATION', 30 * 86400); // 30 days
 
 require_once BASE_PATH . '/includes/session-bootstrap.php';
 
-define('APP_VERSION', '0.3.138');
+define('APP_VERSION', '0.3.139');
 
 // Check if installed
 if (!file_exists(BASE_PATH . '/config.php')) {
@@ -64,15 +64,17 @@ if (file_exists($maintenance_file)) {
         } else {
             http_response_code(503);
             header('Retry-After: 120');
+            $theme_version = htmlspecialchars((string) APP_VERSION, ENT_QUOTES, 'UTF-8');
             echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Maintenance</title>';
-            echo '<style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc;color:#334155}';
-            echo '.box{text-align:center;padding:2rem}.spinner{width:24px;height:24px;border:3px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin .6s linear infinite;margin:0 auto 1rem}';
-            echo '@keyframes spin{to{transform:rotate(360deg)}}</style>';
+            echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
+            echo '<link href="theme.css?v=' . $theme_version . '" rel="stylesheet">';
             echo '<meta http-equiv="refresh" content="15"></head>';
-            echo '<body><div class="box"><div class="spinner"></div>';
-            echo '<div style="font-weight:600;font-size:1.1rem">System is updating</div>';
-            echo '<div style="color:#64748b;margin-top:.5rem;font-size:.875rem">Please try again in a few minutes. This page refreshes automatically.</div>';
-            echo '</div></body></html>';
+            echo '<body class="system-notice-page">';
+            echo '<main class="system-notice-card" role="status" aria-live="polite">';
+            echo '<div class="system-notice-spinner" aria-hidden="true"></div>';
+            echo '<h1 class="system-notice-title">System is updating</h1>';
+            echo '<p class="system-notice-copy">Please try again in a few minutes. This page refreshes automatically.</p>';
+            echo '</main></body></html>';
             exit;
         }
     } else {

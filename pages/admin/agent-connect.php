@@ -820,20 +820,6 @@ include BASE_PATH . '/includes/components/page-header.php';
     </details>
 </div>
 
-
-<style>
-.ac-step { flex-shrink:0; width:1.75rem; height:1.75rem; border-radius:9999px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; }
-.ac-pre { padding:0.75rem; font-size:0.75rem; font-family:ui-monospace,monospace; overflow-x:auto; white-space:pre-wrap; margin:0; background:#0f172a; color:#4ade80; max-height:280px; overflow-y:auto; }
-.ac-tb { font-size:0.6875rem; padding:0.125rem 0.5rem; border-radius:0.25rem; color:#cbd5e1; transition:all 0.15s; display:flex; align-items:center; gap:0.125rem; cursor:pointer; background:transparent; border:none; }
-.ac-tb:hover { color:#fff; background:rgba(255,255,255,0.1); }
-.tool-btn-active { border-color: var(--accent-color, #6366f1) !important; background: var(--surface-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.tool-btn-inactive { border-color: transparent; background: var(--surface-secondary); }
-.tool-btn-inactive:hover { border-color: var(--border-color); background: var(--surface-primary); }
-.lang-active { background: var(--surface-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.08); color: var(--text-primary); }
-.lang-inactive { color: var(--text-muted); }
-.lang-inactive:hover { color: var(--text-secondary); }
-</style>
-
 <script>
 var toolNames = ['bot','claude_ai','claude_code','chatgpt','cursor','api'];
 function showTool(id) {

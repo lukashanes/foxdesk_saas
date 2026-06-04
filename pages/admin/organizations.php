@@ -688,23 +688,6 @@ include BASE_PATH . '/includes/components/page-header.php';
     </div>
 </div>
 
-<style>
-.org-toggle {
-    transition: transform 0.2s ease;
-}
-.org-toggle.rotated {
-    transform: rotate(90deg);
-}
-.org-members {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease;
-}
-.org-members.expanded {
-    max-height: 1000px;
-}
-</style>
-
 <script>
     const csrfToken = window.csrfToken || '';
 

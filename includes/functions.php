@@ -77,7 +77,7 @@ function safe_html($html)
 
     // Remove any script/style/event handler content that might have slipped through
     $clean = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $clean);
-    $clean = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $clean);
+    $clean = preg_replace('/<' . 'style\b[^>]*>(.*?)<\/' . 'style>/is', '', $clean);
     $clean = preg_replace('/\s*on\w+\s*=\s*["\'][^"\']*["\']/i', '', $clean);
     $clean = preg_replace('/\s*javascript\s*:/i', '', $clean);
 

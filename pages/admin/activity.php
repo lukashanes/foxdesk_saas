@@ -120,46 +120,6 @@ $daily_views = db_fetch_all("
 require_once BASE_PATH . '/includes/header.php';
 ?>
 
-<style>
-    .act-card { padding: 16px 20px; border-radius: 12px; background: var(--surface-primary); border: 1px solid var(--border-light); }
-    .act-stat-value { font-size: 1.75rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
-    .act-stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
-    .act-table { width: 100%; border-collapse: collapse; }
-    .act-table th { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
-        color: var(--text-muted); padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border-light); }
-    .act-table td { font-size: 0.8125rem; padding: 8px 12px; color: var(--text-primary); border-bottom: 1px solid var(--border-light); }
-    .act-table tbody tr:hover { background: var(--primary-soft, rgba(59,130,246,0.03)); }
-    .act-page-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px;
-        font-size: 0.75rem; font-weight: 500; background: var(--surface-secondary); color: var(--text-secondary); }
-    .act-role-badge { font-size: 0.625rem; font-weight: 600; text-transform: uppercase; padding: 1px 5px;
-        border-radius: 4px; letter-spacing: 0.03em; }
-    .act-role-admin { background: #fef3c7; color: #92400e; }
-    .act-role-agent { background: #dbeafe; color: #1e40af; }
-    .act-role-user { background: #f1f5f9; color: #64748b; }
-    [data-theme="dark"] .act-role-admin { background: rgba(146,64,14,0.2); color: #fbbf24; }
-    [data-theme="dark"] .act-role-agent { background: rgba(30,64,175,0.2); color: #60a5fa; }
-    [data-theme="dark"] .act-role-user { background: rgba(100,116,139,0.2); color: #94a3b8; }
-    .act-bar { height: 6px; border-radius: 3px; background: var(--primary, #3b82f6); transition: width 0.3s; }
-    .act-bar-bg { height: 6px; border-radius: 3px; background: var(--surface-secondary); width: 100%; overflow: hidden; }
-    .act-avatar { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center;
-        font-size: 11px; font-weight: 600; color: #fff; flex-shrink: 0; overflow: hidden; }
-    .act-avatar img { width: 100%; height: 100%; object-fit: cover; }
-    .act-tabs { display: flex; gap: 3px; padding: 3px; border-radius: 10px; background: var(--surface-secondary, #f1f5f9); margin-bottom: 16px; }
-    .act-tab { padding: 6px 14px; font-size: 0.8125rem; font-weight: 500; border-radius: 8px; color: var(--text-secondary);
-        text-decoration: none; transition: all 0.15s; white-space: nowrap; }
-    .act-tab:hover { background: var(--surface-primary, #fff); color: var(--text-primary); }
-    .act-tab.active { background: var(--surface-primary, #fff); color: var(--primary, #3b82f6); font-weight: 600;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-    .act-range { display: flex; gap: 2px; }
-    .act-range a { padding: 4px 10px; font-size: 0.6875rem; font-weight: 500; border-radius: 6px;
-        color: var(--text-secondary); text-decoration: none; transition: all 0.12s; }
-    .act-range a:hover { background: var(--surface-secondary); }
-    .act-range a.active { background: var(--primary, #3b82f6); color: #fff; }
-    .act-spark { display: flex; align-items: flex-end; gap: 2px; height: 32px; }
-    .act-spark-bar { min-width: 4px; border-radius: 2px; background: var(--primary, #3b82f6); opacity: 0.7; transition: opacity 0.12s; }
-    .act-spark-bar:hover { opacity: 1; }
-</style>
-
 <div class="admin-legacy-page is-narrow">
     <!-- Header -->
     <section class="admin-hero">

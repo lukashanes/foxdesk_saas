@@ -123,31 +123,9 @@ $nav = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo e($doc['title']); ?> - FoxDesk Cloud</title>
-    <style>
-        :root { color-scheme: light; --ink:#111827; --muted:#667085; --line:#e5e7eb; --bg:#f7f8fb; --panel:#fff; --blue:#2557d6; }
-        * { box-sizing: border-box; }
-        body { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
-        a { color:inherit; }
-        .legal-shell { max-width:1040px; margin:0 auto; padding:28px 18px 56px; }
-        .legal-top { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:22px; }
-        .legal-brand { font-weight:820; font-size:17px; text-decoration:none; }
-        .legal-nav { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
-        .legal-nav a { border:1px solid var(--line); border-radius:999px; padding:7px 11px; color:var(--muted); text-decoration:none; font-size:13px; font-weight:700; background:var(--panel); }
-        .legal-nav a.active { color:var(--ink); border-color:#111827; }
-        .legal-card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:30px; box-shadow:0 16px 45px rgba(15,23,42,.06); }
-        h1 { margin:0; font-size:36px; line-height:1.05; letter-spacing:0; }
-        .intro { color:var(--muted); margin:12px 0 0; max-width:760px; line-height:1.65; }
-        .updated { margin-top:12px; color:var(--muted); font-size:13px; }
-        .section { border-top:1px solid var(--line); padding-top:18px; margin-top:18px; }
-        h2 { margin:0 0 7px; font-size:17px; }
-        p { margin:0; color:var(--muted); line-height:1.68; }
-        .notice { margin-top:22px; font-size:13px; color:var(--muted); }
-        .contact { margin-top:22px; padding:14px 16px; border:1px solid #dbe4ff; border-radius:12px; background:#f7f9ff; color:#1f2f5f; font-size:14px; line-height:1.55; }
-        .contact a { color:var(--blue); font-weight:700; }
-        @media (max-width:640px) { .legal-top { flex-direction:column; } .legal-nav { justify-content:flex-start; } .legal-card { padding:20px; } h1 { font-size:29px; } }
-    </style>
+    <link href="theme.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
 </head>
-<body>
+<body class="legal-page">
     <main class="legal-shell">
         <header class="legal-top">
             <a class="legal-brand" href="<?php echo e(url('cloud')); ?>">FoxDesk Cloud</a>

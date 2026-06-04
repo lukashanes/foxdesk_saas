@@ -10,8 +10,7 @@
  */
 if (empty($ww_id)) return;
 $ww_hidden = $ww_hidden ?? false;
-$ww_hide_style = $ww_hidden ? ' style="display:none"' : '';
+$ww_hide_class = $ww_hidden ? ' is-hidden' : '';
 ?>
-<div class="db-widget" data-widget="<?php echo e($ww_id); ?>" data-size="<?php echo e($ww_size); ?>" draggable="true"<?php echo $ww_hide_style; ?>>
+<div class="db-widget<?php echo $ww_hide_class; ?>" data-widget="<?php echo e($ww_id); ?>" data-size="<?php echo e($ww_size); ?>" draggable="true">
     <div class="card card-body">
-

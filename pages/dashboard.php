@@ -130,1047 +130,7 @@ if ($selected_agent_id > 0 && function_exists('ticket_time_table_exists') && tic
 require_once BASE_PATH . '/includes/header.php';
 ?>
 
-<style>
-    .db-onboarding {
-        border: 1px solid var(--border-light);
-        border-radius: 8px;
-        background: var(--surface-primary);
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
-        margin-bottom: 16px;
-        overflow: hidden;
-    }
 
-    .db-onboarding__head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 18px 20px 14px;
-        border-bottom: 1px solid var(--border-light);
-    }
-
-    .db-onboarding__eyebrow {
-        color: var(--text-muted);
-        font-size: .7rem;
-        font-weight: 700;
-        letter-spacing: .06em;
-        text-transform: uppercase;
-        margin-bottom: 4px;
-    }
-
-    .db-onboarding__title {
-        color: var(--text-primary);
-        font-size: 1.15rem;
-        font-weight: 800;
-        line-height: 1.2;
-        margin: 0;
-    }
-
-    .db-onboarding__subtitle {
-        color: var(--text-secondary);
-        font-size: .875rem;
-        margin-top: 6px;
-        max-width: 54rem;
-    }
-
-    .db-onboarding__progress {
-        min-width: 138px;
-        text-align: right;
-        color: var(--text-secondary);
-        font-size: .8rem;
-        font-weight: 700;
-    }
-
-    .db-onboarding__bar {
-        width: 138px;
-        height: 7px;
-        margin-top: 8px;
-        border-radius: 999px;
-        overflow: hidden;
-        background: var(--surface-tertiary, #e5e7eb);
-    }
-
-    .db-onboarding__bar span {
-        display: block;
-        height: 100%;
-        border-radius: inherit;
-        background: var(--primary);
-    }
-
-    .db-onboarding__steps {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .db-onboarding__step {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        min-width: 0;
-        padding: 16px 18px;
-        border-right: 1px solid var(--border-light);
-    }
-
-    .db-onboarding__step:last-child {
-        border-right: 0;
-    }
-
-    .db-onboarding__status {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 28px;
-        height: 28px;
-        border-radius: 999px;
-        background: color-mix(in srgb, var(--primary) 12%, transparent);
-        color: var(--primary);
-        flex: 0 0 auto;
-    }
-
-    .db-onboarding__status.is-done {
-        background: rgba(16, 185, 129, .14);
-        color: #059669;
-    }
-
-    .db-onboarding__step-title {
-        color: var(--text-primary);
-        font-size: .95rem;
-        font-weight: 750;
-        line-height: 1.25;
-        margin: 0;
-    }
-
-    .db-onboarding__step-text {
-        color: var(--text-muted);
-        font-size: .8rem;
-        line-height: 1.45;
-        min-height: 38px;
-    }
-
-    .db-onboarding__link {
-        color: var(--primary);
-        font-size: .8rem;
-        font-weight: 750;
-        text-decoration: none;
-        margin-top: auto;
-    }
-
-    .db-onboarding__link:hover {
-        text-decoration: underline;
-    }
-
-    .db-onboarding__dismiss {
-        border: 0;
-        background: transparent;
-        color: var(--text-muted);
-        cursor: pointer;
-        font-size: .8rem;
-        font-weight: 700;
-        padding: 0;
-    }
-
-    .db-onboarding__dismiss:hover {
-        color: var(--text-primary);
-    }
-
-    @media (max-width: 1100px) {
-        .db-onboarding__steps {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .db-onboarding__step:nth-child(2) {
-            border-right: 0;
-        }
-
-        .db-onboarding__step:nth-child(-n + 2) {
-            border-bottom: 1px solid var(--border-light);
-        }
-    }
-
-    @media (max-width: 640px) {
-        .db-onboarding__head {
-            display: grid;
-        }
-
-        .db-onboarding__progress {
-            min-width: 0;
-            text-align: left;
-        }
-
-        .db-onboarding__bar {
-            width: 100%;
-        }
-
-        .db-onboarding__steps {
-            grid-template-columns: 1fr;
-        }
-
-        .db-onboarding__step {
-            border-right: 0;
-            border-bottom: 1px solid var(--border-light);
-        }
-
-        .db-onboarding__step:last-child {
-            border-bottom: 0;
-        }
-    }
-
-    /* ─── Dashboard v2 — Grid Design System (3-col equal) ──────────────── */
-    .db-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 24px;
-        font-variant-numeric: tabular-nums;
-        margin-top: 16px;
-    }
-
-    @media (min-width: 1024px) {
-        .db-grid {
-            grid-template-columns: repeat(3, 1fr);
-        }
-
-        .db-widget[data-size="full"] {
-            grid-column: span 3;
-        }
-
-        .db-widget[data-size="half"] {
-            grid-column: span 1;
-        }
-    }
-
-    @media (min-width: 768px) and (max-width: 1023px) {
-        .db-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
-        .db-widget[data-size="full"] {
-            grid-column: span 2;
-        }
-    }
-
-    @media (max-width: 767px) {
-        .db-widget {
-            cursor: default !important;
-        }
-
-        .db-drag-handle {
-            display: none;
-        }
-    }
-
-    /* Widget base */
-    .db-widget {
-        position: relative;
-        border-radius: 8px;
-        transition: opacity 0.2s, transform 0.2s;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .db-widget > .card {
-        flex: 1;
-    }
-
-    /* "View all" footer for truncated lists */
-    .db-widget-viewall {
-        text-align: center;
-        padding: 0.5rem 0 0;
-        margin-top: 0.5rem;
-        border-top: 1px solid var(--border-light, #e2e8f0);
-    }
-    .db-widget-viewall a {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--primary);
-        text-decoration: none;
-    }
-    .db-widget-viewall a:hover {
-        text-decoration: underline;
-    }
-
-    .db-widget[draggable="true"] {
-        cursor: grab;
-    }
-
-    .db-widget[draggable="true"]:active {
-        cursor: grabbing;
-    }
-
-    .db-widget.dragging {
-        opacity: 0.45;
-        transform: scale(0.97);
-    }
-
-    .db-widget.drag-over {
-        box-shadow: 0 0 0 2px var(--primary);
-        border-radius: 14px;
-    }
-
-    /* Prevent native link/img drag from stealing widget drag */
-    .db-widget[draggable="true"] a,
-    .db-widget[draggable="true"] img {
-        -webkit-user-drag: none;
-        user-drag: none;
-    }
-
-    /* Drag handle */
-    .db-drag-handle {
-        opacity: 0;
-        transition: opacity 0.15s;
-        cursor: grab;
-        color: var(--text-muted);
-        padding: 2px;
-    }
-
-    .db-widget:hover .db-drag-handle {
-        opacity: 0.5;
-    }
-
-    .db-drag-handle:hover {
-        opacity: 1 !important;
-    }
-
-    /* ─── KPI Cards (Modern SaaS style) ─── */
-    .db-kpi-grid {
-        display: flex;
-        flex-wrap: wrap;
-        border: 1px solid var(--border-light);
-        border-radius: 8px;
-        background: var(--surface-primary);
-        overflow: hidden;
-    }
-
-    .db-kpi {
-        flex: 1 1 180px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        padding: 16px 20px;
-        text-decoration: none;
-        border-right: 1px solid var(--border-light);
-        border-bottom: 1px solid var(--border-light);
-        background: transparent;
-        transition: background 0.15s ease;
-        position: relative;
-        min-height: 80px;
-    }
-    
-    .db-kpi:last-child {
-        border-right: none;
-    }
-    
-    @media (min-width: 1024px) {
-        .db-kpi { border-bottom: none; }
-    }
-
-    .db-kpi:hover {
-        background: var(--surface-secondary);
-    }
-
-    .db-kpi__label {
-        font-size: 0.75rem;
-        font-weight: 500;
-        color: var(--text-secondary);
-        line-height: 1;
-        margin-bottom: 8px;
-    }
-
-    .db-kpi__value {
-        font-size: 1.75rem;
-        font-weight: 600;
-        line-height: 1;
-        color: var(--text-primary);
-        letter-spacing: -0.02em;
-    }
-
-    .db-kpi__sub {
-        font-size: 0.6875rem;
-        color: var(--text-muted);
-        margin-top: 2px;
-        font-weight: 500;
-    }
-
-    /* Pulse dot */
-    @keyframes pulse-dot {
-
-        0%,
-        100% {
-            opacity: 1;
-        }
-
-        50% {
-            opacity: 0.3;
-        }
-    }
-
-    .db-pulse-dot {
-        display: inline-block;
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: var(--corp-danger);
-        animation: pulse-dot 1.5s ease-in-out infinite;
-        margin-left: 6px;
-        vertical-align: middle;
-    }
-
-    /* ─── Interactive Stat Rows ─── */
-    a.db-stat-row,
-    .db-stat-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 12px;
-        border-bottom: 1px solid var(--border-light);
-        text-decoration: none;
-        transition: background 0.1s;
-        margin: 0 -12px;
-        position: relative;
-        /* for absolute arrow */
-    }
-
-    a.db-stat-row:hover {
-        background: var(--primary-soft);
-    }
-
-    a.db-stat-row:last-child,
-    .db-stat-row:last-child {
-        border-bottom: none;
-    }
-
-    .db-stat-label {
-        font-size: 0.8125rem;
-        color: var(--text-secondary);
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .db-stat-value {
-        font-size: 0.9375rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        min-width: 28px;
-        text-align: right;
-    }
-
-    .db-stat-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
-    }
-
-    a.db-stat-row .db-stat-value {
-        transition: color 0.1s;
-    }
-
-    a.db-stat-row:hover .db-stat-value {
-        color: var(--primary);
-    }
-
-    /* Arrow indicator on hover — positioned absolutely so it doesn't affect flex layout */
-    a.db-stat-row::after {
-        content: '\203A';
-        font-size: 1.125rem;
-        color: var(--text-muted);
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        opacity: 0;
-        transition: opacity 0.15s, transform 0.15s;
-        transform: translateY(-50%) translateX(-4px);
-    }
-
-    a.db-stat-row:hover::after {
-        opacity: 1;
-        transform: translateY(-50%) translateX(0);
-    }
-
-    a.db-stat-row {
-        padding-right: 28px;
-    }
-
-    /* room for the absolute arrow */
-
-    /* ─── Time Tracking Rows ─── */
-    a.db-time-row,
-    .db-time-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 12px;
-        border-bottom: 1px solid var(--border-light);
-        text-decoration: none;
-        transition: background 0.1s;
-        margin: 0 -12px;
-    }
-
-    a.db-time-row:hover {
-        background: var(--primary-soft);
-    }
-
-    a.db-time-row:last-child,
-    .db-time-row:last-child {
-        border-bottom: none;
-    }
-
-    .db-time-label {
-        font-size: 0.8125rem;
-        color: var(--text-secondary);
-        font-weight: 500;
-        width: 80px;
-        flex-shrink: 0;
-    }
-
-    .db-time-value {
-        font-size: 0.75rem;
-        font-weight: 500;
-        color: var(--text-secondary);
-        width: 50px;
-        flex-shrink: 0;
-        text-align: right;
-    }
-
-    .db-time-bar-wrap {
-        flex: 1;
-        height: 8px;
-        background: var(--surface-tertiary);
-        border-radius: 99px;
-        overflow: hidden;
-    }
-
-    .db-time-bar {
-        height: 100%;
-        border-radius: 99px;
-        transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        background: var(--primary);
-        min-width: 2px;
-    }
-
-    /* ─── Team Table ─── */
-    .db-team-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .db-team-table th {
-        font-size: 0.6875rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-muted);
-        padding: 0 6px 8px;
-        text-align: left;
-        border-bottom: 1px solid var(--border-light);
-    }
-
-    .db-team-table th:nth-child(n+3) {
-        text-align: right;
-    }
-
-    .db-team-table td {
-        padding: 8px 6px;
-        font-size: 0.8125rem;
-        color: var(--text-primary);
-        vertical-align: middle;
-    }
-
-    .db-team-table td:nth-child(n+3) {
-        text-align: right;
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-    }
-
-    .db-team-table tr:not(:last-child) td {
-        border-bottom: 1px solid var(--border-light);
-    }
-
-    .db-team-table tbody tr {
-        transition: background 0.1s;
-    }
-
-    .db-team-table tbody tr:hover {
-        background: var(--primary-soft);
-    }
-
-    .db-team-table tfoot td {
-        padding-top: 8px;
-        font-weight: 700;
-        border-top: 2px solid var(--border-medium);
-        font-size: 0.8125rem;
-    }
-
-    .db-team-table a.db-team-name {
-        text-decoration: none;
-        color: var(--text-primary);
-    }
-
-    .db-team-table a.db-team-name:hover {
-        color: var(--primary);
-        text-decoration: underline;
-    }
-
-    .db-role-badge {
-        display: inline-block;
-        font-size: 0.625rem;
-        font-weight: 700;
-        padding: 2px 6px;
-        border-radius: 99px;
-        letter-spacing: 0.03em;
-        text-transform: uppercase;
-        line-height: 1.4;
-    }
-
-    .db-role-badge--admin {
-        background: #eef2ff;
-        color: #4f46e5;
-    }
-
-    .db-role-badge--agent {
-        background: #ecfdf5;
-        color: #059669;
-    }
-
-    [data-theme="dark"] .db-role-badge--admin {
-        background: rgba(99, 102, 241, 0.25);
-        color: #a5b4fc;
-    }
-
-    [data-theme="dark"] .db-role-badge--agent {
-        background: rgba(16, 185, 129, 0.25);
-        color: #6ee7b7;
-    }
-
-    .db-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.625rem;
-        font-weight: 700;
-        color: #fff;
-        background: var(--primary);
-        overflow: hidden;
-    }
-    img.db-avatar {
-        width: 32px !important;
-        height: 32px !important;
-        min-width: 32px;
-        min-height: 32px;
-        object-fit: cover;
-        display: block;
-        border-radius: 50%;
-    }
-
-    .db-avatar-cell {
-        width: 40px;
-        min-width: 40px;
-        padding-right: 0;
-    }
-
-    /* ─── Ticket List ─── */
-    .db-ticket {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        padding: 8px 10px;
-        border: 1px solid var(--border-light);
-        border-radius: 10px;
-        transition: border-color 0.12s, background 0.12s;
-        text-decoration: none;
-    }
-
-    .db-ticket:hover {
-        border-color: var(--primary);
-        background: var(--primary-soft);
-    }
-
-    .db-ticket__title {
-        font-size: 0.8125rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .db-ticket__meta {
-        font-size: 0.6875rem;
-        color: var(--text-muted);
-        margin-top: 2px;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-
-    /* ─── Charts ─── */
-    .db-chart-wrap {
-        position: relative;
-        height: 200px;
-    }
-
-    .db-chart-empty {
-        min-height: 200px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--text-muted);
-        border: 1px dashed var(--border-light);
-        border-radius: 12px;
-        font-size: 0.875rem;
-    }
-
-    .db-chart-toggle {
-        border: 1px solid var(--border-light);
-        background: var(--surface-secondary);
-        color: var(--text-secondary);
-        border-radius: 99px;
-        padding: 4px 10px;
-        font-size: 0.6875rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.12s;
-    }
-
-    .db-chart-toggle.active {
-        border-color: var(--primary);
-        color: var(--primary);
-        background: var(--primary-soft);
-    }
-
-    /* ─── Config Panel ─── */
-    .db-config-toggle {
-        accent-color: var(--primary);
-        width: 16px;
-        height: 16px;
-        cursor: pointer;
-    }
-
-    #dashboard-config-panel label:hover {
-        background: var(--surface-secondary);
-    }
-
-    .db-size-toggle {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 22px;
-        height: 22px;
-        border-radius: 6px;
-        cursor: pointer;
-        border: 1px solid var(--border-light);
-        background: var(--surface-secondary);
-        color: var(--text-muted);
-        font-size: 0.625rem;
-        font-weight: 700;
-        transition: all 0.12s;
-        line-height: 1;
-        flex-shrink: 0;
-    }
-
-    .db-size-toggle:hover {
-        border-color: var(--primary);
-        color: var(--primary);
-    }
-
-    .db-size-toggle[data-current-size="full"] {
-        background: var(--primary-soft);
-        border-color: var(--primary);
-        color: var(--primary);
-    }
-
-    /* ─── Section Header ─── */
-    .db-section-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 12px;
-    }
-
-    .db-section-title {
-        font-size: 0.8125rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        letter-spacing: -0.01em;
-    }
-
-    .db-section-link {
-        font-size: 0.75rem;
-        color: var(--primary);
-        text-decoration: none;
-        font-weight: 600;
-    }
-
-    .db-section-link:hover {
-        text-decoration: underline;
-    }
-
-    /* ─── Badge ─── */
-    .db-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 2px 8px;
-        border-radius: 99px;
-        font-size: 0.6875rem;
-        font-weight: 600;
-        white-space: nowrap;
-        line-height: 1.5;
-    }
-
-    /* ─── Timer ─── */
-    .db-timer-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        padding: 10px 14px;
-    }
-
-    /* ─── Notifications Widget Enhanced ─── */
-    .dbnotif-card {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-        padding: 8px 10px;
-        border-radius: 10px;
-        text-decoration: none;
-        transition: background 0.12s;
-        border-left: 3px solid transparent;
-        position: relative;
-    }
-    .dbnotif-card:hover { background: var(--primary-soft, rgba(59,130,246,0.04)); }
-    .dbnotif-card.unread {
-        border-left-color: var(--accent-primary, #3b82f6);
-        background: var(--primary-soft, rgba(59,130,246,0.04));
-    }
-    .dbnotif-avatar {
-        width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 12px; font-weight: 600; color: #fff; overflow: hidden;
-    }
-    .dbnotif-avatar img { width: 100%; height: 100%; object-fit: cover; }
-    .dbnotif-content { flex: 1; min-width: 0; text-decoration: none; }
-    .dbnotif-text { font-size: 0.8125rem; line-height: 1.35; color: var(--text-primary); }
-    .dbnotif-card.unread .dbnotif-text { font-weight: 600; }
-    .dbnotif-snippet {
-        font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 360px;
-    }
-    .dbnotif-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
-    .dbnotif-time { font-size: 0.6875rem; color: var(--text-muted); }
-    .dbnotif-action-badge {
-        display: inline-flex; align-items: center; font-size: 0.5625rem;
-        font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
-        padding: 1px 5px; border-radius: 99px; background: #fff7ed; color: #ea580c;
-    }
-    [data-theme="dark"] .dbnotif-action-badge { background: rgba(234,88,12,0.15); color: #fb923c; }
-    .dbnotif-actions {
-        flex-shrink: 0; display: flex; align-items: center; gap: 2px;
-        opacity: 0; transition: opacity 0.15s;
-    }
-    .dbnotif-card:hover .dbnotif-actions { opacity: 1; }
-    .dbnotif-btn {
-        padding: 3px; border-radius: 5px; color: var(--text-muted);
-        cursor: pointer; transition: color 0.12s, background 0.12s;
-        border: none; background: none; line-height: 0;
-    }
-    .dbnotif-btn:hover { color: var(--primary, #3b82f6); background: var(--primary-soft, rgba(59,130,246,0.08)); }
-    .dbnotif-filter-tabs {
-        display: flex; gap: 3px; padding: 2px; border-radius: 8px;
-        background: var(--surface-secondary, #f1f5f9); margin-bottom: 8px;
-    }
-    .dbnotif-filter-tab {
-        padding: 4px 10px; font-size: 0.6875rem; font-weight: 500; border-radius: 6px;
-        color: var(--text-secondary); text-decoration: none; transition: all 0.15s;
-        white-space: nowrap; cursor: pointer; border: none; background: none;
-    }
-    .dbnotif-filter-tab:hover { background: var(--surface-primary, #fff); color: var(--text-primary); }
-    .dbnotif-filter-tab.active {
-        background: var(--surface-primary, #fff); color: var(--primary, #3b82f6);
-        font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-    }
-    @media (max-width: 640px) { .dbnotif-snippet { max-width: 200px; } }
-
-    /* ─── Notification Ticket Grouping ─── */
-    .dbnotif-ticket-group {
-        border-radius: 10px;
-        transition: background 0.15s;
-    }
-    .dbnotif-group-toggle {
-        padding: 2px; border: none; background: none; cursor: pointer; line-height: 0;
-    }
-    .dbnotif-group-count {
-        display: inline-flex; align-items: center; justify-content: center;
-        min-width: 18px; height: 18px; padding: 0 5px;
-        font-size: 0.625rem; font-weight: 600; border-radius: 9px;
-        background: var(--surface-secondary, #e2e8f0); color: var(--text-secondary);
-        flex-shrink: 0; transition: background 0.15s, color 0.15s;
-    }
-    .dbnotif-group-toggle:hover .dbnotif-group-count {
-        background: var(--primary, #3b82f6); color: #fff;
-    }
-    .dbnotif-group-children {
-        max-height: 0; overflow: hidden; opacity: 0;
-        transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.2s ease;
-        padding: 0 0 0 42px; margin-left: 14px;
-        border-left: 2px solid transparent;
-    }
-    .dbnotif-ticket-group:hover .dbnotif-group-children,
-    .dbnotif-ticket-group.expanded .dbnotif-group-children {
-        max-height: 400px; opacity: 1;
-        padding: 4px 0 6px 42px;
-        border-left-color: var(--border-light, #e2e8f0);
-    }
-    .dbnotif-child-card {
-        display: flex; align-items: center; gap: 6px;
-        padding: 4px 8px; border-radius: 6px;
-        font-size: 0.75rem; color: var(--text-secondary);
-        text-decoration: none; transition: background 0.12s, color 0.12s;
-    }
-    .dbnotif-child-card:hover {
-        background: var(--primary-soft, rgba(59,130,246,0.06)); color: var(--text-primary);
-    }
-    .dbnotif-child-card.unread { color: var(--text-primary); font-weight: 600; }
-    .dbnotif-child-text {
-        flex: 1; min-width: 0; overflow: hidden;
-        text-overflow: ellipsis; white-space: nowrap;
-    }
-    .dbnotif-child-time {
-        font-size: 0.625rem; color: var(--text-muted);
-        flex-shrink: 0; white-space: nowrap;
-    }
-    @media (max-width: 640px) {
-        .dbnotif-ticket-group:hover .dbnotif-group-children {
-            max-height: 0; opacity: 0;
-            padding: 0 0 0 42px; border-left-color: transparent;
-        }
-        .dbnotif-ticket-group.expanded .dbnotif-group-children {
-            max-height: 400px; opacity: 1;
-            padding: 4px 0 6px 42px;
-            border-left-color: var(--border-light, #e2e8f0);
-        }
-    }
-    .db-agent-activity {
-        border: 1px solid var(--border-light);
-        border-radius: 8px;
-        background: var(--surface-primary);
-        margin-bottom: 16px;
-        overflow: hidden;
-    }
-    .db-agent-activity__head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 16px;
-        border-bottom: 1px solid var(--border-light);
-    }
-    .db-agent-activity__person {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        min-width: 0;
-    }
-    .db-agent-activity__title {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 700;
-        color: var(--text-primary);
-    }
-    .db-agent-activity__meta {
-        margin-top: 2px;
-        font-size: .75rem;
-        color: var(--text-muted);
-    }
-    .db-agent-activity__totals {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(90px, 1fr));
-        gap: 8px;
-        min-width: 300px;
-    }
-    .db-agent-activity__total {
-        padding: 9px 10px;
-        border: 1px solid var(--border-light);
-        border-radius: 8px;
-        background: var(--surface-secondary);
-    }
-    .db-agent-activity__total span {
-        display: block;
-        font-size: .68rem;
-        font-weight: 700;
-        color: var(--text-muted);
-        text-transform: uppercase;
-        letter-spacing: .04em;
-    }
-    .db-agent-activity__total strong {
-        display: block;
-        margin-top: 3px;
-        font-size: .95rem;
-        color: var(--text-primary);
-    }
-    .db-agent-activity__table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    .db-agent-activity__table th,
-    .db-agent-activity__table td {
-        padding: 10px 16px;
-        border-bottom: 1px solid var(--border-light);
-        text-align: left;
-        vertical-align: top;
-        font-size: .8125rem;
-    }
-    .db-agent-activity__table th {
-        color: var(--text-muted);
-        font-size: .68rem;
-        text-transform: uppercase;
-        letter-spacing: .04em;
-        font-weight: 700;
-    }
-    .db-agent-activity__table tr:last-child td {
-        border-bottom: 0;
-    }
-    .db-agent-activity__ticket {
-        color: var(--text-primary);
-        font-weight: 700;
-        text-decoration: none;
-    }
-    .db-agent-activity__ticket:hover,
-    .db-team-name:hover {
-        color: var(--primary);
-        text-decoration: underline;
-    }
-    .db-agent-activity__summary {
-        margin-top: 2px;
-        color: var(--text-muted);
-        font-size: .75rem;
-        line-height: 1.35;
-    }
-    .db-agent-activity__empty {
-        padding: 16px;
-        color: var(--text-muted);
-        font-size: .875rem;
-    }
-    @media (max-width: 720px) {
-        .db-agent-activity__head {
-            display: grid;
-        }
-        .db-agent-activity__totals {
-            grid-template-columns: 1fr;
-            min-width: 0;
-        }
-        .db-agent-activity__table {
-            min-width: 720px;
-        }
-    }
-</style>
 
 <div class="flex items-center justify-between mb-3">
     <div></div>
@@ -1312,7 +272,7 @@ require_once BASE_PATH . '/includes/header.php';
                         <h2 class="db-agent-activity__title"><?php echo e($agent_name); ?></h2>
                         <div class="db-agent-activity__meta">
                             <?php echo e($selected_agent['email'] ?? ''); ?> · <?php echo e(ucfirst((string) ($selected_agent['role'] ?? 'agent'))); ?>
-                            · <a href="<?php echo e(url('dashboard')); ?>" style="color: var(--primary);"><?php echo e(t('Close')); ?></a>
+                            · <a href="<?php echo e(url('dashboard')); ?>" class="db-inline-link"><?php echo e(t('Close')); ?></a>
                         </div>
                     </div>
                 </div>
@@ -1369,7 +329,7 @@ require_once BASE_PATH . '/includes/header.php';
         <?php else: ?>
             <div class="db-agent-activity__empty">
                 <?php echo e(t('Agent was not found or is not available in this workspace.')); ?>
-                <a href="<?php echo e(url('dashboard')); ?>" style="color: var(--primary);"><?php echo e(t('Back to dashboard')); ?></a>
+                <a href="<?php echo e(url('dashboard')); ?>" class="db-inline-link"><?php echo e(t('Back to dashboard')); ?></a>
             </div>
         <?php endif; ?>
     </section>
@@ -1383,7 +343,7 @@ require_once BASE_PATH . '/includes/header.php';
     <?php foreach ($section_order as $section_id): ?>
         <?php
         $is_section_hidden = in_array($section_id, $hidden_sections);
-        $hide_style = $is_section_hidden ? ' style="display:none"' : '';
+        $hide_class = $is_section_hidden ? ' is-hidden' : '';
         $w_size = $widget_sizes[$section_id] ?? ($default_sizes[$section_id] ?? 'full');
         ?>
 
@@ -1393,7 +353,7 @@ require_once BASE_PATH . '/includes/header.php';
             // OVERVIEW — KPI Strip (always full width)
             // ••••••••••••••••••••••••••••••••••••••••••••••••••••••
             case 'overview': ?>
-                <div class="db-widget" data-widget="overview" data-size="full" draggable="true" <?php echo $hide_style; ?>>
+                <div class="db-widget<?php echo $hide_class; ?>" data-widget="overview" data-size="full" draggable="true">
                     <div class="db-kpi-grid">
                         <?php
                         $kpi_href = url('tickets', $scope_link_params);
@@ -1461,7 +421,7 @@ require_once BASE_PATH . '/includes/header.php';
                     </h3>
                     <div class="flex items-center gap-2">
                         <?php if ($dashboard_unread_count > 0): ?>
-                            <button type="button" onclick="dbNotifMarkAllRead()" class="dbnotif-btn" title="<?php echo e(t('Mark all as read')); ?>" style="opacity:1;">
+                            <button type="button" onclick="dbNotifMarkAllRead()" class="dbnotif-btn dbnotif-btn--visible" title="<?php echo e(t('Mark all as read')); ?>">
                                 <?php echo get_icon('check', 'w-4 h-4'); ?>
                             </button>
                         <?php endif; ?>
@@ -1497,7 +457,7 @@ require_once BASE_PATH . '/includes/header.php';
                     foreach (['today', 'yesterday', 'earlier'] as $grp):
                         if (empty($grouped_dashboard[$grp])) continue;
                         ?>
-                        <div class="text-xs font-semibold uppercase tracking-wider mt-3 mb-1.5 px-1" style="color: var(--text-muted); letter-spacing: 0.05em;">
+                        <div class="dbnotif-group-heading">
                             <?php echo e($group_labels[$grp]); ?>
                         </div>
                         <div class="space-y-0.5">
@@ -1540,7 +500,7 @@ require_once BASE_PATH . '/includes/header.php';
                                      id="dbnotif-<?php echo (int)$notif['id']; ?>"
                                      data-id="<?php echo (int)$notif['id']; ?>"
                                      data-action="<?php echo $n_is_action ? '1' : '0'; ?>">
-                                    <a href="<?php echo $n_href; ?>" class="dbnotif-avatar" style="background: <?php echo $avatar_bg; ?>; text-decoration:none;">
+                                    <a href="<?php echo $n_href; ?>" class="dbnotif-avatar" style="background: <?php echo $avatar_bg; ?>;">
                                         <?php if ($n_actor_avatar && !str_starts_with($n_actor_avatar, 'data:')): ?>
                                             <img src="<?php echo e(upload_url($n_actor_avatar)); ?>" alt=""
                                                  onerror="this.style.display='none';this.parentElement.textContent='<?php echo e($n_initials); ?>'">
@@ -1634,9 +594,9 @@ require_once BASE_PATH . '/includes/header.php';
                         </div>
                     <?php endforeach; ?>
                     </div>
-                    <div class="text-center py-3 mt-2 border-t" style="border-color: var(--border-light);">
+                    <div class="dbnotif-footer">
                         <a href="<?php echo url('notifications'); ?>"
-                           class="text-xs font-semibold" style="color: var(--primary); text-decoration: none;">
+                           class="dbnotif-footer__link">
                             <?php echo e(t('View all notifications')); ?>
                         </a>
                     </div>
@@ -1863,7 +823,7 @@ require_once BASE_PATH . '/includes/header.php';
             // ••••••••••••••••••••••••••••••••••••••••••••••••••••••
             case 'status_chart': ?>
                 <?php if ($is_admin): ?>
-                    <div class="db-widget" data-widget="status_chart" data-size="<?php echo e($w_size); ?>" draggable="true" <?php echo $hide_style; ?>>
+                    <div class="db-widget<?php echo $hide_class; ?>" data-widget="status_chart" data-size="<?php echo e($w_size); ?>" draggable="true">
                         <div class="card card-body">
                             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                                 <h3 class="db-section-title"><?php echo e(t('By status')); ?></h3>
@@ -1971,7 +931,7 @@ require_once BASE_PATH . '/includes/header.php';
             // ••••••••••••••••••••••••••••••••••••••••••••••••••••••
             case 'timers': ?>
                 <?php if (!empty($active_timers)): ?>
-                    <div class="db-widget" data-widget="timers" data-size="<?php echo e($w_size); ?>" draggable="true" <?php echo $hide_style; ?>>
+                    <div class="db-widget<?php echo $hide_class; ?>" data-widget="timers" data-size="<?php echo e($w_size); ?>" draggable="true">
                         <div class="card overflow-hidden">
                             <div class="card-header">
                                 <h3 class="db-section-title flex items-center gap-2">
@@ -2162,7 +1122,7 @@ require_once BASE_PATH . '/includes/header.php';
             // ••••••••••••••••••••••••••••••••••••••••••••••••••••••
             case 'recent': ?>
                 <?php if (!$is_staff): ?>
-                    <div class="db-widget" data-widget="recent" data-size="full" draggable="true" <?php echo $hide_style; ?>>
+                    <div class="db-widget<?php echo $hide_class; ?>" data-widget="recent" data-size="full" draggable="true">
                         <div class="card overflow-hidden">
                             <div class="card-header">
                                 <h3 class="db-section-title"><?php echo e(t('Your recent tickets')); ?></h3>
@@ -2232,7 +1192,7 @@ require_once BASE_PATH . '/includes/header.php';
                                     <?php endforeach; ?>
                                 </div>
                                 <?php if ($nonstaff_total > $db_list_limit): ?>
-                                    <div class="db-widget-viewall" style="padding: 0.75rem 1rem;">
+                                    <div class="db-widget-viewall db-widget-viewall--padded">
                                         <a href="<?php echo url('tickets', $scope_link_params); ?>"><?php echo e(t('View all')); ?> (<?php echo $nonstaff_total; ?>)</a>
                                     </div>
                                 <?php endif; ?>
@@ -2256,7 +1216,7 @@ require_once BASE_PATH . '/includes/header.php';
                             <?php echo get_icon('check-circle', 'w-4 h-4'); ?>
                             <?php echo e(t('Completed tickets')); ?>
                         </h3>
-                        <div class="dbnotif-filter-tabs" style="margin-bottom: 0;">
+                        <div class="dbnotif-filter-tabs dbnotif-filter-tabs--flush">
                             <button type="button" class="dbnotif-filter-tab" onclick="filterCompletedTickets('today', this)"><?php echo e(t('Today')); ?></button>
                             <button type="button" class="dbnotif-filter-tab active" onclick="filterCompletedTickets('week', this)"><?php echo e(t('Week')); ?></button>
                             <button type="button" class="dbnotif-filter-tab" onclick="filterCompletedTickets('month', this)"><?php echo e(t('Month')); ?></button>
@@ -2292,7 +1252,7 @@ require_once BASE_PATH . '/includes/header.php';
                                 </a>
                             <?php endforeach; ?>
                         </div>
-                        <div class="db-widget-viewall" id="completed-viewall" style="display:none;">
+                        <div class="db-widget-viewall is-hidden" id="completed-viewall">
                             <a href="<?php echo url('tickets', ['status' => 'closed']); ?>"><?php echo e(t('View all')); ?> (<span id="completed-viewall-count">0</span>)</a>
                         </div>
                     <?php endif; ?>
@@ -2359,7 +1319,7 @@ require_once BASE_PATH . '/includes/header.php';
         var va = document.getElementById('completed-viewall');
         var vc = document.getElementById('completed-viewall-count');
         if (va) {
-            va.style.display = visible > limit ? '' : 'none';
+            va.classList.toggle('is-hidden', !(visible > limit));
             if (vc) vc.textContent = visible;
         }
     }
@@ -2472,7 +1432,7 @@ require_once BASE_PATH . '/includes/header.php';
         var grid = document.querySelector('.db-grid');
         if (!grid) return;
         var el = grid.querySelector('.db-widget[data-widget="' + sid + '"]');
-        if (el) el.style.display = cb.checked ? '' : 'none';
+        if (el) el.classList.toggle('is-hidden', !cb.checked);
         saveDashboardLayout();
     }
 
@@ -2566,7 +1526,7 @@ require_once BASE_PATH . '/includes/header.php';
             var id = w.dataset.widget;
             if (id) {
                 order.push(id);
-                if (w.style.display === 'none') hidden.push(id);
+                if (w.classList.contains('is-hidden') || w.style.display === 'none') hidden.push(id);
                 sizes[id] = w.getAttribute('data-size') || 'full';
             }
         });

@@ -96,6 +96,253 @@ async function expectQueueSurface(page, pagePath, shellSelector, panelSelector) 
   }
 }
 
+async function expectDashboardSurface(page) {
+  await page.goto('/index.php?page=dashboard');
+  const layout = await page.evaluate(() => {
+    const grid = document.querySelector('.db-grid');
+    const kpi = document.querySelector('.db-kpi-grid');
+    const widget = document.querySelector('.db-widget');
+    const configButton = document.querySelector('#dashboard-config-btn');
+    const configPanel = document.querySelector('#dashboard-config-panel');
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const rect = (element) => {
+      const bounds = element.getBoundingClientRect();
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+    };
+
+    return {
+      url: window.location.href,
+      gridRect: grid ? rect(grid) : null,
+      gridDisplay: grid ? getComputedStyle(grid).display : null,
+      gridColumns: grid ? getComputedStyle(grid).gridTemplateColumns : null,
+      kpiRect: kpi ? rect(kpi) : null,
+      kpiDisplay: kpi ? getComputedStyle(kpi).display : null,
+      widgetRect: widget ? rect(widget) : null,
+      widgetDisplay: widget ? getComputedStyle(widget).display : null,
+      configButtonRect: configButton ? rect(configButton) : null,
+      configPanelHidden: configPanel ? configPanel.classList.contains('hidden') : null,
+      bodyOpacity: getComputedStyle(document.body).opacity,
+      themeLinks,
+      inlineDashboardStyles: [...document.querySelectorAll('style')].some(style =>
+        style.textContent.includes('.db-grid') ||
+        style.textContent.includes('.db-onboarding') ||
+        style.textContent.includes('.db-agent-activity')
+      )
+    };
+  });
+
+  if (!layout.gridRect || layout.gridDisplay !== 'grid') {
+    throw new Error(`Dashboard grid is missing or unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.kpiRect || layout.kpiDisplay !== 'flex') {
+    throw new Error(`Dashboard KPI strip is missing or unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.widgetRect || layout.widgetDisplay === 'block') {
+    throw new Error(`Dashboard widget shell is unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.configButtonRect || layout.configPanelHidden !== true) {
+    throw new Error(`Dashboard customize controls are not ready: ${JSON.stringify(layout)}`);
+  }
+  if (layout.bodyOpacity !== '1') {
+    throw new Error(`Dashboard body is not fully visible: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
+    throw new Error(`Dashboard does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  }
+  if (layout.inlineDashboardStyles) {
+    throw new Error(`Dashboard still contains page-level dashboard layout styles: ${JSON.stringify(layout)}`);
+  }
+
+  await page.locator('#dashboard-config-btn').click();
+  const opened = await page.evaluate(() => {
+    const panel = document.querySelector('#dashboard-config-panel');
+    return {
+      hidden: panel ? panel.classList.contains('hidden') : null,
+      display: panel ? getComputedStyle(panel).display : null,
+      visibleItems: panel ? [...panel.querySelectorAll('[data-config-section]')].filter(item => {
+        const rect = item.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      }).length : 0
+    };
+  });
+  if (opened.hidden !== false || opened.display === 'none' || opened.visibleItems < 1) {
+    throw new Error(`Dashboard customize panel did not open: ${JSON.stringify(opened)}`);
+  }
+  await page.keyboard.press('Escape');
+}
+
+async function expectPublicRefactorSurfaces(page) {
+  await page.goto('/index.php?page=signup');
+  const signup = await page.evaluate(() => {
+    const shell = document.querySelector('.signup-shell');
+    const card = document.querySelector('.signup-card');
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    return {
+      bodyClass: document.body.className,
+      shellDisplay: shell ? getComputedStyle(shell).display : null,
+      cardWidth: card ? card.getBoundingClientRect().width : 0,
+      themeLinks,
+      inlineSignupStyles: [...document.querySelectorAll('style')].some(style =>
+        style.textContent.includes('.signup-shell') ||
+        style.textContent.includes('.signup-input')
+      )
+    };
+  });
+  if (!signup.bodyClass.includes('signup-page') || signup.shellDisplay !== 'grid' || signup.cardWidth < 300) {
+    throw new Error(`Signup page layout is broken: ${JSON.stringify(signup)}`);
+  }
+  if (!signup.themeLinks.some(href => href && href.includes('theme.css?v='))) {
+    throw new Error(`Signup page does not use a versioned theme.css link: ${JSON.stringify(signup)}`);
+  }
+  if (signup.inlineSignupStyles) {
+    throw new Error(`Signup page still contains local signup styles: ${JSON.stringify(signup)}`);
+  }
+
+  await page.goto('/index.php?page=legal&type=terms');
+  const legal = await page.evaluate(() => {
+    const shell = document.querySelector('.legal-shell');
+    const card = document.querySelector('.legal-card');
+    const nav = document.querySelector('.legal-nav');
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    return {
+      bodyClass: document.body.className,
+      shellWidth: shell ? shell.getBoundingClientRect().width : 0,
+      cardBorderStyle: card ? getComputedStyle(card).borderTopStyle : null,
+      navDisplay: nav ? getComputedStyle(nav).display : null,
+      themeLinks,
+      inlineLegalStyles: [...document.querySelectorAll('style')].some(style =>
+        style.textContent.includes('.legal-shell') ||
+        style.textContent.includes('.legal-card')
+      )
+    };
+  });
+  if (!legal.bodyClass.includes('legal-page') || legal.shellWidth < 320 || legal.cardBorderStyle === 'none') {
+    throw new Error(`Legal page layout is broken: ${JSON.stringify(legal)}`);
+  }
+  if (legal.navDisplay !== 'flex') {
+    throw new Error(`Legal navigation is unstyled: ${JSON.stringify(legal)}`);
+  }
+  if (!legal.themeLinks.some(href => href && href.includes('theme.css?v='))) {
+    throw new Error(`Legal page does not use a versioned theme.css link: ${JSON.stringify(legal)}`);
+  }
+  if (legal.inlineLegalStyles) {
+    throw new Error(`Legal page still contains local legal styles: ${JSON.stringify(legal)}`);
+  }
+}
+
+async function expectPlatformSurface(page) {
+  await page.goto('/index.php?page=platform');
+  const layout = await page.evaluate(() => {
+    const shell = document.querySelector('.op-shell');
+    const sidebar = document.querySelector('.op-sidebar');
+    const catalog = document.querySelector('#workspaces');
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    return {
+      url: window.location.href,
+      bodyClass: document.body.className,
+      shellDisplay: shell ? getComputedStyle(shell).display : null,
+      sidebarDisplay: sidebar ? getComputedStyle(sidebar).display : null,
+      catalogExists: !!catalog,
+      themeLinks,
+      inlinePlatformStyles: [...document.querySelectorAll('style')].some(style =>
+        style.textContent.includes('.op-shell') ||
+        style.textContent.includes('--op-bg')
+      ),
+      bodyText: document.body.textContent.slice(0, 240)
+    };
+  });
+  if (!layout.bodyClass.includes('op-page') && layout.url.includes('page=login') && layout.bodyText.includes('FoxDesk Platform')) {
+    return;
+  }
+  if (!layout.bodyClass.includes('op-page') || layout.shellDisplay !== 'block' || layout.sidebarDisplay !== 'flex') {
+    throw new Error(`Platform console layout is broken: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.catalogExists || !layout.bodyText.includes('Workspace catalog')) {
+    throw new Error(`Platform console content is missing: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
+    throw new Error(`Platform console does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  }
+  if (layout.inlinePlatformStyles) {
+    throw new Error(`Platform console still contains local operator styles: ${JSON.stringify(layout)}`);
+  }
+}
+
+async function expectSettingsSurface(page) {
+  await page.goto('/index.php?page=admin&section=settings&tab=system');
+  const layout = await page.evaluate(() => {
+    const shell = document.querySelector('.admin-legacy-page, .admin-shell, .card');
+    const tabs = document.querySelector('.admin-tabs');
+    const activeTab = document.querySelector('.admin-tab.is-active');
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    return {
+      url: window.location.href,
+      shellWidth: shell ? shell.getBoundingClientRect().width : 0,
+      tabsDisplay: tabs ? getComputedStyle(tabs).display : null,
+      activeTabText: activeTab ? activeTab.textContent.trim() : '',
+      themeLinks,
+      inlineSettingsStyles: [...document.querySelectorAll('style')].some(style =>
+        style.textContent.includes('Operations overview') ||
+        style.textContent.includes('system-notice')
+      )
+    };
+  });
+  if (layout.shellWidth < 320 || !['flex', 'inline-flex'].includes(layout.tabsDisplay)) {
+    throw new Error(`Settings surface is missing or unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.activeTabText) {
+    throw new Error(`Settings active tab is missing: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
+    throw new Error(`Settings page does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  }
+  if (layout.inlineSettingsStyles) {
+    throw new Error(`Settings page still contains moved notice/system styles: ${JSON.stringify(layout)}`);
+  }
+}
+
+async function expectMovedAdminPageStyles(page) {
+  await page.goto('/index.php?page=notifications');
+  const notifications = await page.evaluate(() => {
+    const wrap = document.querySelector('.notif-page-wrap');
+    const tabs = document.querySelector('.notif-filter-tabs');
+    return {
+      wrapWidth: wrap ? wrap.getBoundingClientRect().width : 0,
+      tabsDisplay: tabs ? getComputedStyle(tabs).display : null,
+      inlineNotificationStyles: [...document.querySelectorAll('style')].some(style =>
+        style.textContent.includes('.notif-page-wrap') ||
+        style.textContent.includes('.notif-card')
+      )
+    };
+  });
+  if (notifications.wrapWidth < 320 || notifications.tabsDisplay !== 'flex') {
+    throw new Error(`Notifications page is unstyled: ${JSON.stringify(notifications)}`);
+  }
+  if (notifications.inlineNotificationStyles) {
+    throw new Error(`Notifications page still contains local notification styles: ${JSON.stringify(notifications)}`);
+  }
+
+  await page.goto('/index.php?page=admin&section=activity');
+  const activity = await page.evaluate(() => {
+    const card = document.querySelector('.act-card');
+    const tabs = document.querySelector('.act-tabs, .admin-tabs');
+    return {
+      cardBorderStyle: card ? getComputedStyle(card).borderTopStyle : null,
+      tabsDisplay: tabs ? getComputedStyle(tabs).display : null,
+      inlineActivityStyles: [...document.querySelectorAll('style')].some(style =>
+        style.textContent.includes('.act-card') ||
+        style.textContent.includes('.act-table')
+      )
+    };
+  });
+  if (activity.cardBorderStyle === 'none' || !['flex', 'inline-flex'].includes(activity.tabsDisplay)) {
+    throw new Error(`Activity page is unstyled: ${JSON.stringify(activity)}`);
+  }
+  if (activity.inlineActivityStyles) {
+    throw new Error(`Activity page still contains local activity styles: ${JSON.stringify(activity)}`);
+  }
+}
+
 async function expectTicketsSurface(page, pagePath) {
   await page.goto(pagePath);
   const layout = await page.evaluate(() => {
@@ -526,6 +773,8 @@ async function expectTicketDetailSurface(page) {
   const browser = await chromium.launch();
   const page = await browser.newPage({ baseURL, acceptDownloads: true });
 
+  await expectPublicRefactorSurfaces(page);
+
   await page.goto('/index.php?page=login');
   await expectLoginLayout(page);
   await page.locator('input[name="email"]').fill(email);
@@ -542,6 +791,10 @@ async function expectTicketDetailSurface(page) {
   }
   await expectQueueSurface(page, '/index.php?page=work', '.work-shell', '.work-panel');
   await expectQueueSurface(page, '/index.php?page=inbox', '.inbox-shell', '.inbox-panel');
+  await expectPlatformSurface(page);
+  await expectDashboardSurface(page);
+  await expectSettingsSurface(page);
+  await expectMovedAdminPageStyles(page);
   await expectReportsSurface(page);
   await expectBillingSurface(page);
   await expectClientSurface(page);

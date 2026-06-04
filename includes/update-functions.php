@@ -55,6 +55,32 @@ function update_security_event($event_type, $context = []): void
     log_security_event((string) $event_type, $user_id, (string) ($context ?: ''));
 }
 
+function render_update_interstitial(string $redirect_url, string $browser_title, string $headline, string $copy, string $tone = 'default'): void
+{
+    $theme_version = defined('APP_VERSION') ? (string) APP_VERSION : (string) time();
+    $safe_redirect_url = htmlspecialchars($redirect_url, ENT_QUOTES, 'UTF-8');
+    $safe_theme_version = htmlspecialchars($theme_version, ENT_QUOTES, 'UTF-8');
+    $safe_title = htmlspecialchars($browser_title, ENT_QUOTES, 'UTF-8');
+    $safe_headline = htmlspecialchars($headline, ENT_QUOTES, 'UTF-8');
+    $safe_copy = htmlspecialchars($copy, ENT_QUOTES, 'UTF-8');
+    $spinner_class = $tone === 'warning'
+        ? 'system-notice-spinner system-notice-spinner--warning'
+        : 'system-notice-spinner';
+
+    echo '<!DOCTYPE html><html><head><meta charset="utf-8">';
+    echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
+    echo '<meta http-equiv="refresh" content="2;url=' . $safe_redirect_url . '">';
+    echo '<title>' . $safe_title . '</title>';
+    echo '<link href="theme.css?v=' . $safe_theme_version . '" rel="stylesheet">';
+    echo '</head><body class="system-notice-page">';
+    echo '<main class="system-notice-card" role="status" aria-live="polite">';
+    echo '<div class="' . $spinner_class . '" aria-hidden="true"></div>';
+    echo '<h1 class="system-notice-title">' . $safe_headline . '</h1>';
+    echo '<p class="system-notice-copy">' . $safe_copy . '</p>';
+    echo '</main></body></html>';
+    exit;
+}
+
 /**
  * Enable maintenance mode — blocks all non-admin requests during update/rollback.
  * The .maintenance file contains a Unix timestamp; index.php checks it.
@@ -1200,17 +1226,7 @@ function apply_update($zip_path, $backup_id = null, bool $dry_run = false): arra
         // The 2-second delay gives opcache time to expire across all
         // PHP-FPM workers before the browser loads the new page.
         $redir = function_exists('url') ? url('admin', ['section' => 'settings', 'tab' => 'system']) : '?page=admin&section=settings&tab=system';
-        echo '<!DOCTYPE html><html><head><meta charset="utf-8">';
-        echo '<meta http-equiv="refresh" content="2;url=' . htmlspecialchars($redir) . '">';
-        echo '<title>' . t('Updating...') . '</title>';
-        echo '<style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc;color:#334155}';
-        echo '.box{text-align:center;padding:2rem}.spinner{width:24px;height:24px;border:3px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin .6s linear infinite;margin:0 auto 1rem}';
-        echo '@keyframes spin{to{transform:rotate(360deg)}}</style></head>';
-        echo '<body><div class="box"><div class="spinner"></div>';
-        echo '<div style="font-weight:600;font-size:1.1rem">' . t('Update complete') . '</div>';
-        echo '<div style="color:#64748b;margin-top:.5rem;font-size:.875rem">' . t('Redirecting...') . '</div>';
-        echo '</div></body></html>';
-        exit;
+        render_update_interstitial($redir, t('Updating...'), t('Update complete'), t('Redirecting...'));
     }
 
     return $result;
@@ -1397,17 +1413,7 @@ function rollback_update($backup_id, $restore_database = false): array
             session_write_close();
         }
         $redir = function_exists('url') ? url('admin', ['section' => 'settings', 'tab' => 'system']) : '?page=admin&section=settings&tab=system';
-        echo '<!DOCTYPE html><html><head><meta charset="utf-8">';
-        echo '<meta http-equiv="refresh" content="2;url=' . htmlspecialchars($redir) . '">';
-        echo '<title>' . t('Rolling back...') . '</title>';
-        echo '<style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:system-ui,sans-serif;background:#f8fafc;color:#334155}';
-        echo '.box{text-align:center;padding:2rem}.spinner{width:24px;height:24px;border:3px solid #e2e8f0;border-top-color:#f59e0b;border-radius:50%;animation:spin .6s linear infinite;margin:0 auto 1rem}';
-        echo '@keyframes spin{to{transform:rotate(360deg)}}</style></head>';
-        echo '<body><div class="box"><div class="spinner"></div>';
-        echo '<div style="font-weight:600;font-size:1.1rem">' . t('Rollback complete') . '</div>';
-        echo '<div style="color:#64748b;margin-top:.5rem;font-size:.875rem">' . t('Redirecting...') . '</div>';
-        echo '</div></body></html>';
-        exit;
+        render_update_interstitial($redir, t('Rolling back...'), t('Rollback complete'), t('Redirecting...'), 'warning');
     }
 
     return $result;
