@@ -150,6 +150,101 @@ async function expectTicketsSurface(page, pagePath) {
   }
 }
 
+async function expectTicketDetailSurface(page) {
+  const layout = await page.evaluate(() => {
+    const editor = document.querySelector('.editor-wrapper');
+    const commentForm = document.querySelector('#comment-form');
+    const timelineOverlay = document.querySelector('#timeline-overlay');
+    const workPanel = document.querySelector('.ticket-work-panel');
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const rect = (element) => {
+      const bounds = element.getBoundingClientRect();
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+    };
+
+    return {
+      url: window.location.href,
+      editorRect: editor ? rect(editor) : null,
+      editorBorderStyle: editor ? getComputedStyle(editor).borderTopStyle : null,
+      editorBorderWidth: editor ? getComputedStyle(editor).borderTopWidth : null,
+      commentFormRect: commentForm ? rect(commentForm) : null,
+      workPanelDisplay: workPanel ? getComputedStyle(workPanel).display : null,
+      timelineDisplay: timelineOverlay ? getComputedStyle(timelineOverlay).display : null,
+      timelineAriaHidden: timelineOverlay ? timelineOverlay.getAttribute('aria-hidden') : null,
+      themeLinks,
+      inlineDetailStyles: [...document.querySelectorAll('style')].some(style =>
+        style.textContent.includes('.editor-wrapper') ||
+        style.textContent.includes('.ticket-work-panel') ||
+        style.textContent.includes('.ticket-timeline-overlay') ||
+        style.textContent.includes('.tl-event')
+      )
+    };
+  });
+
+  if (!layout.editorRect || layout.editorBorderStyle === 'none' || layout.editorBorderWidth === '0px') {
+    throw new Error(`Ticket detail editor is unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.commentFormRect) {
+    throw new Error(`Ticket detail comment form is missing: ${JSON.stringify(layout)}`);
+  }
+  if (layout.workPanelDisplay !== 'flex') {
+    throw new Error(`Ticket detail work panel is unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (layout.timelineDisplay !== null && layout.timelineDisplay !== 'none') {
+    throw new Error(`Ticket timeline overlay should be hidden by default: ${JSON.stringify(layout)}`);
+  }
+  if (layout.timelineAriaHidden !== null && layout.timelineAriaHidden !== 'true') {
+    throw new Error(`Ticket timeline overlay should be aria-hidden by default: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
+    throw new Error(`Ticket detail does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  }
+  if (layout.inlineDetailStyles) {
+    throw new Error(`Ticket detail still contains page-level layout styles: ${JSON.stringify(layout)}`);
+  }
+
+  const timelineButton = page.locator('button[onclick^="openTicketTimeline"]');
+  const timelineButtonCount = await timelineButton.count();
+  if (timelineButtonCount > 0) {
+    if (timelineButtonCount !== 1) {
+      throw new Error(`Expected one timeline button, found ${timelineButtonCount}`);
+    }
+    await timelineButton.click();
+    await page.waitForFunction(() => {
+      const overlay = document.querySelector('#timeline-overlay');
+      const content = document.querySelector('#timeline-content');
+      return overlay &&
+        overlay.classList.contains('is-open') &&
+        overlay.getAttribute('aria-hidden') === 'false' &&
+        content &&
+        !content.textContent.includes('Loading');
+    });
+    const openState = await page.evaluate(() => {
+      const overlay = document.querySelector('#timeline-overlay');
+      return {
+        display: overlay ? getComputedStyle(overlay).display : null,
+        bodyLocked: document.body.classList.contains('ticket-timeline-open'),
+        hasContent: !!document.querySelector('#timeline-content .tl-event, #timeline-content .ticket-timeline-empty')
+      };
+    });
+    if (openState.display !== 'flex' || !openState.bodyLocked || !openState.hasContent) {
+      throw new Error(`Ticket timeline did not open correctly: ${JSON.stringify(openState)}`);
+    }
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => {
+      const overlay = document.querySelector('#timeline-overlay');
+      return overlay && !overlay.classList.contains('is-open') && overlay.getAttribute('aria-hidden') === 'true';
+    });
+    const closeState = await page.evaluate(() => ({
+      bodyLocked: document.body.classList.contains('ticket-timeline-open'),
+      display: getComputedStyle(document.querySelector('#timeline-overlay')).display
+    }));
+    if (closeState.bodyLocked || closeState.display !== 'none') {
+      throw new Error(`Ticket timeline did not close correctly: ${JSON.stringify(closeState)}`);
+    }
+  }
+}
+
 (async () => {
   const health = await fetch(`${baseURL}/index.php?page=health`);
   if (!health.ok) throw new Error(`Health check failed: ${health.status}`);
@@ -191,6 +286,7 @@ async function expectTicketsSurface(page, pagePath) {
   await page.waitForURL(/page=ticket&id=\d+/);
   await expectText(page, 'Local smoke ticket');
   await expectText(page, 'foxdesk-local-smoke.txt');
+  await expectTicketDetailSurface(page);
 
   const attachmentHref = await page.locator('a[href*="attachment.php"]', { hasText: 'foxdesk-local-smoke.txt' }).first().getAttribute('href');
   if (!attachmentHref) throw new Error('Attachment link was not rendered.');

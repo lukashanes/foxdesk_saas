@@ -35,11 +35,11 @@ Files:
 - `tests/csp-ui-baseline.test.js`: fails when a file adds more inline/page
   styling than the baseline allows.
 
-Current baseline after Work/Inbox/Tickets refactor:
+Current baseline after Work/Inbox/Tickets/Ticket detail refactor:
 
 - Affected files: 48
-- `<style>` blocks: 24
-- Inline `style=""` attributes: 1433
+- `<style>` blocks: 22
+- Inline `style=""` attributes: 1421
 - Unversioned `theme.css` links: 5
 - Unversioned `tailwind.min.css` links: 8
 - Priority files affected: 15
@@ -60,20 +60,30 @@ Completed in milestone 4a:
 - `tests/smoke/local-smoke.js`: now checks that All tickets list and board
   render with external CSS after login.
 
+Completed in milestone 5a:
+
+- `pages/ticket-detail.php`: page-level `<style>` blocks removed, editor,
+  rich content, link preview, work panel, and timeline modal styles moved to
+  `theme.css`.
+- Timeline modal no longer uses inline layout styles for its hidden/open state.
+- `tests/smoke/local-smoke.js`: now checks that ticket detail renders with
+  external CSS, opens/closes the activity timeline, and keeps versioned
+  `theme.css`.
+
 ## Priority Order
 
 ### P0 - Blocks Cloud Usability
 
 These pages can look broken under production CSP and must be converted first:
 
-1. `pages/ticket-detail.php`
-2. `pages/new-ticket.php`
+1. `pages/new-ticket.php`
 
 Already converted:
 
 - `pages/work.php`
 - `pages/inbox.php`
 - `pages/tickets.php`
+- `pages/ticket-detail.php`
 
 Done means:
 
