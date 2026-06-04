@@ -157,6 +157,27 @@ go/no-go artifact before a human operator performs those actions.
 
 If the command exits non-zero, the cutover hold remains active.
 
+## Milestone 7 Post-Cutover Confirmation
+
+After the human operator performs final sync, marks the migration as
+single-active, disables self-hosted ingest/notifications, and changes the
+customer-facing redirect or DNS, run:
+
+```bash
+npm run cutover:postcheck -- /path/to/foxdesk-cutover-gate/cutover-preflight.json
+```
+
+The postcheck verifies that the preflight was approved, SaaS still passes
+production smoke checks, and the old source URL redirects to the SaaS target.
+It writes:
+
+- `cutover-postcheck.json`
+- `cutover-postcheck.md`
+
+The cutover is considered confirmed only when the postcheck decision is
+`cutover_confirmed`. If the command exits non-zero, treat cutover as incomplete
+and keep rollback or hold actions available.
+
 ## Explicit Non-Goals During Hold
 
 - Do not redirect `helpdesk.aenze.com` to SaaS.

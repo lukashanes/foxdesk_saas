@@ -17,6 +17,7 @@
     "cutover:gate": "node tests/smoke/cutover-gate.js",
     "cutover:verify": "node bin/verify-cutover-evidence.js",
     "cutover:preflight": "node bin/cutover-preflight.js",
+    "cutover:postcheck": "node bin/cutover-postcheck.js",
     "prod:cutover:gate": "FOXDESK_CUTOVER_MODE=production FOXDESK_CUTOVER_BASE_URL=${PROD_BASE_URL:-https://app.foxdesk.net} node tests/smoke/cutover-gate.js",
     "prod:smoke": "node tests/smoke/production-smoke.js",
     "audit:csp-ui": "node bin/audit-csp-ui.js",
