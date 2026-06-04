@@ -35,10 +35,10 @@ Files:
 - `tests/csp-ui-baseline.test.js`: fails when a file adds more inline/page
   styling than the baseline allows.
 
-Current baseline after Work/Inbox refactor:
+Current baseline after Work/Inbox/Tickets refactor:
 
 - Affected files: 48
-- `<style>` blocks: 27
+- `<style>` blocks: 24
 - Inline `style=""` attributes: 1433
 - Unversioned `theme.css` links: 5
 - Unversioned `tailwind.min.css` links: 8
@@ -53,20 +53,27 @@ Completed in milestone 3a:
 - `tests/smoke/local-smoke.js`: now checks that Work and Inbox render as styled
   queue surfaces after login.
 
+Completed in milestone 4a:
+
+- `pages/tickets.php`: page-level `<style>` blocks removed, list, filter,
+  kanban, quick-add, and inline-edit styles moved to `theme.css`.
+- `tests/smoke/local-smoke.js`: now checks that All tickets list and board
+  render with external CSS after login.
+
 ## Priority Order
 
 ### P0 - Blocks Cloud Usability
 
 These pages can look broken under production CSP and must be converted first:
 
-1. `pages/tickets.php`
-2. `pages/ticket-detail.php`
-3. `pages/new-ticket.php`
+1. `pages/ticket-detail.php`
+2. `pages/new-ticket.php`
 
 Already converted:
 
 - `pages/work.php`
 - `pages/inbox.php`
+- `pages/tickets.php`
 
 Done means:
 

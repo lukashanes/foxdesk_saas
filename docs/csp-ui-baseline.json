@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-04T06:59:48.597Z",
+  "generatedAt": "2026-06-04T07:17:23.992Z",
   "scanRoots": [
     "pages",
     "includes"
@@ -23,25 +23,19 @@
   ],
   "totals": {
     "files": 48,
-    "styleBlocks": 27,
+    "styleBlocks": 24,
     "inlineStyles": 1433,
     "unversionedThemeLinks": 5,
     "unversionedTailwindLinks": 8,
     "priorityFiles": 15,
     "risk": {
-      "critical": 21,
-      "high": 5,
+      "critical": 20,
+      "high": 6,
       "medium": 21,
       "low": 1
     }
   },
   "records": {
-    "pages/tickets.php": {
-      "styleBlocks": 3,
-      "inlineStyles": 89,
-      "unversionedThemeLinks": 0,
-      "unversionedTailwindLinks": 0
-    },
     "pages/admin/settings.php": {
       "styleBlocks": 2,
       "inlineStyles": 168,
@@ -159,6 +153,12 @@
     "pages/legal.php": {
       "styleBlocks": 1,
       "inlineStyles": 0,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/tickets.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 89,
       "unversionedThemeLinks": 0,
       "unversionedTailwindLinks": 0
     },

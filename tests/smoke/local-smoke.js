@@ -96,6 +96,60 @@ async function expectQueueSurface(page, pagePath, shellSelector, panelSelector) 
   }
 }
 
+async function expectTicketsSurface(page, pagePath) {
+  await page.goto(pagePath);
+  const layout = await page.evaluate(() => {
+    const tabs = document.querySelector('.ticket-view-tabs');
+    const card = document.querySelector('.card');
+    const table = document.querySelector('.tickets-table');
+    const board = document.querySelector('.kanban-board');
+    const rect = (element) => {
+      const bounds = element.getBoundingClientRect();
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+    };
+
+    return {
+      url: window.location.href,
+      viewportWidth: window.innerWidth,
+      tabsRect: tabs ? rect(tabs) : null,
+      cardRect: card ? rect(card) : null,
+      tableRect: table ? rect(table) : null,
+      boardRect: board ? rect(board) : null,
+      tabsDisplay: tabs ? getComputedStyle(tabs).display : null,
+      cardBorderStyle: card ? getComputedStyle(card).borderTopStyle : null,
+      cardBorderWidth: card ? getComputedStyle(card).borderTopWidth : null,
+      tableLayout: table ? getComputedStyle(table).tableLayout : null,
+      tableDisplay: table ? getComputedStyle(table).display : null,
+      boardDisplay: board ? getComputedStyle(board).display : null,
+      inlineTicketStyles: [...document.querySelectorAll('style')].some(style =>
+        style.textContent.includes('.ticket-view-tabs') ||
+        style.textContent.includes('.kanban-board') ||
+        style.textContent.includes('.tl-dropdown')
+      ),
+      bodyText: document.body.textContent.slice(0, 300)
+    };
+  });
+
+  if (!layout.tabsRect || layout.tabsDisplay !== 'flex') {
+    throw new Error(`Ticket view tabs are unstyled on ${pagePath}: ${JSON.stringify(layout)}`);
+  }
+  if (layout.inlineTicketStyles) {
+    throw new Error(`Tickets page still contains inline ticket layout styles on ${pagePath}`);
+  }
+  if (pagePath.includes('view=board')) {
+    if (!layout.boardRect || layout.boardDisplay !== 'flex') {
+      throw new Error(`Tickets board is unstyled on ${pagePath}: ${JSON.stringify(layout)}`);
+    }
+  } else {
+    if (!layout.cardRect || layout.cardBorderStyle === 'none' || layout.cardBorderWidth === '0px') {
+      throw new Error(`Tickets card is unstyled on ${pagePath}: ${JSON.stringify(layout)}`);
+    }
+    if (layout.viewportWidth >= 1024 && (!layout.tableRect || layout.tableDisplay !== 'table')) {
+      throw new Error(`Tickets table is not usable on ${pagePath}: ${JSON.stringify(layout)}`);
+    }
+  }
+}
+
 (async () => {
   const health = await fetch(`${baseURL}/index.php?page=health`);
   if (!health.ok) throw new Error(`Health check failed: ${health.status}`);
@@ -148,6 +202,8 @@ async function expectQueueSurface(page, pagePath, shellSelector, panelSelector) 
   if (!content.includes('hello from local smoke')) {
     throw new Error('Downloaded attachment content did not match.');
   }
+  await expectTicketsSurface(page, '/index.php?page=tickets');
+  await expectTicketsSurface(page, '/index.php?page=tickets&view=board');
 
   await browser.close();
   console.log('Local smoke passed.');
