@@ -41,6 +41,8 @@ if (!empty($token)) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
     if (!csrf_is_valid()) {
         $error = t('Security check failed. Please try again.');
+    } elseif (!require_turnstile_for_public_form('password_reset_complete')) {
+        $error = t('Bot protection check failed. Please try again.');
     } else {
         $new_password = $_POST['password'] ?? '';
         $confirm_password = $_POST['confirm_password'] ?? '';
@@ -75,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
     <title><?php echo e(t('New password')); ?> - <?php echo e($app_name); ?></title>
     <link href="tailwind.min.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
     <link href="theme.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
+    <?php echo turnstile_script_tag(); ?>
     <script>
         (function() {
             const saved = localStorage.getItem('theme') || 'light';
@@ -132,6 +135,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
                             required>
                     </div>
                 </div>
+
+                <?php echo turnstile_widget('password_reset_complete'); ?>
 
                 <button type="submit" class="btn btn-primary w-full mt-6">
                     <?php echo e(t('Set new password')); ?>

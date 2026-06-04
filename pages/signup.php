@@ -23,6 +23,8 @@ $values = [
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_is_valid()) {
         $error = 'Security check failed. Please try again.';
+    } elseif (!require_turnstile_for_public_form('signup')) {
+        $error = 'Bot protection check failed. Please try again.';
     } else {
         $password = (string) ($_POST['password'] ?? '');
         $password_confirm = (string) ($_POST['password_confirm'] ?? '');
@@ -70,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title><?php echo e($page_title); ?></title>
     <link rel="stylesheet" href="tailwind.min.css?v=<?php echo e((string) APP_VERSION); ?>">
     <link rel="stylesheet" href="theme.css?v=<?php echo e((string) APP_VERSION); ?>">
+    <?php echo turnstile_script_tag(); ?>
 </head>
 <body class="signup-page">
     <main class="signup-shell">
@@ -119,6 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label class="block text-sm font-medium mb-1.5">Confirm password</label>
                         <input class="signup-input" type="password" name="password_confirm" minlength="12" required>
                     </div>
+                    <?php echo turnstile_widget('signup'); ?>
                     <button type="submit" class="btn btn-primary w-full py-2.5">Start 14-day free trial</button>
                     <p class="text-xs leading-5 text-theme-muted">
                         By creating a workspace you agree to the

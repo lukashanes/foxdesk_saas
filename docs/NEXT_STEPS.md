@@ -11,6 +11,7 @@
 - Billing lifecycle rules are prepared: trial grace, failed-payment grace, suspension after grace, and paid-invoice reactivation.
 - Usage counters now split local/R2 attachment storage and expose monthly email/API volume for abuse monitoring.
 - Platform console now includes operator tenant detail, subscription history, usage overview, manual lifecycle controls, and owner reset/invite flow.
+- Public signup, login, and password reset forms have optional Cloudflare Turnstile guards that stay disabled until production keys are configured.
 
 ## Immediate Next Steps
 
@@ -39,7 +40,7 @@
    - deploy/update script
 7. Harden public endpoints:
    - rate limiting
-   - Cloudflare Turnstile on signup/login/reset
+   - configure Cloudflare Turnstile production keys for signup/login/reset
    - stricter audit logging for billing/platform actions
 8. Add production observability:
    - structured error logs

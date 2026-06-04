@@ -204,11 +204,12 @@ function send_security_headers()
 
     if (!$is_localhost) {
         header("Content-Security-Policy: default-src 'self'; " .
-            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net; " .
+            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net https://challenges.cloudflare.com; " .
             "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.quilljs.com https://cdn.jsdelivr.net; " .
             "font-src 'self' https://cdnjs.cloudflare.com data:; " .
             "img-src 'self' data: https:; " .
-            "connect-src 'self'; " .
+            "connect-src 'self' https://challenges.cloudflare.com; " .
+            "frame-src https://challenges.cloudflare.com; " .
             "frame-ancestors 'self'");
     }
 
@@ -220,6 +221,115 @@ function send_security_headers()
     if ($is_https) {
         header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
     }
+}
+
+function turnstile_config_value(string $name, string $fallback_constant = ''): string
+{
+    $value = getenv($name);
+    if ($value !== false && trim((string) $value) !== '') {
+        return trim((string) $value);
+    }
+
+    if ($fallback_constant !== '' && defined($fallback_constant)) {
+        return trim((string) constant($fallback_constant));
+    }
+
+    if (defined($name)) {
+        return trim((string) constant($name));
+    }
+
+    return '';
+}
+
+function turnstile_site_key(): string
+{
+    $value = turnstile_config_value('TURNSTILE_SITE_KEY');
+    return $value !== '' ? $value : turnstile_config_value('CLOUDFLARE_TURNSTILE_SITE_KEY');
+}
+
+function turnstile_secret_key(): string
+{
+    $value = turnstile_config_value('TURNSTILE_SECRET_KEY');
+    return $value !== '' ? $value : turnstile_config_value('CLOUDFLARE_TURNSTILE_SECRET_KEY');
+}
+
+function turnstile_enabled(): bool
+{
+    return turnstile_site_key() !== '' && turnstile_secret_key() !== '';
+}
+
+function turnstile_script_tag(): string
+{
+    if (!turnstile_enabled()) {
+        return '';
+    }
+
+    return '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>';
+}
+
+function turnstile_widget(string $action = 'public_form'): string
+{
+    if (!turnstile_enabled()) {
+        return '';
+    }
+
+    $safe_action = preg_replace('/[^a-zA-Z0-9_-]/', '_', $action) ?: 'public_form';
+    return '<div class="cf-turnstile" data-sitekey="' . e(turnstile_site_key()) . '" data-action="' . e($safe_action) . '"></div>';
+}
+
+function turnstile_verify_response(string $response, string $remote_ip = ''): bool
+{
+    if (!turnstile_enabled()) {
+        return true;
+    }
+
+    $response = trim($response);
+    if ($response === '' || !function_exists('curl_init')) {
+        return false;
+    }
+
+    $fields = [
+        'secret' => turnstile_secret_key(),
+        'response' => $response,
+    ];
+    if ($remote_ip !== '') {
+        $fields['remoteip'] = $remote_ip;
+    }
+
+    $ch = curl_init('https://challenges.cloudflare.com/turnstile/v0/siteverify');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query($fields),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 8,
+        CURLOPT_CONNECTTIMEOUT => 4,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
+    ]);
+    $body = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+
+    if (!is_string($body) || $body === '' || $status < 200 || $status >= 300) {
+        return false;
+    }
+
+    $decoded = json_decode($body, true);
+    return is_array($decoded) && !empty($decoded['success']);
+}
+
+function require_turnstile_for_public_form(string $action = 'public_form'): bool
+{
+    if (!turnstile_enabled()) {
+        return true;
+    }
+
+    $response = (string) ($_POST['cf-turnstile-response'] ?? '');
+    $ok = turnstile_verify_response($response, get_client_ip());
+    if (!$ok) {
+        log_security_event('turnstile_failed', null, 'action=' . $action);
+    }
+
+    return $ok;
 }
 
 /**

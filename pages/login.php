@@ -123,6 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_2fa'])) {
 elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
     if (!csrf_is_valid()) {
         $error = t('Security check failed. Please try again.');
+    } elseif (!require_turnstile_for_public_form('login')) {
+        $error = t('Bot protection check failed. Please try again.');
     } else {
         $email = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
@@ -214,6 +216,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
     <title><?php echo e(t('Sign in')); ?> - <?php echo e($login_brand_name); ?></title>
     <link href="tailwind.min.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
     <link href="theme.css?v=<?php echo e((string) (@filemtime(BASE_PATH . '/theme.css') ?: APP_VERSION)); ?>" rel="stylesheet">
+    <?php echo turnstile_script_tag(); ?>
     <script>
         // Apply theme immediately to prevent flash
         (function () {
@@ -393,6 +396,8 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                             <?php echo e(t('Forgot password?')); ?>
                         </a>
                     </div>
+
+                    <?php echo turnstile_widget('login'); ?>
 
                     <button type="submit"
                         class="btn btn-primary login-submit w-full mt-6 py-2.5 text-base rounded-lg transition-transform active:scale-[0.98]">

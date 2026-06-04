@@ -29,6 +29,8 @@ $lang_params = ['page' => 'forgot-password'];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_is_valid()) {
         $error = t('Security check failed. Please try again.');
+    } elseif (!require_turnstile_for_public_form('password_reset_request')) {
+        $error = t('Bot protection check failed. Please try again.');
     } else {
         $email = trim($_POST['email'] ?? '');
         $rate_key = 'password_reset';
@@ -82,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title><?php echo e(t('Reset password')); ?> - <?php echo e($app_name); ?></title>
     <link href="tailwind.min.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
     <link href="theme.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
+    <?php echo turnstile_script_tag(); ?>
     <script>
         (function() {
             const saved = localStorage.getItem('theme') || 'light';
@@ -115,6 +118,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="email" name="email" value="<?php echo e($_POST['email'] ?? ''); ?>" class="form-input login-input"
                     autocomplete="username" inputmode="email" autocapitalize="none" required autofocus>
             </div>
+
+            <?php echo turnstile_widget('password_reset_request'); ?>
 
             <button type="submit" class="btn btn-primary w-full mt-6 login-btn">
                 <?php echo e(t('Send reset link')); ?>
