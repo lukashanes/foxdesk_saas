@@ -5,7 +5,8 @@ This is the recommended first deployment path for FoxDesk SaaS work. It keeps th
 ## Target Hostnames
 
 - `foxdesk.org` stays the public open-source/self-hosted website.
-- `app.foxdesk.net` is the production SaaS application.
+- `app.foxdesk.net` is the production customer workspace application.
+- `platform.foxdesk.net` is the SaaS operator console for platform admins only.
 - `foxdesk.net` is the public SaaS website or canonical redirect target.
 - `api.foxdesk.net`, `status.foxdesk.net`, and `support.foxdesk.net` are reserved for later.
 
@@ -34,7 +35,7 @@ This is the recommended first deployment path for FoxDesk SaaS work. It keeps th
 ## Deployment Sequence
 
 1. Provision Hetzner VPS with Ubuntu.
-2. Point `app.foxdesk.net` DNS A record to `46.224.66.79` in Cloudflare.
+2. Point `app.foxdesk.net` and `platform.foxdesk.net` DNS A records to `46.224.66.79` in Cloudflare.
 3. Keep the DNS record proxied.
 4. Run `deploy/hetzner/bootstrap.sh` on the server.
 5. Clone this repository into `/opt/foxdesk_saas`.
@@ -44,9 +45,10 @@ This is the recommended first deployment path for FoxDesk SaaS work. It keeps th
 9. Run `deploy/hetzner/preflight.sh`.
 10. Run `deploy/hetzner/deploy.sh`.
 11. Visit `https://app.foxdesk.net/install.php` for first install or run existing migration flow.
-12. Enable Cloudflare WAF/rate limiting rules.
-13. Configure backups and restore test.
-14. Add monitoring and uptime checks.
+12. Use `https://platform.foxdesk.net/index.php?page=platform` only for the operator console.
+13. Enable Cloudflare WAF/rate limiting rules.
+14. Configure backups and restore test.
+15. Add monitoring and uptime checks.
 
 ## Production Files
 

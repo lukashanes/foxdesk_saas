@@ -27,6 +27,12 @@ $login_brand_name = function_exists('foxdesk_is_platform_host') && foxdesk_is_pl
 $error = '';
 $info_message = '';
 $show_2fa_form = !empty($_SESSION['2fa_pending']);
+$workspace_login_url = function_exists('foxdesk_workspace_url')
+    ? foxdesk_workspace_url('index.php?page=login')
+    : 'index.php?page=login';
+if (isset($_GET['platform_login_rejected']) && function_exists('foxdesk_is_platform_host') && foxdesk_is_platform_host()) {
+    $error = 'This address is for FoxDesk platform administrators. Use the workspace login instead: ' . $workspace_login_url;
+}
 $current_lang = get_app_language();
 $lang_options = [
     'en' => t('English'),
@@ -134,8 +140,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
 
             if (function_exists('foxdesk_is_platform_host') && foxdesk_is_platform_host() && !is_platform_admin($logged_user)) {
                 logout();
-                $workspace_login = function_exists('foxdesk_workspace_url') ? foxdesk_workspace_url('index.php?page=login') : 'index.php?page=login';
-                $error = 'This address is for FoxDesk platform administrators. Use the workspace login instead: ' . $workspace_login;
+                $error = 'This address is for FoxDesk platform administrators. Use the workspace login instead: ' . $workspace_login_url;
                 log_security_event('platform_login_rejected', null, 'email=' . $email);
             } else {
 

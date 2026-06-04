@@ -267,7 +267,18 @@ function require_platform_admin(): void
 {
     if (!is_platform_admin()) {
         http_response_code(403);
-        header('Location: index.php?page=dashboard');
+        if (function_exists('foxdesk_is_platform_host') && foxdesk_is_platform_host()) {
+            if (function_exists('logout') && is_logged_in()) {
+                logout();
+            }
+            header('Location: index.php?page=login&platform_login_rejected=1');
+            exit;
+        }
+
+        $login_url = function_exists('foxdesk_platform_url')
+            ? foxdesk_platform_url('index.php?page=login')
+            : 'index.php?page=login';
+        header('Location: ' . $login_url);
         exit;
     }
 }

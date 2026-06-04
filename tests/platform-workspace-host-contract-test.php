@@ -31,11 +31,14 @@ $compose = file_get_contents($root . '/docker-compose.prod.yml');
 $index = file_get_contents($root . '/index.php');
 $functions = file_get_contents($root . '/includes/functions.php');
 $login = file_get_contents($root . '/pages/login.php');
+$tenant = file_get_contents($root . '/includes/tenant-functions.php');
 
 $assert($caddy !== false && str_contains($caddy, '{$PLATFORM_HOST}'), 'Caddy must route PLATFORM_HOST.');
 $assert($compose !== false && str_contains($compose, 'PLATFORM_HOST:'), 'Production compose must pass PLATFORM_HOST to Caddy.');
 $assert($index !== false && str_contains($index, 'foxdesk_is_platform_host()'), 'Index router must check platform host.');
 $assert($functions !== false && str_contains($functions, 'foxdesk_platform_url'), 'URL helper must support platform host links.');
 $assert($login !== false && str_contains($login, 'platform_login_rejected'), 'Login must reject workspace users on the platform host.');
+$assert($tenant !== false && str_contains($tenant, 'platform_login_rejected=1'), 'Platform admin guard must not redirect non-platform users back to platform.');
+$assert($tenant !== false && str_contains($tenant, 'foxdesk_platform_url'), 'Platform admin guard must send non-platform-host attempts to the platform login.');
 
 echo "Platform/workspace host contract OK\n";
