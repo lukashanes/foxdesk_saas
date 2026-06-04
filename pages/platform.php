@@ -37,36 +37,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'plan' => billing_plan_code(),
             ]);
             $selected_tenant_id = (int) $workspace['tenant_id'];
+            platform_log_operator_action('platform_workspace_created', $selected_tenant_id, [
+                'status' => (string) ($_POST['status'] ?? 'trialing'),
+                'subscription_status' => (string) ($_POST['subscription_status'] ?? 'trialing'),
+            ]);
             $success = 'Workspace created.';
         } elseif ($action === 'update_tenant') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
+            $status = (string) ($_POST['status'] ?? 'active');
+            $subscription_status = (string) ($_POST['subscription_status'] ?? 'manual');
             platform_update_tenant_lifecycle(
                 $tenant_id,
-                (string) ($_POST['status'] ?? 'active'),
-                (string) ($_POST['subscription_status'] ?? 'manual')
+                $status,
+                $subscription_status
             );
             $selected_tenant_id = $tenant_id;
+            platform_log_operator_action('platform_workspace_lifecycle_updated', $tenant_id, [
+                'status' => $status,
+                'subscription_status' => $subscription_status,
+            ]);
             $success = 'Workspace updated.';
         } elseif ($action === 'extend_trial') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
             $days = max(1, min(90, (int) ($_POST['days'] ?? 7)));
             platform_extend_trial($tenant_id, $days);
             $selected_tenant_id = $tenant_id;
+            platform_log_operator_action('platform_trial_extended', $tenant_id, ['days' => $days]);
             $success = 'Trial extended by ' . $days . ' days.';
         } elseif ($action === 'block_tenant') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
             platform_block_tenant($tenant_id);
             $selected_tenant_id = $tenant_id;
+            platform_log_operator_action('platform_workspace_blocked', $tenant_id);
             $success = 'Workspace blocked.';
         } elseif ($action === 'reactivate_tenant') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
             platform_reactivate_tenant($tenant_id);
             $selected_tenant_id = $tenant_id;
+            platform_log_operator_action('platform_workspace_reactivated', $tenant_id, [
+                'subscription_status' => 'manual',
+            ]);
             $success = 'Workspace reactivated manually.';
         } elseif ($action === 'grant_free_access') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
             platform_grant_free_access($tenant_id);
             $selected_tenant_id = $tenant_id;
+            platform_log_operator_action('platform_workspace_free_access_granted', $tenant_id, [
+                'subscription_status' => 'free',
+            ]);
             $success = 'Workspace marked free by platform override.';
         } elseif ($action === 'send_owner_reset') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
@@ -87,6 +105,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = platform_create_owner_reset($tenant_id, $owner);
             $selected_tenant_id = $tenant_id;
             $operator_link = (string) $result['reset_link'];
+            platform_log_operator_action('platform_owner_reset_link_created', $tenant_id, [
+                'owner_id' => (int) ($owner['id'] ?? 0),
+            ]);
             $success = 'Owner reset link generated. It expires in one hour.';
         } elseif ($action === 'invite_owner') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
@@ -109,6 +130,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $selected_tenant_id = $tenant_id;
             $operator_secret = (string) $result['token'];
             $operator_secret_label = 'Migration token';
+            platform_log_operator_action('platform_migration_token_created', $tenant_id, [
+                'connection_id' => (int) ($result['id'] ?? 0),
+            ]);
             $success = 'Migration token created. Copy it now; it will not be shown again.';
         }
     } catch (Throwable $e) {

@@ -43,16 +43,20 @@ if ($action === 'checkout' || $action === 'portal') {
                 throw new RuntimeException('This workspace does not need a checkout action in its current billing state.');
             }
             $plan = (string) ($_POST['plan'] ?? billing_plan_code());
+            log_security_event('billing_checkout_requested', (int) ($user['id'] ?? 0), 'tenant_id=' . (int) $tenant['id'] . ';plan=' . str_replace([';', "\r", "\n"], ['_', ' ', ' '], $plan));
             $url = billing_create_checkout_session((int) $tenant['id'], $plan);
         } else {
             if (empty($billing_action_state['show_portal'])) {
                 throw new RuntimeException('The billing portal is not available for this workspace state.');
             }
+            log_security_event('billing_portal_requested', (int) ($user['id'] ?? 0), 'tenant_id=' . (int) $tenant['id']);
             $url = billing_create_portal_session((int) $tenant['id']);
         }
         header('Location: ' . $url);
         exit;
     } catch (Throwable $e) {
+        $safe_error = str_replace([';', "\r", "\n"], ['_', ' ', ' '], $e->getMessage());
+        log_security_event('billing_action_failed', (int) ($user['id'] ?? 0), 'tenant_id=' . (int) $tenant['id'] . ';action=' . $action . ';error=' . $safe_error);
         flash($e->getMessage(), 'error');
         $back = is_platform_admin($user) ? url('platform') : url('billing');
         header('Location: ' . $back);

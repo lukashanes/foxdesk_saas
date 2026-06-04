@@ -13,6 +13,22 @@ function platform_allowed_subscription_statuses(): array
     return ['trialing', 'active', 'manual', 'free', 'past_due', 'trial_expired', 'suspended', 'blocked', 'canceled'];
 }
 
+function platform_log_operator_action(string $event_type, int $tenant_id, array $context = []): void
+{
+    if (!function_exists('log_security_event')) {
+        return;
+    }
+
+    $parts = ['tenant_id=' . $tenant_id];
+    foreach ($context as $key => $value) {
+        $safe_key = preg_replace('/[^a-zA-Z0-9_:-]/', '_', (string) $key) ?: 'value';
+        $safe_value = str_replace([';', "\r", "\n"], ['_', ' ', ' '], (string) $value);
+        $parts[] = $safe_key . '=' . $safe_value;
+    }
+
+    log_security_event($event_type, (int) ($_SESSION['user_id'] ?? 0), implode(';', $parts));
+}
+
 function platform_update_tenant_lifecycle(int $tenant_id, string $status, string $subscription_status): void
 {
     $status = trim($status);
