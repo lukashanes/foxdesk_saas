@@ -12,6 +12,8 @@
 - Usage counters now split local/R2 attachment storage and expose monthly email/API volume for abuse monitoring.
 - Platform console now includes operator tenant detail, subscription history, usage overview, manual lifecycle controls, and owner reset/invite flow.
 - Public signup, login, and password reset forms have optional Cloudflare Turnstile guards that stay disabled until production keys are configured.
+- Platform lifecycle actions and billing checkout/portal actions are written to the security log with sanitized operator context.
+- The public health endpoint now checks database connectivity, writable upload/storage paths, PHP baseline, host mode, version, and timestamp for uptime monitoring.
 
 ## Immediate Next Steps
 
@@ -41,10 +43,8 @@
 7. Harden public endpoints:
    - rate limiting
    - configure Cloudflare Turnstile production keys for signup/login/reset
-   - stricter audit logging for billing/platform actions
 8. Add production observability:
-   - structured error logs
-   - uptime checks
+   - point an external uptime monitor at `https://app.foxdesk.net/index.php?page=health`
    - failed webhook alerting
    - backup success/failure alerting
 
