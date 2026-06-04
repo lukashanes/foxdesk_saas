@@ -35,10 +35,10 @@ Files:
 - `tests/csp-ui-baseline.test.js`: fails when a file adds more inline/page
   styling than the baseline allows.
 
-Current baseline after Work/Inbox/Tickets/Ticket detail refactor:
+Current baseline after Work/Inbox/Tickets/Ticket detail/New ticket refactor:
 
 - Affected files: 48
-- `<style>` blocks: 22
+- `<style>` blocks: 21
 - Inline `style=""` attributes: 1421
 - Unversioned `theme.css` links: 5
 - Unversioned `tailwind.min.css` links: 8
@@ -70,13 +70,19 @@ Completed in milestone 5a:
   external CSS, opens/closes the activity timeline, and keeps versioned
   `theme.css`.
 
+Completed in milestone 6a:
+
+- `pages/new-ticket.php`: page-level `<style>` block removed, editor and
+  option pill styles moved to `theme.css`.
+- `tests/smoke/local-smoke.js`: now checks that New ticket renders as a styled
+  card, uses an external versioned `theme.css`, shows a styled editor and
+  upload zone, renders option pills, and previews selected attachments.
+
 ## Priority Order
 
 ### P0 - Blocks Cloud Usability
 
-These pages can look broken under production CSP and must be converted first:
-
-1. `pages/new-ticket.php`
+No remaining P0 page-level style blocks after milestone 6a.
 
 Already converted:
 
@@ -84,6 +90,7 @@ Already converted:
 - `pages/inbox.php`
 - `pages/tickets.php`
 - `pages/ticket-detail.php`
+- `pages/new-ticket.php`
 
 Done means:
 

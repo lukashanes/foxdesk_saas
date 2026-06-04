@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-04T07:31:39.326Z",
+  "generatedAt": "2026-06-04T07:44:10.051Z",
   "scanRoots": [
     "pages",
     "includes"
@@ -23,15 +23,15 @@
   ],
   "totals": {
     "files": 48,
-    "styleBlocks": 22,
+    "styleBlocks": 21,
     "inlineStyles": 1421,
     "unversionedThemeLinks": 5,
     "unversionedTailwindLinks": 8,
     "priorityFiles": 15,
     "risk": {
-      "critical": 19,
+      "critical": 18,
       "high": 7,
-      "medium": 21,
+      "medium": 22,
       "low": 1
     }
   },
@@ -51,12 +51,6 @@
     "pages/dashboard.php": {
       "styleBlocks": 1,
       "inlineStyles": 26,
-      "unversionedThemeLinks": 0,
-      "unversionedTailwindLinks": 0
-    },
-    "pages/new-ticket.php": {
-      "styleBlocks": 1,
-      "inlineStyles": 24,
       "unversionedThemeLinks": 0,
       "unversionedTailwindLinks": 0
     },
@@ -189,6 +183,12 @@
     "pages/admin/ticket-types-content.php": {
       "styleBlocks": 0,
       "inlineStyles": 26,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/new-ticket.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 24,
       "unversionedThemeLinks": 0,
       "unversionedTailwindLinks": 0
     },

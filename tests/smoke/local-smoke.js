@@ -150,6 +150,60 @@ async function expectTicketsSurface(page, pagePath) {
   }
 }
 
+async function expectNewTicketSurface(page) {
+  const layout = await page.evaluate(() => {
+    const form = document.querySelector('#new-ticket-form');
+    const editor = document.querySelector('.editor-wrapper');
+    const uploadZone = document.querySelector('#upload-zone');
+    const optionPill = document.querySelector('.option-pill');
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const rect = (element) => {
+      const bounds = element.getBoundingClientRect();
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+    };
+
+    return {
+      url: window.location.href,
+      formRect: form ? rect(form) : null,
+      formBorderStyle: form ? getComputedStyle(form).borderTopStyle : null,
+      formBorderWidth: form ? getComputedStyle(form).borderTopWidth : null,
+      editorRect: editor ? rect(editor) : null,
+      editorBorderStyle: editor ? getComputedStyle(editor).borderTopStyle : null,
+      editorBorderWidth: editor ? getComputedStyle(editor).borderTopWidth : null,
+      uploadZoneRect: uploadZone ? rect(uploadZone) : null,
+      uploadZoneBorderStyle: uploadZone ? getComputedStyle(uploadZone).borderTopStyle : null,
+      uploadZoneBorderWidth: uploadZone ? getComputedStyle(uploadZone).borderTopWidth : null,
+      optionPillDisplay: optionPill ? getComputedStyle(optionPill).display : null,
+      optionPillHeight: optionPill ? getComputedStyle(optionPill).height : null,
+      themeLinks,
+      inlineNewTicketStyles: [...document.querySelectorAll('style')].some(style =>
+        style.textContent.includes('#description-editor') ||
+        style.textContent.includes('.option-pill') ||
+        style.textContent.includes('.editor-wrapper')
+      )
+    };
+  });
+
+  if (!layout.formRect || layout.formBorderStyle === 'none' || layout.formBorderWidth === '0px') {
+    throw new Error(`New ticket form card is unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.editorRect || layout.editorBorderStyle === 'none' || layout.editorBorderWidth === '0px') {
+    throw new Error(`New ticket editor is unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.uploadZoneRect || layout.uploadZoneBorderStyle === 'none' || layout.uploadZoneBorderWidth === '0px') {
+    throw new Error(`New ticket upload zone is unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (layout.optionPillDisplay !== null && !['flex', 'inline-flex'].includes(layout.optionPillDisplay)) {
+    throw new Error(`New ticket option pills are unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
+    throw new Error(`New ticket does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  }
+  if (layout.inlineNewTicketStyles) {
+    throw new Error(`New ticket still contains page-level layout styles: ${JSON.stringify(layout)}`);
+  }
+}
+
 async function expectTicketDetailSurface(page) {
   const layout = await page.evaluate(() => {
     const editor = document.querySelector('.editor-wrapper');
@@ -277,11 +331,22 @@ async function expectTicketDetailSurface(page) {
   fs.writeFileSync(attachmentPath, 'hello from local smoke\n');
 
   await page.goto('/index.php?page=new-ticket');
+  await expectNewTicketSurface(page);
   await page.locator('input[name="title"]').fill('Local smoke ticket');
   await page.locator('#description-input').evaluate(input => {
     input.value = '<p>Created by local smoke test.</p>';
   });
   await page.locator('#file-input').setInputFiles(attachmentPath);
+  const previewState = await page.evaluate(() => {
+    const preview = document.querySelector('#file-preview');
+    return {
+      hidden: preview ? preview.classList.contains('hidden') : true,
+      text: preview ? preview.textContent : ''
+    };
+  });
+  if (previewState.hidden || !previewState.text.includes('foxdesk-local-smoke.txt')) {
+    throw new Error(`New ticket attachment preview did not render: ${JSON.stringify(previewState)}`);
+  }
   await page.locator('button[type="submit"]').click();
   await page.waitForURL(/page=ticket&id=\d+/);
   await expectText(page, 'Local smoke ticket');
