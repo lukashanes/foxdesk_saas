@@ -205,6 +205,25 @@ The summary reports the current phase:
 Use this report as the operator-facing cutover state instead of manually
 inspecting several JSON files.
 
+## Milestone 9 Cutover Audit Manifest
+
+After status generation, create a checksum manifest for the whole cutover
+evidence directory:
+
+```bash
+npm run cutover:manifest -- --dir=/path/to/foxdesk-cutover-gate
+```
+
+The manifest command reads the known cutover JSON/Markdown files and screenshots,
+then writes:
+
+- `cutover-manifest.json`
+- `cutover-manifest.md`
+
+The manifest records file sizes, SHA-256 checksums, missing core files, lifecycle
+decisions, screenshot count, and a manifest-level SHA-256. Keep this manifest
+with the migration archive so the reviewed cutover evidence can be audited later.
+
 ## Explicit Non-Goals During Hold
 
 - Do not redirect `helpdesk.aenze.com` to SaaS.
