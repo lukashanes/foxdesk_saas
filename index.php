@@ -237,16 +237,11 @@ if (!empty($_SESSION['user_id']) && $page !== 'login' && $page !== 'logout' && $
 // Health check endpoint (for uptime monitoring)
 if ($page === 'health') {
     header('Content-Type: application/json');
-    $health = ['status' => 'ok', 'version' => APP_VERSION];
-    try {
-        db_fetch_one("SELECT 1");
-        $health['db'] = true;
-    } catch (Throwable $e) {
-        $health['status'] = 'error';
-        $health['db'] = false;
+    require_once BASE_PATH . '/includes/health-functions.php';
+    $health = foxdesk_health_status();
+    if (($health['status'] ?? 'error') !== 'ok') {
+        http_response_code(503);
     }
-    $health['php'] = PHP_VERSION;
-    $health['timestamp'] = gmdate('Y-m-d\TH:i:s\Z');
     echo json_encode($health);
     exit;
 }
