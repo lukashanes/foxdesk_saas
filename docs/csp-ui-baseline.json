@@ -1,0 +1,328 @@
+{
+  "generatedAt": "2026-06-04T06:53:24.463Z",
+  "scanRoots": [
+    "pages",
+    "includes"
+  ],
+  "priorityFiles": [
+    "pages/work.php",
+    "pages/inbox.php",
+    "pages/tickets.php",
+    "pages/ticket-detail.php",
+    "pages/new-ticket.php",
+    "pages/client.php",
+    "pages/dashboard.php",
+    "pages/admin/reports.php",
+    "pages/admin/settings.php",
+    "pages/billing.php",
+    "pages/platform.php",
+    "pages/login.php",
+    "pages/signup.php",
+    "pages/forgot-password.php",
+    "pages/reset-password.php"
+  ],
+  "totals": {
+    "files": 48,
+    "styleBlocks": 29,
+    "inlineStyles": 1443,
+    "unversionedThemeLinks": 5,
+    "unversionedTailwindLinks": 8,
+    "priorityFiles": 15,
+    "risk": {
+      "critical": 23,
+      "high": 5,
+      "medium": 19,
+      "low": 1
+    }
+  },
+  "records": {
+    "pages/tickets.php": {
+      "styleBlocks": 3,
+      "inlineStyles": 89,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/settings.php": {
+      "styleBlocks": 2,
+      "inlineStyles": 168,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/ticket-detail.php": {
+      "styleBlocks": 2,
+      "inlineStyles": 131,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/reports.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 190,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/dashboard.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 26,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/new-ticket.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 24,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/client.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 20,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/reset-password.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 8,
+      "unversionedThemeLinks": 1,
+      "unversionedTailwindLinks": 1
+    },
+    "pages/forgot-password.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 7,
+      "unversionedThemeLinks": 1,
+      "unversionedTailwindLinks": 1
+    },
+    "pages/signup.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 7,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 1
+    },
+    "pages/inbox.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 6,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/work.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 6,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/platform.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 4,
+      "unversionedThemeLinks": 1,
+      "unversionedTailwindLinks": 1
+    },
+    "includes/header.php": {
+      "styleBlocks": 2,
+      "inlineStyles": 66,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "includes/update-functions.php": {
+      "styleBlocks": 2,
+      "inlineStyles": 4,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/agent-connect.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 96,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/organizations.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 59,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/activity.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 52,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/report-public.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 13,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 1
+    },
+    "pages/notifications.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 10,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "includes/email-ingest-functions.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 0,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "includes/functions.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 0,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/legal.php": {
+      "styleBlocks": 1,
+      "inlineStyles": 0,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/users.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 110,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/recurring-tasks.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 65,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/profile.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 51,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/report-builder.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 47,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/ticket-types-content.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 26,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/billing.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 20,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/priorities-content.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 24,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/clients.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 23,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/statuses-content.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 23,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "includes/report-functions.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 18,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/reports-list.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 16,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "includes/modules/email/email-renderer.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 10,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "includes/footer.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 7,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "includes/components/attachment-grid.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 4,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/ticket-share.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 3,
+      "unversionedThemeLinks": 1,
+      "unversionedTailwindLinks": 1
+    },
+    "pages/user-profile.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 3,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "includes/components/badge-colored.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 1,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "includes/components/stat-row.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 1,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "includes/components/widget-wrap-open.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 1,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "includes/help-panel.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 1,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/priorities.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 1,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/statuses.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 1,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/admin/ticket-types.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 1,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/report-share.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 0,
+      "unversionedThemeLinks": 1,
+      "unversionedTailwindLinks": 1
+    },
+    "pages/login.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 0,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 1
+    }
+  }
+}

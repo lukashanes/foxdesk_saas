@@ -14,7 +14,9 @@
     "local:reset": "node scripts/local/reset.js",
     "local:seed": "node scripts/local/seed.js",
     "local:smoke": "node tests/smoke/local-smoke.js",
-    "prod:smoke": "node tests/smoke/production-smoke.js"
+    "prod:smoke": "node tests/smoke/production-smoke.js",
+    "audit:csp-ui": "node bin/audit-csp-ui.js",
+    "test:csp-ui": "node tests/csp-ui-baseline.test.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0"
