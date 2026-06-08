@@ -1274,10 +1274,13 @@ return [
     'Time this month' => 'Čas tento měsíc',
     'Billable this month' => 'Fakturovatelné tento měsíc',
     'Client tickets' => 'Požadavky klienta',
-    'Recent work connected to this client.' => 'Poslední práce navázaná na tohoto klienta.',
     'Client profile' => 'Profil klienta',
     'Contacts' => 'Kontakty',
-    'No contacts linked yet.' => 'Zatím nejsou připojené žádné kontakty.',
+    'No contacts yet.' => 'Zatím žádné kontakty.',
+    'Pick a client and period.' => 'Vyberte klienta a období.',
+    'Check billable rows.' => 'Zkontrolujte fakturované položky.',
+    'Tune rates, discounts, or totals.' => 'Upravte sazby, slevy nebo součty.',
+    'Send the final report.' => 'Odešlete finální výkaz.',
 
     // Link preview cards
     'Google Drive file' => 'Soubor Google Drive',

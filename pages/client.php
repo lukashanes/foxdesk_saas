@@ -84,7 +84,6 @@ require_once BASE_PATH . '/includes/header.php';
             <div class="card-header">
                 <div>
                     <h2 class="client-section-title"><?php echo e(t('Client tickets')); ?></h2>
-                    <p class="client-section-note"><?php echo e(t('Recent work connected to this client.')); ?></p>
                 </div>
                 <div class="client-tabs">
                     <?php foreach (['open', 'waiting', 'done', 'all'] as $view_key): ?>
@@ -99,7 +98,7 @@ require_once BASE_PATH . '/includes/header.php';
 
             <?php if (empty($tickets)): ?>
                 <div class="client-empty">
-                    <?php echo e(t('No tickets here')); ?>
+                    <?php echo e(t('All clear')); ?>
                 </div>
             <?php else: ?>
                 <?php foreach ($tickets as $ticket): ?>
@@ -154,7 +153,7 @@ require_once BASE_PATH . '/includes/header.php';
                     <a href="<?php echo url('admin', ['section' => 'users']); ?>" class="client-manage-link"><?php echo e(t('Manage')); ?></a>
                 </div>
                 <?php if (empty($contacts)): ?>
-                    <p class="client-section-note"><?php echo e(t('No contacts linked yet.')); ?></p>
+                    <p class="client-section-note"><?php echo e(t('No contacts yet.')); ?></p>
                 <?php else: ?>
                     <?php foreach (array_slice($contacts, 0, 8) as $contact): ?>
                         <div class="client-contact">

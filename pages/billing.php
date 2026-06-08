@@ -57,7 +57,7 @@ if ($action === 'checkout' || $action === 'portal') {
     } catch (Throwable $e) {
         $safe_error = str_replace([';', "\r", "\n"], ['_', ' ', ' '], $e->getMessage());
         log_security_event('billing_action_failed', (int) ($user['id'] ?? 0), 'tenant_id=' . (int) $tenant['id'] . ';action=' . $action . ';error=' . $safe_error);
-        flash('Billing action failed. Please try again or contact support if the problem continues.', 'error');
+        flash('We could not open billing. Try again, or contact support if it keeps happening.', 'error');
         $back = is_platform_admin($user) ? url('platform') : url('billing');
         header('Location: ' . $back);
         exit;
@@ -78,7 +78,7 @@ $billing_action_state = function_exists('billing_tenant_billing_action_state')
     ? billing_tenant_billing_action_state($tenant, $access_state)
     : [
         'show_checkout' => true,
-        'checkout_label' => 'Start subscription',
+        'checkout_label' => 'Start plan',
         'show_portal' => !empty($tenant['stripe_customer_id']),
         'portal_label' => 'Manage billing',
         'notice_title' => '',
@@ -95,18 +95,18 @@ require_once BASE_PATH . '/includes/header.php';
 <div class="billing-page">
     <div class="card card-body billing-card">
         <h1 class="billing-title">Billing</h1>
-        <p class="billing-muted billing-intro">Manage subscription and access for <?php echo e($tenant['name']); ?>.</p>
+        <p class="billing-muted billing-intro">Plan, payment, and usage for <?php echo e($tenant['name']); ?>.</p>
 
         <?php if ($checkout_state === 'success'): ?>
-            <div class="alert alert-success mb-5">Payment setup is complete. Stripe will confirm the subscription shortly.</div>
+            <div class="alert alert-success mb-5">You are all set. Your subscription will update shortly.</div>
         <?php elseif ($checkout_state === 'cancelled'): ?>
-            <div class="alert alert-warning mb-5">Checkout was cancelled. Your workspace is still available, but the subscription has not started.</div>
+            <div class="alert alert-warning mb-5">Checkout was cancelled. Nothing changed.</div>
         <?php elseif (isset($_GET['signup'])): ?>
-            <div class="alert alert-info mb-5">Workspace created. Your <?php echo billing_trial_days(); ?>-day trial is active. Add billing before it ends to keep access.</div>
+            <div class="alert alert-info mb-5">Your workspace is ready. You have <?php echo billing_trial_days(); ?> days to try FoxDesk.</div>
         <?php elseif (empty($access_state['allowed'])): ?>
             <div class="alert alert-error mb-5"><?php echo e($access_state['message']); ?></div>
         <?php elseif (($access_state['reason'] ?? '') === 'past_due_grace' && $past_due_grace_ends_at): ?>
-            <div class="alert alert-warning mb-5">Payment is past due. Update billing before <?php echo e(format_date($past_due_grace_ends_at)); ?> to avoid suspension.</div>
+            <div class="alert alert-warning mb-5">We could not process payment. Update billing by <?php echo e(format_date($past_due_grace_ends_at)); ?> to keep access.</div>
         <?php endif; ?>
 
         <dl class="billing-summary-grid">
@@ -170,7 +170,7 @@ require_once BASE_PATH . '/includes/header.php';
         </section>
 
         <?php if (!billing_enabled()): ?>
-            <div class="alert alert-info mb-5">Billing is prepared but not enabled. Configure Stripe keys and set BILLING_ENABLED=true.</div>
+            <div class="alert alert-info mb-5">Billing is off for this workspace. Platform admins can enable it from production settings.</div>
         <?php endif; ?>
 
         <?php if (!empty($billing_action_state['notice_title']) || !empty($billing_action_state['notice_body'])): ?>
@@ -193,7 +193,7 @@ require_once BASE_PATH . '/includes/header.php';
                 <form method="post" action="<?php echo url('billing', ['action' => 'checkout', 'tenant_id' => (int) $tenant['id']]); ?>">
                     <?php echo csrf_field(); ?>
                     <input type="hidden" name="plan" value="<?php echo e(billing_plan_code()); ?>">
-                    <button class="btn btn-primary" type="submit"><?php echo e((string) ($billing_action_state['checkout_label'] ?? 'Start subscription')); ?></button>
+                    <button class="btn btn-primary" type="submit"><?php echo e((string) ($billing_action_state['checkout_label'] ?? 'Start plan')); ?></button>
                 </form>
             <?php endif; ?>
             <?php if (!empty($billing_action_state['show_portal'])): ?>

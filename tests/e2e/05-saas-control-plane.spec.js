@@ -342,7 +342,7 @@ test('Stripe checkout and invoice webhooks keep tenant lifecycle in sync', async
 
   await ownerPage.goto('/index.php?page=tickets');
   await expect(ownerPage).toHaveURL(/page=billing/);
-  await expect(ownerPage.locator('body')).toContainText('Workspace access is suspended');
+  await expect(ownerPage.locator('body')).toContainText('We could not process payment');
 
   const paidInvoice = {
     id: `evt_invoice_paid_${stamp}`,
@@ -397,7 +397,7 @@ test('blocked tenant admins are redirected to billing instead of app pages', asy
 
   await page.goto('/index.php?page=tickets');
   await expect(page).toHaveURL(/page=billing/);
-  await expect(page.locator('body')).toContainText('This subscription has been canceled');
+  await expect(page.locator('body')).toContainText('This plan was canceled');
   await expect(page.locator('body')).toContainText('Billing');
   await ownerContext.close();
 });
@@ -422,7 +422,7 @@ test('platform admin can grant free access and restore workspace access', async 
 
   await page.goto('/index.php?page=tickets');
   await expect(page).toHaveURL(/page=billing/);
-  await expect(page.locator('body')).toContainText('This subscription has been canceled');
+  await expect(page.locator('body')).toContainText('This plan was canceled');
 
   const platformContext = await browser.newContext({ baseURL: platformBaseURL });
   const platformPage = await platformContext.newPage();
@@ -444,9 +444,9 @@ test('platform admin can grant free access and restore workspace access', async 
   await page.goto('/index.php?page=tickets');
   await expect(page).not.toHaveURL(/page=billing/);
   await page.goto('/index.php?page=billing');
-  await expect(page.locator('body')).toContainText('platform admin override');
-  await expect(page.getByRole('button', { name: 'Start subscription' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Restart subscription' })).toHaveCount(0);
+  await expect(page.locator('body')).toContainText('platform-approved access');
+  await expect(page.getByRole('button', { name: 'Start plan' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Restart plan' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Add billing' })).toHaveCount(0);
 
   await platformContext.close();

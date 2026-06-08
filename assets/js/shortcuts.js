@@ -131,7 +131,7 @@
         var header = document.createElement('div');
         header.className = 'cmd-palette-section';
         header.textContent = title;
-        header.style.cssText = 'padding:10px 12px 5px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);';
+        header.style.cssText = 'padding:10px 12px 5px;font-size:12px;font-weight:650;color:var(--text-muted);';
         paletteResults.appendChild(header);
     }
 
@@ -142,7 +142,7 @@
 
         if (!items.length) {
             var empty = document.createElement('div');
-            empty.textContent = 'No results found';
+            empty.textContent = 'No matches';
             empty.style.cssText = 'padding:16px;text-align:center;color:var(--text-muted);font-size:13px;';
             paletteResults.appendChild(empty);
             return;

@@ -1274,10 +1274,13 @@ return [
     'Time this month' => 'Time this month',
     'Billable this month' => 'Billable this month',
     'Client tickets' => 'Client tickets',
-    'Recent work connected to this client.' => 'Recent work connected to this client.',
     'Client profile' => 'Client profile',
     'Contacts' => 'Contacts',
-    'No contacts linked yet.' => 'No contacts linked yet.',
+    'No contacts yet.' => 'No contacts yet.',
+    'Pick a client and period.' => 'Pick a client and period.',
+    'Check billable rows.' => 'Check billable rows.',
+    'Tune rates, discounts, or totals.' => 'Tune rates, discounts, or totals.',
+    'Send the final report.' => 'Send the final report.',
 
     // Link preview cards
     'Google Drive file' => 'Google Drive file',

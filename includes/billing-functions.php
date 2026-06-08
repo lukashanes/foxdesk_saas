@@ -1057,20 +1057,20 @@ function billing_trial_email_copy(array $tenant, string $event_type): array
 
     return match ($event_type) {
         'trial_started' => [
-            'subject' => 'Your FoxDesk trial is ready',
-            'body' => "Hi,\n\n{$workspace} is ready. Your " . billing_trial_days() . "-day trial is active and no card is required today.\n\nAdd billing before the trial ends to keep access:\n{$billing_url}\n\nFoxDesk",
+            'subject' => 'Your FoxDesk workspace is ready',
+            'body' => "Hi,\n\n{$workspace} is ready. You have " . billing_trial_days() . " days to try FoxDesk, and no card is needed today.\n\nAdd billing before the trial ends to keep the workspace active:\n{$billing_url}\n\nFoxDesk",
         ],
         'trial_3_days_left' => [
             'subject' => 'FoxDesk trial ends in 3 days',
-            'body' => "Hi,\n\n{$workspace} has {$days_text} days left in the trial.\n\nAdd billing here to keep access:\n{$billing_url}\n\nFoxDesk",
+            'body' => "Hi,\n\nQuick heads up: {$workspace} has {$days_text} days left in the trial.\n\nAdd billing here to keep the workspace active:\n{$billing_url}\n\nFoxDesk",
         ],
         'trial_1_day_left' => [
             'subject' => 'FoxDesk trial ends tomorrow',
-            'body' => "Hi,\n\n{$workspace} has {$days_text} day left in the trial.\n\nAdd billing here to keep access:\n{$billing_url}\n\nFoxDesk",
+            'body' => "Hi,\n\nOne more day: {$workspace} has {$days_text} day left in the trial.\n\nAdd billing here to keep the workspace active:\n{$billing_url}\n\nFoxDesk",
         ],
         'trial_expired' => [
             'subject' => 'FoxDesk trial has ended',
-            'body' => "Hi,\n\nThe trial for {$workspace} has ended. Admins can still open Billing and start a subscription to restore access.\n\nOpen Billing here:\n{$billing_url}\n\nFoxDesk",
+            'body' => "Hi,\n\nThe trial for {$workspace} has ended. Add billing to restore access.\n\nOpen Billing here:\n{$billing_url}\n\nFoxDesk",
         ],
         default => [
             'subject' => 'FoxDesk trial update',
@@ -1208,12 +1208,12 @@ function billing_workspace_access_state(?array $tenant = null): array
         ? $status
         : ($subscription_status !== '' ? $subscription_status : $status);
     $message = match ($reason) {
-        'trial_expired' => 'Your ' . billing_trial_days() . '-day trial has ended. Add billing to continue.',
-        'past_due' => 'Payment is past due. Update billing to continue.',
-        'suspended' => 'Workspace access is suspended after an unpaid invoice. Update billing to restore access.',
-        'blocked' => 'This workspace was blocked by the FoxDesk platform admin. Contact support to restore access.',
-        'canceled' => 'This subscription has been canceled.',
-        default => 'Workspace access is limited by its billing state (' . trim($status . ' / ' . $subscription_status, ' /') . '). Open Billing, or ask a platform admin to review the workspace.',
+        'trial_expired' => 'Your ' . billing_trial_days() . '-day trial has ended. Add billing to keep using FoxDesk.',
+        'past_due' => 'We could not process payment. Update billing to keep using FoxDesk.',
+        'suspended' => 'We could not process payment. Update billing to restore access.',
+        'blocked' => 'This workspace is blocked. Contact support to restore access.',
+        'canceled' => 'This plan was canceled. Start a new plan to keep using FoxDesk.',
+        default => 'This workspace needs a billing review. Open Billing or ask a platform admin.',
     };
 
     return ['allowed' => false, 'reason' => $reason, 'message' => $message];
@@ -1235,11 +1235,11 @@ function billing_tenant_billing_action_state(?array $tenant = null, ?array $acce
     if (!$tenant) {
         return [
             'show_checkout' => false,
-            'checkout_label' => 'Start subscription',
+            'checkout_label' => 'Start plan',
             'show_portal' => false,
             'portal_label' => 'Manage billing',
-            'notice_title' => 'Billing unavailable',
-            'notice_body' => 'Workspace billing state could not be loaded.',
+            'notice_title' => 'Billing is unavailable',
+            'notice_body' => 'We could not load billing for this workspace.',
             'notice_variant' => 'warning',
         ];
     }
@@ -1253,7 +1253,7 @@ function billing_tenant_billing_action_state(?array $tenant = null, ?array $acce
 
     $state = [
         'show_checkout' => false,
-        'checkout_label' => 'Start subscription',
+        'checkout_label' => 'Start plan',
         'show_portal' => false,
         'portal_label' => 'Manage billing',
         'notice_title' => '',
@@ -1265,25 +1265,25 @@ function billing_tenant_billing_action_state(?array $tenant = null, ?array $acce
         $billing_enabled = billing_enabled();
         $state['show_portal'] = $billing_enabled;
         $state['portal_label'] = 'Manage billing details';
-        $state['notice_title'] = 'Workspace active';
+        $state['notice_title'] = 'All set';
         $state['notice_body'] = $billing_enabled
-            ? 'This workspace is active by platform admin override. No Stripe subscription is required. Billing details, address, and VAT ID can still be managed in Stripe.'
-            : 'This workspace is active by platform admin override. No Stripe subscription is required.';
+            ? 'This workspace has platform-approved access. Billing details, address, and VAT ID can still be managed in Stripe.'
+            : 'This workspace has platform-approved access.';
         return $state;
     }
 
     if (!billing_enabled()) {
-        $state['notice_title'] = 'Billing is not enabled';
-        $state['notice_body'] = 'Stripe billing is configured later; no customer action is available right now.';
+        $state['notice_title'] = 'Billing is off';
+        $state['notice_body'] = 'Platform admins can enable billing from production settings.';
         return $state;
     }
 
     if ($subscription_status === 'active' || ($status === 'active' && $has_subscription)) {
         $state['show_portal'] = $has_customer;
-        $state['notice_title'] = 'Subscription active';
+        $state['notice_title'] = 'Your plan is active';
         $state['notice_body'] = $has_customer
-            ? 'Your subscription is active. Use the billing portal for invoices, payment method, and cancellation.'
-            : 'Your workspace is active. No checkout action is required.';
+            ? 'Manage invoices, payment method, and cancellation from Billing.'
+            : 'No billing action is needed.';
         return $state;
     }
 
@@ -1292,28 +1292,28 @@ function billing_tenant_billing_action_state(?array $tenant = null, ?array $acce
         $state['checkout_label'] = 'Add billing';
         $state['show_portal'] = $has_customer && $has_subscription;
         $state['notice_title'] = 'Trial active';
-        $state['notice_body'] = 'Add billing when you are ready to keep access after the trial.';
+        $state['notice_body'] = 'Add billing anytime before the trial ends.';
         return $state;
     }
 
     if ($status === 'past_due' || $subscription_status === 'past_due' || $reason === 'past_due_grace') {
         $state['show_portal'] = $has_customer;
         $state['show_checkout'] = !$has_customer;
-        $state['checkout_label'] = 'Start subscription';
+        $state['checkout_label'] = 'Start plan';
         $state['portal_label'] = 'Update payment';
-        $state['notice_title'] = 'Payment needs attention';
+        $state['notice_title'] = 'We could not process payment';
         $state['notice_body'] = $has_customer
-            ? 'Update the payment method in Stripe to keep the workspace active.'
-            : 'Start a subscription to keep the workspace active.';
+            ? 'Update payment to keep this workspace active.'
+            : 'Start a plan to keep this workspace active.';
         $state['notice_variant'] = 'warning';
         return $state;
     }
 
     if ($status === 'trial_expired' || $subscription_status === 'trial_expired') {
         $state['show_checkout'] = true;
-        $state['checkout_label'] = 'Start subscription';
-        $state['notice_title'] = 'Trial ended';
-        $state['notice_body'] = 'Start a subscription to restore workspace access.';
+        $state['checkout_label'] = 'Start plan';
+        $state['notice_title'] = 'Your trial has ended';
+        $state['notice_body'] = 'Add billing to keep using FoxDesk.';
         $state['notice_variant'] = 'warning';
         return $state;
     }
@@ -1321,40 +1321,40 @@ function billing_tenant_billing_action_state(?array $tenant = null, ?array $acce
     if ($status === 'suspended') {
         $state['show_portal'] = $has_customer;
         $state['show_checkout'] = !$has_customer;
-        $state['checkout_label'] = 'Start subscription';
+        $state['checkout_label'] = 'Start plan';
         $state['portal_label'] = 'Update payment';
         $state['notice_title'] = 'Workspace suspended';
         $state['notice_body'] = $has_customer
-            ? 'Update billing to restore access.'
-            : 'Start a subscription or contact support to restore access.';
+            ? 'Update payment to restore access.'
+            : 'Start a plan or contact support to restore access.';
         $state['notice_variant'] = 'warning';
         return $state;
     }
 
     if ($status === 'canceled' || $subscription_status === 'canceled') {
         $state['show_checkout'] = true;
-        $state['checkout_label'] = 'Restart subscription';
-        $state['notice_title'] = 'Subscription canceled';
-        $state['notice_body'] = 'Restart the subscription to restore or keep access.';
+        $state['checkout_label'] = 'Restart plan';
+        $state['notice_title'] = 'Plan canceled';
+        $state['notice_body'] = 'Restart the plan to restore access.';
         $state['notice_variant'] = 'warning';
         return $state;
     }
 
     if ($status === 'blocked') {
         $state['notice_title'] = 'Workspace blocked';
-        $state['notice_body'] = 'This workspace was blocked by the platform admin. Contact support to restore access.';
+        $state['notice_body'] = 'Contact support to restore access.';
         $state['notice_variant'] = 'warning';
         return $state;
     }
 
     if ($status === 'active') {
-        $state['notice_title'] = 'Workspace active';
-        $state['notice_body'] = 'No billing action is required for this workspace right now.';
+        $state['notice_title'] = 'All set';
+        $state['notice_body'] = 'No billing action needed.';
         return $state;
     }
 
-    $state['notice_title'] = 'Billing state needs review';
-    $state['notice_body'] = 'This workspace has an unusual billing state. Contact support or review it from the platform console.';
+    $state['notice_title'] = 'Needs review';
+    $state['notice_body'] = 'Open Billing or ask a platform admin.';
     $state['notice_variant'] = 'warning';
     return $state;
 }
