@@ -50,9 +50,7 @@ require_once BASE_PATH . '/includes/header.php';
 <div class="space-y-4">
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
-            <div class="queue-page-kicker"><?php echo e(t('Work queues')); ?></div>
             <h1 class="queue-page-title"><?php echo e(t('Work')); ?></h1>
-            <p class="queue-page-copy"><?php echo e(t('Start with the queue that needs attention now.')); ?></p>
         </div>
         <a href="<?php echo e(url('new-ticket')); ?>" class="btn btn-primary btn-sm">
             <?php echo get_icon('plus', 'w-4 h-4 mr-1'); ?><?php echo e(t('New ticket')); ?>
@@ -60,13 +58,12 @@ require_once BASE_PATH . '/includes/header.php';
     </div>
 
     <div class="work-shell">
-        <nav class="work-queue-list" aria-label="<?php echo e(t('Work queues')); ?>">
+        <nav class="work-queue-list" aria-label="<?php echo e(t('Work')); ?>">
             <?php foreach ($queue_summary as $key => $queue): ?>
                 <?php $definition = $queue['definition']; ?>
                 <a href="<?php echo e($work_queue_url($key)); ?>" class="work-queue-link <?php echo $key === $queue_key ? 'is-active' : ''; ?>" <?php echo $key === $queue_key ? 'aria-current="page"' : ''; ?>>
                     <div>
                         <div class="work-queue-title"><?php echo e(t($definition['label'])); ?></div>
-                        <div class="work-queue-desc"><?php echo e(t($definition['description'])); ?></div>
                     </div>
                     <span class="work-queue-count"><?php echo (int) ($queue['count'] ?? 0); ?></span>
                 </a>
@@ -76,17 +73,14 @@ require_once BASE_PATH . '/includes/header.php';
         <section class="work-panel">
             <div class="work-panel__head">
                 <div>
-                    <div class="work-panel__eyebrow"><?php echo e(t('Current queue')); ?></div>
                     <div class="work-panel__title"><?php echo e(t($active_queue['definition']['label'] ?? 'My work')); ?></div>
-                    <div class="queue-panel-copy"><?php echo e(t($active_queue['definition']['description'] ?? 'Tickets assigned to the current user.')); ?></div>
                 </div>
                 <a href="<?php echo e($work_tickets_url($queue_key)); ?>" class="btn btn-secondary btn-sm"><?php echo e(t('View all')); ?></a>
             </div>
 
             <?php if (empty($active_items)): ?>
                 <div class="work-empty">
-                    <div class="queue-empty-title"><?php echo e(t('No tickets here')); ?></div>
-                    <div class="text-sm mt-1"><?php echo e(t('This queue is clear.')); ?></div>
+                    <div class="queue-empty-title"><?php echo e(t('All clear')); ?></div>
                 </div>
             <?php else: ?>
                 <div class="work-ticket-list">

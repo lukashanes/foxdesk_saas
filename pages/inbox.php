@@ -45,9 +45,7 @@ require_once BASE_PATH . '/includes/header.php';
 <div class="space-y-4">
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
-            <div class="queue-page-kicker"><?php echo e(t('Triage')); ?></div>
             <h1 class="queue-page-title"><?php echo e(t('Inbox')); ?></h1>
-            <p class="queue-page-copy"><?php echo e(t('Decide what should be assigned, started, merged, or closed.')); ?></p>
         </div>
         <a href="<?php echo e(url('new-ticket')); ?>" class="btn btn-primary btn-sm">
             <?php echo get_icon('plus', 'w-4 h-4 mr-1'); ?><?php echo e(t('New ticket')); ?>
@@ -55,13 +53,12 @@ require_once BASE_PATH . '/includes/header.php';
     </div>
 
     <div class="inbox-shell">
-        <nav class="inbox-list" aria-label="<?php echo e(t('Inbox queues')); ?>">
+        <nav class="inbox-list" aria-label="<?php echo e(t('Inbox')); ?>">
             <?php foreach ($inbox_summary as $key => $queue): ?>
                 <?php $definition = $queue['definition']; ?>
                 <a href="<?php echo e($inbox_queue_url($key)); ?>" class="inbox-queue <?php echo $key === $queue_key ? 'is-active' : ''; ?>" <?php echo $key === $queue_key ? 'aria-current="page"' : ''; ?>>
                     <div>
                         <div class="inbox-queue__title"><?php echo e(t($definition['label'])); ?></div>
-                        <div class="inbox-queue__desc"><?php echo e(t($definition['description'])); ?></div>
                     </div>
                     <span class="inbox-queue__count"><?php echo (int) ($queue['count'] ?? 0); ?></span>
                 </a>
@@ -71,17 +68,14 @@ require_once BASE_PATH . '/includes/header.php';
         <section class="inbox-panel">
             <div class="inbox-panel__head">
                 <div>
-                    <div class="inbox-panel__eyebrow"><?php echo e(t('Current inbox')); ?></div>
                     <div class="inbox-panel__title"><?php echo e(t($active_queue['definition']['label'] ?? 'Triage')); ?></div>
-                    <div class="queue-panel-copy"><?php echo e(t($active_queue['definition']['description'] ?? 'New or unassigned tickets that need a decision.')); ?></div>
                 </div>
                 <a href="<?php echo e($inbox_ticket_list_url($queue_key)); ?>" class="btn btn-secondary btn-sm"><?php echo e(t('View all')); ?></a>
             </div>
 
             <?php if (empty($active_items)): ?>
                 <div class="inbox-empty">
-                    <div class="queue-empty-title"><?php echo e(t('Inbox is clear')); ?></div>
-                    <div class="text-sm mt-1"><?php echo e(t('No ticket needs triage in this queue.')); ?></div>
+                    <div class="queue-empty-title"><?php echo e(t('All clear')); ?></div>
                 </div>
             <?php else: ?>
                 <div>

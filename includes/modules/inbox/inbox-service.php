@@ -11,15 +11,12 @@ function inbox_queue_definitions(): array
     return [
         'triage' => [
             'label' => 'Triage',
-            'description' => 'New or unassigned tickets that need a decision.',
         ],
         'customer_replies' => [
             'label' => 'Customer replies',
-            'description' => 'Tickets where the latest public reply came from a client user.',
         ],
         'email_imports' => [
             'label' => 'Email imports',
-            'description' => 'Tickets created from inbound email that still need triage.',
         ],
     ];
 }

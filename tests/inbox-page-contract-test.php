@@ -18,5 +18,16 @@ assert_inbox_page(strpos($header, "url('inbox')") !== false, 'sidebar should lin
 assert_inbox_page(strpos($inbox, 'inbox_summary') !== false, 'inbox page should use inbox service summary.');
 assert_inbox_page(strpos($inbox, "redirect('work')") !== false, 'client users should be redirected away from inbox.');
 assert_inbox_page(strpos($shortcuts, "navigateTo('inbox')") !== false, 'command palette should include inbox.');
+foreach ([
+    'Decide what should be assigned, started, merged, or closed.',
+    'Current inbox',
+    'New or unassigned tickets that need a decision.',
+    'Tickets where the latest public reply came from a client user.',
+    'Tickets created from inbound email that still need triage.',
+    'No ticket needs triage in this queue.',
+] as $forbidden_copy) {
+    assert_inbox_page(strpos($inbox, $forbidden_copy) === false, 'inbox page should not render redundant helper copy: ' . $forbidden_copy);
+}
+assert_inbox_page(strpos($inbox, "t('All clear')") !== false, 'empty inbox queue should use concise state copy.');
 
 echo "Inbox page contract tests passed\n";

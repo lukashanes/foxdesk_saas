@@ -1,6 +1,6 @@
 <?php
 /**
- * Work queues.
+ * Work overview queues.
  *
  * Work is the action-oriented layer above the ticket registry. It answers
  * "what needs attention now" without turning dashboard/tickets pages into
@@ -12,27 +12,22 @@ function work_queue_definitions(): array
     return [
         'mine' => [
             'label' => 'My work',
-            'description' => 'Tickets assigned to the current user.',
             'scope' => 'personal',
         ],
         'unassigned' => [
             'label' => 'Unassigned',
-            'description' => 'New work that needs triage.',
             'scope' => 'team',
         ],
         'overdue' => [
             'label' => 'Overdue',
-            'description' => 'Open work past its due date.',
             'scope' => 'team',
         ],
         'waiting' => [
             'label' => 'Waiting',
-            'description' => 'Tickets waiting for a customer, vendor, or another person.',
             'scope' => 'team',
         ],
         'done_today' => [
             'label' => 'Done today',
-            'description' => 'Completed work updated today.',
             'scope' => 'team',
         ],
     ];

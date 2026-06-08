@@ -19,5 +19,15 @@ assert_work_page(strpos($index, "return 'work';") !== false, 'authenticated SaaS
 assert_work_page(strpos($header, "url('work')") !== false, 'sidebar should link to work.');
 assert_work_page(strpos($work, 'work_queue_summary') !== false, 'work page should use the work queue module.');
 assert_work_page(strpos($work, "url('tickets', ['work_view' => 'waiting']") !== false, 'work page should link waiting queue to the ticket list view.');
+foreach ([
+    'Work queues',
+    'Start with the queue that needs attention now.',
+    'Current queue',
+    'Tickets assigned to the current user.',
+    'This queue is clear.',
+] as $forbidden_copy) {
+    assert_work_page(strpos($work, $forbidden_copy) === false, 'work page should not render redundant helper copy: ' . $forbidden_copy);
+}
+assert_work_page(strpos($work, "t('All clear')") !== false, 'empty work queue should use concise state copy.');
 
 echo "Work page contract tests passed\n";
