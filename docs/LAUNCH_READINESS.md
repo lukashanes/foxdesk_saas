@@ -78,15 +78,19 @@ STRIPE_CANCEL_URL=https://app.foxdesk.net/index.php?page=platform&billing=cancel
 
 - Use Cloudflare Email Sending for outbound transactional mail.
 - Verify SPF, DKIM, and DMARC for `foxdesk.net`.
-- Use sender identities such as `noreply@foxdesk.net`, `support@foxdesk.net`, and `billing@foxdesk.net`.
+- Use sender identities such as `notifications@foxdesk.net`, `support@foxdesk.net`, and `billing@foxdesk.net`.
+- Route inbound ticket replies through `tickets@foxdesk.net` plus addressing to Worker `foxdesk-email-router`.
 - Confirm app environment:
 
 ```env
 MAIL_PROVIDER=cloudflare
 CLOUDFLARE_ACCOUNT_ID=...
 CLOUDFLARE_EMAIL_API_TOKEN=...
-CLOUDFLARE_EMAIL_FROM=noreply@foxdesk.net
+CLOUDFLARE_EMAIL_FROM=notifications@foxdesk.net
 CLOUDFLARE_EMAIL_REPLY_TO=support@foxdesk.net
+FOXDESK_TICKET_EMAIL_DOMAIN=foxdesk.net
+FOXDESK_TICKET_EMAIL_LOCAL_PART=tickets
+FOXDESK_EMAIL_ROUTE_SECRET=...
 ```
 
 - Before launch, send test mails for signup, password reset, ticket notification, billing contact, and migration confirmation.

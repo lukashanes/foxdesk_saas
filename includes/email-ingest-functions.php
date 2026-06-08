@@ -563,6 +563,420 @@ function email_ingest_process_uid($imap, $uid, $cfg, $dry_run = false)
     ];
 }
 
+function email_ingest_extract_email_from_string($value)
+{
+    $value = trim((string) $value);
+    if ($value === '') {
+        return '';
+    }
+    if (preg_match('/<([^>]+)>/', $value, $matches)) {
+        return email_ingest_normalize_email($matches[1]);
+    }
+    if (preg_match('/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/i', $value, $matches)) {
+        return email_ingest_normalize_email($matches[0]);
+    }
+    return email_ingest_normalize_email($value);
+}
+
+function email_ingest_cloudflare_header_map(array $payload): array
+{
+    $headers = [];
+    $source = $payload['headers'] ?? [];
+    if (!is_array($source)) {
+        return $headers;
+    }
+
+    foreach ($source as $key => $value) {
+        if (is_array($value) && isset($value['name'], $value['value'])) {
+            $headers[strtolower((string) $value['name'])] = (string) $value['value'];
+            continue;
+        }
+        if (is_array($value) && isset($value['key'], $value['value'])) {
+            $headers[strtolower((string) $value['key'])] = (string) $value['value'];
+            continue;
+        }
+        if (!is_int($key)) {
+            $headers[strtolower((string) $key)] = is_array($value) ? implode(', ', array_map('strval', $value)) : (string) $value;
+        }
+    }
+
+    return $headers;
+}
+
+function email_ingest_cloudflare_raw_headers(array $payload, array $headers): string
+{
+    if (isset($payload['raw_headers']) && is_string($payload['raw_headers']) && trim($payload['raw_headers']) !== '') {
+        return (string) $payload['raw_headers'];
+    }
+
+    $lines = [];
+    foreach ($headers as $name => $value) {
+        $name = trim((string) $name);
+        $value = trim((string) $value);
+        if ($name === '' || $value === '') {
+            continue;
+        }
+        $lines[] = ucwords($name, '-') . ': ' . $value;
+    }
+    return implode("\r\n", $lines);
+}
+
+function email_ingest_cloudflare_collect_addresses($value, array &$out): void
+{
+    if (is_array($value)) {
+        if (isset($value['address'])) {
+            email_ingest_cloudflare_collect_addresses($value['address'], $out);
+            return;
+        }
+        foreach ($value as $item) {
+            email_ingest_cloudflare_collect_addresses($item, $out);
+        }
+        return;
+    }
+
+    $value = trim((string) $value);
+    if ($value === '') {
+        return;
+    }
+
+    foreach (explode(',', $value) as $part) {
+        $email = email_ingest_extract_email_from_string($part);
+        if ($email !== '') {
+            $out[] = $email;
+        }
+    }
+}
+
+function email_ingest_cloudflare_recipient_addresses(array $payload): array
+{
+    $headers = email_ingest_cloudflare_header_map($payload);
+    $addresses = [];
+    foreach (['recipients', 'to', 'cc', 'bcc', 'delivered_to', 'envelope_to'] as $key) {
+        if (array_key_exists($key, $payload)) {
+            email_ingest_cloudflare_collect_addresses($payload[$key], $addresses);
+        }
+    }
+    foreach (['to', 'cc', 'bcc', 'delivered-to', 'envelope-to', 'x-original-to'] as $key) {
+        if (!empty($headers[$key])) {
+            email_ingest_cloudflare_collect_addresses($headers[$key], $addresses);
+        }
+    }
+
+    return array_values(array_unique($addresses));
+}
+
+function email_ingest_cloudflare_uid(array $payload): int
+{
+    $source = trim((string) ($payload['id'] ?? $payload['message_id'] ?? ''));
+    if ($source === '') {
+        $source = json_encode([
+            'from' => $payload['from'] ?? '',
+            'to' => $payload['to'] ?? '',
+            'subject' => $payload['subject'] ?? '',
+            'received_at' => $payload['received_at'] ?? '',
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+    $uid = (int) hexdec(substr(hash('sha256', (string) $source), 0, 7));
+    return $uid > 0 ? $uid : 1;
+}
+
+function email_ingest_cloudflare_ticket_exists(int $ticket_id): bool
+{
+    if ($ticket_id <= 0) {
+        return false;
+    }
+
+    $params = [$ticket_id];
+    $sql = "SELECT id FROM tickets WHERE id = ?";
+    if (function_exists('tenant_sql_filter')) {
+        $sql .= tenant_sql_filter('tickets', '', $params);
+    }
+
+    return (bool) db_fetch_one($sql . " LIMIT 1", $params);
+}
+
+function email_ingest_cloudflare_store_attachment_metadata(int $ticket_message_id, array $attachments): array
+{
+    $stored = 0;
+    $skipped = 0;
+
+    foreach ($attachments as $attachment) {
+        if (!is_array($attachment)) {
+            $skipped++;
+            continue;
+        }
+
+        $storage_key = trim((string) ($attachment['r2_key'] ?? $attachment['storage_key'] ?? ''));
+        $filename = trim((string) ($attachment['filename'] ?? $attachment['name'] ?? 'attachment'));
+        if ($storage_key === '') {
+            $skipped++;
+            continue;
+        }
+
+        $filename = email_ingest_sanitize_filename($filename);
+        db_insert('ticket_message_attachments', [
+            'ticket_message_id' => $ticket_message_id,
+            'attachment_id' => null,
+            'filename' => mb_substr($filename !== '' ? $filename : 'attachment', 0, 255),
+            'mime' => mb_substr((string) ($attachment['mime'] ?? $attachment['mime_type'] ?? 'application/octet-stream'), 0, 120),
+            'size' => max(0, (int) ($attachment['size'] ?? 0)),
+            'storage_path' => mb_substr('r2://' . $storage_key, 0, 500),
+            'content_id' => !empty($attachment['content_id']) ? mb_substr((string) $attachment['content_id'], 0, 255) : null,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        $stored++;
+    }
+
+    return ['stored' => $stored, 'skipped' => $skipped];
+}
+
+function email_ingest_process_cloudflare_payload(array $payload): array
+{
+    require_once BASE_PATH . '/includes/email-routing-functions.php';
+
+    email_ingest_ensure_schema();
+
+    $mailbox = 'cloudflare:' . foxdesk_ticket_email_domain();
+    $uid = email_ingest_cloudflare_uid($payload);
+    $headers = email_ingest_cloudflare_header_map($payload);
+    $raw_headers = email_ingest_cloudflare_raw_headers($payload, $headers);
+    $message_id = email_ingest_normalize_message_id($payload['message_id'] ?? ($headers['message-id'] ?? ''));
+    if ($message_id === null && !empty($payload['id'])) {
+        $message_id = email_ingest_normalize_message_id('cf-' . preg_replace('/[^a-z0-9._-]+/i', '-', (string) $payload['id']) . '@' . foxdesk_ticket_email_domain());
+    }
+
+    $addresses = email_ingest_cloudflare_recipient_addresses($payload);
+    $route = foxdesk_first_routable_ticket_address($addresses);
+    if (!$route) {
+        email_ingest_log($mailbox, $uid, $message_id, 'skipped', 'no_routable_recipient', null, [
+            'subject' => (string) ($payload['subject'] ?? ($headers['subject'] ?? '')),
+        ]);
+        return [
+            'status' => 'skipped',
+            'reason' => 'no_routable_recipient',
+            'recipients' => $addresses,
+        ];
+    }
+
+    $tenant_id = (int) ($route['tenant_id'] ?? 0);
+    if ($tenant_id <= 0) {
+        email_ingest_log($mailbox, $uid, $message_id, 'failed', 'tenant_resolution_failed', null, [
+            'subject' => (string) ($payload['subject'] ?? ($headers['subject'] ?? '')),
+        ]);
+        return [
+            'status' => 'failed',
+            'reason' => 'tenant_resolution_failed',
+        ];
+    }
+
+    $previous_tenant = $_SESSION['tenant_id'] ?? null;
+    $_SESSION['tenant_id'] = $tenant_id;
+
+    try {
+        return email_ingest_process_cloudflare_payload_for_route($payload, $route, $mailbox, $uid, $headers, $raw_headers, $message_id);
+    } finally {
+        if ($previous_tenant === null) {
+            unset($_SESSION['tenant_id']);
+        } else {
+            $_SESSION['tenant_id'] = $previous_tenant;
+        }
+    }
+}
+
+function email_ingest_process_cloudflare_payload_for_route(array $payload, array $route, string $mailbox, int $uid, array $headers, string $raw_headers, ?string $message_id): array
+{
+    $from_email = email_ingest_extract_email_from_string($payload['from'] ?? ($headers['from'] ?? ''));
+    $subject = trim((string) ($payload['subject'] ?? ($headers['subject'] ?? '')));
+    $subject = $subject !== '' ? $subject : '(No subject)';
+
+    if ($message_id !== null && email_ingest_message_id_exists($message_id)) {
+        email_ingest_log($mailbox, $uid, $message_id, 'skipped', 'duplicate_message_id', null, [
+            'sender_email' => $from_email,
+            'subject' => $subject,
+            'tenant_id' => current_tenant_id(),
+        ]);
+        return [
+            'uid' => $uid,
+            'status' => 'skipped',
+            'reason' => 'duplicate_message_id',
+            'message_id' => $message_id,
+        ];
+    }
+
+    if ($from_email === '') {
+        email_ingest_log($mailbox, $uid, $message_id, 'skipped', 'missing_from', null, [
+            'subject' => $subject,
+            'tenant_id' => current_tenant_id(),
+        ]);
+        return [
+            'uid' => $uid,
+            'status' => 'skipped',
+            'reason' => 'missing_from',
+            'message_id' => $message_id,
+        ];
+    }
+
+    if (email_ingest_is_auto_reply(null, $raw_headers)) {
+        email_ingest_log($mailbox, $uid, $message_id, 'skipped', 'auto_reply_or_bulk', null, [
+            'sender_email' => $from_email,
+            'subject' => $subject,
+            'tenant_id' => current_tenant_id(),
+        ]);
+        return [
+            'uid' => $uid,
+            'status' => 'skipped',
+            'reason' => 'auto_reply_or_bulk',
+            'message_id' => $message_id,
+            'from' => $from_email,
+        ];
+    }
+
+    $cfg = email_ingest_config();
+    $allow_unknown_value = defined('FOXDESK_EMAIL_ALLOW_UNKNOWN_SENDERS')
+        ? (FOXDESK_EMAIL_ALLOW_UNKNOWN_SENDERS ? 'true' : 'false')
+        : getenv('FOXDESK_EMAIL_ALLOW_UNKNOWN_SENDERS');
+    $allow_unknown = $allow_unknown_value !== false && trim((string) $allow_unknown_value) !== ''
+        ? email_ingest_parse_bool($allow_unknown_value, false)
+        : !empty($cfg['allow_unknown_senders']);
+
+    $allowed_sender = email_ingest_allowed_sender($from_email);
+    if (!$allowed_sender && !$allow_unknown) {
+        email_ingest_log($mailbox, $uid, $message_id, 'skipped', 'sender_not_allowed', null, [
+            'sender_email' => $from_email,
+            'subject' => $subject,
+            'tenant_id' => current_tenant_id(),
+        ]);
+        return [
+            'uid' => $uid,
+            'status' => 'skipped',
+            'reason' => 'sender_not_allowed',
+            'message_id' => $message_id,
+            'from' => $from_email,
+        ];
+    }
+
+    $requester = email_ingest_resolve_requester_user_id($from_email, $allowed_sender);
+    $requester_user_id = (int) ($requester['user_id'] ?? 0);
+    if ($requester_user_id <= 0) {
+        email_ingest_log($mailbox, $uid, $message_id, 'failed', 'requester_resolution_failed', null, [
+            'sender_email' => $from_email,
+            'subject' => $subject,
+            'tenant_id' => current_tenant_id(),
+        ]);
+        return [
+            'uid' => $uid,
+            'status' => 'failed',
+            'reason' => 'requester_resolution_failed',
+            'message_id' => $message_id,
+        ];
+    }
+
+    $body_text = email_ingest_normalize_plain_text((string) ($payload['text'] ?? ''));
+    $body_html_raw = trim((string) ($payload['html'] ?? ''));
+    $body_html = email_ingest_sanitize_html($body_html_raw);
+    $body_text = email_ingest_select_display_body($body_text, $body_html);
+    if ($body_text === '') {
+        $body_text = '(No content)';
+    }
+
+    $in_reply_to = email_ingest_normalize_message_id($payload['in_reply_to'] ?? ($headers['in-reply-to'] ?? ''));
+    $references = trim((string) ($payload['references'] ?? ($headers['references'] ?? '')));
+    $reference_ids = email_ingest_extract_message_ids($references);
+    $attachments = is_array($payload['attachments'] ?? null) ? $payload['attachments'] : [];
+
+    $db = get_db();
+    $ticket_id = 0;
+    $comment_id = null;
+    $ticket_created = false;
+    $attachment_meta = ['stored' => 0, 'skipped' => count($attachments)];
+
+    try {
+        $db->beginTransaction();
+
+        if (($route['kind'] ?? '') === 'ticket') {
+            $ticket_id = (int) ($route['ticket_id'] ?? 0);
+            if (!email_ingest_cloudflare_ticket_exists($ticket_id)) {
+                throw new RuntimeException('Routed ticket does not exist in this tenant.');
+            }
+            $comment_id = email_ingest_add_inbound_comment($ticket_id, $requester_user_id, $body_text);
+        } else {
+            $ticket_id = email_ingest_resolve_ticket_id($subject, $in_reply_to, $reference_ids);
+            if ($ticket_id <= 0) {
+                $ticket_id = email_ingest_create_ticket_from_email($requester_user_id, $subject, $body_text);
+                $ticket_created = true;
+            } else {
+                $comment_id = email_ingest_add_inbound_comment($ticket_id, $requester_user_id, $body_text);
+            }
+        }
+
+        if ($ticket_id <= 0) {
+            throw new RuntimeException('Ticket could not be created/resolved');
+        }
+
+        $ticket_message_id = email_ingest_insert_ticket_message([
+            'ticket_id' => $ticket_id,
+            'user_id' => $requester_user_id,
+            'comment_id' => $comment_id,
+            'sender_email' => $from_email,
+            'subject' => $subject,
+            'body_text' => $body_text,
+            'body_html' => $body_html,
+            'body_html_raw' => $body_html_raw,
+            'raw_headers' => $raw_headers,
+            'message_id' => $message_id,
+            'in_reply_to' => $in_reply_to,
+            'references' => $references !== '' ? $references : null,
+            'mailbox' => $mailbox,
+            'uid' => $uid,
+        ]);
+
+        $attachment_meta = email_ingest_cloudflare_store_attachment_metadata($ticket_message_id, $attachments);
+        $db->commit();
+    } catch (Throwable $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        email_ingest_log($mailbox, $uid, $message_id, 'failed', 'processing_failed', $e->getMessage(), [
+            'sender_email' => $from_email,
+            'subject' => $subject,
+            'ticket_id' => $ticket_id > 0 ? $ticket_id : null,
+            'tenant_id' => current_tenant_id(),
+        ]);
+        return [
+            'uid' => $uid,
+            'status' => 'failed',
+            'reason' => 'processing_failed',
+            'error' => $e->getMessage(),
+            'message_id' => $message_id,
+        ];
+    }
+
+    email_ingest_log($mailbox, $uid, $message_id, 'processed', null, null, [
+        'sender_email' => $from_email,
+        'subject' => $subject,
+        'ticket_id' => $ticket_id,
+        'tenant_id' => current_tenant_id(),
+    ]);
+
+    try {
+        email_ingest_send_requester_notifications($ticket_id, $ticket_created, $requester);
+    } catch (Throwable $e) {
+        error_log('email_ingest_send_requester_notifications failed: ' . $e->getMessage());
+    }
+
+    return [
+        'uid' => $uid,
+        'status' => 'processed',
+        'message_id' => $message_id,
+        'from' => $from_email,
+        'ticket_id' => $ticket_id,
+        'ticket_created' => $ticket_created,
+        'attachments' => $attachment_meta,
+        'route' => $route,
+    ];
+}
+
 /**
  * Validate required configuration fields.
  */
@@ -1128,14 +1542,16 @@ function email_ingest_allowed_sender($email)
         $domain = substr($email, $at_pos + 1);
     }
 
-    $row = db_fetch_one(
-        "SELECT * FROM allowed_senders
+    $params = [$email, $domain];
+    $sql = "SELECT * FROM allowed_senders
          WHERE active = 1
-           AND ((type = 'email' AND value = ?) OR (type = 'domain' AND value = ?))
-         ORDER BY CASE WHEN type = 'email' THEN 0 ELSE 1 END
-         LIMIT 1",
-        [$email, $domain]
-    );
+           AND ((type = 'email' AND value = ?) OR (type = 'domain' AND value = ?))";
+    if (function_exists('tenant_sql_filter')) {
+        $sql .= tenant_sql_filter('allowed_senders', '', $params);
+    }
+    $sql .= " ORDER BY CASE WHEN type = 'email' THEN 0 ELSE 1 END LIMIT 1";
+
+    $row = db_fetch_one($sql, $params);
 
     return $row ?: null;
 }
@@ -1157,14 +1573,24 @@ function email_ingest_resolve_requester_user_id($email, $allowed_sender)
     }
 
     if (!empty($allowed_sender['user_id'])) {
-        $user = db_fetch_one("SELECT id FROM users WHERE id = ? LIMIT 1", [(int) $allowed_sender['user_id']]);
+        $params = [(int) $allowed_sender['user_id']];
+        $sql = "SELECT id FROM users WHERE id = ?";
+        if (function_exists('tenant_sql_filter')) {
+            $sql .= tenant_sql_filter('users', '', $params);
+        }
+        $user = db_fetch_one($sql . " LIMIT 1", $params);
         if ($user) {
             $result['user_id'] = (int) $user['id'];
             return $result;
         }
     }
 
-    $existing = db_fetch_one("SELECT id FROM users WHERE email = ? LIMIT 1", [$email]);
+    $params = [$email];
+    $sql = "SELECT id FROM users WHERE email = ?";
+    if (function_exists('tenant_sql_filter')) {
+        $sql .= tenant_sql_filter('users', '', $params);
+    }
+    $existing = db_fetch_one($sql . " LIMIT 1", $params);
     if ($existing) {
         $result['user_id'] = (int) $existing['id'];
         return $result;
@@ -1322,6 +1748,7 @@ function email_ingest_send_requester_notifications($ticket_id, $ticket_created, 
 
     if (function_exists('send_ticket_notification_email')) {
         @send_ticket_notification_email($user['email'], $subject, $body, [
+            'ticket_id' => (int) ($ticket['id'] ?? 0),
             'eyebrow' => 'Ticket received',
             'title' => (string) ($ticket['title'] ?? $subject),
             'cta_label' => 'View ticket',
@@ -1347,7 +1774,12 @@ function email_ingest_resolve_ticket_id($subject, $in_reply_to, $reference_ids)
             if ($candidate <= 0) {
                 continue;
             }
-            $ticket = db_fetch_one("SELECT id FROM tickets WHERE id = ? LIMIT 1", [$candidate]);
+            $params = [$candidate];
+            $sql = "SELECT id FROM tickets WHERE id = ?";
+            if (function_exists('tenant_sql_filter')) {
+                $sql .= tenant_sql_filter('tickets', '', $params);
+            }
+            $ticket = db_fetch_one($sql . " LIMIT 1", $params);
             if ($ticket) {
                 return (int) $ticket['id'];
             }
@@ -1365,10 +1797,13 @@ function email_ingest_resolve_ticket_id($subject, $in_reply_to, $reference_ids)
 
     if (!empty($ids_for_lookup)) {
         $placeholders = implode(',', array_fill(0, count($ids_for_lookup), '?'));
-        $row = db_fetch_one(
-            "SELECT ticket_id FROM ticket_messages WHERE message_id IN ($placeholders) ORDER BY id DESC LIMIT 1",
-            $ids_for_lookup
-        );
+        $params = $ids_for_lookup;
+        $sql = "SELECT ticket_id FROM ticket_messages WHERE message_id IN ($placeholders)";
+        if (function_exists('tenant_sql_filter')) {
+            $sql .= tenant_sql_filter('ticket_messages', '', $params);
+        }
+        $sql .= " ORDER BY id DESC LIMIT 1";
+        $row = db_fetch_one($sql, $params);
         if ($row && !empty($row['ticket_id'])) {
             return (int) $row['ticket_id'];
         }

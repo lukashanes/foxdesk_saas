@@ -222,7 +222,7 @@ function api_mobile_login(): void
     $input = get_json_input();
     $email = strtolower(trim((string) ($input['email'] ?? '')));
     $password = (string) ($input['password'] ?? '');
-    $rate_key = 'mobile_login';
+    $rate_key = function_exists('rate_limit_key') ? rate_limit_key('mobile_login', $email) : 'mobile_login';
 
     if (rate_limit_is_blocked($rate_key, 8, 900)) {
         api_error('Too many attempts. Please wait and try again.', 429);

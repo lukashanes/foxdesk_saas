@@ -680,11 +680,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($target_user && $_FILES['user_avatar']['error'] === UPLOAD_ERR_OK) {
             try {
                 $allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-                $result = upload_file($_FILES['user_avatar'], $allowed, 2 * 1024 * 1024);
+                $result = upload_file($_FILES['user_avatar'], $allowed, 2 * 1024 * 1024, 'public');
                 // Delete old avatar file if exists
                 if (!empty($target_user['avatar']) && strpos($target_user['avatar'], 'data:') !== 0) {
-                    $old_path = BASE_PATH . '/' . UPLOAD_DIR . basename($target_user['avatar']);
-                    if (file_exists($old_path)) {
+                    $old_path = function_exists('upload_absolute_path') ? upload_absolute_path($target_user['avatar']) : (BASE_PATH . '/' . UPLOAD_DIR . basename($target_user['avatar']));
+                    if ($old_path && file_exists($old_path)) {
                         @unlink($old_path);
                     }
                 }
@@ -706,8 +706,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $target_user = db_fetch_one("SELECT * FROM users WHERE id = ? AND tenant_id = ?", [$target_user_id, current_tenant_id()]);
         if ($target_user && !empty($target_user['avatar'])) {
             if (strpos($target_user['avatar'], 'data:') !== 0) {
-                $old_path = BASE_PATH . '/' . UPLOAD_DIR . basename($target_user['avatar']);
-                if (file_exists($old_path)) {
+                $old_path = function_exists('upload_absolute_path') ? upload_absolute_path($target_user['avatar']) : (BASE_PATH . '/' . UPLOAD_DIR . basename($target_user['avatar']));
+                if ($old_path && file_exists($old_path)) {
                     @unlink($old_path);
                 }
             }

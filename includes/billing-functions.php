@@ -1430,6 +1430,12 @@ function billing_create_checkout_session(int $tenant_id, string $plan = 'cloud')
         'subscription_data[metadata][plan]' => billing_plan_code(),
     ];
 
+    $trial_end = billing_checkout_trial_end_timestamp($tenant);
+    if ($trial_end !== null) {
+        $params['subscription_data[trial_end]'] = (string) $trial_end;
+        $params['subscription_data[trial_settings][end_behavior][missing_payment_method]'] = 'cancel';
+    }
+
     $storage_price_id = billing_storage_overage_price_id();
     if ($storage_price_id !== '') {
         $params['line_items[1][price]'] = $storage_price_id;
@@ -1456,6 +1462,24 @@ function billing_create_checkout_session(int $tenant_id, string $plan = 'cloud')
     }
 
     return $url;
+}
+
+function billing_checkout_trial_end_timestamp(array $tenant): ?int
+{
+    $status = (string) ($tenant['status'] ?? '');
+    $subscription_status = (string) ($tenant['subscription_status'] ?? '');
+    $trial_ends_at = trim((string) ($tenant['trial_ends_at'] ?? ''));
+
+    if ($status !== 'trialing' || $subscription_status !== 'trialing' || $trial_ends_at === '') {
+        return null;
+    }
+
+    $trial_end = strtotime($trial_ends_at);
+    if (!$trial_end || $trial_end <= time()) {
+        return null;
+    }
+
+    return $trial_end;
 }
 
 function billing_create_portal_session(int $tenant_id): string

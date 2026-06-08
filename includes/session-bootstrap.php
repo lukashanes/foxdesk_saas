@@ -186,6 +186,13 @@ if (!function_exists('foxdesk_is_workspace_host')) {
     }
 }
 
+if (!function_exists('foxdesk_is_marketing_host')) {
+    function foxdesk_is_marketing_host(): bool
+    {
+        return foxdesk_request_host_matches(foxdesk_marketing_host());
+    }
+}
+
 if (!function_exists('foxdesk_session_context')) {
     function foxdesk_session_context(): string
     {

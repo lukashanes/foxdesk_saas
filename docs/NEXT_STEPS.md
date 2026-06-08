@@ -17,6 +17,10 @@
 
 ## Immediate Next Steps
 
+0. Follow the technical-debt execution plan in
+   `docs/TECHNICAL_DEBT_PLAN.md`. SaaS is the primary product track; the
+   self-hosted PHP app is maintained as a separate compatibility, update, and
+   migration channel.
 1. Create real Stripe test products, recurring prices, and storage meter for FoxDesk Cloud.
 2. Add production-style environment handling for secrets on Hetzner: app config, database credentials, Stripe keys, webhook secret, mail credentials, and backup credentials.
 3. Validate Stripe usage reporting end to end:

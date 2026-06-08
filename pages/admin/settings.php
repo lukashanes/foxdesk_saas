@@ -531,13 +531,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($_FILES['app_logo']['name']) && $_FILES['app_logo']['error'] === UPLOAD_ERR_OK) {
             try {
                 $allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-                $result = upload_file($_FILES['app_logo'], $allowed, 2 * 1024 * 1024);
+                $result = upload_file($_FILES['app_logo'], $allowed, 2 * 1024 * 1024, 'public');
                 // Delete old logo
                 $current = get_setting('app_logo', '');
                 if ($current) {
-                    $clean_path = explode('?', $current)[0];
-                    if (file_exists(BASE_PATH . '/' . $clean_path)) {
-                        @unlink(BASE_PATH . '/' . $clean_path);
+                    $old_path = function_exists('upload_absolute_path') ? upload_absolute_path($current) : (BASE_PATH . '/' . explode('?', $current)[0]);
+                    if ($old_path && file_exists($old_path)) {
+                        @unlink($old_path);
                     }
                 }
                 save_setting('app_logo', UPLOAD_DIR . $result['filename'] . '?v=' . time());
@@ -548,9 +548,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (isset($_POST['remove_app_logo'])) {
             $current = get_setting('app_logo', '');
             if ($current) {
-                $clean_path = explode('?', $current)[0];
-                if (file_exists(BASE_PATH . '/' . $clean_path)) {
-                    @unlink(BASE_PATH . '/' . $clean_path);
+                $old_path = function_exists('upload_absolute_path') ? upload_absolute_path($current) : (BASE_PATH . '/' . explode('?', $current)[0]);
+                if ($old_path && file_exists($old_path)) {
+                    @unlink($old_path);
                 }
             }
             save_setting('app_logo', '');

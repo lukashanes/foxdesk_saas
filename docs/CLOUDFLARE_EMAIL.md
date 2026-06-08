@@ -1,75 +1,124 @@
-# Cloudflare Email Service
+# Cloudflare Email Setup
 
-FoxDesk is prepared to send transactional email through Cloudflare Email Service REST API.
+FoxDesk Cloud uses Cloudflare for both transactional sending and mailbox-less inbound ticket replies.
 
-## Domain
+## Recommended Addresses
 
-Use the top-level domain for sending:
+- Outbound sender: `notifications@foxdesk.net`
+- Human support mailbox/alias: `support@foxdesk.net`
+- Billing mailbox/alias: `billing@foxdesk.net`
+- Security mailbox/alias: `security@foxdesk.net`
+- Ticket reply address: `tickets+...@foxdesk.net`
+
+Ticket notifications are sent from `notifications@foxdesk.net`, but their `Reply-To` is a signed per-ticket plus address such as:
 
 ```text
-foxdesk.net
+tickets+tk-123-<token>@foxdesk.net
 ```
 
-Recommended app host:
+That keeps customer replies attached to the right ticket without creating SMTP/IMAP mailboxes.
 
-```text
-app.foxdesk.net
-```
-
-Recommended sender identities:
-
-- `noreply@foxdesk.net`
-- `support@foxdesk.net`
-- `billing@foxdesk.net`
-- `security@foxdesk.net`
-
-## Required Cloudflare Setup
+## Outbound Email Sending
 
 In Cloudflare Email Sending:
 
 1. Select zone `foxdesk.net`.
-2. Leave the subdomain field blank to use the top-level domain.
-3. Let Cloudflare add DNS records for bounce handling, SPF, DKIM, and DMARC.
+2. Leave the subdomain field blank for top-level sending.
+3. Let Cloudflare add bounce handling, SPF, DKIM, and DMARC records.
 4. Create an API token with Email Sending permission.
+5. Verify sender addresses used by FoxDesk.
 
-Cloudflare docs:
+FoxDesk production values:
 
-- REST endpoint: `POST https://api.cloudflare.com/client/v4/accounts/{account_id}/email/sending/send`
-- Authentication: `Authorization: Bearer <API_TOKEN>`
-
-## FoxDesk Config
-
-Set these in production config or environment:
-
-```php
-define('MAIL_PROVIDER', 'cloudflare');
-define('CLOUDFLARE_ACCOUNT_ID', '...');
-define('CLOUDFLARE_EMAIL_API_TOKEN', '...');
-define('CLOUDFLARE_EMAIL_FROM', 'noreply@foxdesk.net');
-define('CLOUDFLARE_EMAIL_FROM_NAME', 'FoxDesk');
-define('CLOUDFLARE_EMAIL_REPLY_TO', 'support@foxdesk.net');
+```env
+MAIL_PROVIDER=cloudflare
+CLOUDFLARE_ACCOUNT_ID=...
+CLOUDFLARE_EMAIL_API_TOKEN=...
+CLOUDFLARE_EMAIL_FROM=notifications@foxdesk.net
+CLOUDFLARE_EMAIL_FROM_NAME=FoxDesk
+CLOUDFLARE_EMAIL_REPLY_TO=support@foxdesk.net
 ```
 
-Optional fallback:
+`CLOUDFLARE_EMAIL_REPLY_TO` is only the fallback for non-ticket system email. Ticket emails override it with a per-ticket `Reply-To`.
 
-```php
-define('MAIL_FALLBACK_ENABLED', '1');
+## Inbound Ticket Replies
+
+Enable Cloudflare Email Routing subaddressing, then add a custom address route:
+
+```text
+tickets@foxdesk.net -> Worker foxdesk-email-router
 ```
 
-Keep fallback disabled in production unless there is a deliberate SMTP/PHP mail fallback configured and tested.
+Backend values:
+
+```env
+FOXDESK_TICKET_EMAIL_DOMAIN=foxdesk.net
+FOXDESK_TICKET_EMAIL_LOCAL_PART=tickets
+FOXDESK_EMAIL_ROUTE_SECRET=<openssl rand -hex 32>
+FOXDESK_EMAIL_ALLOW_UNKNOWN_SENDERS=false
+```
+
+Use the same `FOXDESK_EMAIL_ROUTE_SECRET` value as the Worker secret `FOXDESK_EMAIL_WEBHOOK_SECRET`.
+
+Set `FOXDESK_EMAIL_ALLOW_UNKNOWN_SENDERS=true` only if workspace inbound addresses should allow public ticket creation from unknown senders. Keeping it `false` means inbound email must match `allowed_senders`.
+
+## Worker Deploy
+
+Worker source lives in:
+
+```text
+cloudflare/email-router
+```
+
+Deploy flow:
+
+```bash
+cd cloudflare/email-router
+npm install
+npx wrangler login
+npx wrangler r2 bucket create foxdesk-email-archive
+npx wrangler secret put FOXDESK_EMAIL_WEBHOOK_SECRET
+npm run deploy
+```
+
+The Worker posts to:
+
+```text
+https://app.foxdesk.net/index.php?page=api&action=cf-email-ingest
+```
+
+It stores raw emails and attachment bodies in R2 before calling FoxDesk, so failed backend delivery can be recovered from `foxdesk-email-archive`.
 
 ## Test
 
-Dry-run configuration check:
+1. Send a ticket notification from FoxDesk.
+2. Confirm the received message has `From: notifications@foxdesk.net`.
+3. Confirm `Reply-To` starts with `tickets+` and ends with `@foxdesk.net`.
+4. Reply to the email.
+5. Confirm a public comment is added to the ticket.
+
+## Inbound Archive Smoke
+
+Before public beta, run a real inbound archive smoke against production. It
+creates a temporary ticket, sends a plus-addressed reply with a small attachment,
+waits for ingest, prints the R2 archive keys, and cleans the temporary DB rows:
 
 ```bash
-php bin/test-cloudflare-email.php --dry-run --json
+php bin/test-cloudflare-inbound-archive.php --tenant-id=3 --json
 ```
 
-Send a real email:
+Then verify both printed keys in the Worker archive bucket:
 
 ```bash
-php bin/test-cloudflare-email.php --to=you@example.com --json
+npx wrangler r2 object get foxdesk-email-archive/<raw_r2_key> --remote --file /tmp/foxdesk-raw.eml
+npx wrangler r2 object get foxdesk-email-archive/<attachment_r2_key> --remote --file /tmp/foxdesk-attachment.txt
 ```
 
-The command uses the same mailer path as password resets, ticket notifications, report emails, and system emails.
+The bucket must be `foxdesk-email-archive`; application attachments use the
+separate `foxdesk-production` bucket.
+
+Useful Cloudflare docs:
+
+- [Email Service](https://developers.cloudflare.com/email-service/)
+- [Email Routing to Workers](https://developers.cloudflare.com/email-service/api/route-emails/email-handler/)
+- [Email Routing subdomains](https://developers.cloudflare.com/email-routing/setup/subdomains/)

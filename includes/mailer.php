@@ -5,6 +5,8 @@
  * Simple mailer for notifications with Cloudflare Email Service, SMTP, and PHP mail() fallback.
  */
 
+require_once __DIR__ . '/email-routing-functions.php';
+
 function mailer_env_or_constant(string $name, $default = '')
 {
     if (defined($name)) {
@@ -83,6 +85,21 @@ function mailer_load_email_renderer(): void
 function send_ticket_notification_email($to, $subject, $body, array $payload = [], $force_delivery = false)
 {
     mailer_load_email_renderer();
+    $send_options = [];
+    $ticket_reply_to = '';
+    if (!empty($payload['reply_to'])) {
+        $ticket_reply_to = trim((string) $payload['reply_to']);
+    } elseif (!empty($payload['ticket_id']) && function_exists('foxdesk_ticket_reply_address')) {
+        $ticket_reply_to = foxdesk_ticket_reply_address((int) $payload['ticket_id']);
+    } elseif (!empty($payload['ticket']) && function_exists('foxdesk_ticket_reply_address')) {
+        $ticket_reply_to = foxdesk_ticket_reply_address((array) $payload['ticket']);
+    }
+    if ($ticket_reply_to !== '') {
+        $send_options['reply_to'] = $ticket_reply_to;
+    }
+    if (!empty($payload['from_name'])) {
+        $send_options['from_name'] = (string) $payload['from_name'];
+    }
 
     if (function_exists('foxdesk_render_ticket_email_html')) {
         $settings = function_exists('get_settings') ? get_settings() : [];
@@ -97,10 +114,10 @@ function send_ticket_notification_email($to, $subject, $body, array $payload = [
             'reason' => 'You are receiving this because you are connected to this ticket.',
         ], $payload));
 
-        return send_email($to, $subject, $html, true, $force_delivery);
+        return send_email($to, $subject, $html, true, $force_delivery, $send_options);
     }
 
-    return send_email($to, $subject, $body, false, $force_delivery);
+    return send_email($to, $subject, $body, false, $force_delivery, $send_options);
 }
 
 function mailer_record_usage_event(string $event_type, string $to, string $subject, string $provider, ?array $recipient_user = null): void
@@ -130,7 +147,7 @@ function mailer_record_usage_event(string $event_type, string $to, string $subje
 /**
  * Send email using configured method
  */
-function send_email($to, $subject, $body, $is_html = false, $force_delivery = false)
+function send_email($to, $subject, $body, $is_html = false, $force_delivery = false, array $options = [])
 {
     $settings = get_settings();
     $provider = mailer_provider();
@@ -164,11 +181,21 @@ function send_email($to, $subject, $body, $is_html = false, $force_delivery = fa
     $from_name = $provider === 'cloudflare'
         ? trim((string) mailer_env_or_constant('CLOUDFLARE_EMAIL_FROM_NAME', defined('APP_NAME') ? APP_NAME : 'FoxDesk'))
         : ($settings['smtp_from_name'] ?? (defined('APP_NAME') ? APP_NAME : 'FoxDesk'));
+    if (!empty($options['from_name'])) {
+        $from_name = trim((string) $options['from_name']);
+    }
 
     // If no from email, use admin email
     if (empty($from_email)) {
         $admin = db_fetch_one("SELECT email FROM users WHERE role = 'admin' LIMIT 1");
         $from_email = $admin['email'] ?? 'noreply@' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+    }
+
+    $reply_to = trim((string) ($options['reply_to'] ?? ''));
+    if ($reply_to === '') {
+        $reply_to = $provider === 'cloudflare'
+            ? trim((string) mailer_env_or_constant('CLOUDFLARE_EMAIL_REPLY_TO', $from_email))
+            : $from_email;
     }
 
     if (in_array($provider, ['log', 'test', 'null'], true)) {
@@ -183,7 +210,7 @@ function send_email($to, $subject, $body, $is_html = false, $force_delivery = fa
             'api_token' => trim((string) mailer_env_or_constant('CLOUDFLARE_EMAIL_API_TOKEN', '')),
             'from_email' => $from_email,
             'from_name' => $from_name,
-            'reply_to' => trim((string) mailer_env_or_constant('CLOUDFLARE_EMAIL_REPLY_TO', $from_email)),
+            'reply_to' => $reply_to,
         ]);
 
         if ($result) {
@@ -211,7 +238,8 @@ function send_email($to, $subject, $body, $is_html = false, $force_delivery = fa
             'pass' => $settings['smtp_pass'] ?? '',
             'encryption' => $settings['smtp_encryption'] ?? 'tls',
             'from_email' => $from_email,
-            'from_name' => $from_name
+            'from_name' => $from_name,
+            'reply_to' => $reply_to,
         ]);
 
         if ($result) {
@@ -223,7 +251,7 @@ function send_email($to, $subject, $body, $is_html = false, $force_delivery = fa
     }
 
     // Fallback to PHP mail()
-    $result = send_php_mail($to, $subject, $body, $is_html, $from_email, $from_name);
+    $result = send_php_mail($to, $subject, $body, $is_html, $from_email, $from_name, $reply_to);
     mailer_record_usage_event($result ? 'email.sent' : 'email.failed', (string) $to, (string) $subject, 'php_mail', $recipient_user);
 
     return $result;
@@ -263,6 +291,10 @@ function send_cloudflare_email($to, $subject, $body, $is_html, array $config)
     if ($reply_to !== '') {
         $payload['reply_to'] = $reply_to;
     }
+    $attachments = mailer_cloudflare_attachments($config['attachments'] ?? []);
+    if (!empty($attachments)) {
+        $payload['attachments'] = $attachments;
+    }
 
     $ch = curl_init('https://api.cloudflare.com/client/v4/accounts/' . rawurlencode($account_id) . '/email/sending/send');
     curl_setopt_array($ch, [
@@ -298,16 +330,58 @@ function send_cloudflare_email($to, $subject, $body, $is_html, array $config)
     return true;
 }
 
+function mailer_cloudflare_attachments($attachments): array
+{
+    if (!is_array($attachments)) {
+        return [];
+    }
+
+    $out = [];
+    foreach ($attachments as $attachment) {
+        if (!is_array($attachment)) {
+            continue;
+        }
+
+        $filename = trim((string) ($attachment['filename'] ?? $attachment['name'] ?? ''));
+        if ($filename === '') {
+            continue;
+        }
+
+        $content = $attachment['content_base64'] ?? null;
+        if (!is_string($content) || $content === '') {
+            $raw = $attachment['content'] ?? null;
+            if (!is_string($raw) || $raw === '') {
+                continue;
+            }
+            $content = base64_encode($raw);
+        }
+
+        $out[] = [
+            'content' => $content,
+            'filename' => mb_substr($filename, 0, 255),
+            'type' => trim((string) ($attachment['type'] ?? $attachment['mime'] ?? 'application/octet-stream')) ?: 'application/octet-stream',
+            'disposition' => trim((string) ($attachment['disposition'] ?? 'attachment')) ?: 'attachment',
+        ];
+    }
+
+    return $out;
+}
+
 /**
  * Send email via PHP mail() function
  */
-function send_php_mail($to, $subject, $body, $is_html, $from_email, $from_name)
+function send_php_mail($to, $subject, $body, $is_html, $from_email, $from_name, $reply_to = '')
 {
+    $reply_to = trim((string) $reply_to);
+    if ($reply_to === '') {
+        $reply_to = $from_email;
+    }
+
     $headers = [];
     $headers[] = 'MIME-Version: 1.0';
     $headers[] = $is_html ? 'Content-Type: text/html; charset=UTF-8' : 'Content-Type: text/plain; charset=UTF-8';
     $headers[] = 'From: =?UTF-8?B?' . base64_encode($from_name) . '?= <' . $from_email . '>';
-    $headers[] = 'Reply-To: ' . $from_email;
+    $headers[] = 'Reply-To: ' . $reply_to;
     $headers[] = 'X-Mailer: PHP/' . phpversion();
 
     // Encode subject for UTF-8
@@ -339,6 +413,10 @@ function send_smtp_email($to, $subject, $body, $is_html, $config)
         $encryption = $config['encryption'];
         $from_email = $config['from_email'];
         $from_name = $config['from_name'];
+        $reply_to = trim((string) ($config['reply_to'] ?? ''));
+        if ($reply_to === '') {
+            $reply_to = $from_email;
+        }
 
         // Connect to SMTP server
         $socket_host = ($encryption === 'ssl') ? 'ssl://' . $host : $host;
@@ -445,6 +523,7 @@ function send_smtp_email($to, $subject, $body, $is_html, $config)
         $message = "Date: " . date('r') . "\r\n";
         $message .= "To: {$to}\r\n";
         $message .= "From: {$encoded_from}\r\n";
+        $message .= "Reply-To: {$reply_to}\r\n";
         $message .= "Subject: {$encoded_subject}\r\n";
         $message .= "MIME-Version: 1.0\r\n";
         $message .= "Content-Type: {$content_type}; charset=UTF-8\r\n";
@@ -594,6 +673,7 @@ function send_status_change_notification($ticket, $old_status, $new_status, $com
     }
 
     return send_ticket_notification_email($user['email'], $subject, $body, [
+        'ticket_id' => (int) ($ticket['id'] ?? 0),
         'eyebrow' => 'Status changed',
         'title' => (string) ($ticket['title'] ?? $subject),
         'cta_label' => 'View ticket',
@@ -747,6 +827,7 @@ function send_new_comment_notification($ticket, $comment, $commenter, $comment_i
         $body = str_replace(array_keys($replacements), array_values($replacements), $body);
 
         if (send_ticket_notification_email($recipient['email'], $subject, $body, [
+            'ticket_id' => (int) ($ticket['id'] ?? 0),
             'eyebrow' => 'New comment',
             'title' => (string) ($ticket['title'] ?? $subject),
             'cta_label' => 'View comment',
@@ -850,6 +931,7 @@ function send_new_ticket_notification($ticket)
         }
 
         if (!send_ticket_notification_email($admin['email'], $subject, $body, [
+            'ticket_id' => (int) ($ticket['id'] ?? 0),
             'eyebrow' => 'New ticket',
             'title' => (string) ($ticket['title'] ?? $subject),
             'cta_label' => 'Open ticket',
@@ -1324,6 +1406,7 @@ function send_ticket_confirmation_to_user($ticket)
     }
 
     return send_ticket_notification_email($user['email'], $subject, $body, [
+        'ticket_id' => (int) ($ticket['id'] ?? 0),
         'eyebrow' => 'Ticket received',
         'title' => (string) ($ticket['title'] ?? $subject),
         'cta_label' => 'Open ticket',
@@ -1373,6 +1456,7 @@ function send_ticket_assignment_notification($ticket, $assigned_agent, $assigner
     $body = str_replace(array_keys($placeholders), array_values($placeholders), $template['body']);
 
     return send_ticket_notification_email($assigned_agent['email'], $subject, $body, [
+        'ticket_id' => (int) ($ticket['id'] ?? 0),
         'eyebrow' => 'Assigned to you',
         'title' => (string) ($ticket['title'] ?? $subject),
         'cta_label' => 'Open ticket',
@@ -1482,6 +1566,7 @@ function send_due_date_reminder($ticket, $is_overdue = false)
     $body .= $i18n['label_view_ticket'] . ': ' . $ticket_url . "\n";
 
     send_ticket_notification_email($assigned_user['email'], $subject, $body, [
+        'ticket_id' => (int) ($ticket['id'] ?? 0),
         'eyebrow' => $is_overdue ? 'Overdue ticket' : 'Due soon',
         'title' => (string) ($ticket['title'] ?? $subject),
         'cta_label' => 'Open ticket',
@@ -1551,6 +1636,7 @@ function send_long_timer_alert($user, $time_entry, $ticket)
     }
 
     return send_ticket_notification_email($user['email'], $subject, $body, [
+        'ticket_id' => (int) ($ticket['id'] ?? 0),
         'eyebrow' => 'Timer reminder',
         'title' => (string) ($ticket['title'] ?? $subject),
         'cta_label' => 'Open ticket',

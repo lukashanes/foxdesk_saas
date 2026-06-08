@@ -36,8 +36,9 @@ $debug = defined('APP_DEBUG') ? APP_DEBUG : (
     strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false ||
     ($_SERVER['HTTP_HOST'] ?? '') === '127.0.0.1'
 );
+$is_health_request = ($_GET['page'] ?? '') === 'health';
 error_reporting(E_ALL);
-ini_set('display_errors', $debug ? '1' : '0');
+ini_set('display_errors', (!$is_health_request && $debug) ? '1' : '0');
 ini_set('log_errors', '1');
 
 require_once BASE_PATH . '/includes/database.php';
@@ -134,7 +135,20 @@ if (!in_array($page, ['cron', 'api', 'health', 'stripe-webhook'], true) && file_
 // Pages that don't require login
 $public_pages = ['cloud', 'legal', 'login', 'logout', 'signup', 'forgot-password', 'reset-password', 'ticket-share', 'report-share', 'report-public', 'report-theme', 'stripe-webhook', 'api', 'health', 'cron'];
 
-if (foxdesk_is_platform_host()) {
+if (function_exists('foxdesk_is_marketing_host') && foxdesk_is_marketing_host()) {
+    $marketing_pages = ['cloud', 'legal', 'health'];
+    if (!in_array($page, $marketing_pages, true)) {
+        $target_page = $page === 'platform' ? 'platform' : $page;
+        $target_path = function_exists('foxdesk_current_query_url')
+            ? foxdesk_current_query_url($target_page)
+            : 'index.php?page=' . urlencode((string) $target_page);
+        $target_url = $target_page === 'platform'
+            ? foxdesk_platform_url($target_path)
+            : foxdesk_workspace_url($target_path);
+        header('Location: ' . $target_url);
+        exit;
+    }
+} elseif (foxdesk_is_platform_host()) {
     $platform_pages = ['platform', 'profile', 'login', 'logout', 'forgot-password', 'reset-password', 'report-theme', 'health'];
     if (!in_array($page, $platform_pages, true)) {
         header('Location: ' . url(is_logged_in() ? 'platform' : 'login'));
@@ -143,6 +157,9 @@ if (foxdesk_is_platform_host()) {
 } elseif ($page === 'platform') {
     header('Location: ' . url('platform'));
     exit;
+} elseif (function_exists('foxdesk_is_workspace_host') && foxdesk_is_workspace_host() && $page === 'cloud') {
+    header('Location: ' . url('cloud'));
+    exit;
 }
 
 // Check authentication
@@ -150,7 +167,7 @@ if (!in_array($page, $public_pages)) {
     if (!is_logged_in()) {
         // Try auto-login from remember-me cookie
         if (!validate_remember_token()) {
-            header('Location: index.php?page=login');
+            header('Location: ' . url('login'));
             exit;
         }
     }
@@ -194,7 +211,7 @@ if (!in_array($page, $public_pages)) {
         }
 
         logout();
-        header('Location: index.php?page=login');
+        header('Location: ' . url('login'));
         exit;
     }
 }
@@ -336,7 +353,7 @@ switch ($page) {
 
     case 'logout':
         logout();
-        header('Location: index.php?page=login');
+        header('Location: ' . url('login'));
         exit;
         break;
 

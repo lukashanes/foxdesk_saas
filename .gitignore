@@ -1,4 +1,5 @@
 node_modules/
+.wrangler/
 playwright-report/
 test-results/
 tests/e2e/.auth/
@@ -6,6 +7,8 @@ tmp/
 .DS_Store
 config.php
 .env.production
+.stripe.generated.env
+cloudflare/email-router/worker-configuration.d.ts
 deploy/hetzner/.env.prod
 deploy/hetzner/config.php
 deploy/hetzner/backups/

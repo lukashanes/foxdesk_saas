@@ -22,6 +22,7 @@ require_once __DIR__ . '/push-handler.php';
 require_once __DIR__ . '/app-handler.php';
 require_once __DIR__ . '/mobile-handler.php';
 require_once __DIR__ . '/migration-handler.php';
+require_once __DIR__ . '/cloudflare-email-handler.php';
 
 /**
  * Record tenant-level API volume for abuse monitoring.
@@ -69,6 +70,7 @@ function route_api_request($action) {
         'migration-status',
         'migration-push-table',
         'migration-push-attachment',
+        'cf-email-ingest',
     ];
 
     // --- Bearer token authentication (for agent/external API access) ---
@@ -178,6 +180,7 @@ function route_api_request($action) {
         'migration-status' => 'api_migration_status',
         'migration-push-table' => 'api_migration_push_table',
         'migration-push-attachment' => 'api_migration_push_attachment',
+        'cf-email-ingest' => 'api_cloudflare_email_ingest',
 
         // Dashboard layout
         'save-dashboard-layout' => 'api_save_dashboard_layout',

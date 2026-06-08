@@ -908,8 +908,8 @@ require_once BASE_PATH . '/includes/header.php';
     if (is_agent()) {
         $_ai_excl = (function_exists('ai_agent_column_exists') && ai_agent_column_exists()) ? ' AND is_ai_agent = 0' : '';
         $_sidebar_agents = db_fetch_all("SELECT id, first_name, last_name FROM users WHERE role IN ('agent', 'admin') AND is_active = 1{$_ai_excl} AND tenant_id = ? ORDER BY first_name", [current_tenant_id()]);
-        $_sidebar_priorities = db_fetch_all("SELECT id, name FROM priorities ORDER BY sort_order");
-        $_sidebar_types = db_fetch_all("SELECT slug, name FROM ticket_types WHERE is_active = 1 ORDER BY sort_order");
+        $_sidebar_priorities = function_exists('get_priorities') ? get_priorities() : db_fetch_all("SELECT id, name FROM priorities ORDER BY sort_order");
+        $_sidebar_types = function_exists('get_ticket_types') ? get_ticket_types(false) : db_fetch_all("SELECT slug, name FROM ticket_types WHERE is_active = 1 ORDER BY sort_order");
     }
     ?>
     <div class="ticket-sidebar" id="ticket-side-panel">

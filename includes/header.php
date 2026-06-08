@@ -762,9 +762,10 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
             function avatarUrl(path) {
                 if (!path) return '';
                 if (path.indexOf('data:') === 0 || path.indexOf('http') === 0) return path;
-                // Use image.php proxy — extract filename from e.g. "uploads/avatar_emily.png"
-                var filename = path.split('/').pop().split('?')[0];
-                return 'image.php?f=' + encodeURIComponent(filename);
+                var clean = String(path).replace(/\\/g, '/').split('?')[0].replace(/^\/+/, '');
+                clean = clean.replace(/^uploads\//, '');
+                if (clean.indexOf('..') !== -1) return '';
+                return 'image.php?f=' + encodeURIComponent(clean);
             }
 
             function avatarHtml(n) {

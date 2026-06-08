@@ -831,17 +831,33 @@ function migration_bridge_extract_bearer_token(): string
     }
 
     $input = function_exists('get_json_input') ? get_json_input() : [];
-    return trim((string) ($input['token'] ?? $_POST['token'] ?? $_GET['token'] ?? ''));
+    return trim((string) ($input['token'] ?? $_POST['token'] ?? ''));
 }
 
 function migration_bridge_authenticate(): array
 {
     $token = migration_bridge_extract_bearer_token();
+    $rate_key = function_exists('rate_limit_key')
+        ? rate_limit_key('migration_bridge', substr(hash('sha256', $token), 0, 24))
+        : 'migration_bridge';
+    if (function_exists('rate_limit_is_blocked') && rate_limit_is_blocked($rate_key, 20, 300)) {
+        api_error('Too many migration authentication attempts.', 429);
+    }
+
     $connection = migration_bridge_connection_by_token($token);
     if (!$connection) {
+        if (function_exists('rate_limit_record')) {
+            rate_limit_record($rate_key, 300);
+        }
+        if (function_exists('log_security_event')) {
+            log_security_event('migration_bridge_auth_failed', null, 'token_hash=' . substr(hash('sha256', $token), 0, 16));
+        }
         api_error('Invalid or expired migration token.', 401);
     }
 
+    if (function_exists('rate_limit_clear')) {
+        rate_limit_clear($rate_key);
+    }
     return $connection;
 }
 

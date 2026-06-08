@@ -57,7 +57,7 @@ if ($action === 'checkout' || $action === 'portal') {
     } catch (Throwable $e) {
         $safe_error = str_replace([';', "\r", "\n"], ['_', ' ', ' '], $e->getMessage());
         log_security_event('billing_action_failed', (int) ($user['id'] ?? 0), 'tenant_id=' . (int) $tenant['id'] . ';action=' . $action . ';error=' . $safe_error);
-        flash($e->getMessage(), 'error');
+        flash('Billing action failed. Please try again or contact support if the problem continues.', 'error');
         $back = is_platform_admin($user) ? url('platform') : url('billing');
         header('Location: ' . $back);
         exit;

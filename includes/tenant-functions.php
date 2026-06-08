@@ -162,7 +162,9 @@ function ensure_tenant_baseline(): void
             }
         }
 
-        if (table_exists('users') && column_exists('users', 'is_platform_admin')) {
+        $allow_platform_bootstrap = defined('FOXDESK_AUTO_BOOTSTRAP_PLATFORM_ADMIN')
+            && (bool) FOXDESK_AUTO_BOOTSTRAP_PLATFORM_ADMIN;
+        if ($allow_platform_bootstrap && table_exists('users') && column_exists('users', 'is_platform_admin')) {
             $platform_count = (int) (db_fetch_one("SELECT COUNT(*) AS c FROM users WHERE is_platform_admin = 1")['c'] ?? 0);
             if ($platform_count === 0) {
                 db_query(

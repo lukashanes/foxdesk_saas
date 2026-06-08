@@ -32,6 +32,7 @@ define('PLATFORM_HOST', foxdesk_env('PLATFORM_HOST', 'platform.foxdesk.net'));
 define('APP_MARKETING_HOST', foxdesk_env('APP_MARKETING_HOST', 'foxdesk.net'));
 define('APP_URL', rtrim(foxdesk_env('APP_URL', 'https://app.foxdesk.net'), '/'));
 define('PLATFORM_URL', rtrim(foxdesk_env('PLATFORM_URL', 'https://platform.foxdesk.net'), '/'));
+define('APP_MARKETING_URL', rtrim(foxdesk_env('APP_MARKETING_URL', 'https://foxdesk.net'), '/'));
 define('APP_DEBUG', foxdesk_env_bool('APP_DEBUG', false));
 define('TRUST_PROXY', foxdesk_env_bool('TRUST_PROXY', true));
 
@@ -57,9 +58,13 @@ define('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=billing&checkout=cancelle
 define('MAIL_PROVIDER', foxdesk_env('MAIL_PROVIDER', 'cloudflare'));
 define('CLOUDFLARE_ACCOUNT_ID', foxdesk_env('CLOUDFLARE_ACCOUNT_ID'));
 define('CLOUDFLARE_EMAIL_API_TOKEN', foxdesk_env('CLOUDFLARE_EMAIL_API_TOKEN'));
-define('CLOUDFLARE_EMAIL_FROM', foxdesk_env('CLOUDFLARE_EMAIL_FROM', 'noreply@foxdesk.net'));
+define('CLOUDFLARE_EMAIL_FROM', foxdesk_env('CLOUDFLARE_EMAIL_FROM', 'notifications@foxdesk.net'));
 define('CLOUDFLARE_EMAIL_FROM_NAME', foxdesk_env('CLOUDFLARE_EMAIL_FROM_NAME', 'FoxDesk'));
 define('CLOUDFLARE_EMAIL_REPLY_TO', foxdesk_env('CLOUDFLARE_EMAIL_REPLY_TO', 'support@foxdesk.net'));
+define('FOXDESK_TICKET_EMAIL_DOMAIN', foxdesk_env('FOXDESK_TICKET_EMAIL_DOMAIN', 'foxdesk.net'));
+define('FOXDESK_TICKET_EMAIL_LOCAL_PART', foxdesk_env('FOXDESK_TICKET_EMAIL_LOCAL_PART', 'tickets'));
+define('FOXDESK_EMAIL_ROUTE_SECRET', foxdesk_env('FOXDESK_EMAIL_ROUTE_SECRET', SECRET_KEY));
+define('FOXDESK_EMAIL_ALLOW_UNKNOWN_SENDERS', foxdesk_env_bool('FOXDESK_EMAIL_ALLOW_UNKNOWN_SENDERS', false));
 
 define('IMAP_ENABLED', foxdesk_env_bool('IMAP_ENABLED', false));
 define('IMAP_HOST', foxdesk_env('IMAP_HOST'));

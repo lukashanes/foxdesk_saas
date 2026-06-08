@@ -18,6 +18,8 @@ public self-hosted updater channel for the free PHP app.
   migration export page, then the SaaS platform admin imports that package.
 
 See [docs/RELEASE_CHANNELS.md](docs/RELEASE_CHANNELS.md).
+For the current technical-debt execution plan, see
+[docs/TECHNICAL_DEBT_PLAN.md](docs/TECHNICAL_DEBT_PLAN.md).
 
 ---
 

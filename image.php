@@ -10,18 +10,12 @@ defined('BASE_PATH') || define('BASE_PATH', __DIR__);
 defined('SESSION_LIFETIME') || define('SESSION_LIFETIME', 2592000);
 defined('REMEMBER_ME_DURATION') || define('REMEMBER_ME_DURATION', 30 * 86400);
 
-$raw = $_GET['f'] ?? '';
-$file = basename(explode('?', (string)$raw)[0]);
+$raw = rawurldecode((string) ($_GET['f'] ?? ''));
+$requested = trim(str_replace('\\', '/', explode('?', $raw)[0]));
+$requested = ltrim($requested, '/');
 
-if ($file === '') {
+if ($requested === '' || str_contains($requested, '..') || !preg_match('/^[A-Za-z0-9._\/-]+$/', $requested)) {
     http_response_code(400);
-    exit;
-}
-
-$path = BASE_PATH . '/uploads/' . $file;
-
-if (!is_file($path)) {
-    http_response_code(404);
     exit;
 }
 
@@ -51,14 +45,175 @@ if (file_exists(BASE_PATH . '/config.php')) {
     if (file_exists(BASE_PATH . '/includes/ticket-functions.php')) {
         require_once BASE_PATH . '/includes/ticket-functions.php';
     }
+}
 
-    if (function_exists('find_attachment_by_relative_path')) {
-        $attachment = find_attachment_by_relative_path($upload_dir . '/' . $file);
-        $is_protected_attachment = !empty($attachment);
+if ($upload_dir !== '' && str_starts_with($requested, $upload_dir . '/')) {
+    $requested = substr($requested, strlen($upload_dir) + 1);
+}
+
+if (function_exists('find_attachment_by_relative_path')) {
+    $lookup_paths = array_values(array_unique(array_filter([
+        $requested,
+        $upload_dir !== '' ? $upload_dir . '/' . $requested : '',
+    ])));
+
+    foreach ($lookup_paths as $lookup_path) {
+        $attachment = find_attachment_by_relative_path($lookup_path);
+        if (!empty($attachment)) {
+            break;
+        }
+    }
+
+    $is_protected_attachment = !empty($attachment);
+}
+
+if (
+    $is_protected_attachment
+    && ($attachment['storage_driver'] ?? '') === 'r2'
+    && function_exists('storage_read_object')
+) {
+    if (!image_proxy_attachment_is_authorized($attachment)) {
+        http_response_code(403);
+        exit;
+    }
+
+    $mime = trim((string) ($attachment['mime_type'] ?? ''));
+    if (!image_proxy_mime_allowed($mime)) {
+        http_response_code(403);
+        exit;
+    }
+
+    try {
+        $body = storage_read_object($attachment);
+        if ($body === null) {
+            http_response_code(404);
+            exit;
+        }
+
+        header('Content-Type: ' . $mime);
+        header('Content-Length: ' . strlen($body));
+        header('Cache-Control: private, max-age=3600');
+        header('X-Content-Type-Options: nosniff');
+        echo $body;
+        exit;
+    } catch (Throwable $e) {
+        error_log('R2 image preview failed: ' . $e->getMessage());
+        http_response_code(502);
+        exit;
     }
 }
 
+$path = BASE_PATH . '/' . $upload_dir . '/' . $requested;
+$upload_root = realpath(BASE_PATH . '/' . $upload_dir);
+$real_path = realpath($path);
+
+if ($upload_root === false || $real_path === false || !str_starts_with($real_path, rtrim($upload_root, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR) || !is_file($real_path)) {
+    http_response_code(404);
+    exit;
+}
+
 if ($is_protected_attachment) {
+    if (!image_proxy_attachment_is_authorized($attachment)) {
+        http_response_code(403);
+        exit;
+    }
+}
+
+if (!$is_protected_attachment && !image_proxy_is_public_upload($upload_dir . '/' . $requested, $requested)) {
+    http_response_code(403);
+    exit;
+}
+
+$allowed = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+];
+
+$mime = function_exists('mime_content_type') ? mime_content_type($real_path) : false;
+if (!is_string($mime) || !image_proxy_mime_allowed($mime)) {
+    http_response_code(403);
+    exit;
+}
+
+header('Content-Type: ' . $mime);
+header('Content-Length: ' . filesize($real_path));
+header('Cache-Control: ' . ($is_protected_attachment ? 'private, max-age=3600' : 'public, max-age=31536000, immutable'));
+header('X-Content-Type-Options: nosniff');
+
+readfile($real_path);
+exit;
+
+function image_proxy_is_public_upload(string $stored_path, string $relative_path): bool
+{
+    if (str_starts_with($relative_path, 'public/')) {
+        return true;
+    }
+
+    if (!function_exists('db_fetch_one')) {
+        return false;
+    }
+
+    $stored_path = ltrim(str_replace('\\', '/', explode('?', $stored_path)[0]), '/');
+    $like = $stored_path . '?%';
+
+    try {
+        if (db_fetch_one("SELECT id FROM users WHERE avatar = ? OR avatar LIKE ? LIMIT 1", [$stored_path, $like])) {
+            return true;
+        }
+    } catch (Throwable $e) {
+    }
+
+    try {
+        if (db_fetch_one("SELECT id FROM organizations WHERE logo = ? OR logo LIKE ? LIMIT 1", [$stored_path, $like])) {
+            return true;
+        }
+    } catch (Throwable $e) {
+    }
+
+    try {
+        if (db_fetch_one(
+            "SELECT id FROM settings WHERE setting_key IN ('app_logo', 'favicon', 'report_company_logo') AND (setting_value = ? OR setting_value LIKE ?) LIMIT 1",
+            [$stored_path, $like]
+        )) {
+            return true;
+        }
+    } catch (Throwable $e) {
+    }
+
+    $encoded = rawurlencode($relative_path);
+    $legacy_patterns = [
+        '%image.php?f=' . $encoded . '%',
+        '%image.php?f=' . basename($relative_path) . '%',
+    ];
+
+    try {
+        if (db_fetch_one("SELECT id FROM comments WHERE content LIKE ? OR content LIKE ? LIMIT 1", $legacy_patterns)) {
+            return true;
+        }
+    } catch (Throwable $e) {
+    }
+
+    try {
+        return (bool) db_fetch_one("SELECT id FROM tickets WHERE description LIKE ? OR description LIKE ? LIMIT 1", $legacy_patterns);
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+function image_proxy_mime_allowed(string $mime): bool
+{
+    return in_array($mime, [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+    ], true);
+}
+
+function image_proxy_attachment_is_authorized(array $attachment): bool
+{
     $authorized = false;
     $share_token = trim((string)($_GET['share_token'] ?? ($_GET['token'] ?? '')));
 
@@ -74,29 +229,5 @@ if ($is_protected_attachment) {
         $authorized = attachment_user_can_access($attachment);
     }
 
-    if (!$authorized) {
-        http_response_code(403);
-        exit;
-    }
+    return (bool) $authorized;
 }
-
-$allowed = [
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/webp',
-];
-
-$mime = function_exists('mime_content_type') ? mime_content_type($path) : false;
-if (!is_string($mime) || !in_array($mime, $allowed, true)) {
-    http_response_code(403);
-    exit;
-}
-
-header('Content-Type: ' . $mime);
-header('Content-Length: ' . filesize($path));
-header('Cache-Control: ' . ($is_protected_attachment ? 'private, max-age=3600' : 'public, max-age=31536000, immutable'));
-header('X-Content-Type-Options: nosniff');
-
-readfile($path);
-exit;

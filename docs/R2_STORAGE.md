@@ -60,12 +60,52 @@ STORAGE_DRIVER=local
 
 ## Current Behavior
 
-- New manual uploads are written to R2 when `STORAGE_DRIVER=r2`.
-- New inbound email attachments are written to R2 when `STORAGE_DRIVER=r2`.
+- New private ticket uploads are written to R2 when `STORAGE_DRIVER=r2`.
+- Public assets such as logos and avatars stay on local disk so public image serving remains simple and cacheable.
+- New IMAP inbound email attachments are written to R2 when `STORAGE_DRIVER=r2`.
+- Cloudflare Email Routing archives raw emails and inbound attachments in the Worker R2 archive bucket; the app stores metadata for those archived inbound attachments.
 - Attachment metadata stores `storage_driver`, `storage_bucket`, and `storage_key`.
 - Existing local attachments continue to work.
 - Attachment downloads still go through FoxDesk authorization.
+- Image previews still go through FoxDesk authorization and support R2-backed protected image attachments.
 
 ## Production Check
 
-After deploy, upload a small attachment in a test workspace and download it through the ticket detail page. Then confirm the object exists in R2 under the `tenants/` prefix.
+After deploy, run the R2 roundtrip smoke test:
+
+```bash
+php bin/test-r2-storage.php --tenant-id=<test_tenant_id> --json
+```
+
+The reported `object_key` must start with:
+
+```text
+tenants/<test_tenant_id>/
+```
+
+Then test the app workflow:
+
+1. Upload a small image attachment in a test workspace.
+2. Confirm the object exists in R2 under the `tenants/` prefix.
+3. Open the ticket detail and verify image preview works.
+4. Download the same attachment through `attachment.php`.
+5. Delete the test attachment/ticket and confirm the R2 object can be deleted by the storage client.
+
+## Attachment Backup Outside The Server
+
+R2 is the production off-server attachment store when `STORAGE_DRIVER=r2`. For migrated or legacy local attachments, keep a second backup process outside the app server:
+
+```text
+backups/attachments/{YYYY-MM-DD}/tenants/{tenant_id}/...
+```
+
+Use a separate R2 API token for backup jobs. It should have write access to the backup prefix/bucket and should not be reused by the web application.
+
+Backup legacy local attachments:
+
+```bash
+php bin/backup-attachments-to-r2.php --dry-run --json
+php bin/backup-attachments-to-r2.php --tenant-id=<tenant_id> --limit=500 --json
+```
+
+This copies local/non-R2 attachment files to R2 and leaves the application metadata unchanged.

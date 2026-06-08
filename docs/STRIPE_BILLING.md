@@ -4,6 +4,8 @@ FoxDesk SaaS has a prepared billing layer for Stripe Checkout, Stripe Customer P
 
 Use Stripe Billing with recurring Prices and Checkout Sessions. Do not build a custom renewal loop with one-off PaymentIntents.
 
+For the dashboard setup checklist used before public beta, see [Stripe Public Beta Setup](STRIPE_PUBLIC_BETA_SETUP.md).
+
 ## Local configuration
 
 Copy the local template and keep real secrets out of git:
@@ -93,6 +95,7 @@ The endpoint verifies the `Stripe-Signature` header with `STRIPE_WEBHOOK_SECRET`
 ## Runtime behavior
 
 - Signup creates a 14-day trial workspace with no card required.
+- If a trialing workspace opens Checkout before the trial ends, FoxDesk sends the existing trial end to Stripe so the first paid billing period starts after the trial instead of immediately.
 - Trial workspaces use `tenants.status = trialing`, `tenants.subscription_status = trialing`, and `tenants.trial_ends_at`.
 - Trial lifecycle emails are recorded in `billing_trial_email_events` so signup, 3-day, 1-day, and expired notices are sent at most once per workspace.
 - When the trial end passes, the workspace stays accessible through `BILLING_TRIAL_GRACE_DAYS`. After that grace period, FoxDesk marks it `trial_expired` and locks normal app access. Workspace admins can still open Billing and activate through Stripe Checkout.

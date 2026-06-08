@@ -492,12 +492,16 @@ function can_see_ticket($ticket, $user = null)
     if (!$user)
         return false;
 
-    if (function_exists('tenant_scoped_table_has_column')
-        && tenant_scoped_table_has_column('tickets')
-        && !empty($ticket['tenant_id'])
-        && !empty($user['tenant_id'])
-        && (int) $ticket['tenant_id'] !== (int) $user['tenant_id']) {
-        return false;
+    if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('tickets')) {
+        if (function_exists('is_platform_admin') && is_platform_admin($user)) {
+            return true;
+        }
+
+        $ticket_tenant_id = (int) ($ticket['tenant_id'] ?? 0);
+        $user_tenant_id = (int) ($user['tenant_id'] ?? 0);
+        if ($ticket_tenant_id <= 0 || $user_tenant_id <= 0 || $ticket_tenant_id !== $user_tenant_id) {
+            return false;
+        }
     }
 
     // Admin sees everything

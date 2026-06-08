@@ -88,12 +88,16 @@ function api_get_active_ticket_type_by_slug($slug) {
         return null;
     }
 
+    $params = [$slug];
     $sql = "SELECT * FROM ticket_types WHERE slug = ?";
     if (function_exists('column_exists') && column_exists('ticket_types', 'is_active')) {
         $sql .= " AND is_active = 1";
     }
+    if (function_exists('workflow_reference_sql_filter')) {
+        $sql .= workflow_reference_sql_filter('ticket_types', $params);
+    }
 
-    return db_fetch_one($sql, [$slug]);
+    return db_fetch_one($sql, $params);
 }
 
 /**

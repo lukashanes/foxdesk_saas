@@ -484,7 +484,12 @@ function create_ticket($data) {
 
     // Set ticket_type_id from the type slug
     if (!empty($ticket_data['type'])) {
-        $type_row = db_fetch_one("SELECT id FROM ticket_types WHERE slug = ?", [$ticket_data['type']]);
+        $params = [$ticket_data['type']];
+        $sql = "SELECT id FROM ticket_types WHERE slug = ?";
+        if (function_exists('workflow_reference_sql_filter')) {
+            $sql .= workflow_reference_sql_filter('ticket_types', $params);
+        }
+        $type_row = db_fetch_one($sql, $params);
         if ($type_row) {
             $ticket_data['ticket_type_id'] = $type_row['id'];
         }

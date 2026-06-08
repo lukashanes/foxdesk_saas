@@ -16,13 +16,22 @@ Hetzner IPv4:
 
 ```env
 APP_HOST=app.foxdesk.net
+PLATFORM_HOST=platform.foxdesk.net
+APP_MARKETING_HOST=foxdesk.net
 APP_URL=https://app.foxdesk.net
+PLATFORM_URL=https://platform.foxdesk.net
+APP_MARKETING_URL=https://foxdesk.net
 APP_NAME=FoxDesk
 TRUST_PROXY=true
 MAIL_PROVIDER=cloudflare
-CLOUDFLARE_EMAIL_FROM=noreply@foxdesk.net
+CLOUDFLARE_EMAIL_FROM=notifications@foxdesk.net
 CLOUDFLARE_EMAIL_FROM_NAME=FoxDesk
 CLOUDFLARE_EMAIL_REPLY_TO=support@foxdesk.net
+FOXDESK_TICKET_EMAIL_DOMAIN=foxdesk.net
+FOXDESK_TICKET_EMAIL_LOCAL_PART=tickets
+FOXDESK_EMAIL_ROUTE_SECRET=<openssl rand -hex 32>
+FOXDESK_EMAIL_ALLOW_UNKNOWN_SENDERS=false
+BILLING_ENABLED=true
 BILLING_CURRENCY=EUR
 BILLING_CLOUD_BASE_PRICE_CENTS=990
 BILLING_STORAGE_OVERAGE_PRICE_CENTS=190
@@ -31,6 +40,8 @@ BILLING_TRIAL_DAYS=14
 BILLING_TRIAL_GRACE_DAYS=3
 BILLING_PAST_DUE_GRACE_DAYS=7
 STRIPE_STORAGE_METER_EVENT_NAME=foxdesk_storage_extra_gb
+STRIPE_PRICE_CLOUD_BASE=price_1TduGWLE0xWWZe199qWeD07B
+STRIPE_PRICE_STORAGE_OVERAGE=price_1TduGXLE0xWWZe19fwYt9nIF
 STRIPE_TAX_ENABLED=true
 STRIPE_TAX_ID_COLLECTION_ENABLED=true
 STRIPE_TAX_ID_COLLECTION_REQUIRED=
@@ -62,6 +73,13 @@ You already configured Email Sending. Required values:
 - `CLOUDFLARE_ACCOUNT_ID`
 - `CLOUDFLARE_EMAIL_API_TOKEN`
 
+Inbound ticket replies use Cloudflare Email Routing plus addressing:
+
+- Enable Email Routing subaddressing for `foxdesk.net`.
+- Route `tickets@foxdesk.net` to Worker `foxdesk-email-router`.
+- Set Worker secret `FOXDESK_EMAIL_WEBHOOK_SECRET` to the same value as `FOXDESK_EMAIL_ROUTE_SECRET`.
+- Keep `FOXDESK_EMAIL_ALLOW_UNKNOWN_SENDERS=false` unless public inbound ticket creation is intentionally enabled.
+
 Required for R2:
 
 - `R2_ENDPOINT`: `https://<account_id>.r2.cloudflarestorage.com`
@@ -76,7 +94,18 @@ Where:
 4. Manage R2 API Tokens.
 5. Create a token scoped to the bucket.
 
+Production smoke tests:
+
+```bash
+php bin/test-r2-storage.php --tenant-id=<test_tenant_id> --json
+php bin/test-cloudflare-email.php --to=<your_email> --scenario=all --json
+```
+
+The R2 test must report `tenant_prefixed: true`. The email test sends signup, password reset, new-ticket, ticket-reply, and billing delivery probes through the configured provider.
+
 ## Stripe Values
+
+Full setup checklist: [Stripe Public Beta Setup](STRIPE_PUBLIC_BETA_SETUP.md).
 
 Required in Stripe live mode:
 
@@ -101,6 +130,6 @@ For EU VAT payers, enable Stripe Tax, set the product tax code to SaaS business 
 
 ## Still Optional For First Private Beta
 
-- IMAP inbound email values.
+- IMAP inbound email values for self-hosted fallback.
 - Turnstile keys.
 - R2 backup credentials separate from attachment credentials.

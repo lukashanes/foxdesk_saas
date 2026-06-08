@@ -35,6 +35,107 @@ function safe_html($html)
 {
     if (empty($html)) return '';
 
+    if (class_exists('DOMDocument')) {
+        return safe_html_dom((string) $html);
+    }
+
+    return safe_html_regex_fallback((string) $html);
+}
+
+function safe_html_dom(string $html): string
+{
+    $allowed = [
+        'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li',
+        'a', 'img', 'blockquote', 'pre', 'code', 'span', 'div',
+    ];
+
+    $previous = libxml_use_internal_errors(true);
+    $doc = new DOMDocument('1.0', 'UTF-8');
+    $doc->loadHTML('<?xml encoding="UTF-8"><div id="foxdesk-safe-root">' . $html . '</div>', LIBXML_HTML_NODEFDTD | LIBXML_HTML_NOIMPLIED);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+
+    $root = $doc->getElementById('foxdesk-safe-root');
+    if (!$root) {
+        return '';
+    }
+
+    $sanitize = function (DOMNode $node) use (&$sanitize, $allowed, $doc): void {
+        foreach (iterator_to_array($node->childNodes) as $child) {
+            if ($child instanceof DOMElement) {
+                $tag = strtolower($child->tagName);
+                if (in_array($tag, ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input'], true)) {
+                    $child->parentNode?->removeChild($child);
+                    continue;
+                }
+                if (!in_array($tag, $allowed, true)) {
+                    while ($child->firstChild) {
+                        $node->insertBefore($child->firstChild, $child);
+                    }
+                    $node->removeChild($child);
+                    continue;
+                }
+
+                $href = $tag === 'a' ? trim((string) $child->getAttribute('href')) : '';
+                $src = $tag === 'img' ? trim((string) $child->getAttribute('src')) : '';
+                $alt = $tag === 'img' ? trim((string) $child->getAttribute('alt')) : '';
+
+                $attrs = [];
+                foreach ($child->attributes as $attr) {
+                    $attrs[] = $attr->name;
+                }
+                foreach ($attrs as $attr) {
+                    $child->removeAttribute($attr);
+                }
+
+                if ($tag === 'a') {
+                    if (safe_html_url_allowed($href, 'link')) {
+                        $child->setAttribute('href', $href);
+                        $child->setAttribute('target', '_blank');
+                        $child->setAttribute('rel', 'noopener noreferrer');
+                    }
+                } elseif ($tag === 'img') {
+                    if (!safe_html_url_allowed($src, 'image')) {
+                        $child->parentNode?->removeChild($child);
+                        continue;
+                    }
+                    $child->setAttribute('src', $src);
+                    $child->setAttribute('alt', $alt);
+                    $child->setAttribute('loading', 'lazy');
+                    $child->setAttribute('class', 'rich-inline-image');
+                }
+            }
+
+            $sanitize($child);
+        }
+    };
+
+    $sanitize($root);
+
+    $out = '';
+    foreach ($root->childNodes as $child) {
+        $out .= $doc->saveHTML($child);
+    }
+
+    return $out;
+}
+
+function safe_html_url_allowed(string $url, string $context): bool
+{
+    if ($url === '' || preg_match('/[\x00-\x1F\x7F]/', $url)) {
+        return false;
+    }
+
+    if ($context === 'link') {
+        return (bool) preg_match('#^(https?://|mailto:|/)#i', $url);
+    }
+
+    return (bool) preg_match('#^(https://|/?image\.php\?|/?attachment\.php\?)#i', $url);
+}
+
+function safe_html_regex_fallback(string $html): string
+{
     // Allow only safe HTML tags (img allowed for uploaded images)
     $allowed_tags = '<p><br><strong><b><em><i><u><s><strike><h1><h2><h3><h4><h5><h6><ul><ol><li><a><img><blockquote><pre><code><span><div>';
     $clean = strip_tags($html, $allowed_tags);
@@ -114,7 +215,7 @@ function linkify_urls(string $html): string
             function ($m) {
                 $url = $m[0];
                 $href = preg_match('~^https?://~i', $url) ? $url : 'https://' . $url;
-                return '<a href="' . $href . '" target="_blank" rel="noopener noreferrer">' . $url . '</a>';
+                return '<a href="' . e($href) . '" target="_blank" rel="noopener noreferrer">' . e($url) . '</a>';
             },
             $part
         );
@@ -316,15 +417,25 @@ function upload_url(string $path): string
     if ($path === '' || str_starts_with($path, 'data:') || str_starts_with($path, 'http')) {
         return $path;
     }
-    // Strip any query-string suffix (?v=...) before building the URL
-    $clean = explode('?', $path)[0];
-    $filename = basename($clean);
-    // Re-append cache-buster as a proper query param
+    $clean = explode('?', str_replace('\\', '/', $path))[0];
+    if (function_exists('normalize_upload_relative_path')) {
+        $file = normalize_upload_relative_path($clean);
+    } else {
+        $file = ltrim($clean, '/');
+        $upload_dir = trim((defined('UPLOAD_DIR') ? UPLOAD_DIR : 'uploads/'), '/');
+        if ($upload_dir !== '' && str_starts_with($file, $upload_dir . '/')) {
+            $file = substr($file, strlen($upload_dir) + 1);
+        }
+        $file = str_contains($file, '..') || !preg_match('/^[A-Za-z0-9._\/-]+$/', $file) ? '' : $file;
+    }
+    if ($file === '') {
+        return '';
+    }
     $qs = '';
     if (str_contains($path, '?')) {
         $qs = '&' . substr($path, strpos($path, '?') + 1);
     }
-    return 'image.php?f=' . urlencode($filename) . $qs;
+    return 'image.php?f=' . rawurlencode($file) . $qs;
 }
 
 /**
@@ -339,10 +450,19 @@ function url($page, $params = [])
 
     if (function_exists('foxdesk_is_platform_host')) {
         $platform_local_pages = ['platform', 'profile', 'login', 'logout', 'forgot-password', 'reset-password', 'health'];
+        $marketing_pages = ['cloud', 'legal'];
         $workspace_entry_pages = ['login', 'signup', 'forgot-password', 'reset-password'];
 
         if ((string) $page === 'platform' && !foxdesk_is_platform_host()) {
             return foxdesk_platform_url($url);
+        }
+
+        if (
+            function_exists('foxdesk_is_workspace_host')
+            && foxdesk_is_workspace_host()
+            && in_array((string) $page, $marketing_pages, true)
+        ) {
+            return foxdesk_marketing_url($url);
         }
 
         if (foxdesk_is_platform_host() && !in_array((string) $page, $platform_local_pages, true)) {
@@ -362,6 +482,13 @@ function url($page, $params = [])
     return $url;
 }
 
+function foxdesk_current_query_url(string $page, array $overrides = []): string
+{
+    $params = array_merge($_GET ?? [], $overrides);
+    $params['page'] = $page;
+    return 'index.php?' . http_build_query($params);
+}
+
 function foxdesk_workspace_url(string $path = ''): string
 {
     $base = defined('APP_URL') && APP_URL !== ''
@@ -376,6 +503,15 @@ function foxdesk_platform_url(string $path = ''): string
     $base = defined('PLATFORM_URL') && PLATFORM_URL !== ''
         ? rtrim((string) PLATFORM_URL, '/')
         : foxdesk_base_url_for_host(function_exists('foxdesk_platform_host') ? foxdesk_platform_host() : 'platform.foxdesk.net');
+
+    return $path !== '' ? $base . '/' . ltrim($path, '/') : $base;
+}
+
+function foxdesk_marketing_url(string $path = ''): string
+{
+    $base = defined('APP_MARKETING_URL') && APP_MARKETING_URL !== ''
+        ? rtrim((string) APP_MARKETING_URL, '/')
+        : foxdesk_base_url_for_host(function_exists('foxdesk_marketing_host') ? foxdesk_marketing_host() : 'foxdesk.net');
 
     return $path !== '' ? $base . '/' . ltrim($path, '/') : $base;
 }

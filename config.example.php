@@ -45,9 +45,13 @@ define('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=billing&checkout=cancelle
 define('MAIL_PROVIDER', 'cloudflare');
 define('CLOUDFLARE_ACCOUNT_ID', '');
 define('CLOUDFLARE_EMAIL_API_TOKEN', '');
-define('CLOUDFLARE_EMAIL_FROM', 'noreply@foxdesk.net');
+define('CLOUDFLARE_EMAIL_FROM', 'notifications@foxdesk.net');
 define('CLOUDFLARE_EMAIL_FROM_NAME', 'FoxDesk');
 define('CLOUDFLARE_EMAIL_REPLY_TO', 'support@foxdesk.net');
+define('FOXDESK_TICKET_EMAIL_DOMAIN', 'tickets.foxdesk.net');
+define('FOXDESK_TICKET_EMAIL_LOCAL_PART', '');
+define('FOXDESK_EMAIL_ROUTE_SECRET', SECRET_KEY);
+define('FOXDESK_EMAIL_ALLOW_UNKNOWN_SENDERS', false);
 
 // Incoming email ingest (IMAP)
 define('IMAP_ENABLED', false);
