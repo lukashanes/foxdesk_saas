@@ -90,13 +90,23 @@ navigation: auto;
 --space-10: 2.5rem;
 --space-12: 3rem;
 --space-16: 4rem;
---text-xs: clamp(0.6875rem, 0.65rem + 0.1875vw, 0.75rem);
---text-sm: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
---text-base: clamp(0.875rem, 0.825rem + 0.25vw, 1rem);
---text-lg: clamp(1rem, 0.925rem + 0.375vw, 1.125rem);
---text-xl: clamp(1.125rem, 1rem + 0.625vw, 1.5rem);
---text-2xl: clamp(1.5rem, 1.25rem + 1.25vw, 2rem);
---text-3xl: clamp(1.875rem, 1.5rem + 1.875vw, 2.5rem);
+--font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+--tracking-ui: 0;
+--type-xs: 0.75rem;
+--type-sm: 0.875rem;
+--type-base: 1rem;
+--type-lg: 1.125rem;
+--type-xl: 1.25rem;
+--type-2xl: 1.5rem;
+--type-3xl: 2rem;
+--type-4xl: 2.5rem;
+--text-xs: var(--type-xs);
+--text-sm: var(--type-sm);
+--text-base: var(--type-base);
+--text-lg: var(--type-lg);
+--text-xl: var(--type-xl);
+--text-2xl: var(--type-2xl);
+--text-3xl: var(--type-3xl);
 --leading-tight: 1.25;
 --leading-normal: 1.5;
 --leading-relaxed: 1.625;
@@ -968,20 +978,23 @@ border-color: rgba(59, 130, 246, 0.6) !important;
 box-sizing: border-box;
 }
 body {
-font-family:
-"Inter",
--apple-system,
-BlinkMacSystemFont,
-"Segoe UI",
-sans-serif;
+font-family: var(--font-sans);
 font-weight: 400;
+font-size: var(--type-base);
 color: var(--text-primary);
 background: var(--bg-primary);
 min-height: 100vh;
 -webkit-font-smoothing: antialiased;
 -moz-osx-font-smoothing: grayscale;
-letter-spacing: -0.01em;
+letter-spacing: var(--tracking-ui);
 line-height: 1.5;
+}
+button,
+input,
+select,
+textarea {
+font: inherit;
+letter-spacing: var(--tracking-ui);
 }
 @keyframes fadeInUp {
 from {
@@ -1360,7 +1373,7 @@ border: none;
 .card {
 background: var(--surface-primary);
 border-radius: var(--radius-xl);
-box-shadow: var(--shadow-md);
+box-shadow: var(--shadow-sm);
 border: 1px solid var(--border-light);
 transition: box-shadow var(--transition-base);
 }
@@ -1431,9 +1444,10 @@ align-items: center;
 justify-content: center;
 gap: 0.5rem;
 padding: 0.4rem 0.875rem;
-border-radius: var(--radius-md);
-font-size: 0.8125rem;
-font-weight: 600;
+border-radius: var(--radius-lg);
+font-size: var(--type-sm);
+font-weight: 650;
+line-height: 1.2;
 transition: all var(--transition-fast);
 cursor: pointer;
 border: none;
@@ -1447,7 +1461,7 @@ outline-offset: 2px;
 }
 .btn-sm {
 padding: 0.3rem 0.625rem;
-font-size: 0.75rem;
+font-size: var(--type-xs);
 border-radius: var(--radius-sm);
 min-height: var(--control-height-sm);
 }
@@ -1530,20 +1544,21 @@ border: 1px solid var(--border-light);
 border-radius: var(--radius-md);
 background: var(--surface-primary);
 color: var(--text-primary);
-font-size: 0.875rem;
+font-size: var(--type-sm);
+line-height: 1.35;
 transition: all var(--transition-fast);
 min-height: var(--control-height);
 }
 .form-input-sm,
 .form-select-sm {
 padding: 0.35rem 0.5rem;
-font-size: 0.75rem;
+font-size: var(--type-xs);
 border-radius: var(--radius-sm);
 min-height: var(--control-height-xs);
 line-height: 1.25;
 }
 .form-input-sm::placeholder {
-font-size: 0.75rem;
+font-size: var(--type-xs);
 color: var(--text-muted);
 }
 .form-select-sm {
@@ -3056,7 +3071,7 @@ line-height: 1;
 }
 .login-brand-title {
 margin: 0 0 1rem;
-font-size: clamp(2rem, 4vw, 3rem);
+font-size: var(--type-4xl);
 font-weight: 800;
 line-height: 1.08;
 letter-spacing: 0;
@@ -6711,7 +6726,7 @@ display: none;
     .ticket-work-panel__title {
         margin: 0.25rem 0 0;
         color: var(--text-primary);
-        font-size: clamp(1.25rem, 2vw, 1.75rem);
+        font-size: var(--type-2xl);
         line-height: 1.15;
         font-weight: 750;
         letter-spacing: 0;
@@ -7598,7 +7613,7 @@ text-align: center;
     font-weight: 600;
     line-height: 1;
     color: var(--text-primary);
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
 }
 
 .db-kpi__sub {
@@ -8015,7 +8030,7 @@ img.db-avatar {
     font-size: 0.8125rem;
     font-weight: 700;
     color: var(--text-primary);
-    letter-spacing: -0.01em;
+    letter-spacing: 0;
 }
 
 .db-section-link {
