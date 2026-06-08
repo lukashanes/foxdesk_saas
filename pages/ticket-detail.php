@@ -909,18 +909,17 @@ require_once BASE_PATH . '/includes/header.php';
         $_sidebar_types = function_exists('get_ticket_types') ? get_ticket_types(false) : db_fetch_all("SELECT slug, name FROM ticket_types WHERE is_active = 1 ORDER BY sort_order");
     }
     ?>
-    <div class="ticket-sidebar" id="ticket-side-panel">
+    <div class="ticket-sidebar" id="ticket-side-panel" data-ticket-sidebar-surface>
         <!-- Details -->
-        <div class="card card-body">
+        <div class="card card-body ticket-side-card">
             <div class="ticket-side-heading">
                 <span><?php echo e(t('Ticket properties')); ?></span>
                 <span class="font-mono text-xs text-theme-muted"><?php echo get_ticket_code($ticket_id); ?></span>
             </div>
             <?php if (!empty($ticket['organization_name'])): ?>
-                    <div class="flex items-center gap-2 px-2.5 py-2 -mx-1 mb-2 rounded-lg"
-                        style="background: var(--primary-soft);">
-                        <span style="color: var(--primary);"><?php echo get_icon('building', 'w-4 h-4 flex-shrink-0'); ?></span>
-                        <span class="text-sm font-semibold truncate" style="color: var(--primary-dark);"
+                    <div class="ticket-client-pill">
+                        <span class="ticket-client-pill__icon"><?php echo get_icon('building', 'w-4 h-4 flex-shrink-0'); ?></span>
+                        <span class="ticket-client-pill__name"
                             title="<?php echo e($ticket['organization_name']); ?>">
                             <?php echo e($ticket['organization_name']); ?>
                         </span>
@@ -943,7 +942,7 @@ require_once BASE_PATH . '/includes/header.php';
                 <div class="flex justify-between items-center">
                     <dt class="text-xs text-theme-muted"><?php echo e(t('Assigned')); ?></dt>
                     <dd>
-                        <select class="text-xs py-0.5 px-1 rounded border-0 cursor-pointer" style="color: var(--text-primary); background: var(--surface-secondary);" onchange="quickEditField('quick-assign', {assignee_id: this.value})">
+                        <select class="ticket-side-select" onchange="quickEditField('quick-assign', {assignee_id: this.value})">
                             <option value=""><?php echo e(t('-- Unassigned --')); ?></option>
                             <?php foreach ($_sidebar_agents as $_ag): ?>
                                 <option value="<?php echo $_ag['id']; ?>" <?php echo ($ticket['assignee_id'] ?? 0) == $_ag['id'] ? 'selected' : ''; ?>>
@@ -958,7 +957,7 @@ require_once BASE_PATH . '/includes/header.php';
                     <dt class="text-xs text-theme-muted"><?php echo e(t('Priority')); ?></dt>
                     <dd>
                         <?php if (is_agent()): ?>
-                        <select class="text-xs py-0.5 px-1 rounded border-0 cursor-pointer" style="color: var(--text-primary); background: var(--surface-secondary);" onchange="quickEditField('quick-priority', {priority_id: this.value})">
+                        <select class="ticket-side-select" onchange="quickEditField('quick-priority', {priority_id: this.value})">
                             <option value=""><?php echo e(t('-- Select --')); ?></option>
                             <?php foreach ($_sidebar_priorities as $_pr): ?>
                                 <option value="<?php echo $_pr['id']; ?>" <?php echo ($ticket['priority_id'] ?? 0) == $_pr['id'] ? 'selected' : ''; ?>>
@@ -967,10 +966,7 @@ require_once BASE_PATH . '/includes/header.php';
                             <?php endforeach; ?>
                         </select>
                         <?php else: ?>
-                        <span class="badge px-2 py-0.5 text-xs"
-                            style="background-color: <?php echo e($priority_color); ?>20; color: <?php echo e($priority_color); ?>">
-                            <?php echo e($priority_name); ?>
-                        </span>
+                        <?php ticket_detail_render_priority_pill($priority_name); ?>
                         <?php endif; ?>
                     </dd>
                 </div>
@@ -978,7 +974,7 @@ require_once BASE_PATH . '/includes/header.php';
                     <dt class="text-xs text-theme-muted"><?php echo e(t('Type')); ?></dt>
                     <dd>
                         <?php if (is_agent()): ?>
-                        <select class="text-xs py-0.5 px-1 rounded border-0 cursor-pointer" style="color: var(--text-primary); background: var(--surface-secondary);" onchange="quickEditField('quick-type', {type: this.value})">
+                        <select class="ticket-side-select" onchange="quickEditField('quick-type', {type: this.value})">
                             <option value=""><?php echo e(t('-- Select --')); ?></option>
                             <?php foreach ($_sidebar_types as $_tp): ?>
                                 <option value="<?php echo $_tp['slug']; ?>" <?php echo ($ticket['type'] ?? '') === $_tp['slug'] ? 'selected' : ''; ?>>
@@ -997,7 +993,7 @@ require_once BASE_PATH . '/includes/header.php';
                         <?php echo e(t('Tags')); ?>
                         <?php if (can_edit_ticket($ticket, $user)): ?>
                             <button type="button" id="sidebar-tags-edit-btn"
-                                class="text-xs font-medium" style="color: var(--primary); cursor: pointer;">
+                                class="ticket-side-edit-button">
                                 <?php echo e(t('Edit')); ?>
                             </button>
                         <?php endif; ?>
@@ -1051,8 +1047,7 @@ require_once BASE_PATH . '/includes/header.php';
                                 <?php
                                 $is_overdue = is_due_date_overdue($ticket['due_date'], !empty($ticket['is_closed']));
                                 ?>
-                                <span class="<?php echo $is_overdue ? 'text-red-600 font-bold' : ''; ?>"
-                                    style="<?php echo !$is_overdue ? 'color: var(--text-primary);' : ''; ?>">
+                                <span class="ticket-date-value <?php echo $is_overdue ? 'ticket-date-value--overdue' : ''; ?>">
                                     <?php echo format_date($ticket['due_date']); ?>
                                 </span>
                             </dd>
@@ -1105,10 +1100,7 @@ require_once BASE_PATH . '/includes/header.php';
         <?php if (function_exists('can_view_timeline') && can_view_timeline($user)): ?>
         <div class="card card-body">
             <button onclick="openTicketTimeline(<?php echo (int)$ticket['id']; ?>)"
-                class="w-full flex items-center gap-2 text-sm font-medium rounded-lg px-3 py-2 transition-colors"
-                style="color: var(--text-secondary); background: var(--surface-secondary);"
-                onmouseover="this.style.background='var(--surface-hover)'"
-                onmouseout="this.style.background='var(--surface-secondary)'">
+                class="ticket-side-action-button">
                 <?php echo get_icon('history', 'w-4 h-4'); ?>
                 <?php echo e(t('Activity Timeline')); ?>
                 <span class="ml-auto"><?php echo get_icon('chevron-right', 'w-3 h-3'); ?></span>
@@ -1131,8 +1123,7 @@ require_once BASE_PATH . '/includes/header.php';
                                 <div class="flex items-start gap-2 p-1.5 rounded group tr-hover">
                                     <?php if ($_is_img): ?>
                                         <a href="<?php echo $_att_url; ?>" target="_blank"
-                                           class="flex-shrink-0 rounded overflow-hidden border cursor-pointer"
-                                           style="border-color: var(--border-light);"
+                                           class="ticket-attachment-thumb"
                                            onclick="event.preventDefault(); openImagePreview('<?php echo $_att_url; ?>', '<?php echo e($attachment['original_name']); ?>');">
                                             <img src="<?php echo $_att_url; ?>" alt="" class="w-8 h-8 object-cover" loading="lazy">
                                         </a>
@@ -1142,15 +1133,13 @@ require_once BASE_PATH . '/includes/header.php';
                                     <div class="min-w-0 flex-1">
                                         <?php if ($_is_img): ?>
                                             <a href="<?php echo $_att_url; ?>"
-                                               class="text-xs font-medium truncate hover:text-blue-600 block cursor-pointer"
-                                               style="color: var(--text-secondary);"
+                                               class="ticket-attachment-link cursor-pointer"
                                                onclick="event.preventDefault(); openImagePreview('<?php echo $_att_url; ?>', '<?php echo e($attachment['original_name']); ?>');">
                                                 <?php echo e($attachment['original_name']); ?>
                                             </a>
                                         <?php else: ?>
                                             <a href="<?php echo $_att_url; ?>" target="_blank"
-                                               class="text-xs font-medium truncate hover:text-blue-600 block"
-                                               style="color: var(--text-secondary);">
+                                               class="ticket-attachment-link">
                                                 <?php echo e($attachment['original_name']); ?>
                                             </a>
                                         <?php endif; ?>
@@ -1317,8 +1306,7 @@ require_once BASE_PATH . '/includes/header.php';
                                 <?php if (!empty($share_url)): ?>
                                         <div class="flex gap-1 mb-1.5">
                                             <input type="text" id="share-link-input" readonly value="<?php echo e($share_url); ?>"
-                                                class="form-input text-xs py-1.5 flex-1 font-mono"
-                                                style="background: var(--surface-secondary); color: var(--text-secondary);">
+                                                class="form-input ticket-share-input">
                                             <button type="button" id="share-copy-btn" class="btn btn-secondary btn-xs px-2"
                                                 title="<?php echo e(t('Copy')); ?>">
                                                 <?php echo get_icon('copy', 'w-3 h-3'); ?>
