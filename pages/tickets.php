@@ -473,7 +473,10 @@ if ($user_search !== '') {
 if ($created_date_value !== '') {
     $filter_notes[] = t('Created') . ': ' . $created_date_value;
 }
-$page_header_subtitle = t('{count} tickets', ['count' => $total_tickets]) . (!empty($filter_notes) ? ' | ' . implode(' | ', $filter_notes) : '');
+$has_filters = !empty($search_query) || !empty($status_id) || !empty($priority_id) ||
+               !empty($organization_id) || !empty($due_date_filter) || !empty($created_date_value) ||
+               !empty($user_search) || !empty($assigned_to) || $staff_scope || ($tags_supported && !empty($tag_filters)) || $sort !== 'newest';
+$page_header_subtitle = '';
 
 $page_header_breadcrumbs = [
     ['label' => t('All tickets'), 'url' => url('tickets', $is_archive ? ['archived' => '1'] : [])]
@@ -503,11 +506,11 @@ if (!is_admin() && !is_agent() && isset($scope) && $scope === 'organization' && 
     $mine_url = url('tickets', $params_mine);
     $company_url = url('tickets', $params_comp);
 
-    $page_header_actions .= '<div class="inline-flex rounded-md shadow-sm mr-4" role="group">
-        <a href="'.$mine_url.'" class="px-4 py-2 text-sm font-medium border rounded-l-lg '.($current_view === 'mine' ? 'bg-blue-600 text-white border-blue-600' : '').' " style="'.($current_view !== 'mine' ? 'background: var(--bg-primary); color: var(--text-secondary); border-color: var(--border-light);' : '').'">
+    $page_header_actions .= '<div class="ticket-segmented-control" role="group" aria-label="' . e(t('Ticket scope')) . '">
+        <a href="'.$mine_url.'" class="ticket-segmented-item '.($current_view === 'mine' ? 'is-active' : '').'">
             '.t('My Tickets').'
         </a>
-        <a href="'.$company_url.'" class="px-4 py-2 text-sm font-medium border rounded-r-lg '.($current_view === 'company' ? 'bg-blue-600 text-white border-blue-600' : '').' " style="'.($current_view !== 'company' ? 'background: var(--bg-primary); color: var(--text-secondary); border-color: var(--border-light);' : '').'">
+        <a href="'.$company_url.'" class="ticket-segmented-item '.($current_view === 'company' ? 'is-active' : '').'">
             '.t('Company Tickets').'
         </a>
     </div>';
@@ -520,11 +523,11 @@ if (!$is_archive) {
     $list_url = url('tickets', $view_params_list);
     $board_url = url('tickets', $view_params_board);
 
-    $page_header_actions .= '<div class="inline-flex rounded-md shadow-sm mr-2" role="group">'
-        . '<a href="' . $list_url . '" class="px-3 py-2 text-sm font-medium border rounded-l-lg ' . ($ticket_view === 'list' ? 'bg-blue-600 text-white border-blue-600' : '') . '" style="' . ($ticket_view !== 'list' ? 'background: var(--bg-primary); color: var(--text-secondary); border-color: var(--border-light);' : '') . '" title="' . e(t('List')) . '">'
+    $page_header_actions .= '<div class="ticket-segmented-control ticket-segmented-control--icon" role="group" aria-label="' . e(t('View')) . '">'
+        . '<a href="' . $list_url . '" class="ticket-segmented-item ' . ($ticket_view === 'list' ? 'is-active' : '') . '" title="' . e(t('List')) . '">'
         . get_icon('list', 'w-4 h-4')
         . '</a>'
-        . '<a href="' . $board_url . '" class="px-3 py-2 text-sm font-medium border rounded-r-lg ' . ($ticket_view === 'board' ? 'bg-blue-600 text-white border-blue-600' : '') . '" style="' . ($ticket_view !== 'board' ? 'background: var(--bg-primary); color: var(--text-secondary); border-color: var(--border-light);' : '') . '" title="' . e(t('Board')) . '">'
+        . '<a href="' . $board_url . '" class="ticket-segmented-item ' . ($ticket_view === 'board' ? 'is-active' : '') . '" title="' . e(t('Board')) . '">'
         . get_icon('columns', 'w-4 h-4')
         . '</a>'
         . '</div>';
@@ -731,25 +734,21 @@ foreach ($board_closed_statuses as $status_item) {
 }
 ?>
 
-<!-- Tickets Table/List with Inline Filters -->
-<nav class="ticket-view-tabs" aria-label="<?php echo e(t('Ticket views')); ?>">
-    <?php foreach ($ticket_list_view_definitions as $view_key => $view_definition): ?>
+<div class="ticket-registry-page" data-ticket-registry-surface>
+    <div class="ticket-registry-toolbar">
         <?php
-        $view_url = ticket_list_view_url($view_key, $_GET, $ticket_list_include_archive);
-        $is_active_view = $ticket_list_view === $view_key;
-        $view_count = (int) ($ticket_list_view_counts[$view_key] ?? 0);
+        ticket_registry_render_view_tabs(
+            $ticket_list_view_definitions,
+            $ticket_list_view_counts,
+            $ticket_list_view,
+            $ticket_list_include_archive,
+            $_GET
+        );
+        ticket_registry_render_filter_summary($total_tickets, $filter_notes, $ticket_clear_url, $has_filters);
         ?>
-        <a href="<?php echo e($view_url); ?>"
-           class="ticket-view-tab <?php echo $is_active_view ? 'is-active' : ''; ?>"
-           aria-current="<?php echo $is_active_view ? 'page' : 'false'; ?>"
-           title="<?php echo e(t($view_definition['description'])); ?>">
-            <span><?php echo e(t($view_definition['label'])); ?></span>
-            <span class="ticket-view-tab__count"><?php echo e((string) $view_count); ?></span>
-        </a>
-    <?php endforeach; ?>
-</nav>
+    </div>
 
-<div class="card overflow-hidden <?php echo $ticket_view === 'board' ? 'kanban-board-wrapper' : ''; ?>">
+<div class="card ticket-registry-card overflow-hidden <?php echo $ticket_view === 'board' ? 'kanban-board-wrapper' : ''; ?>">
     <?php if (empty($tickets)): ?>
         <?php
         // Check if filters are active to show "Show all" button
@@ -951,13 +950,6 @@ foreach ($board_closed_statuses as $status_item) {
                 </div>
             <?php endif; ?>
         <?php else: ?>
-        <?php
-        // Check if any filters are active
-        $has_filters = !empty($search_query) || !empty($status_id) || !empty($priority_id) ||
-                       !empty($organization_id) || !empty($due_date_filter) || !empty($created_date_value) ||
-                       !empty($user_search) || !empty($assigned_to) || $staff_scope || ($tags_supported && !empty($tag_filters)) || $sort !== 'newest';
-        ?>
-
         <!-- Mobile Filter Bar -->
         <div class="block lg:hidden border-b px-4 py-3 glass border-theme-light">
             <form method="get" action="index.php" class="flex flex-wrap items-center gap-2">
@@ -1721,6 +1713,7 @@ foreach ($board_closed_statuses as $status_item) {
         <?php endif; /* board/list toggle */ ?>
     <?php endif; ?>
 
+</div>
 </div>
 
 <?php if ($ticket_view === 'board'): ?>

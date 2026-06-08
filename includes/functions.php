@@ -19,6 +19,7 @@ require_once BASE_PATH . '/includes/migration-functions.php';
 require_once BASE_PATH . '/includes/icons.php';
 require_once BASE_PATH . '/includes/components/date-input.php';
 require_once BASE_PATH . '/includes/components/workspace-surface.php';
+require_once BASE_PATH . '/includes/components/ticket-registry-surface.php';
 
 /**
  * Escape HTML output
