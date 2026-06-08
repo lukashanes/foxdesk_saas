@@ -16,6 +16,8 @@ function assert_inbox_page($condition, $message)
 assert_inbox_page(strpos($index, "case 'inbox'") !== false, 'inbox route is not registered.');
 assert_inbox_page(strpos($header, "url('inbox')") !== false, 'sidebar should link to inbox.');
 assert_inbox_page(strpos($inbox, 'inbox_summary') !== false, 'inbox page should use inbox service summary.');
+assert_inbox_page(strpos($inbox, 'workspace_render_queue_page') !== false, 'inbox page should use the shared workspace queue renderer.');
+assert_inbox_page(strpos($inbox, "'show_source' => true") !== false, 'inbox ticket rows should show source context.');
 assert_inbox_page(strpos($inbox, "redirect('work')") !== false, 'client users should be redirected away from inbox.');
 assert_inbox_page(strpos($shortcuts, "navigateTo('inbox')") !== false, 'command palette should include inbox.');
 foreach ([
@@ -28,6 +30,7 @@ foreach ([
 ] as $forbidden_copy) {
     assert_inbox_page(strpos($inbox, $forbidden_copy) === false, 'inbox page should not render redundant helper copy: ' . $forbidden_copy);
 }
-assert_inbox_page(strpos($inbox, "t('All clear')") !== false, 'empty inbox queue should use concise state copy.');
+$workspaceSurface = file_get_contents($root . '/includes/components/workspace-surface.php');
+assert_inbox_page($workspaceSurface !== false && strpos($workspaceSurface, "t('All clear')") !== false, 'empty inbox queue should use concise state copy from the shared renderer.');
 
 echo "Inbox page contract tests passed\n";

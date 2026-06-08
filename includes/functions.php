@@ -18,6 +18,7 @@ require_once BASE_PATH . '/includes/storage-functions.php';
 require_once BASE_PATH . '/includes/migration-functions.php';
 require_once BASE_PATH . '/includes/icons.php';
 require_once BASE_PATH . '/includes/components/date-input.php';
+require_once BASE_PATH . '/includes/components/workspace-surface.php';
 
 /**
  * Escape HTML output

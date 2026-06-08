@@ -42,69 +42,18 @@ $inbox_ticket_list_url = static function (string $key): string {
 require_once BASE_PATH . '/includes/header.php';
 ?>
 
-<div class="space-y-4">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-        <div>
-            <h1 class="queue-page-title"><?php echo e(t('Inbox')); ?></h1>
-        </div>
-        <a href="<?php echo e(url('new-ticket')); ?>" class="btn btn-primary btn-sm">
-            <?php echo get_icon('plus', 'w-4 h-4 mr-1'); ?><?php echo e(t('New ticket')); ?>
-        </a>
-    </div>
-
-    <div class="inbox-shell">
-        <nav class="inbox-list" aria-label="<?php echo e(t('Inbox')); ?>">
-            <?php foreach ($inbox_summary as $key => $queue): ?>
-                <?php $definition = $queue['definition']; ?>
-                <a href="<?php echo e($inbox_queue_url($key)); ?>" class="inbox-queue <?php echo $key === $queue_key ? 'is-active' : ''; ?>" <?php echo $key === $queue_key ? 'aria-current="page"' : ''; ?>>
-                    <div>
-                        <div class="inbox-queue__title"><?php echo e(t($definition['label'])); ?></div>
-                    </div>
-                    <span class="inbox-queue__count"><?php echo (int) ($queue['count'] ?? 0); ?></span>
-                </a>
-            <?php endforeach; ?>
-        </nav>
-
-        <section class="inbox-panel">
-            <div class="inbox-panel__head">
-                <div>
-                    <div class="inbox-panel__title"><?php echo e(t($active_queue['definition']['label'] ?? 'Triage')); ?></div>
-                </div>
-                <a href="<?php echo e($inbox_ticket_list_url($queue_key)); ?>" class="btn btn-secondary btn-sm"><?php echo e(t('View all')); ?></a>
-            </div>
-
-            <?php if (empty($active_items)): ?>
-                <div class="inbox-empty">
-                    <div class="queue-empty-title"><?php echo e(t('All clear')); ?></div>
-                </div>
-            <?php else: ?>
-                <div>
-                    <?php foreach ($active_items as $ticket): ?>
-                        <?php
-                        $status_color = $ticket['status_color'] ?? '#64748b';
-                        $org = trim((string) ($ticket['organization_name'] ?? ''));
-                        $source = trim((string) ($ticket['source'] ?? ''));
-                        ?>
-                        <a href="<?php echo e(ticket_url($ticket)); ?>" class="inbox-ticket">
-                            <div class="min-w-0">
-                                <div class="inbox-ticket__meta">
-                                    <span class="inbox-ticket__dot" style="background: <?php echo e($status_color); ?>"></span>
-                                    <span><?php echo e(get_ticket_code((int) $ticket['id'])); ?></span>
-                                    <span><?php echo e($ticket['status_name'] ?? ''); ?></span>
-                                    <?php if ($org !== ''): ?><span><?php echo e($org); ?></span><?php endif; ?>
-                                    <?php if ($source !== ''): ?><span><?php echo e($source); ?></span><?php endif; ?>
-                                </div>
-                                <div class="inbox-ticket__title"><?php echo e($ticket['title'] ?? ''); ?></div>
-                            </div>
-                            <div class="inbox-ticket__side">
-                                <div><?php echo e(format_date($ticket['updated_at'] ?? $ticket['created_at'] ?? '', 'd.m.Y')); ?></div>
-                            </div>
-                        </a>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-        </section>
-    </div>
-</div>
+<?php
+workspace_render_queue_page([
+    'title' => 'Inbox',
+    'summary' => $inbox_summary,
+    'active_key' => $queue_key,
+    'active_queue' => $active_queue,
+    'items' => $active_items,
+    'queue_url' => $inbox_queue_url,
+    'view_all_url' => $inbox_ticket_list_url($queue_key),
+    'primary_action' => workspace_surface_action(url('new-ticket'), 'New ticket'),
+    'row_options' => ['show_source' => true],
+]);
+?>
 
 <?php require_once BASE_PATH . '/includes/footer.php'; ?>

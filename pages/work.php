@@ -47,71 +47,18 @@ $work_tickets_url = static function (string $key) use ($user): string {
 require_once BASE_PATH . '/includes/header.php';
 ?>
 
-<div class="space-y-4">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-        <div>
-            <h1 class="queue-page-title"><?php echo e(t('Work')); ?></h1>
-        </div>
-        <a href="<?php echo e(url('new-ticket')); ?>" class="btn btn-primary btn-sm">
-            <?php echo get_icon('plus', 'w-4 h-4 mr-1'); ?><?php echo e(t('New ticket')); ?>
-        </a>
-    </div>
-
-    <div class="work-shell">
-        <nav class="work-queue-list" aria-label="<?php echo e(t('Work')); ?>">
-            <?php foreach ($queue_summary as $key => $queue): ?>
-                <?php $definition = $queue['definition']; ?>
-                <a href="<?php echo e($work_queue_url($key)); ?>" class="work-queue-link <?php echo $key === $queue_key ? 'is-active' : ''; ?>" <?php echo $key === $queue_key ? 'aria-current="page"' : ''; ?>>
-                    <div>
-                        <div class="work-queue-title"><?php echo e(t($definition['label'])); ?></div>
-                    </div>
-                    <span class="work-queue-count"><?php echo (int) ($queue['count'] ?? 0); ?></span>
-                </a>
-            <?php endforeach; ?>
-        </nav>
-
-        <section class="work-panel">
-            <div class="work-panel__head">
-                <div>
-                    <div class="work-panel__title"><?php echo e(t($active_queue['definition']['label'] ?? 'My work')); ?></div>
-                </div>
-                <a href="<?php echo e($work_tickets_url($queue_key)); ?>" class="btn btn-secondary btn-sm"><?php echo e(t('View all')); ?></a>
-            </div>
-
-            <?php if (empty($active_items)): ?>
-                <div class="work-empty">
-                    <div class="queue-empty-title"><?php echo e(t('All clear')); ?></div>
-                </div>
-            <?php else: ?>
-                <div class="work-ticket-list">
-                    <?php foreach ($active_items as $ticket): ?>
-                        <?php
-                        $status_color = $ticket['status_color'] ?? '#64748b';
-                        $assignee = trim((string) (($ticket['assignee_first_name'] ?? '') . ' ' . ($ticket['assignee_last_name'] ?? '')));
-                        $org = trim((string) ($ticket['organization_name'] ?? ''));
-                        ?>
-                        <a href="<?php echo e(ticket_url($ticket)); ?>" class="work-ticket">
-                            <div class="min-w-0">
-                                <div class="work-ticket__meta">
-                                    <span class="work-ticket__dot" style="background: <?php echo e($status_color); ?>"></span>
-                                    <span><?php echo e(get_ticket_code((int) $ticket['id'])); ?></span>
-                                    <span><?php echo e($ticket['status_name'] ?? ''); ?></span>
-                                    <?php if ($org !== ''): ?><span><?php echo e($org); ?></span><?php endif; ?>
-                                </div>
-                                <div class="work-ticket__title"><?php echo e($ticket['title'] ?? ''); ?></div>
-                            </div>
-                            <div class="work-ticket__side">
-                                <?php if ($assignee !== ''): ?>
-                                    <div><?php echo e($assignee); ?></div>
-                                <?php endif; ?>
-                                <div><?php echo e(format_date($ticket['updated_at'] ?? $ticket['created_at'] ?? '', 'd.m.Y')); ?></div>
-                            </div>
-                        </a>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
-        </section>
-    </div>
-</div>
+<?php
+workspace_render_queue_page([
+    'title' => 'Work',
+    'summary' => $queue_summary,
+    'active_key' => $queue_key,
+    'active_queue' => $active_queue,
+    'items' => $active_items,
+    'queue_url' => $work_queue_url,
+    'view_all_url' => $work_tickets_url($queue_key),
+    'primary_action' => workspace_surface_action(url('new-ticket'), 'New ticket'),
+    'row_options' => ['show_assignee' => true],
+]);
+?>
 
 <?php require_once BASE_PATH . '/includes/footer.php'; ?>
