@@ -182,9 +182,9 @@ require_once BASE_PATH . '/includes/header.php';
 <!-- Quill Editor CSS (1.3.7 stable) -->
 <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
 
-<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+<div class="ticket-detail-page" data-ticket-detail-surface data-ticket-id="<?php echo (int) $ticket_id; ?>">
     <!-- Main Content -->
-    <div class="md:col-span-2 lg:col-span-3 space-y-3">
+    <div class="ticket-detail-main">
         <!-- Ticket Work Panel -->
         <div class="card ticket-work-panel">
             <div class="min-w-0">
@@ -199,17 +199,14 @@ require_once BASE_PATH . '/includes/header.php';
                 }
                 ?>
                 <div class="ticket-work-panel__meta">
-                    <a href="<?php echo $back_url; ?>" class="inline-flex items-center gap-1 hover:underline" style="color: var(--text-muted);">
+                    <a href="<?php echo $back_url; ?>" class="ticket-back-link">
                         <?php echo get_icon('arrow-left', 'w-3.5 h-3.5'); ?>
                         <?php echo e(t('Back')); ?>
                     </a>
                     <span><?php echo get_ticket_code($ticket_id); ?></span>
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold"
-                        style="background-color: <?php echo e($ticket['status_color']); ?>15; color: <?php echo e($ticket['status_color']); ?>; border: 1px solid <?php echo e($ticket['status_color']); ?>30;">
-                        <?php echo e($ticket['status_name']); ?>
-                    </span>
+                    <?php ticket_detail_render_status_pill($ticket, $statuses); ?>
                     <?php if (!empty($ticket['is_archived'])): ?>
-                        <span class="px-1.5 py-0.5 rounded text-[11px] font-medium bg-theme-tertiary text-theme-secondary"><?php echo e(t('Archived')); ?></span>
+                        <span class="ticket-status-pill ticket-status-pill--archived"><?php echo e(t('Archived')); ?></span>
                     <?php endif; ?>
                     <?php if (!empty($ticket['organization_name'])): ?>
                         <span><?php echo e($ticket['organization_name']); ?></span>
@@ -219,17 +216,17 @@ require_once BASE_PATH . '/includes/header.php';
             </div>
             <div class="ticket-work-panel__actions" aria-label="<?php echo e(t('Primary actions')); ?>">
                 <?php foreach ($ticket_primary_actions as $action): ?>
-                    <?php $action_class = 'ticket-primary-action ticket-primary-action--' . e($action['style'] ?? 'secondary'); ?>
+                    <?php $action_class = ticket_detail_primary_action_class($action); ?>
                     <?php if ($action['type'] === 'anchor'): ?>
-                        <a href="<?php echo e($action['href']); ?>" class="<?php echo $action_class; ?>">
+                        <a href="<?php echo e($action['href']); ?>" class="<?php echo e($action_class); ?>">
                             <?php echo get_icon($action['icon'], 'w-4 h-4'); ?>
                             <span><?php echo e(t($action['label'])); ?></span>
                         </a>
                     <?php elseif ($action['type'] === 'submit'): ?>
-                        <form method="post" class="inline-flex">
+                        <form method="post" class="ticket-primary-action-form">
                             <?php echo csrf_field(); ?>
                             <input type="hidden" name="status_id" value="<?php echo (int) $action['status_id']; ?>">
-                            <button type="submit" name="<?php echo e($action['name']); ?>" class="<?php echo $action_class; ?>">
+                            <button type="submit" name="<?php echo e($action['name']); ?>" class="<?php echo e($action_class); ?>">
                                 <?php echo get_icon($action['icon'], 'w-4 h-4'); ?>
                                 <span><?php echo e(t($action['label'])); ?></span>
                             </button>
@@ -238,7 +235,7 @@ require_once BASE_PATH . '/includes/header.php';
                         <button type="button"
                             <?php if (!empty($action['id'])): ?>id="<?php echo e($action['id']); ?>"<?php endif; ?>
                             <?php if (!empty($action['onclick'])): ?>onclick="<?php echo e($action['onclick']); ?>"<?php endif; ?>
-                            class="<?php echo $action_class; ?>">
+                            class="<?php echo e($action_class); ?>">
                             <?php echo get_icon($action['icon'], 'w-4 h-4'); ?>
                             <span><?php echo e(t($action['label'])); ?></span>
                             <?php if (($action['key'] ?? '') === 'start_work' && $timer_state !== 'stopped'): ?>
@@ -939,10 +936,7 @@ require_once BASE_PATH . '/includes/header.php';
                 <div class="flex justify-between items-center">
                     <dt class="text-xs text-theme-muted"><?php echo e(t('Status')); ?></dt>
                     <dd>
-                        <span class="badge px-2 py-0.5 text-xs"
-                            style="background-color: <?php echo e($ticket['status_color']); ?>20; color: <?php echo e($ticket['status_color']); ?>">
-                            <?php echo e($ticket['status_name']); ?>
-                        </span>
+                        <?php ticket_detail_render_status_pill($ticket, $statuses); ?>
                     </dd>
                 </div>
                 <?php if (is_agent()): ?>
@@ -2108,40 +2102,37 @@ require_once BASE_PATH . '/includes/header.php';
         function updateToolbarTimer(state, timeStr) {
             const toolbarBtn = document.getElementById('toolbar-timer-btn');
             if (!toolbarBtn) return;
-            let toolbarElapsed = document.getElementById('toolbar-timer-elapsed');
+
+            function renderToolbarTimerButton(className, title, icon, label, elapsedText) {
+                const detachedElapsed = document.getElementById('toolbar-timer-elapsed');
+                if (detachedElapsed && detachedElapsed.parentNode !== toolbarBtn) {
+                    detachedElapsed.remove();
+                }
+
+                toolbarBtn.className = className;
+                toolbarBtn.title = title;
+                toolbarBtn.textContent = '';
+                toolbarBtn.insertAdjacentHTML('beforeend', icon);
+
+                const labelEl = document.createElement('span');
+                labelEl.textContent = label;
+                toolbarBtn.appendChild(labelEl);
+
+                if (elapsedText) {
+                    const elapsedEl = document.createElement('span');
+                    elapsedEl.id = 'toolbar-timer-elapsed';
+                    elapsedEl.className = 'ticket-primary-action__timer';
+                    elapsedEl.textContent = elapsedText;
+                    toolbarBtn.appendChild(elapsedEl);
+                }
+            }
 
             if (state === 'running') {
-                toolbarBtn.className = 'td-tool-btn td-tool-btn--active-timer';
-                toolbarBtn.title = STR.pause;
-                toolbarBtn.textContent = '';
-                toolbarBtn.insertAdjacentHTML('afterbegin', ICON_PAUSE_SM);
-                if (!toolbarElapsed) {
-                    toolbarElapsed = document.createElement('span');
-                    toolbarElapsed.id = 'toolbar-timer-elapsed';
-                    toolbarElapsed.className = 'text-xs tabular-nums';
-                    toolbarBtn.parentNode.insertBefore(toolbarElapsed, toolbarBtn.nextSibling);
-                }
-                toolbarElapsed.style.color = 'var(--warning)';
-                toolbarElapsed.textContent = timeStr || '';
+                renderToolbarTimerButton('ticket-primary-action ticket-primary-action--warning', STR.pause, ICON_PAUSE_SM, STR.pause, timeStr || '');
             } else if (state === 'paused') {
-                toolbarBtn.className = 'td-tool-btn';
-                toolbarBtn.title = STR.resume;
-                toolbarBtn.textContent = '';
-                toolbarBtn.insertAdjacentHTML('afterbegin', ICON_PLAY_SM);
-                if (!toolbarElapsed) {
-                    toolbarElapsed = document.createElement('span');
-                    toolbarElapsed.id = 'toolbar-timer-elapsed';
-                    toolbarElapsed.className = 'text-xs tabular-nums';
-                    toolbarBtn.parentNode.insertBefore(toolbarElapsed, toolbarBtn.nextSibling);
-                }
-                toolbarElapsed.style.color = 'var(--success)';
-                toolbarElapsed.textContent = timeStr || '';
+                renderToolbarTimerButton('ticket-primary-action ticket-primary-action--success', STR.resume, ICON_PLAY_SM, STR.resume, timeStr || '');
             } else {
-                toolbarBtn.className = 'td-tool-btn';
-                toolbarBtn.title = STR.start;
-                toolbarBtn.textContent = '';
-                toolbarBtn.insertAdjacentHTML('afterbegin', ICON_PLAY_SM);
-                if (toolbarElapsed) toolbarElapsed.remove();
+                renderToolbarTimerButton('ticket-primary-action ticket-primary-action--secondary', STR.start, ICON_PLAY_SM, STR.start, '');
             }
         }
 
