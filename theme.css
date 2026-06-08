@@ -117,6 +117,10 @@ navigation: auto;
 --control-height-xs: 1.375rem;
 --control-padding-y: 0.375rem;
 --control-padding-x: 0.625rem;
+--app-sidebar-width: 280px;
+--app-sidebar-compact-width: 76px;
+--app-content-max: 1480px;
+--app-shell-gutter: 1.25rem;
 --worklog-card-bg: rgba(255, 255, 255, 0.9);
 --worklog-card-blur: 12px;
 --worklog-card-border: rgba(255, 255, 255, 0.4);
@@ -1065,7 +1069,7 @@ textarea {
 font-family: inherit;
 }
 .sidebar {
-width: 280px;
+width: var(--app-sidebar-width);
 background: var(--surface-primary);
 color: var(--text-primary);
 border-right: 1px solid var(--border-light);
@@ -1133,7 +1137,7 @@ color: #fff;
 color: #5a6a80;
 }
 .main-content {
-margin-left: 280px;
+margin-left: var(--app-sidebar-width);
 display: flex;
 flex-direction: column;
 min-width: 0;
@@ -1145,9 +1149,10 @@ transition: margin-left 0.2s ease;
 }
 .app-content {
 width: 100%;
-max-width: 100%;
+max-width: var(--app-content-max);
+margin: 0 auto;
 flex: 1 0 auto;
-padding: 1.25rem;
+padding: var(--app-shell-gutter);
 }
 .app-content > * {
 max-width: 100%;
@@ -1157,16 +1162,54 @@ max-width: 100%;
 background: var(--surface-primary) !important;
 border-color: var(--border-light) !important;
 }
+.app-shell-page .app-content {
+max-width: var(--app-content-max);
+}
+.app-topbar {
+min-height: 58px;
+box-shadow: 0 1px 0 rgba(15, 23, 42, 0.02);
+}
+.app-topbar-title {
+min-width: 0;
+display: flex;
+align-items: center;
+gap: 0.625rem;
+}
+.app-topbar-title h1 {
+min-width: 0;
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+}
+.app-shell-context {
+min-height: 22px;
+display: inline-flex;
+align-items: center;
+border: 1px solid var(--border-light);
+border-radius: var(--radius-full);
+padding: 0 0.55rem;
+background: var(--surface-secondary);
+color: var(--text-muted);
+font-size: var(--type-xs);
+font-weight: 700;
+white-space: nowrap;
+}
+.header-search-input {
+width: min(320px, 25vw);
+min-width: 200px;
+border-radius: 10px;
+padding-left: 2.25rem;
+}
 .sidebar-collapse-btn {
 display: none;
 }
 @media (min-width: 1025px) {
 #sidebar.is-compact {
-width: 76px !important;
+width: var(--app-sidebar-compact-width) !important;
 overflow: visible;
 }
 #sidebar.is-compact ~ #main-content {
-margin-left: 76px !important;
+margin-left: var(--app-sidebar-compact-width) !important;
 }
 }
 @media (max-width: 1024px) {
@@ -1204,12 +1247,12 @@ display: flex;
 }
 body.sidebar-compact .sidebar,
 body.sidebar-compact #sidebar {
-width: 76px !important;
+width: var(--app-sidebar-compact-width) !important;
 overflow: visible;
 }
 body.sidebar-compact .main-content,
 body.sidebar-compact #main-content {
-margin-left: 76px !important;
+margin-left: var(--app-sidebar-compact-width) !important;
 }
 body.sidebar-compact .sidebar-brand-row {
 justify-content: center;
@@ -1279,7 +1322,7 @@ width: 15rem;
 }
 @media (min-width: 1280px) {
 .app-content {
-padding: 1.5rem;
+--app-shell-gutter: 1.5rem;
 }
 }
 .sidebar-overlay {
@@ -1325,7 +1368,7 @@ color: var(--text-muted);
 font-size: 0.7rem;
 font-weight: 600;
 text-transform: uppercase;
-letter-spacing: 0.08em;
+letter-spacing: 0;
 border-radius: var(--radius-md);
 transition: all var(--transition-fast);
 }
@@ -2789,7 +2832,7 @@ font-size: 1rem;
 color: var(--text-muted);
 font-size: 0.75rem;
 font-weight: 800;
-letter-spacing: 0.08em;
+letter-spacing: 0;
 text-transform: uppercase;
 }
 .queue-page-title {
@@ -2902,7 +2945,7 @@ border-bottom: 1px solid var(--border-light);
 color: var(--text-muted);
 font-size: 0.7rem;
 font-weight: 800;
-letter-spacing: 0.08em;
+letter-spacing: 0;
 text-transform: uppercase;
 }
 .work-panel__title,
@@ -8712,6 +8755,7 @@ body.op-page {
     --op-amber: #b45309;
     --op-red: #b42318;
     --op-shadow: 0 12px 32px rgba(15, 23, 42, .06);
+    --op-content-max: 1480px;
 }
 [data-theme="dark"] body.op-page {
     --op-bg: #070b12;
@@ -8880,6 +8924,8 @@ body.op-page {
 .op-main {
     min-width: 0;
     width: 100%;
+    max-width: var(--op-content-max);
+    margin: 0 auto;
     padding: 14px clamp(12px, 2vw, 24px) 24px;
 }
 .op-topbar {
@@ -8896,6 +8942,25 @@ body.op-page {
     line-height: 1.12;
     font-weight: 820;
     letter-spacing: 0;
+}
+.op-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+.op-environment-pill {
+    min-height: 22px;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--op-line);
+    border-radius: 999px;
+    padding: 0 8px;
+    background: var(--op-panel-solid);
+    color: var(--op-muted);
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
 }
 .op-topbar p {
     margin: 3px 0 0;

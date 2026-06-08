@@ -257,7 +257,10 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
     <main class="op-main">
         <header class="op-topbar">
             <div>
-                <h1>Platform console</h1>
+                <div class="op-title-row">
+                    <h1>Platform console</h1>
+                    <span class="op-environment-pill">Platform admin</span>
+                </div>
                 <p>Operate hosted FoxDesk workspaces without mixing platform controls into customer helpdesk administration.</p>
             </div>
             <div class="op-actions">

@@ -1252,6 +1252,7 @@ return [
     'Resolved tickets' => 'Resolved tickets',
     'Every non-archived ticket' => 'Every non-archived ticket',
     'Archived tickets' => 'Archived tickets',
+    'Workspace' => 'Workspace',
     'Work' => 'Work',
     'My work' => 'My work',
     'Unassigned' => 'Unassigned',

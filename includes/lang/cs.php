@@ -1252,6 +1252,7 @@ return [
     'Resolved tickets' => 'Vyřešené požadavky',
     'Every non-archived ticket' => 'Všechny nearchivované požadavky',
     'Archived tickets' => 'Archivované požadavky',
+    'Workspace' => 'Workspace',
     'Work' => 'Práce',
     'My work' => 'Moje práce',
     'Unassigned' => 'Nepřiřazené',

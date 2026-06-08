@@ -180,7 +180,7 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
     </script>
 </head>
 
-<body class="antialiased font-sans" style="background-color: var(--bg-primary); color: var(--text-primary);">
+<body class="app-shell-page antialiased font-sans" style="background-color: var(--bg-primary); color: var(--text-primary);">
     <!-- Impersonation Warning Banner -->
     <?php if (function_exists('is_impersonating') && is_impersonating()): ?>
         <div class="bg-red-600 text-white px-4 py-2 flex items-center justify-end gap-4 shadow-md relative z-50">
@@ -242,12 +242,17 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
         </div>
 
         <script>
+            window.getAppShellVar = window.getAppShellVar || function(name, fallback) {
+                var value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+                return value || fallback;
+            };
             window.syncSidebarCompactLayout = function() {
                 var compact = document.body.classList.contains('sidebar-compact') && window.innerWidth >= 1025;
                 var sidebar = document.getElementById('sidebar');
                 var mainContent = document.getElementById('main-content');
-                if (sidebar) sidebar.style.width = compact ? '76px' : '';
-                if (mainContent) mainContent.style.marginLeft = compact ? '76px' : '';
+                var compactWidth = window.getAppShellVar('--app-sidebar-compact-width', '76px');
+                if (sidebar) sidebar.style.width = compact ? compactWidth : '';
+                if (mainContent) mainContent.style.marginLeft = compact ? compactWidth : '';
             };
             document.addEventListener('DOMContentLoaded', function() {
                 window.syncSidebarCompactLayout();
@@ -538,7 +543,7 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
     <!-- Main Content -->
     <main id="main-content" class="main-content min-h-screen">
         <!-- Mobile Header -->
-        <header class="mobile-header bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
+        <header class="app-topbar mobile-header bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
             <button onclick="toggleSidebar()" id="mobile-menu-btn" class="p-2 rounded-xl transition-all sidebar-hover text-theme-secondary" aria-label="<?php echo e(t('Open menu')); ?>" aria-expanded="false" aria-controls="sidebar">
                 <?php echo get_icon('bars', 'text-xl'); ?>
             </button>
@@ -605,13 +610,16 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
         </header>
 
         <!-- Desktop Header -->
-        <header class="desktop-header bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-3 flex items-center justify-between sticky top-0 z-30 w-full">
-            <h1 class="text-lg font-semibold text-theme-primary"><?php echo e($page_title ?? t('Dashboard')); ?></h1>
+        <header class="app-topbar desktop-header bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-3 flex items-center justify-between sticky top-0 z-30 w-full">
+            <div class="app-topbar-title">
+                <h1 class="text-lg font-semibold text-theme-primary"><?php echo e($page_title ?? t('Dashboard')); ?></h1>
+                <span class="app-shell-context"><?php echo e(t('Workspace')); ?></span>
+            </div>
             <div class="flex items-center space-x-4">
                 <form action="<?php echo url('tickets'); ?>" method="get" class="relative">
                     <input type="hidden" name="page" value="tickets">
                     <input type="text" name="search" id="header-search" placeholder="<?php echo e(t('Search...')); ?>"
-                        class="form-input pr-4 header-search-input" style="width: clamp(200px, 25vw, 320px); border-radius: 10px; padding-left: 2.25rem;">
+                        class="form-input pr-4 header-search-input">
                     <span class="absolute top-1/2 transform -translate-y-1/2" style="left: 1rem; color: var(--text-muted); pointer-events: none;">
                         <?php echo get_icon('search', 'w-4 h-4'); ?>
                     </span>
