@@ -437,6 +437,40 @@ if (is_agent()) {
     }
 }
 
+$ticket_registry_allowed_status_groups = ['new', 'active', 'waiting', 'done', 'archived'];
+$ticket_registry_normalize_status_group = static function (string $group) use ($ticket_registry_allowed_status_groups): string {
+    if (function_exists('ticket_status_group_normalize')) {
+        $group = ticket_status_group_normalize($group);
+    }
+    return in_array($group, $ticket_registry_allowed_status_groups, true) ? $group : 'active';
+};
+$ticket_registry_status_group_from_ticket = static function (array $ticket) use ($statuses, $ticket_registry_normalize_status_group): string {
+    if (function_exists('ticket_detail_status_group')) {
+        return $ticket_registry_normalize_status_group(ticket_detail_status_group($ticket, $statuses));
+    }
+    return !empty($ticket['is_closed']) ? 'done' : 'active';
+};
+$ticket_registry_status_group_from_status = static function (array $status) use ($ticket_registry_normalize_status_group): string {
+    if (function_exists('ticket_status_group_from_status')) {
+        return $ticket_registry_normalize_status_group(ticket_status_group_from_status($status));
+    }
+    return !empty($status['is_closed']) ? 'done' : 'active';
+};
+$ticket_registry_status_accent_class = static function (array $ticket) use ($ticket_registry_status_group_from_ticket): string {
+    return 'ticket-status-accent ticket-status-accent--' . $ticket_registry_status_group_from_ticket($ticket);
+};
+$ticket_registry_status_dot_class = static function (string $group, string $base = 'ticket-status-dot') use ($ticket_registry_normalize_status_group): string {
+    $group = $ticket_registry_normalize_status_group($group);
+    return $base . ' ' . $base . '--' . $group;
+};
+$ticket_registry_status_badge_class = static function (array $ticket) use ($ticket_registry_status_group_from_ticket): string {
+    return 'badge-inline ticket-status-inline ticket-status-inline--' . $ticket_registry_status_group_from_ticket($ticket);
+};
+$ticket_registry_priority_badge_class = static function (string $priority_name, string $base = 'badge-inline ticket-priority-inline'): string {
+    $key = function_exists('ticket_detail_priority_key') ? ticket_detail_priority_key($priority_name) : 'medium';
+    return $base . ' ticket-priority-inline--' . $key;
+};
+
 $page_header_title = $is_archive ? t('Archive') : t('Tickets');
 $filter_notes = [];
 if (!empty($status_id)) {
@@ -785,11 +819,11 @@ foreach ($board_closed_statuses as $status_item) {
             if ($fill_wide_board) {
                 $main_board_classes .= ' kanban-board--fill';
             }
-            $main_board_style = ($center_wide_board || $fill_wide_board)
-                ? '--kanban-column-count: ' . $main_column_count . ';'
-                : '';
+            if ($center_wide_board || $fill_wide_board) {
+                $main_board_classes .= ' kanban-board--count-' . $main_column_count;
+            }
             ?>
-            <div class="<?php echo e($main_board_classes); ?>"<?php echo $main_board_style !== '' ? ' style="' . e($main_board_style) . '"' : ''; ?> data-kanban-scope="main">
+            <div class="<?php echo e($main_board_classes); ?>" data-kanban-scope="main">
                 <?php foreach ($kanban_main_statuses as $status): ?>
                     <?php
                     $status_key = (int) ($status['id'] ?? 0);
@@ -800,7 +834,7 @@ foreach ($board_closed_statuses as $status_item) {
                          data-is-closed="<?php echo !empty($status['is_closed']) ? '1' : '0'; ?>"
                          data-kanban-scope="main">
                         <div class="kanban-column-header">
-                            <span class="kanban-dot" style="background: <?php echo e($status['color']); ?>;"></span>
+                            <span class="<?php echo e($ticket_registry_status_dot_class($ticket_registry_status_group_from_status($status), 'kanban-dot')); ?>"></span>
                             <span class="kanban-status-name"><?php echo e($status['name']); ?></span>
                             <span class="kanban-count"><?php echo count($status_tickets); ?></span>
                         </div>
@@ -832,7 +866,7 @@ foreach ($board_closed_statuses as $status_item) {
                                         <div class="kanban-card-title"><?php echo e($ticket['title']); ?></div>
                                         <div class="kanban-card-meta">
                                             <?php if (!empty($ticket['priority_name'])): ?>
-                                                <span class="kanban-card-priority" style="background: <?php echo e($priority_color); ?>20; color: <?php echo e($priority_color); ?>;">
+                                                <span class="<?php echo e($ticket_registry_priority_badge_class($ticket['priority_name'], 'kanban-card-priority ticket-priority-inline')); ?>">
                                                     <?php echo e($ticket['priority_name']); ?>
                                                 </span>
                                             <?php endif; ?>
@@ -884,7 +918,7 @@ foreach ($board_closed_statuses as $status_item) {
                                  data-is-closed="1"
                                  data-kanban-scope="archived">
                                 <div class="kanban-column-header">
-                                    <span class="kanban-dot" style="background: <?php echo e($status['color']); ?>;"></span>
+                                    <span class="<?php echo e($ticket_registry_status_dot_class($ticket_registry_status_group_from_status($status), 'kanban-dot')); ?>"></span>
                                     <span class="kanban-status-name"><?php echo e($status['name']); ?></span>
                                     <span class="kanban-count"><?php echo count($status_tickets); ?></span>
                                 </div>
@@ -916,7 +950,7 @@ foreach ($board_closed_statuses as $status_item) {
                                                 <div class="kanban-card-title"><?php echo e($ticket['title']); ?></div>
                                                 <div class="kanban-card-meta">
                                                     <?php if (!empty($ticket['priority_name'])): ?>
-                                                        <span class="kanban-card-priority" style="background: <?php echo e($priority_color); ?>20; color: <?php echo e($priority_color); ?>;">
+                                                        <span class="<?php echo e($ticket_registry_priority_badge_class($ticket['priority_name'], 'kanban-card-priority ticket-priority-inline')); ?>">
                                                             <?php echo e($ticket['priority_name']); ?>
                                                         </span>
                                                     <?php endif; ?>
@@ -1018,17 +1052,17 @@ foreach ($board_closed_statuses as $status_item) {
             }
             $clear_tags_url = url('tickets', $clear_tags_params);
             ?>
-            <div class="border-b px-4 py-2.5 flex flex-wrap items-center gap-2" style="border-color: var(--border-light); background: var(--surface-secondary);">
-                <span class="text-xs font-medium text-theme-secondary"><?php echo e(t('Tags')); ?>:</span>
+            <div class="ticket-active-tags-bar">
+                <span class="ticket-active-tags-label"><?php echo e(t('Tags')); ?>:</span>
                 <?php foreach ($tag_filters as $active_tag): ?>
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs" style="background: var(--primary-soft); color: var(--primary);">
+                    <span class="ticket-active-tag">
                         #<?php echo e($active_tag); ?>
-                        <a href="<?php echo e($build_remove_tag_filter_url($active_tag)); ?>" class="opacity-80 hover:opacity-100" aria-label="<?php echo e(t('Remove')); ?>">
+                        <a href="<?php echo e($build_remove_tag_filter_url($active_tag)); ?>" class="ticket-active-tag-remove" aria-label="<?php echo e(t('Remove')); ?>">
                             &times;
                         </a>
                     </span>
                 <?php endforeach; ?>
-                <a href="<?php echo e($clear_tags_url); ?>" class="text-xs underline" style="color: var(--text-secondary);">
+                <a href="<?php echo e($clear_tags_url); ?>" class="ticket-active-tags-clear">
                     <?php echo e(t('Clear all tags')); ?>
                 </a>
             </div>
@@ -1050,7 +1084,7 @@ foreach ($board_closed_statuses as $status_item) {
                 $priority_color = $ticket['priority_color'] ?? get_priority_color($ticket['priority_id'] ?? $ticket['priority'] ?? 'medium');
                 $is_overdue_mobile = is_due_date_overdue($ticket['due_date'] ?? null, !empty($ticket['is_closed']));
                 ?>
-                <div class="p-4 ticket-list-item<?php echo $is_overdue_mobile ? ' ticket-overdue' : ''; ?>" style="border-left: 5px solid <?php echo e($ticket['status_color']); ?>;">
+                <div class="p-4 ticket-list-item <?php echo e($ticket_registry_status_accent_class($ticket)); ?><?php echo $is_overdue_mobile ? ' ticket-overdue' : ''; ?>">
                     <div class="flex items-start gap-3">
                         <?php if ($bulk_actions_enabled): ?>
                             <input type="checkbox" name="ticket_ids[]" value="<?php echo (int) $ticket['id']; ?>"
@@ -1058,8 +1092,7 @@ foreach ($board_closed_statuses as $status_item) {
                         <?php endif; ?>
                             <a href="<?php echo ticket_url($ticket); ?>" class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2 text-xs mb-1 text-theme-muted">
-                                    <span class="w-2 h-2 rounded-full"
-                                        style="background-color: <?php echo e($ticket['status_color']); ?>"></span>
+                                    <span class="<?php echo e($ticket_registry_status_dot_class($ticket_registry_status_group_from_ticket($ticket))); ?>"></span>
                                     <span><?php echo e($ticket['status_name']); ?></span>
                                     <span class="ticket-code-pill" title="<?php echo e('#' . (int) $ticket['id']); ?>">
                                         <?php echo e(get_ticket_code($ticket['id'])); ?>
@@ -1074,15 +1107,13 @@ foreach ($board_closed_statuses as $status_item) {
                                         $is_overdue = is_due_date_overdue($ticket['due_date'] ?? null, !empty($ticket['is_closed']));
                                         ?>
                                         <span
-                                            class="<?php echo $is_overdue ? 'text-red-600 font-medium' : ''; ?> text-xs"
-                                            <?php if (!$is_overdue): ?>style="color: var(--text-muted);"<?php endif; ?>
+                                            class="<?php echo $is_overdue ? 'text-red-600 font-medium' : 'text-theme-muted'; ?> text-xs"
                                             title="<?php echo e(t('Due date')); ?>">
                                             <?php echo get_icon('calendar-alt', 'ml-1 mr-0.5 w-3 h-3 inline'); ?>
                                             <?php echo date('d.m.', $due_ts); ?>
                                         </span>
                                     <?php endif; ?>
-                                    <span class="badge"
-                                        style="background-color: <?php echo e($priority_color); ?>20; color: <?php echo e($priority_color); ?>">
+                                    <span class="<?php echo e($ticket_registry_priority_badge_class($priority_name)); ?>">
                                         <?php echo e($priority_name); ?>
                                     </span>
                                     <?php if (is_admin() && !empty($ticket['organization_name'])): ?>
@@ -1141,10 +1172,10 @@ foreach ($board_closed_statuses as $status_item) {
                 <?php if ($is_archive): ?>
                     <input type="hidden" name="archived" value="1">
                 <?php endif; ?>
-            <table class="w-full hidden lg:table tickets-table text-xs" style="table-layout: fixed;">
+            <table class="w-full hidden lg:table tickets-table tickets-table--fixed text-xs">
                 <thead>
                     <tr class="border-b border-theme-light">
-                        <th class="px-3 py-2.5 text-left" style="width: 80px;">
+                        <th class="px-3 py-2.5 text-left tickets-col-date">
                             <div class="flex items-center gap-1">
                                 <?php if ($bulk_actions_enabled): ?>
                                     <input type="checkbox" id="select-all" class="rounded hidden" onchange="toggleAll(this)">
@@ -1152,7 +1183,7 @@ foreach ($board_closed_statuses as $status_item) {
                                 <span class="text-[10px] font-medium uppercase tracking-wider text-theme-muted"><?php echo e(t('Date')); ?></span>
                             </div>
                         </th>
-                        <th class="px-3 py-2.5 text-left" style="min-width: 260px; max-width: 480px; overflow:visible">
+                        <th class="px-3 py-2.5 text-left tickets-col-subject">
                             <div class="flex items-center justify-between gap-2">
                                 <span class="text-[10px] font-medium uppercase tracking-wider text-theme-muted"><?php echo e(t('Subject')); ?></span>
                                 <div class="flex items-center gap-1.5">
@@ -1167,14 +1198,14 @@ foreach ($board_closed_statuses as $status_item) {
                                     </div>
                                     <?php if ($has_filters): ?>
                                     <a href="<?php echo e($ticket_clear_url); ?>"
-                                       class="inline-flex items-center justify-center w-6 h-6 rounded hover:text-red-500 hover:bg-red-50 transition-colors" style="color: var(--text-muted);" title="<?php echo e(t('Clear')); ?>">
+                                       class="ticket-filter-clear-button" title="<?php echo e(t('Clear')); ?>">
                                         <?php echo get_icon('x', 'w-3.5 h-3.5'); ?>
                                     </a>
                                     <?php endif; ?>
                                 </div>
                             </div>
                         </th>
-                        <th class="px-2 py-2.5" style="width: 140px;">
+                        <th class="px-2 py-2.5 tickets-col-status">
                             <select name="status" class="filter-select" onchange="this.form.submit()">
                                 <option value=""><?php echo e(t('Status')); ?></option>
                                 <?php foreach ($statuses as $status): ?>
@@ -1184,7 +1215,7 @@ foreach ($board_closed_statuses as $status_item) {
                                 <?php endforeach; ?>
                             </select>
                         </th>
-                        <th class="px-2 py-2.5" style="width: 110px;">
+                        <th class="px-2 py-2.5 tickets-col-priority">
                             <select name="priority" class="filter-select" onchange="this.form.submit()">
                                 <option value=""><?php echo e(t('Priority')); ?></option>
                                 <?php foreach ($priorities as $priority): ?>
@@ -1194,7 +1225,7 @@ foreach ($board_closed_statuses as $status_item) {
                                 <?php endforeach; ?>
                             </select>
                         </th>
-                        <th class="px-2 py-2.5" style="width: 90px;">
+                        <th class="px-2 py-2.5 tickets-col-due">
                             <select name="due_date" class="filter-select" onchange="this.form.submit()">
                                 <option value=""><?php echo e(t('Due')); ?></option>
                                 <option value="overdue" <?php echo $due_date_filter === 'overdue' ? 'selected' : ''; ?>>!</option>
@@ -1203,7 +1234,7 @@ foreach ($board_closed_statuses as $status_item) {
                             </select>
                         </th>
                         <?php if (is_admin()): ?>
-                            <th class="px-2 py-2.5" style="width: 120px;">
+                            <th class="px-2 py-2.5 tickets-col-company">
                                 <?php if (!empty($organizations)): ?>
                                 <select name="organization" class="filter-select" onchange="this.form.submit()">
                                     <option value=""><?php echo e(t('Company')); ?></option>
@@ -1217,23 +1248,23 @@ foreach ($board_closed_statuses as $status_item) {
                             </th>
                         <?php endif; ?>
                         <?php if (is_admin()): ?>
-                            <th class="px-2 py-2.5" style="width: 110px;">
+                            <th class="px-2 py-2.5 tickets-col-user">
                                 <select name="user" class="filter-select" onchange="this.form.submit()">
                                     <option value=""><?php echo e(t('User...')); ?></option>
                                     <?php foreach ($filter_users as $fu): ?>
                                         <option value="<?php echo e($fu['first_name'] . ' ' . $fu['last_name']); ?>"
                                             <?php echo $user_search === ($fu['first_name'] . ' ' . $fu['last_name']) ? 'selected' : ''; ?>>
                                             <?php echo e($fu['first_name'] . ' ' . substr($fu['last_name'] ?? '', 0, 1) . '.'); ?>
-                                            <?php if ($fu['role'] !== 'user'): ?><span style="opacity:0.5">(<?php echo e($fu['role']); ?>)</span><?php endif; ?>
+                                            <?php if ($fu['role'] !== 'user'): ?><span class="ticket-muted-soft">(<?php echo e($fu['role']); ?>)</span><?php endif; ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
                             </th>
-                            <th class="px-3 py-2.5 text-left" style="width: 110px;">
+                            <th class="px-3 py-2.5 text-left tickets-col-time">
                                 <span class="text-[10px] font-medium uppercase tracking-wider text-theme-muted"><?php echo e(t('Time')); ?></span>
                             </th>
                         <?php elseif (is_agent()): ?>
-                            <th class="px-2 py-2.5" style="width: 110px;">
+                            <th class="px-2 py-2.5 tickets-col-user">
                                 <select name="user" class="filter-select" onchange="this.form.submit()">
                                     <option value=""><?php echo e(t('User...')); ?></option>
                                     <?php foreach ($filter_users as $fu): ?>
@@ -1245,7 +1276,7 @@ foreach ($board_closed_statuses as $status_item) {
                                     <?php endforeach; ?>
                                 </select>
                             </th>
-                            <th class="px-3 py-2.5 text-left" style="width: 110px;">
+                            <th class="px-3 py-2.5 text-left tickets-col-time">
                                 <span class="text-[10px] font-medium uppercase tracking-wider text-theme-muted"><?php echo e(t('Time')); ?></span>
                             </th>
                         <?php endif; ?>
@@ -1255,7 +1286,7 @@ foreach ($board_closed_statuses as $status_item) {
                 </thead>
                 <tbody>
                 <?php if ((is_agent() || is_admin()) && !$is_archive): ?>
-                    <tr id="new-ticket-row" class="new-ticket-row" style="border-left: 5px solid var(--border-light); background: var(--surface-secondary); display: none;">
+                    <tr id="new-ticket-row" class="new-ticket-row ticket-status-accent ticket-status-accent--archived hidden">
                         <td class="px-3 py-1.5 whitespace-nowrap align-middle text-center">
                             <button type="button" id="new-ticket-submit-btn"
                                     class="nt-plus-btn"
@@ -1269,7 +1300,7 @@ foreach ($board_closed_statuses as $status_item) {
                                    placeholder="<?php echo e(t('New ticket subject — press Enter')); ?>"
                                    maxlength="500">
                             <?php if (!empty($ticket_types_list)): ?>
-                            <select id="new-ticket-type" class="nt-input nt-input-sm mt-1 w-full" style="font-size: 10px;">
+                            <select id="new-ticket-type" class="nt-input nt-input-sm mt-1 w-full ticket-new-type-select">
                                 <option value=""><?php echo e(t('Type')); ?></option>
                                 <?php foreach ($ticket_types_list as $tt): ?>
                                     <option value="<?php echo e($tt['slug']); ?>"><?php echo e($tt['name']); ?></option>
@@ -1329,7 +1360,7 @@ foreach ($board_closed_statuses as $status_item) {
                 <?php foreach ($ticket_groups as $group): ?>
                     <?php if ($group['name'] === 'closed'): ?>
                         </tbody>
-                        <tbody class="border-t-2" style="border-top-color: var(--border-light)">
+                        <tbody class="ticket-closed-group">
                             <tr class="cursor-pointer bg-theme-secondary" onclick="document.getElementById('closed-tickets-desktop').classList.toggle('hidden')">
                                 <?php $colspan = is_admin() ? 8 : (is_agent() ? 6 : 5); ?>
                                 <td colspan="<?php echo $colspan; ?>" class="px-3 py-2 font-medium text-xs text-center text-gray-500 hover:text-gray-700">
@@ -1344,7 +1375,7 @@ foreach ($board_closed_statuses as $status_item) {
                         $priority_color = $ticket['priority_color'] ?? get_priority_color($ticket['priority_id'] ?? $ticket['priority'] ?? 'medium');
                         $is_overdue = is_due_date_overdue($ticket['due_date'] ?? null, !empty($ticket['is_closed']));
                         ?>
-                        <tr class="ticket-row<?php echo $is_overdue ? ' ticket-overdue' : ''; ?>" style="border-left: 5px solid <?php echo e($ticket['status_color']); ?>;" data-href="<?php echo e(ticket_url($ticket)); ?>">
+                        <tr class="ticket-row <?php echo e($ticket_registry_status_accent_class($ticket)); ?><?php echo $is_overdue ? ' ticket-overdue' : ''; ?>" data-href="<?php echo e(ticket_url($ticket)); ?>">
                             <td class="px-3 py-2.5 whitespace-nowrap align-top">
                                 <div class="flex items-center gap-1.5">
                                     <?php if ($bulk_actions_enabled): ?>
@@ -1352,7 +1383,7 @@ foreach ($board_closed_statuses as $status_item) {
                                             class="bulk-checkbox hidden rounded flex-shrink-0" form="bulk-actions-form">
                                     <?php endif; ?>
                                     <div>
-                                        <a href="<?php echo ticket_url($ticket); ?>" class="font-medium text-xs" style="color: var(--text-primary);" title="<?php echo e(get_ticket_code($ticket['id'])); ?>">
+                                        <a href="<?php echo ticket_url($ticket); ?>" class="ticket-row-date-link" title="<?php echo e(get_ticket_code($ticket['id'])); ?>">
                                             <?php echo date('d.m.', strtotime($ticket['created_at'])); ?>
                                         </a>
                                         <div class="text-[10px] text-theme-muted"><?php echo e(get_ticket_code($ticket['id'])); ?></div>
@@ -1367,7 +1398,7 @@ foreach ($board_closed_statuses as $status_item) {
                                           data-field="subject"
                                           data-value="<?php echo e($ticket['title']); ?>"
                                           title="<?php echo e(t('Click to edit')); ?>"
-                                          style="cursor: text;"><?php echo e($ticket['title']); ?></span>
+                                          ><?php echo e($ticket['title']); ?></span>
                                     <?php else: ?>
                                     <a href="<?php echo ticket_url($ticket); ?>" class="ticket-subject-link truncate">
                                         <?php echo e($ticket['title']); ?>
@@ -1381,11 +1412,10 @@ foreach ($board_closed_statuses as $status_item) {
                                 </div>
                                 <div class="text-[11px] mt-0.5 text-theme-muted">
                                     <?php if ((is_agent() || is_admin()) && !empty($ticket_types_list)): ?>
-                                        <span class="tl-inline-edit" style="position:relative; display:inline-block;">
+                                        <span class="tl-inline-edit tl-inline-anchor">
                                             <span class="tl-edit-trigger tl-type-trigger"
                                                   data-ticket="<?php echo (int)$ticket['id']; ?>"
-                                                  data-field="type"
-                                                  style="cursor:pointer; text-decoration: underline dotted; text-underline-offset: 2px;">
+                                                  data-field="type">
                                                 <?php echo e(get_type_label($ticket['type'])); ?>
                                             </span>
                                             <span class="tl-dropdown hidden" data-dropdown="type-<?php echo (int)$ticket['id']; ?>">
@@ -1416,9 +1446,9 @@ foreach ($board_closed_statuses as $status_item) {
                             </td>
                             <td class="px-2 py-2.5 whitespace-nowrap align-top">
                                 <?php if (is_agent() || is_admin()): ?>
-                                <div class="tl-inline-edit" style="position:relative;">
+                                <div class="tl-inline-edit tl-inline-anchor">
                                     <span class="badge-inline tl-edit-trigger" data-ticket="<?php echo (int)$ticket['id']; ?>" data-field="status"
-                                        style="background-color: <?php echo e($ticket['status_color']); ?>20; color: <?php echo e($ticket['status_color']); ?>; cursor:pointer;"
+                                        style="background-color: <?php echo e($ticket['status_color']); ?>20; color: <?php echo e($ticket['status_color']); ?>;"
                                         title="<?php echo e(t('Click to change')); ?>">
                                         <?php echo e($ticket['status_name']); ?>
                                     </span>
@@ -1433,17 +1463,16 @@ foreach ($board_closed_statuses as $status_item) {
                                     </div>
                                 </div>
                                 <?php else: ?>
-                                <span class="badge-inline"
-                                    style="background-color: <?php echo e($ticket['status_color']); ?>20; color: <?php echo e($ticket['status_color']); ?>">
+                                <span class="<?php echo e($ticket_registry_status_badge_class($ticket)); ?>">
                                     <?php echo e($ticket['status_name']); ?>
                                 </span>
                                 <?php endif; ?>
                             </td>
                             <td class="px-2 py-2.5 whitespace-nowrap align-top">
                                 <?php if (is_agent() || is_admin()): ?>
-                                <div class="tl-inline-edit" style="position:relative;">
+                                <div class="tl-inline-edit tl-inline-anchor">
                                     <span class="badge-inline tl-edit-trigger" data-ticket="<?php echo (int)$ticket['id']; ?>" data-field="priority"
-                                        style="background-color: <?php echo e($priority_color); ?>20; color: <?php echo e($priority_color); ?>; cursor:pointer;"
+                                        style="background-color: <?php echo e($priority_color); ?>20; color: <?php echo e($priority_color); ?>;"
                                         title="<?php echo e(t('Click to change')); ?>">
                                         <?php echo e($priority_name); ?>
                                     </span>
@@ -1458,8 +1487,7 @@ foreach ($board_closed_statuses as $status_item) {
                                     </div>
                                 </div>
                                 <?php else: ?>
-                                <span class="badge-inline"
-                                    style="background-color: <?php echo e($priority_color); ?>20; color: <?php echo e($priority_color); ?>">
+                                <span class="<?php echo e($ticket_registry_priority_badge_class($priority_name)); ?>">
                                     <?php echo e($priority_name); ?>
                                 </span>
                                 <?php endif; ?>
@@ -1475,7 +1503,6 @@ foreach ($board_closed_statuses as $status_item) {
                                           data-ticket="<?php echo (int)$ticket['id']; ?>"
                                           data-due="<?php echo e($_due_iso); ?>"
                                           data-is-closed="<?php echo !empty($ticket['is_closed']) ? '1' : '0'; ?>"
-                                          style="cursor:pointer; text-decoration: underline dotted; text-underline-offset: 2px;"
                                           title="<?php echo e(t('Click to change')); ?>">
                                         <?php if ($_due_ts): ?>
                                             <?php echo date('d.m', $_due_ts); ?>
@@ -1483,7 +1510,7 @@ foreach ($board_closed_statuses as $status_item) {
                                                 <?php echo get_icon('exclamation-circle', 'w-2.5 h-2.5 inline ml-0.5'); ?>
                                             <?php endif; ?>
                                         <?php else: ?>
-                                            <span style="opacity:0.4;">—</span>
+                                            <span class="ticket-empty-value">—</span>
                                         <?php endif; ?>
                                     </span>
                                 <?php elseif ($_due_ts): ?>
@@ -1496,23 +1523,22 @@ foreach ($board_closed_statuses as $status_item) {
                                 <?php endif; ?>
                             </td>
                             <?php if (is_admin()): ?>
-                                <td class="px-2 py-2.5 text-xs truncate align-top" style="color: var(--text-muted); overflow: visible;" title="<?php echo e($ticket['organization_name'] ?? ''); ?>">
-                                    <span class="tl-inline-edit" style="position:relative; display:inline-block;">
+                                <td class="px-2 py-2.5 text-xs truncate align-top ticket-cell-muted" title="<?php echo e($ticket['organization_name'] ?? ''); ?>">
+                                    <span class="tl-inline-edit tl-inline-anchor">
                                         <span class="tl-edit-trigger tl-company-trigger"
                                               data-ticket="<?php echo (int)$ticket['id']; ?>"
                                               data-field="company"
-                                              style="cursor:pointer; text-decoration: underline dotted; text-underline-offset: 2px;"
                                               title="<?php echo e(t('Click to change')); ?>">
                                             <?php if (!empty($ticket['organization_name'])): ?>
                                                 <?php echo e($ticket['organization_name']); ?>
                                             <?php else: ?>
-                                                <span style="opacity:0.4;">—</span>
+                                                <span class="ticket-empty-value">—</span>
                                             <?php endif; ?>
                                         </span>
                                         <span class="tl-dropdown hidden" data-dropdown="company-<?php echo (int)$ticket['id']; ?>">
                                             <button type="button" class="tl-dropdown-item"
                                                 onclick="inlineUpdateCompany(<?php echo (int)$ticket['id']; ?>, '', <?php echo e(json_encode(t('No company'))); ?>, this)">
-                                                <span style="opacity:0.6;"><?php echo e(t('No company')); ?></span>
+                                                <span class="ticket-muted-value"><?php echo e(t('No company')); ?></span>
                                             </button>
                                             <?php foreach ($organizations as $org): ?>
                                                 <button type="button" class="tl-dropdown-item"
@@ -1525,12 +1551,11 @@ foreach ($board_closed_statuses as $status_item) {
                                 </td>
                             <?php endif; ?>
                             <?php if (is_admin()): ?>
-                                <td class="px-2 py-2.5 text-xs truncate align-top" style="color: var(--text-muted); overflow: visible;" title="<?php echo e($ticket['first_name'] . ' ' . $ticket['last_name']); ?>">
-                                    <span class="tl-inline-edit" style="position:relative; display:inline-block;">
+                                <td class="px-2 py-2.5 text-xs truncate align-top ticket-cell-muted" title="<?php echo e($ticket['first_name'] . ' ' . $ticket['last_name']); ?>">
+                                    <span class="tl-inline-edit tl-inline-anchor">
                                         <span class="tl-edit-trigger tl-assign-trigger"
                                               data-ticket="<?php echo (int)$ticket['id']; ?>"
                                               data-field="assign"
-                                              style="cursor:pointer; text-decoration: underline dotted; text-underline-offset: 2px;"
                                               title="<?php echo e(t('Click to change')); ?>">
                                             <?php if (!empty($ticket['assignee_id'])):
                                                 $_assigned = null;
@@ -1542,13 +1567,13 @@ foreach ($board_closed_statuses as $status_item) {
                                                     <?php echo e(t('Unassigned')); ?>
                                                 <?php endif; ?>
                                             <?php else: ?>
-                                                <span style="opacity:0.4;"><?php echo e(t('Unassigned')); ?></span>
+                                                <span class="ticket-empty-value"><?php echo e(t('Unassigned')); ?></span>
                                             <?php endif; ?>
                                         </span>
                                         <span class="tl-dropdown hidden" data-dropdown="assign-<?php echo (int)$ticket['id']; ?>">
                                             <button type="button" class="tl-dropdown-item"
                                                 onclick="inlineUpdateAssign(<?php echo (int)$ticket['id']; ?>, '', <?php echo e(json_encode(t('Unassigned'))); ?>, this)">
-                                                <span style="opacity:0.6;"><?php echo e(t('Unassigned')); ?></span>
+                                                <span class="ticket-muted-value"><?php echo e(t('Unassigned')); ?></span>
                                             </button>
                                             <?php foreach ($assignable_agents as $_ag): ?>
                                                 <button type="button" class="tl-dropdown-item"
@@ -1580,12 +1605,11 @@ foreach ($board_closed_statuses as $status_item) {
                                     </div>
                                 </td>
                             <?php elseif (is_agent()): ?>
-                                <td class="px-2 py-2.5 text-xs truncate align-top" style="color: var(--text-muted); overflow: visible;" title="<?php echo e($ticket['first_name'] . ' ' . $ticket['last_name']); ?>">
-                                    <span class="tl-inline-edit" style="position:relative; display:inline-block;">
+                                <td class="px-2 py-2.5 text-xs truncate align-top ticket-cell-muted" title="<?php echo e($ticket['first_name'] . ' ' . $ticket['last_name']); ?>">
+                                    <span class="tl-inline-edit tl-inline-anchor">
                                         <span class="tl-edit-trigger tl-assign-trigger"
                                               data-ticket="<?php echo (int)$ticket['id']; ?>"
                                               data-field="assign"
-                                              style="cursor:pointer; text-decoration: underline dotted; text-underline-offset: 2px;"
                                               title="<?php echo e(t('Click to change')); ?>">
                                             <?php if (!empty($ticket['assignee_id'])):
                                                 $_assigned = null;
@@ -1597,13 +1621,13 @@ foreach ($board_closed_statuses as $status_item) {
                                                     <?php echo e(t('Unassigned')); ?>
                                                 <?php endif; ?>
                                             <?php else: ?>
-                                                <span style="opacity:0.4;"><?php echo e(t('Unassigned')); ?></span>
+                                                <span class="ticket-empty-value"><?php echo e(t('Unassigned')); ?></span>
                                             <?php endif; ?>
                                         </span>
                                         <span class="tl-dropdown hidden" data-dropdown="assign-<?php echo (int)$ticket['id']; ?>">
                                             <button type="button" class="tl-dropdown-item"
                                                 onclick="inlineUpdateAssign(<?php echo (int)$ticket['id']; ?>, '', <?php echo e(json_encode(t('Unassigned'))); ?>, this)">
-                                                <span style="opacity:0.6;"><?php echo e(t('Unassigned')); ?></span>
+                                                <span class="ticket-muted-value"><?php echo e(t('Unassigned')); ?></span>
                                             </button>
                                             <?php foreach ($assignable_agents as $_ag): ?>
                                                 <button type="button" class="tl-dropdown-item"
@@ -1647,8 +1671,7 @@ foreach ($board_closed_statuses as $status_item) {
             <form method="post" id="bulk-actions-form">
                 <?php echo csrf_field(); ?>
                 <div id="bulk-actions"
-                    class="hidden sticky bottom-0 border-t card-body space-y-3 <?php echo $bulk_delete_mode ? 'bg-red-50 border-red-200' : ''; ?>"
-                    style="<?php echo $bulk_delete_mode ? '' : 'border-color: var(--border-light); background: var(--surface-secondary);'; ?>">
+                    class="ticket-bulk-actions hidden <?php echo $bulk_delete_mode ? 'ticket-bulk-actions--danger' : ''; ?>">
                     <div class="flex items-center justify-between">
                         <div class="inline-flex items-center gap-2 text-sm">
                             <span class="inline-flex items-center justify-center min-w-[1.75rem] h-7 px-2 rounded-full font-semibold bg-theme-tertiary text-theme-secondary">
@@ -1758,10 +1781,10 @@ foreach ($board_closed_statuses as $status_item) {
             const isSelected = bulkMode && cb.checked;
 
             if (tableRow) {
-                if (isSelected) { tableRow.style.background = 'var(--surface-secondary)'; } else { tableRow.style.background = ''; }
+                tableRow.classList.toggle('is-bulk-selected', isSelected);
             }
             if (mobileCard) {
-                if (isSelected) { mobileCard.style.background = 'var(--surface-secondary)'; } else { mobileCard.style.background = ''; }
+                mobileCard.classList.toggle('is-bulk-selected', isSelected);
             }
         });
     }
@@ -2126,7 +2149,7 @@ foreach ($board_closed_statuses as $status_item) {
                     var trig = row && row.querySelector('.tl-company-trigger[data-ticket="' + ticketId + '"]');
                     if (trig) {
                         if (orgId === '' || !label) {
-                            trig.innerHTML = '<span style="opacity:0.4;">—</span>';
+                            trig.innerHTML = '<span class="ticket-empty-value">—</span>';
                         } else {
                             trig.textContent = label;
                         }
@@ -2147,7 +2170,7 @@ foreach ($board_closed_statuses as $status_item) {
                     var trig = row && row.querySelector('.tl-assign-trigger[data-ticket="' + ticketId + '"]');
                     if (trig) {
                         if (!assigneeId) {
-                            trig.innerHTML = '<span style="opacity:0.4;"><?php echo e(t('Unassigned')); ?></span>';
+                            trig.innerHTML = '<span class="ticket-empty-value"><?php echo e(t('Unassigned')); ?></span>';
                         } else {
                             trig.textContent = label;
                         }
@@ -2260,7 +2283,7 @@ foreach ($board_closed_statuses as $status_item) {
                 var row = trig.closest('.ticket-row, .ticket-list-item');
                 var isClosed = trig.dataset.isClosed === '1';
                 if (!dueValue) {
-                    trig.innerHTML = '<span style="opacity:0.4;">—</span>';
+                    trig.innerHTML = '<span class="ticket-empty-value">—</span>';
                     if (row) {
                         row.classList.remove('ticket-overdue');
                     }
@@ -2400,8 +2423,8 @@ foreach ($board_closed_statuses as $status_item) {
             function setVal(id, v) { var el = document.getElementById(id); if (el) el.value = v; }
 
             window.toggleNewTicketRow = function(force) {
-                var show = (typeof force === 'boolean') ? force : (row.style.display === 'none');
-                row.style.display = show ? '' : 'none';
+                var show = (typeof force === 'boolean') ? force : row.classList.contains('hidden');
+                row.classList.toggle('hidden', !show);
                 var tbtn = document.getElementById('quick-add-toggle-btn');
                 if (tbtn) tbtn.classList.toggle('is-active', show);
                 if (show) {
