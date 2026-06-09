@@ -411,13 +411,12 @@ require_once BASE_PATH . '/includes/header.php';
         ?>
 
         <!-- Comments & Time Log Combined -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="font-semibold text-theme-primary"><?php echo e(t('Activity')); ?>
-                    (<?php echo count($comments); ?> <?php echo e(t('comments')); ?>)</h3>
+        <div class="card ticket-activity-card" data-ticket-activity-surface>
+            <div class="card-header ticket-activity-header">
+                <h3 class="ticket-activity-title"><?php echo e(t('Activity')); ?></h3>
+                <span class="ticket-activity-count"><?php echo e(t('{count} comments', ['count' => count($comments)])); ?></span>
                 <?php if ($time_tracking_available && $total_time_minutes > 0 && can_view_time($user)): ?>
-                        <span
-                            class="text-xs font-semibold px-2 py-1 bg-blue-50 text-blue-700 rounded flex items-center gap-1">
+                        <span class="ticket-activity-time">
                             <?php echo get_icon('clock', 'w-3 h-3'); ?>
                             <?php echo format_duration_minutes($total_time_minutes); ?>
                         </span>
@@ -425,19 +424,19 @@ require_once BASE_PATH . '/includes/header.php';
             </div>
 
             <?php if (empty($timeline_items)): ?>
-                    <div class="p-4 text-center text-theme-muted">
+                    <div class="ticket-activity-empty">
                         <?php echo e(t('No comments yet.')); ?>
                     </div>
             <?php else: ?>
-                    <div class="divide-y border-theme-light">
+                    <div class="ticket-activity-list">
                         <?php foreach ($timeline_items as $timeline_item): ?>
                                 <?php if ($timeline_item['type'] === 'time_entry'): ?>
                                         <?php $entry = $timeline_item['data']; ?>
                                         <?php if (can_view_time($user)): ?>
-                                                <div class="flex justify-center py-2.5">
-                                                    <div class="time-entry-row inline-flex flex-wrap items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-theme-secondary text-theme-muted">
+                                                <div class="ticket-time-entry-line">
+                                                    <div class="time-entry-row ticket-time-entry-chip">
                                                         <?php echo get_icon('clock', 'w-3.5 h-3.5 flex-shrink-0'); ?>
-                                                        <span class="font-medium text-theme-secondary"><?php
+                                                        <span class="ticket-time-entry-chip__duration"><?php
                                                         if (empty($entry['ended_at'])) {
                                                             $elapsed = max(0, time() - strtotime($entry['started_at']));
                                                             if (!empty($entry['paused_at'])) {
@@ -454,14 +453,14 @@ require_once BASE_PATH . '/includes/header.php';
                                                             echo format_duration_minutes($entry['duration_minutes']);
                                                         }
                                                         ?></span>
-                                                        <span class="text-theme-border-light">·</span>
+                                                        <span class="ticket-time-entry-chip__dot">·</span>
                                                         <span><?php echo e(trim($entry['first_name'] . ' ' . $entry['last_name'])); ?></span>
                                                         <?php if (!empty($entry['summary'])): ?>
-                                                                <span class="text-theme-border-light">·</span>
-                                                                <span class="truncate max-w-[200px]"
+                                                                <span class="ticket-time-entry-chip__dot">·</span>
+                                                                <span class="ticket-time-entry-chip__summary"
                                                                     title="<?php echo e($entry['summary']); ?>"><?php echo e($entry['summary']); ?></span>
                                                         <?php endif; ?>
-                                                        <span class="text-theme-border-light">·</span>
+                                                        <span class="ticket-time-entry-chip__dot">·</span>
                                                         <span><?php echo format_date($entry['started_at']); ?></span>
                                                         <?php $can_edit_this_entry = is_admin() || (is_agent() && (int) $entry['user_id'] === (int) $user['id']); ?>
                                                         <?php if ($can_edit_this_entry): ?>
@@ -469,7 +468,7 @@ require_once BASE_PATH . '/includes/header.php';
                                                                     <?php if (!empty($entry['ended_at'])): ?>
                                                                             <button type="button"
                                                                                 onclick="openEditTimeEntry(<?php echo htmlspecialchars(json_encode($entry)); ?>)"
-                                                                                class="p-0.5 hover:text-blue-600 transition" style="color: var(--text-muted);"
+                                                                                class="ticket-inline-icon-button"
                                                                                 title="<?php echo e(t('Edit')); ?>">
                                                                                 <?php echo get_icon('pencil', 'w-3 h-3'); ?>
                                                                             </button>
@@ -478,7 +477,7 @@ require_once BASE_PATH . '/includes/header.php';
                                                                         <?php echo csrf_field(); ?>
                                                                         <input type="hidden" name="entry_id" value="<?php echo $entry['id']; ?>">
                                                                         <button type="submit" name="delete_time_entry"
-                                                                            class="p-0.5 hover:text-red-500 transition text-theme-muted"
+                                                                            class="ticket-inline-icon-button ticket-inline-icon-button--danger"
                                                                             title="<?php echo e(t('Delete')); ?>"
                                                                             onclick="return confirm('<?php echo e(t('Delete this time entry?')); ?>')">
                                                                             <?php echo get_icon('trash', 'w-3 h-3'); ?>
@@ -498,40 +497,36 @@ require_once BASE_PATH . '/includes/header.php';
                                         $is_own_comment = ((int) $comment['user_id'] === (int) $user['id']);
                                         ?>
                                         <div id="comment-<?php echo $comment['id']; ?>"
-                                            class="comment-item group px-4 lg:px-5 py-4 transition-colors hover:bg-[var(--surface-secondary)]/40 <?php echo $comment['is_internal'] ? 'comment-internal' : ''; ?>">
-                                            <div class="flex gap-3">
+                                            class="comment-item ticket-comment <?php echo $comment['is_internal'] ? 'comment-internal ticket-comment--internal' : ''; ?>">
+                                            <div class="ticket-comment__inner">
                                                 <!-- Avatar -->
                                                 <?php if (!empty($comment['avatar'])): ?>
                                                         <img src="<?php echo e(upload_url($comment['avatar'])); ?>" alt=""
-                                                            class="w-9 h-9 rounded-full object-cover flex-shrink-0 mt-0.5">
+                                                            class="ticket-comment__avatar">
                                                 <?php else: ?>
-                                                        <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                                                            style="background: <?php echo $is_own_comment ? 'var(--primary-soft-strong)' : 'var(--surface-tertiary)'; ?>;">
-                                                            <span class="font-semibold text-sm"
-                                                                style="color: <?php echo $is_own_comment ? 'var(--primary)' : 'var(--text-muted)'; ?>;">
+                                                        <div class="ticket-comment__avatar ticket-comment__avatar--initial <?php echo $is_own_comment ? 'ticket-comment__avatar--own' : ''; ?>">
+                                                            <span class="ticket-comment__initial">
                                                                 <?php echo strtoupper(substr($comment['first_name'], 0, 1)); ?>
                                                             </span>
                                                         </div>
                                                 <?php endif; ?>
 
                                                 <!-- Content -->
-                                                <div class="flex-1 min-w-0">
+                                                <div class="ticket-comment__content">
                                                     <!-- Header: name + badges + timestamp + actions -->
-                                                    <div class="flex items-center gap-2 mb-1">
-                                                        <span class="font-semibold text-sm text-theme-primary">
+                                                    <div class="ticket-comment__header">
+                                                        <span class="ticket-comment__author">
                                                             <?php echo e($comment['first_name'] . ' ' . $comment['last_name']); ?>
                                                         </span>
                                                         <?php if ($is_own_comment): ?>
-                                                                <span class="text-xs px-1.5 py-0.5 rounded font-medium"
-                                                                    style="background: var(--primary-soft); color: var(--primary);"><?php echo e(t('You')); ?></span>
+                                                                <span class="ticket-comment__badge ticket-comment__badge--you"><?php echo e(t('You')); ?></span>
                                                         <?php endif; ?>
                                                         <?php if ($comment['is_internal']): ?>
-                                                                <span
-                                                                    class="text-xs px-1.5 py-0.5 rounded font-medium bg-amber-50 text-amber-700"><?php echo e(t('Internal')); ?></span>
+                                                                <span class="ticket-comment__badge ticket-comment__badge--internal"><?php echo e(t('Internal')); ?></span>
                                                         <?php endif; ?>
-                                                        <span class="text-xs text-theme-muted"><?php echo format_date($comment['created_at']); ?></span>
+                                                        <span class="ticket-comment__date"><?php echo format_date($comment['created_at']); ?></span>
                                                         <?php if ($can_view_edit_history && !empty($comment['updated_at']) && $comment['updated_at'] !== $comment['created_at']): ?>
-                                                                <span class="text-xs italic text-theme-muted">(<?php echo e(t('edited')); ?>)</span>
+                                                                <span class="ticket-comment__edited">(<?php echo e(t('edited')); ?>)</span>
                                                         <?php endif; ?>
 
                                                         <!-- Edit/Delete actions (visible on hover) -->
@@ -539,13 +534,11 @@ require_once BASE_PATH . '/includes/header.php';
                                                                 <div class="comment-actions">
                                                                     <button type="button"
                                                                         onclick="openEditCommentModal(<?php echo $comment['id']; ?>, <?php echo htmlspecialchars(json_encode($comment['content']), ENT_QUOTES, 'UTF-8'); ?>)"
-                                                                        class="hover:text-blue-600 p-1 rounded transition"
-                                                                        style="color: var(--text-muted);" title="<?php echo e(t('Edit comment')); ?>">
+                                                                        class="ticket-inline-icon-button" title="<?php echo e(t('Edit comment')); ?>">
                                                                         <?php echo get_icon('pencil', 'w-3.5 h-3.5'); ?>
                                                                     </button>
                                                                     <button type="button" onclick="deleteComment(<?php echo $comment['id']; ?>)"
-                                                                        class="hover:text-red-600 p-1 rounded transition"
-                                                                        style="color: var(--text-muted);" title="<?php echo e(t('Delete comment')); ?>">
+                                                                        class="ticket-inline-icon-button ticket-inline-icon-button--danger" title="<?php echo e(t('Delete comment')); ?>">
                                                                         <?php echo get_icon('trash', 'w-3.5 h-3.5'); ?>
                                                                     </button>
                                                                 </div>
@@ -553,9 +546,8 @@ require_once BASE_PATH . '/includes/header.php';
                                                     </div>
 
                                                     <!-- Comment body -->
-                                                    <div class="break-words rich-content text-sm"
-                                                        id="comment-content-<?php echo $comment['id']; ?>"
-                                                        style="color: var(--text-secondary);">
+                                                    <div class="ticket-comment__body rich-content"
+                                                        id="comment-content-<?php echo $comment['id']; ?>">
                                                         <?php echo render_content($comment['content']); ?>
                                                     </div>
 
@@ -574,19 +566,19 @@ require_once BASE_PATH . '/includes/header.php';
                                                     // Show summary badge only if NO detailed entries (fallback for old time_spent)
                                                     $display_time = $comment_linked_time > 0 ? 0 : ($comment['time_spent'] ?? 0);
                                                     if ($display_time > 0 && can_view_time($user)): ?>
-                                                            <div class="mt-2 inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-md bg-theme-secondary text-theme-muted">
+                                                            <div class="ticket-time-badge">
                                                                 <?php echo get_icon('clock', 'w-3 h-3'); ?>
                                                                 <span><?php echo e(format_duration_minutes($display_time)); ?></span>
                                                             </div>
                                                     <?php endif; ?>
 
                                                     <?php if (!empty($comment_time_entries) && can_view_time($user)): ?>
-                                                            <div class="mt-2 space-y-1.5">
+                                                            <div class="ticket-time-entry-list">
                                                                 <?php foreach ($comment_time_entries as $entry): ?>
                                                                         <?php $can_edit_this_entry = is_admin() || (is_agent() && (int) $entry['user_id'] === (int) $user['id']); ?>
-                                                                        <div class="time-entry-row inline-flex flex-wrap items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-theme-secondary text-theme-muted">
+                                                                        <div class="time-entry-row ticket-time-entry-chip">
                                                                             <?php echo get_icon('clock', 'w-3.5 h-3.5 flex-shrink-0'); ?>
-                                                                            <span class="font-medium text-theme-secondary"><?php
+                                                                            <span class="ticket-time-entry-chip__duration"><?php
                                                                             if (empty($entry['ended_at'])) {
                                                                                 echo format_duration_minutes(max(0, (int) floor(calculate_timer_elapsed($entry) / 60)));
                                                                                 if (!empty($entry['paused_at'])) {
@@ -598,22 +590,21 @@ require_once BASE_PATH . '/includes/header.php';
                                                                                 echo format_duration_minutes($entry['duration_minutes']);
                                                                             }
                                                                             ?></span>
-                                                                            <span class="text-theme-border-light">·</span>
+                                                                            <span class="ticket-time-entry-chip__dot">·</span>
                                                                             <span><?php echo e(trim($entry['first_name'] . ' ' . $entry['last_name'])); ?></span>
                                                                             <?php if (!empty($entry['summary'])): ?>
-                                                                                    <span class="text-theme-border-light">·</span>
-                                                                                    <span class="truncate max-w-[200px]"
+                                                                                    <span class="ticket-time-entry-chip__dot">·</span>
+                                                                                    <span class="ticket-time-entry-chip__summary"
                                                                                         title="<?php echo e($entry['summary']); ?>"><?php echo e($entry['summary']); ?></span>
                                                                             <?php endif; ?>
-                                                                            <span class="text-theme-border-light">·</span>
+                                                                            <span class="ticket-time-entry-chip__dot">·</span>
                                                                             <span><?php echo format_date($entry['started_at']); ?></span>
                                                                             <?php if ($can_edit_this_entry): ?>
                                                                                     <span class="time-entry-actions">
                                                                                         <?php if (!empty($entry['ended_at'])): ?>
                                                                                                 <button type="button"
                                                                                                     onclick="openEditTimeEntry(<?php echo htmlspecialchars(json_encode($entry)); ?>)"
-                                                                                                    class="p-0.5 hover:text-blue-600 transition"
-                                                                                                    style="color: var(--text-muted);" title="<?php echo e(t('Edit time')); ?>">
+                                                                                                    class="ticket-inline-icon-button" title="<?php echo e(t('Edit time')); ?>">
                                                                                                     <?php echo get_icon('pencil', 'w-3 h-3'); ?>
                                                                                                 </button>
                                                                                         <?php endif; ?>
@@ -621,7 +612,7 @@ require_once BASE_PATH . '/includes/header.php';
                                                                                             <?php echo csrf_field(); ?>
                                                                                             <input type="hidden" name="entry_id" value="<?php echo $entry['id']; ?>">
                                                                                             <button type="submit" name="delete_time_entry"
-                                                                                                class="p-0.5 hover:text-red-500 transition text-theme-muted"
+                                                                                                class="ticket-inline-icon-button ticket-inline-icon-button--danger"
                                                                                                 title="<?php echo e(t('Delete time')); ?>"
                                                                                                 onclick="return confirm('<?php echo e(t('Delete this time entry?')); ?>')">
                                                                                                 <?php echo get_icon('trash', 'w-3 h-3'); ?>
@@ -642,7 +633,8 @@ require_once BASE_PATH . '/includes/header.php';
             <?php endif; ?>
 
             <!-- Add Comment Form -->
-            <form method="post" enctype="multipart/form-data" class="p-3 lg:p-4 border-t bg-theme-secondary"
+            <form method="post" enctype="multipart/form-data" class="ticket-composer"
+                data-ticket-composer-surface
                 id="comment-form">
                 <?php echo csrf_field(); ?>
                 <?php
@@ -658,23 +650,23 @@ require_once BASE_PATH . '/includes/header.php';
 
                 <?php if (is_agent()): ?>
                         <!-- Comment Mode Toggle - Primary Choice -->
-                        <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-                            <div class="inline-flex items-center gap-0.5 rounded-lg p-1 bg-theme-secondary">
+                        <div class="ticket-composer-mode-row">
+                            <div class="ticket-composer-mode-tabs">
                                 <button type="button"
-                                    class="comment-mode-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all"
+                                    class="comment-mode-btn ticket-composer-mode-button"
                                     data-mode="public" title="<?php echo e(t('Public reply')); ?>">
                                     <?php echo get_icon('eye', 'w-4 h-4'); ?>
                                     <span><?php echo e(t('Public')); ?></span>
                                 </button>
                                 <button type="button"
-                                    class="comment-mode-btn flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all"
+                                    class="comment-mode-btn ticket-composer-mode-button"
                                     data-mode="internal" title="<?php echo e(t('Internal note')); ?>">
                                     <?php echo get_icon('lock', 'w-4 h-4'); ?>
                                     <span><?php echo e(t('Internal')); ?></span>
                                 </button>
                             </div>
                             <input type="checkbox" id="is_internal_toggle" name="is_internal" class="hidden">
-                            <p class="text-xs text-theme-muted" id="comment-mode-hint">
+                            <p class="ticket-composer-mode-hint" id="comment-mode-hint">
                                 <?php echo e(t('Visible to customer')); ?></p>
                         </div>
                 <?php endif; ?>
@@ -682,7 +674,7 @@ require_once BASE_PATH . '/includes/header.php';
                 <!-- Public Reply Section -->
                 <div id="public-comment-section">
                     <?php if (!is_agent()): ?>
-                            <label class="block text-sm mb-2 text-theme-secondary"><?php echo e(t('Your reply')); ?>
+                            <label class="ticket-composer-label"><?php echo e(t('Your reply')); ?>
                                 <span class="text-red-500">*</span></label>
                     <?php endif; ?>
                     <div class="editor-wrapper">
@@ -702,11 +694,11 @@ require_once BASE_PATH . '/includes/header.php';
                 <?php endif; ?>
 
                 <!-- Status + Attachments -->
-                <div class="mt-3">
+                <div class="ticket-composer-tools">
                     <?php if (is_agent()): ?>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="ticket-composer-tool-grid">
                                 <div>
-                                    <select name="status_id" class="form-select text-sm w-full" style="height: 42px;">
+                                    <select name="status_id" class="form-select ticket-composer-status-select">
                                         <?php foreach ($statuses as $status): ?>
                                                 <option value="<?php echo $status['id']; ?>" <?php echo $status['id'] == $ticket['status_id'] ? 'selected' : ''; ?>>
                                                     <?php echo e(t('Status')); ?>: <?php echo e($status['name']); ?>
@@ -716,8 +708,7 @@ require_once BASE_PATH . '/includes/header.php';
                                 </div>
                                 <div>
                                     <div id="comment-upload-zone"
-                                        class="upload-zone rounded-lg text-center cursor-pointer border-2 border-dashed hover:border-blue-300 transition-colors flex items-center justify-center"
-                                        style="border-color: var(--border-light); height: 42px;">
+                                        class="upload-zone ticket-composer-upload-zone">
                                         <input type="file" name="comment_attachments[]" id="comment-file-input" multiple
                                             class="hidden"
                                             accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar">
@@ -736,7 +727,7 @@ require_once BASE_PATH . '/includes/header.php';
                             <!-- Non-agent: attachments only -->
                             <div>
                                 <div id="comment-upload-zone"
-                                    class="upload-zone rounded-lg p-2.5 text-center cursor-pointer border-2 border-dashed hover:border-blue-300 transition-colors border-theme-light">
+                                    class="upload-zone ticket-composer-upload-zone ticket-composer-upload-zone--standalone">
                                     <input type="file" name="comment_attachments[]" id="comment-file-input" multiple
                                         class="hidden"
                                         accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar">
@@ -761,49 +752,49 @@ require_once BASE_PATH . '/includes/header.php';
 
                 <?php if (is_agent() && $time_tracking_available): ?>
                         <!-- Manual Time Entry (expandable, between attachments and submit row) -->
-                        <div id="manual-entry-row" class="hidden mt-2 pt-2 border-t border-theme-light">
+                        <div id="manual-entry-row" class="ticket-composer-manual-entry hidden">
                             <input type="hidden" name="manual_start_at" id="manual-start-at">
                             <input type="hidden" name="manual_end_at" id="manual-end-at">
-                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                                <div>
-                                    <label class="form-label-sm mb-1"><?php echo e(t('Time (min)')); ?></label>
+                            <div class="ticket-composer-manual-grid">
+                                <div class="ticket-composer-field">
+                                    <label class="form-label-sm"><?php echo e(t('Time (min)')); ?></label>
                                     <input type="number" name="manual_duration_minutes" id="manual-duration-minutes"
                                         min="1" max="1440" step="1" placeholder="15"
-                                        class="form-input text-sm h-9">
+                                        class="form-input ticket-composer-compact-input">
                                 </div>
-                                <div>
-                                    <label class="form-label-sm mb-1"><?php echo e(t('Date')); ?></label>
+                                <div class="ticket-composer-field">
+                                    <label class="form-label-sm"><?php echo e(t('Date')); ?></label>
                                     <input type="date" name="manual_date" value="<?php echo e(date('Y-m-d')); ?>"
-                                        class="form-input text-sm h-9">
+                                        class="form-input ticket-composer-compact-input">
                                 </div>
-                                <div>
-                                    <label class="form-label-sm mb-1"><?php echo e(t('Start')); ?></label>
-                                    <input type="time" name="manual_start_time" class="form-input text-sm h-9">
+                                <div class="ticket-composer-field">
+                                    <label class="form-label-sm"><?php echo e(t('Start')); ?></label>
+                                    <input type="time" name="manual_start_time" class="form-input ticket-composer-compact-input">
                                 </div>
-                                <div>
-                                    <label class="form-label-sm mb-1"><?php echo e(t('End')); ?></label>
-                                    <input type="time" name="manual_end_time" class="form-input text-sm h-9">
+                                <div class="ticket-composer-field">
+                                    <label class="form-label-sm"><?php echo e(t('End')); ?></label>
+                                    <input type="time" name="manual_end_time" class="form-input ticket-composer-compact-input">
                                 </div>
                             </div>
-                            <div class="mt-2 flex flex-wrap gap-2">
-                                <button type="button" class="manual-duration-chip btn btn-ghost px-2 py-1 text-xs" data-minutes="5">+5</button>
-                                <button type="button" class="manual-duration-chip btn btn-ghost px-2 py-1 text-xs" data-minutes="10">+10</button>
-                                <button type="button" class="manual-duration-chip btn btn-ghost px-2 py-1 text-xs" data-minutes="15">+15</button>
-                                <button type="button" class="manual-duration-chip btn btn-ghost px-2 py-1 text-xs" data-minutes="30">+30</button>
-                                <button type="button" class="manual-duration-chip btn btn-ghost px-2 py-1 text-xs" data-minutes="60">+60</button>
+                            <div class="ticket-composer-manual-presets">
+                                <button type="button" class="manual-duration-chip ticket-composer-manual-chip" data-minutes="5">+5</button>
+                                <button type="button" class="manual-duration-chip ticket-composer-manual-chip" data-minutes="10">+10</button>
+                                <button type="button" class="manual-duration-chip ticket-composer-manual-chip" data-minutes="15">+15</button>
+                                <button type="button" class="manual-duration-chip ticket-composer-manual-chip" data-minutes="30">+30</button>
+                                <button type="button" class="manual-duration-chip ticket-composer-manual-chip" data-minutes="60">+60</button>
                             </div>
                         </div>
                 <?php endif; ?>
 
                 <!-- Submit row: timer + notification on LEFT, CC + send on RIGHT -->
-                <div class="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
-                    <div class="flex items-center gap-2 flex-wrap min-w-0">
+                <div class="ticket-composer-submit-row">
+                    <div class="ticket-composer-submit-left">
                         <?php if (is_agent() && $time_tracking_available): ?>
                                 <!-- Unified timer control — single button that changes state -->
                                 <div id="timer-controls" data-ticket-id="<?php echo $ticket_id; ?>"
-                                    data-paused="<?php echo $timer_is_paused ? '1' : '0'; ?>" class="flex items-center gap-2">
+                                    data-paused="<?php echo $timer_is_paused ? '1' : '0'; ?>" class="ticket-composer-timer-controls">
                                     <button type="button" id="btn-timer-action"
-                                        class="btn <?php echo $timer_state === 'running' ? 'btn-warning' : 'btn-success'; ?> px-3 py-1.5 text-sm inline-flex items-center gap-1.5 transition-colors"
+                                        class="btn <?php echo $timer_state === 'running' ? 'btn-warning' : 'btn-success'; ?> ticket-composer-timer-button"
                                         data-state="<?php echo $timer_state; ?>"
                                         title="<?php echo $timer_state === 'running' ? e(t('Pause timer')) : ($timer_state === 'paused' ? e(t('Resume timer')) : e(t('Start timer'))); ?>">
                                         <span class="btn-timer-icon">
@@ -830,38 +821,36 @@ require_once BASE_PATH . '/includes/header.php';
                                     </button>
                                     <!-- Log on submit checkbox (visible when timer active) -->
                                     <label id="timer-log-toggle"
-                                        class="<?php echo $timer_state === 'stopped' ? 'hidden' : ''; ?> inline-flex items-center gap-1.5 text-xs cursor-pointer select-none whitespace-nowrap"
-                                        style="color: var(--text-secondary);">
+                                        class="ticket-composer-timer-log <?php echo $timer_state === 'stopped' ? 'hidden' : ''; ?>">
                                         <input type="checkbox" name="stop_timer" id="stop-timer-toggle" value="1" <?php echo $timer_state !== 'stopped' ? 'checked' : 'disabled'; ?>
                                             class="rounded text-blue-600 focus:ring-blue-500 w-4 h-4">
                                         <span><?php echo e(t('Log on submit')); ?></span>
                                     </label>
                                     <!-- Discard button (visible when timer active) -->
                                     <button type="button" id="btn-discard-timer"
-                                        class="<?php echo $timer_state === 'stopped' ? 'hidden' : ''; ?> btn btn-ghost px-2 py-1.5 hover:text-red-500 transition-colors"
-                                        style="color: var(--text-muted);" title="<?php echo e(t('Discard timer')); ?>">
+                                        class="ticket-composer-icon-button <?php echo $timer_state === 'stopped' ? 'hidden' : ''; ?>"
+                                        title="<?php echo e(t('Discard timer')); ?>">
                                         <?php echo get_icon('trash', 'w-4 h-4'); ?>
                                     </button>
                                 </div>
                                 <!-- Manual entry toggle -->
-                                <button type="button" id="manual-toggle" class="btn btn-ghost px-2 py-1.5 text-theme-muted"
+                                <button type="button" id="manual-toggle" class="ticket-composer-icon-button ticket-composer-icon-button--neutral"
                                     aria-expanded="false"
                                     title="<?php echo e(t('Manual entry')); ?>">
                                     <?php echo get_icon('pen', 'w-4 h-4'); ?>
                                 </button>
                         <?php endif; ?>
-                        <label class="flex items-center text-sm cursor-pointer whitespace-nowrap text-theme-secondary">
-                            <input type="checkbox" name="skip_notification" value="1" class="mr-2 rounded">
+                        <label class="ticket-composer-skip-notification">
+                            <input type="checkbox" name="skip_notification" value="1" class="ticket-composer-checkbox">
                             <span><?php echo e(t('Do not send email notification')); ?></span>
                         </label>
                     </div>
-                    <div class="flex items-center gap-2 flex-shrink-0">
+                    <div class="ticket-composer-submit-right">
                         <?php if (is_agent()): ?>
                                 <!-- CC compact -->
-                                <div class="relative" id="agent-cc-dropdown-container">
+                                <div class="ticket-composer-cc-dropdown" id="agent-cc-dropdown-container">
                                     <button type="button" id="agent-cc-toggle"
-                                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm border rounded-lg transition-colors"
-                                        style="color: var(--text-secondary); background: var(--bg-primary); border-color: var(--border-light);"
+                                        class="ticket-composer-cc-toggle"
                                         data-none-text="<?php echo e(t('CC')); ?>"
                                         data-selected-text="<?php echo e(t('CC')); ?>">
                                         <?php echo get_icon('users', 'w-3.5 h-3.5 td-text-muted'); ?>
@@ -869,15 +858,14 @@ require_once BASE_PATH . '/includes/header.php';
                                         <?php echo get_icon('chevron-down', 'w-3 h-3 td-text-muted flex-shrink-0'); ?>
                                     </button>
                                     <div id="agent-cc-list"
-                                        class="hidden absolute z-50 bottom-full mb-1 right-0 w-64 border rounded-lg shadow-lg max-h-48 overflow-y-auto"
-                                        style="background: var(--bg-primary); border-color: var(--border-light);">
+                                        class="ticket-composer-cc-list hidden">
                                         <?php foreach ($all_users as $u): ?>
                                                 <?php if ($u['id'] !== $user['id'] && $u['id'] !== $ticket['user_id']): ?>
-                                                        <label class="flex items-center px-3 py-2 cursor-pointer tr-hover">
+                                                        <label class="ticket-composer-cc-option">
                                                             <input type="checkbox" name="cc_users[]" value="<?php echo $u['id']; ?>"
-                                                                class="agent-cc-checkbox rounded text-blue-600 mr-2">
+                                                                class="agent-cc-checkbox ticket-composer-checkbox">
                                                             <span
-                                                                class="text-sm truncate"><?php echo e($u['first_name'] . ' ' . $u['last_name']); ?></span>
+                                                                class="ticket-composer-cc-name"><?php echo e($u['first_name'] . ' ' . $u['last_name']); ?></span>
                                                         </label>
                                                 <?php endif; ?>
                                         <?php endforeach; ?>
@@ -885,7 +873,7 @@ require_once BASE_PATH . '/includes/header.php';
                                 </div>
                         <?php endif; ?>
                         <button type="submit" name="add_comment" id="comment-submit-btn"
-                            class="btn btn-primary whitespace-nowrap"
+                            class="btn btn-primary ticket-composer-submit-button"
                             data-default-text="<?php echo e(t('Send update')); ?>"
                             data-log-time-text="<?php echo e(t('Log time & send update')); ?>"
                             data-stop-text="<?php echo e(t('Stop timer & send update')); ?>"
@@ -1965,15 +1953,7 @@ require_once BASE_PATH . '/includes/header.php';
 
         modeButtons.forEach(btn => {
             const active = btn.dataset.mode === mode;
-            btn.classList.toggle('shadow', active);
-            btn.classList.toggle('text-blue-600', active);
-            if (active) {
-                btn.style.background = 'var(--bg-primary)';
-                btn.style.color = '';
-            } else {
-                btn.style.background = '';
-                btn.style.color = 'var(--text-muted)';
-            }
+            btn.classList.toggle('is-active', active);
         });
     }
 
