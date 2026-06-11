@@ -4,8 +4,9 @@ FoxDesk SaaS is deployable as a private/beta hosted service, but paid public lau
 
 ## Current State
 
-- App domain: `https://app.foxdesk.net`.
 - Public cloud page: `https://foxdesk.net` or `https://www.foxdesk.net` once DNS is pointed correctly.
+- Customer app domain: `https://app.foxdesk.net`.
+- Platform admin domain: `https://platform.foxdesk.net`.
 - Self-hosted migration export is public in the free PHP app release `v0.3.115`.
 - SaaS import is available in Platform Console under Migrations.
 - Billing foundation exists: Stripe Checkout, Customer Portal, signed webhooks, tenant subscription state, and metered storage reporting.
@@ -21,7 +22,8 @@ FoxDesk SaaS is deployable as a private/beta hosted service, but paid public lau
 
 ### 1. Domains and DNS
 
-- Keep `app.foxdesk.net` for the customer app login and platform admin.
+- Keep `app.foxdesk.net` for customer workspace login.
+- Use `platform.foxdesk.net` for the SaaS operator console.
 - Use `foxdesk.net` or `www.foxdesk.net` for the public SaaS website.
 - Keep `foxdesk.org` for the open-source/self-hosted edition.
 - Verify Cloudflare proxy/TLS for both public site and app.
@@ -122,10 +124,52 @@ FOXDESK_EMAIL_ROUTE_SECRET=...
 - Verify users, clients, tickets, attachments, reports, permissions, outbound email, and billing state.
 - Switch DNS only after the imported workspace is verified.
 
+### 8. Public Beta Verification
+
+The public beta gate is green when these local checks pass:
+
+```bash
+npm run beta:gate
+npm run test:csp-ui
+node tests/public-beta-gate.test.js
+node tests/stripe-beta-configurator.test.js
+```
+
+PHP contract checks must also pass inside the PHP runtime:
+
+```bash
+php -l pages/admin/reports.php
+php tests/reporting-flow-contract-test.php
+php tests/billing-review-test.php
+php tests/email-notification-contract-test.php
+php tests/email-format-test.php
+php tests/notification-policy-test.php
+php tests/platform-workspace-host-contract-test.php
+php tests/billing-lifecycle-contract-test.php
+php tests/r2-storage-contract-test.php
+php tests/email-routing-plus-address-contract-test.php
+php tests/legal-copy-contract-test.php
+php tests/security-debt-contract-test.php
+php tests/health-endpoint-contract-test.php
+php tests/home-redirect-contract-test.php
+```
+
+Current beta verification covers:
+
+- public/app/platform host separation
+- 14-day trial and Stripe checkout handoff
+- VAT ID collection support
+- idempotent Stripe webhook handling
+- R2 attachment storage contract
+- Cloudflare plus-address inbound reply contract
+- email formatting and reduced notification spam rules
+- legal, security, health, and home redirect contracts
+- CSP-safe UI baseline with no page-level `<style>` blocks
+
 ## Launch Order
 
-1. Fix DNS for `foxdesk.net` public SaaS site.
-2. Deploy current SaaS build to `app.foxdesk.net`.
+1. Fix DNS for `foxdesk.net`, `app.foxdesk.net`, and `platform.foxdesk.net`.
+2. Deploy current SaaS build to production.
 3. Review production legal copy and operator identity.
 4. Configure Stripe in test mode and run the billing flow.
 5. Configure R2 and test attachment storage.

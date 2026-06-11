@@ -74,6 +74,30 @@ $by_week = [];
 $by_source = [];
 
 $rounding = get_billing_rounding_increment();
+
+function report_scale_class(string $prefix, $value, $max = 100, int $steps = 20): string
+{
+    $value = max(0, (float) $value);
+    $max = max(1, (float) $max);
+    $steps = max(1, $steps);
+    $index = (int) round($steps * $value / $max);
+    if ($value > 0) {
+        $index = max(1, $index);
+    }
+    $index = min($steps, max(0, $index));
+    return $prefix . $index;
+}
+
+function report_width_class($percent): string
+{
+    return report_scale_class('report-width--', $percent, 100, 20);
+}
+
+function report_tone_class($index): string
+{
+    return 'report-tone--' . ((int) $index % 8);
+}
+
 // AI user IDs for human/AI breakdown (v0.3.1)
 $_ai_user_ids = function_exists('get_ai_user_ids') ? get_ai_user_ids() : [];
 
@@ -1347,7 +1371,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                             <?php echo e(format_duration_minutes($org['minutes'])); ?>
                                             <div class="flex items-center gap-1.5 mt-1">
                                                 <div class="report-mini-progress">
-                                                    <div class="report-mini-progress__bar report-mini-progress__bar--org" style="width: <?php echo $org_pct; ?>%;"></div>
+                                                    <div class="report-mini-progress__bar report-mini-progress__bar--org <?php echo e(report_width_class($org_pct)); ?>"></div>
                                                 </div>
                                                 <span class="text-xs text-theme-muted"><?php echo $org_pct; ?>%</span>
                                             </div>
@@ -1405,7 +1429,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                             <?php echo e(format_duration_minutes($agent['minutes'])); ?>
                                             <div class="flex items-center gap-1.5 mt-1">
                                                 <div class="report-mini-progress">
-                                                    <div class="report-mini-progress__bar report-mini-progress__bar--agent" style="width: <?php echo $agent_pct; ?>%;"></div>
+                                                    <div class="report-mini-progress__bar report-mini-progress__bar--agent <?php echo e(report_width_class($agent_pct)); ?>"></div>
                                                 </div>
                                                 <span class="text-xs text-theme-muted"><?php echo $agent_pct; ?>%</span>
                                             </div>
@@ -1461,7 +1485,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                         <?php echo e(format_duration_minutes($src['minutes'])); ?>
                                         <div class="flex items-center gap-1.5 mt-1">
                                             <div class="report-mini-progress">
-                                                <div class="report-mini-progress__bar report-mini-progress__bar--source" style="width: <?php echo $src_pct; ?>%;"></div>
+                                                <div class="report-mini-progress__bar report-mini-progress__bar--source <?php echo e(report_width_class($src_pct)); ?>"></div>
                                             </div>
                                             <span class="text-xs text-theme-muted"><?php echo $src_pct; ?>%</span>
                                         </div>
@@ -1548,7 +1572,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                             <?php endforeach; ?>
                         </tbody>
                         <?php if (!empty($closed_tickets_report)): ?>
-                        <tbody class="border-t-2" style="border-top-color: var(--border-light);">
+                        <tbody class="report-closed-ticket-toggle">
                             <tr class="cursor-pointer bg-theme-secondary" onclick="document.getElementById('closed-tickets-report').classList.toggle('hidden')">
                                 <?php $report_colspan = 3 + ($tags_supported ? 1 : 0) + ($show_money ? 1 : 0) + ($show_money && $has_cost_data ? 1 : 0); ?>
                                 <td colspan="<?php echo $report_colspan; ?>" class="px-6 py-2 font-medium text-xs text-center text-gray-500 hover:text-gray-700">
@@ -1558,7 +1582,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                         </tbody>
                         <tbody id="closed-tickets-report" class="hidden divide-y">
                             <?php foreach ($closed_tickets_report as $tid => $ticket): ?>
-                                <tr style="opacity: 0.7;">
+                                <tr class="report-muted-row">
                                     <td class="px-3 py-1.5 text-xs"><a href="<?php echo url('ticket', ['id' => $tid]); ?>" class="text-blue-600 hover:text-blue-800 hover:underline"><?php echo e($ticket['title']); ?></a></td>
                                     <td class="px-3 py-1.5 text-xs text-theme-secondary">
                                         <?php echo e($ticket['organization_name'] ?: t('-- No organization --')); ?></td>
@@ -1609,16 +1633,15 @@ include BASE_PATH . '/includes/components/page-header.php';
                 if ($w['minutes'] > $weekly_max_minutes) $weekly_max_minutes = $w['minutes'];
             }
             // Assign consistent agent colors
-            $weekly_agent_colors = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16'];
+            $weekly_agent_tone_map = [];
             $weekly_agent_ids = [];
             foreach ($by_week as $w) {
                 foreach (array_keys($w['agents']) as $aid) {
                     if (!in_array($aid, $weekly_agent_ids)) $weekly_agent_ids[] = $aid;
                 }
             }
-            $weekly_agent_color_map = [];
             foreach ($weekly_agent_ids as $ci => $aid) {
-                $weekly_agent_color_map[$aid] = $weekly_agent_colors[$ci % count($weekly_agent_colors)];
+                $weekly_agent_tone_map[$aid] = $ci % 8;
             }
             $weekly_col_count = 3 + ($show_money ? 1 : 0) + ($show_money && $has_cost_data ? 1 : 0);
             ?>
@@ -1630,7 +1653,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                         <?php foreach ($weekly_agent_ids as $aid): ?>
                             <?php $aname = ''; foreach ($by_week as $w) { if (isset($w['agents'][$aid])) { $aname = $w['agents'][$aid]['name']; break; } } ?>
                             <div class="flex items-center gap-1.5 text-xs text-theme-secondary">
-                                <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:<?php echo $weekly_agent_color_map[$aid]; ?>;"></span>
+                                <span class="report-agent-dot report-agent-dot--legend <?php echo e(report_tone_class($weekly_agent_tone_map[$aid] ?? 0)); ?>"></span>
                                 <?php echo e($aname); ?>
                             </div>
                         <?php endforeach; ?>
@@ -1643,7 +1666,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                             <tr>
                                 <th class="px-3 py-2 text-left th-label">
                                     <?php echo e(t('Week')); ?></th>
-                                <th class="px-3 py-2 text-left th-label" style="min-width:180px;">
+                                <th class="px-3 py-2 text-left th-label report-week-time-col">
                                     <?php echo e(t('Time')); ?></th>
                                 <th class="px-3 py-2 text-left th-label">
                                     <?php echo e(t('Billable time')); ?></th>
@@ -1659,7 +1682,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                         </thead>
                         <tbody class="divide-y">
                             <?php $wi = 0; foreach ($by_week as $wk => $week): $wi++; ?>
-                                <tr class="cursor-pointer hover:bg-opacity-50" style="transition:background .15s;" onclick="toggleWeekAgents('week-agents-<?php echo $wi; ?>')">
+                                <tr class="cursor-pointer hover:bg-opacity-50 report-week-row" onclick="toggleWeekAgents('week-agents-<?php echo $wi; ?>')">
                                     <td class="px-6 py-3">
                                         <div class="text-sm font-medium text-theme-primary"><?php echo e($week['label_formatted']); ?></div>
                                     </td>
@@ -1668,7 +1691,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                             <?php echo e(format_duration_minutes($week['minutes'])); ?>
                                         </div>
                                         <?php if ($weekly_max_minutes > 0): ?>
-                                        <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--border-light);margin-top:4px;width:100%;max-width:160px;" title="<?php
+                                        <div class="report-week-stack" title="<?php
                                             $parts = [];
                                             // Sort agents by minutes desc for this week
                                             $wa_sorted = $week['agents'];
@@ -1681,7 +1704,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                             <?php foreach ($wa_sorted as $aid => $ag):
                                                 $seg_pct = $weekly_max_minutes > 0 ? ($ag['minutes'] / $weekly_max_minutes) * 100 : 0;
                                             ?>
-                                            <div style="width:<?php echo round($seg_pct, 1); ?>%;background:<?php echo $weekly_agent_color_map[$aid] ?? '#94a3b8'; ?>;"></div>
+                                            <div class="report-week-segment <?php echo e(report_width_class($seg_pct)); ?> <?php echo e(report_tone_class($weekly_agent_tone_map[$aid] ?? 0)); ?>"></div>
                                             <?php endforeach; ?>
                                         </div>
                                         <?php endif; ?>
@@ -1700,7 +1723,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                 <tr id="week-agents-<?php echo $wi; ?>" class="hidden">
                                     <td colspan="<?php echo $weekly_col_count; ?>" class="px-0 py-0">
                                         <div class="px-6 py-3 bg-theme-secondary">
-                                            <div class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));">
+                                            <div class="report-week-agent-grid">
                                                 <?php
                                                 $wa_sorted2 = $week['agents'];
                                                 uasort($wa_sorted2, fn($a, $b) => $b['minutes'] <=> $a['minutes']);
@@ -1708,7 +1731,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                                     $ag_pct = $week['minutes'] > 0 ? round(($ag['minutes'] / $week['minutes']) * 100) : 0;
                                                 ?>
                                                 <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-theme-primary">
-                                                    <span style="display:inline-block;width:8px;height:8px;border-radius:2px;flex-shrink:0;background:<?php echo $weekly_agent_color_map[$aid] ?? '#94a3b8'; ?>;"></span>
+                                                    <span class="report-agent-dot report-agent-dot--small <?php echo e(report_tone_class($weekly_agent_tone_map[$aid] ?? 0)); ?>"></span>
                                                     <div class="min-w-0 flex-1">
                                                         <div class="text-xs font-medium truncate text-theme-primary"><?php echo e($ag['name']); ?></div>
                                                         <div class="text-xs text-theme-muted">
@@ -2624,7 +2647,7 @@ include BASE_PATH . '/includes/components/page-header.php';
         function applyCol(col, visible) {
             var cells = document.querySelectorAll('[data-col="' + col + '"]');
             cells.forEach(function (cell) {
-                cell.style.display = visible ? '' : 'none';
+                cell.classList.toggle('is-hidden', !visible);
             });
         }
 

@@ -2854,6 +2854,78 @@ background: #8b5cf6;
 .report-mini-progress__bar--source {
 background: #10b981;
 }
+.report-width--0 { width: 0; }
+.report-width--1 { width: 5%; }
+.report-width--2 { width: 10%; }
+.report-width--3 { width: 15%; }
+.report-width--4 { width: 20%; }
+.report-width--5 { width: 25%; }
+.report-width--6 { width: 30%; }
+.report-width--7 { width: 35%; }
+.report-width--8 { width: 40%; }
+.report-width--9 { width: 45%; }
+.report-width--10 { width: 50%; }
+.report-width--11 { width: 55%; }
+.report-width--12 { width: 60%; }
+.report-width--13 { width: 65%; }
+.report-width--14 { width: 70%; }
+.report-width--15 { width: 75%; }
+.report-width--16 { width: 80%; }
+.report-width--17 { width: 85%; }
+.report-width--18 { width: 90%; }
+.report-width--19 { width: 95%; }
+.report-width--20 { width: 100%; }
+.report-closed-ticket-toggle {
+border-top: 2px solid var(--border-light);
+}
+.report-muted-row {
+opacity: 0.7;
+}
+.report-week-time-col {
+min-width: 180px;
+}
+.report-week-row {
+transition: background 0.15s;
+}
+.report-week-stack {
+display: flex;
+height: 6px;
+border-radius: 3px;
+overflow: hidden;
+background: var(--border-light);
+margin-top: 4px;
+width: 100%;
+max-width: 160px;
+}
+.report-week-segment {
+height: 100%;
+}
+.report-week-agent-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+gap: 0.5rem;
+}
+.report-agent-dot {
+display: inline-block;
+border-radius: 2px;
+flex-shrink: 0;
+}
+.report-agent-dot--legend {
+width: 10px;
+height: 10px;
+}
+.report-agent-dot--small {
+width: 8px;
+height: 8px;
+}
+.report-tone--0 { background: #3b82f6; }
+.report-tone--1 { background: #8b5cf6; }
+.report-tone--2 { background: #10b981; }
+.report-tone--3 { background: #f59e0b; }
+.report-tone--4 { background: #ef4444; }
+.report-tone--5 { background: #ec4899; }
+.report-tone--6 { background: #06b6d4; }
+.report-tone--7 { background: #84cc16; }
 .worklog__cell--duration.is-saving {
 opacity: 0.4;
 }

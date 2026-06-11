@@ -48,6 +48,11 @@ $assert(str_contains($reports, 'class="report-summary-strip"'), 'Summary report 
 $assert(str_contains($reports, 'class="report-detail-totals"'), 'Detailed report totals must use the shared detail totals strip.');
 $assert(str_contains($reports, 'class="report-bulk-billing px-4 py-3 border-b"'), 'Bulk billing form must use the shared billing surface.');
 $assert(str_contains($reports, 'class="range-preset-btn <?php echo $time_range === $preset_val ? \'is-active\' : \'\'; ?>"'), 'Range presets must use an active class, not inline styles.');
+$assert(str_contains($reports, 'function report_width_class'), 'Reports page must normalize dynamic widths through CSS classes.');
+$assert(str_contains($reports, 'function report_tone_class'), 'Reports page must normalize chart colors through CSS classes.');
+$assert(str_contains($reports, 'report-mini-progress__bar--org <?php echo e(report_width_class($org_pct)); ?>'), 'Organization progress bars must use width classes.');
+$assert(str_contains($reports, 'report-week-segment <?php echo e(report_width_class($seg_pct)); ?>'), 'Weekly stacked bars must use width classes.');
+$assert(str_contains($reports, "cell.classList.toggle('is-hidden', !visible)"), 'Column picker must use CSS classes, not inline display writes.');
 $assert(str_contains($builder, '$_GET[\'organization_id\']'), 'Report builder must accept a prefilled organization.');
 $assert(str_contains($builder, '$_GET[\'date_from\']'), 'Report builder must accept a prefilled start date.');
 $assert(str_contains($builder, '$_GET[\'date_to\']'), 'Report builder must accept a prefilled end date.');
@@ -56,10 +61,17 @@ $assert(str_contains($theme, '.report-page-toolbar'), 'Report toolbar styling is
 $assert(str_contains($theme, '.report-filter-summary'), 'Report filter summary styling is missing.');
 $assert(str_contains($theme, '.report-metric__value'), 'Report metric styling is missing.');
 $assert(str_contains($theme, '.report-bulk-billing'), 'Report bulk billing styling is missing.');
+$assert(str_contains($theme, '.report-width--20'), 'Report width utility classes are missing.');
+$assert(str_contains($theme, '.report-tone--7'), 'Report tone utility classes are missing.');
+$assert(str_contains($theme, '.report-week-stack'), 'Report weekly stacked bar styling is missing.');
+$assert(str_contains($theme, '.report-agent-dot--legend'), 'Report agent legend dots are missing.');
 $assert(!str_contains($reports, 'style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;'), 'Report toolbar must not use inline layout styles.');
 $assert(!str_contains($reports, 'style="display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px;'), 'Report mini actions must use CSS classes.');
 $assert(!str_contains($reports, 'style="display: flex; border: 1px solid var(--border-light); border-radius: 8px;'), 'Report total strips must use CSS classes.');
 $assert(!str_contains($reports, 'btn.style.background'), 'Range preset state must use CSS classes.');
 $assert(!str_contains($reports, 'reportCustomRange.style.display'), 'Custom date range visibility must use CSS classes.');
+$assert(!str_contains($reports, 'style="'), 'Reports page must not use inline style attributes.');
+$assert(!str_contains($reports, 'style.'), 'Reports page JS must not write inline styles.');
+$assert(!str_contains($reports, 'weekly_agent_color_map'), 'Weekly report colors must use CSS tone classes.');
 
 echo "Reporting flow contract OK\n";

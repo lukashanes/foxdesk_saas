@@ -35,14 +35,23 @@ Files:
 - `tests/csp-ui-baseline.test.js`: fails when a file adds more inline/page
   styling than the baseline allows.
 
-Current baseline after the CSP cleanup milestone:
+Current baseline after the public beta hardening pass:
 
-- Affected files: 34
+- Affected files: 25
 - `<style>` blocks: 0
-- Inline `style=""` attributes: 434
+- Inline `style=""` attributes: 115
 - Unversioned `theme.css` links: 0
 - Unversioned `tailwind.min.css` links: 0
-- Priority files affected: 10
+- Priority files affected: 5
+
+Email-only HTML templates are deliberately excluded from the web CSP count:
+
+- `includes/modules/email/email-renderer.php`
+- `includes/report-functions.php`
+
+Those files still use inline CSS because many email clients ignore external
+stylesheets. The audit keeps them visible in `emailInlineStyleFiles` so this
+does not hide web UI debt.
 
 Completed in milestone 1 cleanup:
 
@@ -157,6 +166,20 @@ Completed in milestone 10c:
 - `tests/smoke/local-smoke.js`: now checks public signup/legal, dashboard,
   settings, notifications, activity, and the local platform-login fallback.
 
+Completed in public beta hardening:
+
+- `pages/admin/reports.php`: remaining inline progress widths, weekly stacked
+  bars, legend colors, closed-ticket toggles, and column picker display changes
+  were moved to class-based styling.
+- `theme.css`: report width steps, report tone classes, weekly report layout,
+  closed-ticket toggle state, and shared report dot styles were added.
+- `tests/reporting-flow-contract-test.php`: now fails if reports reintroduce
+  inline `style=""`, `style.` mutations, or the old PHP-generated color map.
+- `bin/audit-csp-ui.js`: email-only inline CSS is explicitly allowlisted and
+  reported separately from web UI CSP debt.
+- `tests/csp-ui-baseline.test.js`: verifies the email allowlist and the reduced
+  baseline before release.
+
 ## Priority Order
 
 ### P0 - Blocks Cloud Usability
@@ -203,10 +226,22 @@ Already converted:
 
 Remaining:
 
-- `includes/footer.php`
-- remaining dynamic inline styles in `includes/header.php`,
-  `pages/admin/settings.php`, `pages/admin/reports.php`, `pages/tickets.php`,
-  and `pages/ticket-detail.php`
+- Priority pages with small dynamic inline debt:
+  - `pages/tickets.php`
+  - `pages/new-ticket.php`
+  - `pages/platform.php`
+  - `pages/ticket-detail.php`
+  - `pages/client.php`
+- Non-priority admin/component pages with mostly legacy dynamic styles:
+  - `pages/admin/agent-connect.php`
+  - `pages/admin/statuses-content.php`
+  - `pages/admin/ticket-types-content.php`
+  - `pages/admin/priorities-content.php`
+  - `pages/admin/users.php`
+  - `pages/admin/organizations.php`
+  - `pages/notifications.php`
+  - `pages/profile.php`
+  - `includes/footer.php`
 
 Done means:
 

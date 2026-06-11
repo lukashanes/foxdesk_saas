@@ -25,6 +25,11 @@ const priorityFiles = [
   'pages/reset-password.php'
 ];
 
+const emailInlineStyleFiles = new Set([
+  'includes/modules/email/email-renderer.php',
+  'includes/report-functions.php'
+]);
+
 function walk(dir) {
   const out = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -63,6 +68,9 @@ function audit() {
   const files = scanRoots.flatMap(scanRoot => walk(path.join(root, scanRoot)));
   const records = files.map(file => {
     const relative = path.relative(root, file);
+    if (emailInlineStyleFiles.has(relative)) {
+      return null;
+    }
     const source = fs.readFileSync(file, 'utf8');
     const record = {
       file: relative,
@@ -74,12 +82,12 @@ function audit() {
     };
     record.risk = classifyRisk(record);
     return record;
-  }).filter(record =>
+  }).filter(record => record && (
     record.styleBlocks > 0 ||
     record.inlineStyles > 0 ||
     record.unversionedThemeLinks > 0 ||
     record.unversionedTailwindLinks > 0
-  );
+  ));
 
   records.sort((a, b) => {
     const riskOrder = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -112,6 +120,7 @@ function audit() {
   return {
     generatedAt: new Date().toISOString(),
     scanRoots,
+    emailInlineStyleFiles: Array.from(emailInlineStyleFiles),
     priorityFiles,
     totals,
     records
@@ -146,6 +155,7 @@ function writeBaseline(result) {
   const baseline = {
     generatedAt: result.generatedAt,
     scanRoots: result.scanRoots,
+    emailInlineStyleFiles: result.emailInlineStyleFiles,
     priorityFiles: result.priorityFiles,
     totals: result.totals,
     records: Object.fromEntries(result.records.map(record => [
@@ -216,4 +226,3 @@ if (args.has('--check-baseline')) {
   compareToBaseline(result);
   console.log('\nCSP UI baseline check passed.');
 }
-
