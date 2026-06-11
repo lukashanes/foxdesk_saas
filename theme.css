@@ -1463,6 +1463,13 @@ text-decoration: none;
 background: var(--surface-secondary);
 color: var(--text-primary);
 }
+.td-tool-btn--danger {
+color: var(--danger);
+}
+.td-tool-btn--danger:hover {
+color: var(--danger);
+background: var(--danger-soft, rgba(239, 68, 68, 0.08));
+}
 .td-tool-btn--active-timer {
 color: var(--warning, #eab308);
 }
@@ -1778,6 +1785,51 @@ gap: 0.5rem;
 .admin-hero-actions {
 flex-wrap: wrap;
 justify-content: flex-end;
+}
+.settings-warning-box,
+.settings-tfa-warning {
+border-color: var(--warning-border, #fde68a);
+background: var(--warning-bg, #fef3c7);
+color: var(--warning-text, #92400e);
+}
+.settings-warning-text {
+color: var(--warning-color, #d97706);
+}
+.settings-select--type {
+width: auto;
+min-width: 120px;
+}
+.settings-select--user {
+width: auto;
+min-width: 150px;
+}
+.settings-allowed-value {
+min-width: 200px;
+}
+.settings-table-wrap,
+.settings-table-row {
+border-color: var(--border-color);
+}
+.settings-muted-action {
+color: var(--text-muted);
+}
+.settings-page-link {
+background: var(--bg-primary);
+color: var(--text-secondary);
+text-decoration: none;
+}
+.settings-page-link:hover {
+color: var(--text-primary);
+background: var(--surface-secondary);
+}
+.settings-tfa-role {
+border: 1px solid var(--border-light);
+}
+.tfa-impact-warning {
+display: none;
+}
+.tfa-impact-warning.is-visible {
+display: flex;
 }
 .reporting-flow-card {
 display: grid;
@@ -5523,6 +5575,18 @@ font-size: 0.95rem;
 font-weight: 600;
 line-height: 1.2;
 }
+.workflow-card-title {
+font-weight: 600;
+}
+.workflow-card-title--statuses {
+color: #3b82f6;
+}
+.workflow-card-title--priorities {
+color: #f59e0b;
+}
+.workflow-card-title--types {
+color: #8b5cf6;
+}
 .workflow-card-header span svg {
 margin-right: 0.5rem;
 }
@@ -5530,6 +5594,10 @@ margin-right: 0.5rem;
 margin: 0;
 font-size: 0.75rem;
 line-height: 1.2;
+}
+.workflow-card-subtitle {
+color: var(--text-muted);
+margin-top: 0.25rem;
 }
 .workflow-card-body {
 flex: 1;

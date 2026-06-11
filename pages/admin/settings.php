@@ -1239,7 +1239,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                 <?php echo e(t('When enabled, the system will automatically create tickets from incoming emails. Requires a cron job or background tasks to be active.')); ?>
                             </p>
                             <?php if (!$imap_extension_loaded): ?>
-                                <div class="ml-8 mt-3 p-3 rounded border text-sm" style="border-color: var(--warning-color); background: var(--warning-bg); color: var(--warning-text);">
+                                <div class="settings-warning-box ml-8 mt-3 p-3 rounded border text-sm">
                                     <div class="font-semibold mb-1">
                                         <?php echo e(t('PHP IMAP extension is not loaded.')); ?>
                                     </div>
@@ -1356,7 +1356,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                 <span
                                     class="text-theme-secondary"><?php echo e(t('Allow unknown senders (without allowlist)')); ?></span>
                             </label>
-                            <p class="text-xs ml-7 mt-0.5" style="color: var(--warning-color, #d97706);">
+                            <p class="settings-warning-text text-xs ml-7 mt-0.5">
                                 <?php echo e(t('When enabled, anyone can create tickets by sending an email — not just addresses in the allowlist below.')); ?>
                             </p>
                         </div>
@@ -1380,18 +1380,18 @@ include BASE_PATH . '/includes/components/page-header.php';
                     <div class="flex flex-wrap gap-2 mb-4 items-end">
                         <div>
                             <label class="block text-xs mb-1 text-theme-secondary"><?php echo e(t('Type')); ?></label>
-                            <select id="as-type" class="input-field text-sm" style="width: auto; min-width: 120px;">
+                            <select id="as-type" class="input-field text-sm settings-select--type">
                                 <option value="email"><?php echo e(t('Email')); ?></option>
                                 <option value="domain"><?php echo e(t('Domain')); ?></option>
                             </select>
                         </div>
-                        <div class="flex-1" style="min-width: 200px;">
+                        <div class="settings-allowed-value flex-1">
                             <label class="block text-xs mb-1 text-theme-secondary"><?php echo e(t('Email or Domain')); ?></label>
                             <input type="text" id="as-value" class="input-field text-sm" placeholder="user@example.com">
                         </div>
                         <div>
                             <label class="block text-xs mb-1 text-theme-secondary"><?php echo e(t('Assign to user')); ?></label>
-                            <select id="as-user" class="input-field text-sm" style="width: auto; min-width: 150px;">
+                            <select id="as-user" class="input-field text-sm settings-select--user">
                                 <option value="">&mdash;</option>
                                 <?php foreach ($all_users as $u): ?>
                                     <option value="<?php echo (int)$u['id']; ?>"><?php echo e($u['first_name'] . ' ' . $u['last_name']); ?></option>
@@ -1404,7 +1404,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                     </div>
 
                     <!-- Senders table -->
-                    <div class="overflow-x-auto border rounded-lg" style="border-color: var(--border-color);">
+                    <div class="settings-table-wrap overflow-x-auto border rounded-lg">
                         <table class="w-full text-sm">
                             <thead>
                                 <tr class="bg-theme-secondary">
@@ -1424,7 +1424,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                     </tr>
                                 <?php else: ?>
                                     <?php foreach ($allowed_senders as $sender): ?>
-                                        <tr class="border-t" style="border-color: var(--border-color);" id="as-row-<?php echo (int)$sender['id']; ?>">
+                                        <tr class="settings-table-row border-t" id="as-row-<?php echo (int)$sender['id']; ?>">
                                             <td class="px-4 py-2 text-theme-secondary">
                                                 <?php echo $sender['type'] === 'email' ? 'Email' : e(t('Domain')); ?>
                                             </td>
@@ -1442,7 +1442,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                                 <?php endif; ?>
                                             </td>
                                             <td class="px-4 py-2 text-right">
-                                                <button type="button" onclick="toggleAllowedSender(<?php echo (int)$sender['id']; ?>)" class="text-xs hover:underline mr-2" style="color: var(--text-muted);">
+                                                <button type="button" onclick="toggleAllowedSender(<?php echo (int)$sender['id']; ?>)" class="settings-muted-action text-xs hover:underline mr-2">
                                                     <?php echo $sender['active'] ? e(t('Disable')) : e(t('Enable')); ?>
                                                 </button>
                                                 <button type="button" onclick="deleteAllowedSender(<?php echo (int)$sender['id']; ?>)" class="text-xs text-red-600 hover:underline">
@@ -1473,7 +1473,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                 <?php echo e(t('Master switch for all email notifications.')); ?>
                             </p>
                             <?php if (($settings['email_notifications_enabled'] ?? '0') === '1'): ?>
-                                <p class="text-xs ml-8 mt-1" style="color: var(--warning-color, #d97706);">
+                                <p class="settings-warning-text text-xs ml-8 mt-1">
                                     <?php echo e(t('Turning this off will stop all email notifications for all users — including ticket updates, status changes, and new ticket alerts.')); ?>
                                 </p>
                             <?php else: ?>
@@ -2132,7 +2132,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                             <form method="post"><?php echo csrf_field(); ?><input type="hidden" name="backup_id" value="<?php echo e($backup['id']); ?>"><input type="hidden" name="download_type" value="database"><button type="submit" name="download_backup" class="td-tool-btn" title="<?php echo e(t('Download database SQL')); ?>"><?php echo get_icon('file-alt', 'w-3.5 h-3.5'); ?></button></form>
                                         <?php endif; ?>
                                         <form method="post"><?php echo csrf_field(); ?><input type="hidden" name="backup_id" value="<?php echo e($backup['id']); ?>"><button type="submit" name="rollback_update" class="td-tool-btn" title="<?php echo e(t('Restore')); ?>" onclick="return confirm('<?php echo e(t('Restore this backup? Current files will be overwritten.')); ?>')"><?php echo get_icon('refresh', 'w-3.5 h-3.5'); ?></button></form>
-                                        <form method="post"><?php echo csrf_field(); ?><input type="hidden" name="backup_id" value="<?php echo e($backup['id']); ?>"><button type="submit" name="delete_backup" class="td-tool-btn" style="color: var(--danger);" title="<?php echo e(t('Delete')); ?>" onclick="return confirm('<?php echo e(t('Delete this backup permanently?')); ?>')"><?php echo get_icon('trash', 'w-3.5 h-3.5'); ?></button></form>
+                                        <form method="post"><?php echo csrf_field(); ?><input type="hidden" name="backup_id" value="<?php echo e($backup['id']); ?>"><button type="submit" name="delete_backup" class="td-tool-btn td-tool-btn--danger" title="<?php echo e(t('Delete')); ?>" onclick="return confirm('<?php echo e(t('Delete this backup permanently?')); ?>')"><?php echo get_icon('trash', 'w-3.5 h-3.5'); ?></button></form>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
@@ -2374,14 +2374,14 @@ include BASE_PATH . '/includes/components/page-header.php';
                         <div class="flex space-x-1">
                             <?php if ($page_num > 1): ?>
                                 <a href="<?php echo url('admin', ['section' => 'settings', 'tab' => 'logs', 'p' => $page_num - 1]); ?>"
-                                    class="px-3 py-1 border rounded text-sm" style="background: var(--bg-primary);">
+                                    class="settings-page-link px-3 py-1 border rounded text-sm">
                                     &laquo; <?php echo e(t('Prev')); ?>
                                 </a>
                             <?php endif; ?>
 
                             <?php if ($page_num < $total_pages): ?>
                                 <a href="<?php echo url('admin', ['section' => 'settings', 'tab' => 'logs', 'p' => $page_num + 1]); ?>"
-                                    class="px-3 py-1 border rounded text-sm" style="background: var(--bg-primary);">
+                                    class="settings-page-link px-3 py-1 border rounded text-sm">
                                     <?php echo e(t('Next')); ?> &raquo;
                                 </a>
                             <?php endif; ?>
@@ -2487,11 +2487,11 @@ include BASE_PATH . '/includes/components/page-header.php';
             <!-- Statuses Card -->
             <div class="workflow-card">
                 <div class="workflow-card-header">
-                    <span style="color: #3b82f6; font-weight: 600;">
+                    <span class="workflow-card-title workflow-card-title--statuses">
                         <?php echo get_icon('check-circle', 'w-4 h-4 inline mr-2'); ?>
                         <?php echo e(t('Statuses')); ?>
                     </span>
-                    <p class="text-xs" style="color: var(--text-muted); margin-top: 0.25rem;">
+                    <p class="workflow-card-subtitle text-xs">
                         <?php echo e(t('Manage ticket statuses')); ?>
                     </p>
                 </div>
@@ -2503,11 +2503,11 @@ include BASE_PATH . '/includes/components/page-header.php';
             <!-- Priorities Card -->
             <div class="workflow-card">
                 <div class="workflow-card-header">
-                    <span style="color: #f59e0b; font-weight: 600;">
+                    <span class="workflow-card-title workflow-card-title--priorities">
                         <?php echo get_icon('arrow-up', 'w-4 h-4 inline mr-2'); ?>
                         <?php echo e(t('Priorities')); ?>
                     </span>
-                    <p class="text-xs" style="color: var(--text-muted); margin-top: 0.25rem;">
+                    <p class="workflow-card-subtitle text-xs">
                         <?php echo e(t('Manage ticket priorities')); ?>
                     </p>
                 </div>
@@ -2519,11 +2519,11 @@ include BASE_PATH . '/includes/components/page-header.php';
             <!-- Ticket Types Card -->
             <div class="workflow-card">
                 <div class="workflow-card-header">
-                    <span style="color: #8b5cf6; font-weight: 600;">
+                    <span class="workflow-card-title workflow-card-title--types">
                         <?php echo get_icon('file-alt', 'w-4 h-4 inline mr-2'); ?>
                         <?php echo e(t('Ticket Types')); ?>
                     </span>
-                    <p class="text-xs" style="color: var(--text-muted); margin-top: 0.25rem;">
+                    <p class="workflow-card-subtitle text-xs">
                         <?php echo e(t('Manage ticket types')); ?>
                     </p>
                 </div>
@@ -2571,7 +2571,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                         $total = $cnt['total'];
                         $enabled = $cnt['enabled'];
                     ?>
-                    <div class="rounded-lg p-3 transition-colors" style="border: 1px solid var(--border-light);" data-tfa-role="<?php echo $role_key; ?>">
+                    <div class="settings-tfa-role rounded-lg p-3 transition-colors" data-tfa-role="<?php echo $role_key; ?>">
                         <label class="flex items-center gap-3 text-sm cursor-pointer text-theme-primary">
                             <input type="checkbox" name="2fa_required_<?php echo $role_key; ?>" class="rounded tfa-checkbox"
                                 data-role="<?php echo e($role_key); ?>"
@@ -2590,16 +2590,14 @@ include BASE_PATH . '/includes/components/page-header.php';
 
                         <?php if ($is_checked && $without > 0): ?>
                         <!-- Currently enforced but some users don't have it -->
-                        <div class="mt-2 rounded p-2 text-xs flex items-start gap-1.5"
-                            style="background: var(--warning-bg, #fef3c7); color: var(--warning-text, #92400e); border: 1px solid var(--warning-border, #fde68a);">
+                        <div class="settings-tfa-warning mt-2 rounded p-2 text-xs flex items-start gap-1.5">
                             <?php echo get_icon('exclamation-triangle', 'w-3.5 h-3.5 flex-shrink-0 mt-0.5'); ?>
                             <span><?php echo $without; ?> <?php echo e($without === 1 ? t('user is') : t('users are')); ?> <?php echo e(t('being forced to set up 2FA before they can use the system.')); ?></span>
                         </div>
                         <?php endif; ?>
 
                         <!-- JS-driven impact warning (hidden by default, shown when toggling ON) -->
-                        <div class="tfa-impact-warning mt-2 rounded p-2 text-xs items-start gap-1.5"
-                            style="display: none; background: var(--warning-bg, #fef3c7); color: var(--warning-text, #92400e); border: 1px solid var(--warning-border, #fde68a);">
+                        <div class="tfa-impact-warning settings-tfa-warning mt-2 rounded p-2 text-xs items-start gap-1.5">
                             <?php echo get_icon('exclamation-triangle', 'w-3.5 h-3.5 flex-shrink-0 mt-0.5'); ?>
                             <span class="tfa-impact-text"></span>
                         </div>
@@ -2644,14 +2642,14 @@ include BASE_PATH . '/includes/components/page-header.php';
                         } else {
                             text.textContent = <?php echo json_encode(t('All users in this role already have 2FA enabled. New users will be required to set it up on first login.')); ?>;
                         }
-                        warning.style.display = 'flex';
+                        warning.classList.add('is-visible');
                     } else if (!cb.checked && initialState) {
                         // Turning OFF — show what will happen
                         text.textContent = <?php echo json_encode(t('The forced setup requirement will be removed. Users who already have 2FA will keep it — it won\'t be disabled.')); ?>;
-                        warning.style.display = 'flex';
+                        warning.classList.add('is-visible');
                     } else {
                         // Back to initial state
-                        warning.style.display = 'none';
+                        warning.classList.remove('is-visible');
                     }
                 });
             });
