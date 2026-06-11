@@ -20,6 +20,9 @@ $assert(str_contains($header, 'class="app-topbar mobile-header'), 'Mobile header
 $assert(str_contains($header, 'app-shell-context'), 'Workspace header must show a compact workspace context.');
 $assert(str_contains($platform, 'op-environment-pill'), 'Platform console must show a platform admin environment pill.');
 
+$headerInlineStyleAttrs = preg_match_all('/\sstyle\s*=\s*["\']/', $header);
+$assert($headerInlineStyleAttrs === 0, 'Workspace header shell must not reintroduce inline style attributes.');
+
 foreach ([
     '--app-sidebar-width: 280px;',
     '--app-sidebar-compact-width: 76px;',
@@ -27,6 +30,9 @@ foreach ([
     '.app-shell-page .app-content',
     '.app-topbar',
     '.app-shell-context',
+    '.sidebar-timers',
+    '.notification-panel',
+    '.billing-trial-banner',
     '.op-environment-pill',
 ] as $needle) {
     $assert(str_contains($theme, $needle), 'theme.css missing app shell visual contract: ' . $needle);

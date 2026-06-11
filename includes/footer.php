@@ -1,7 +1,7 @@
 </div>
 
 <!-- Footer -->
-<footer class="px-4 lg:px-8 py-3 text-xs" style="color: var(--text-muted); margin-top: auto;">
+<footer class="app-footer px-4 lg:px-8 py-3 text-xs">
     <div class="copyright">
         <a href="https://foxdesk.org" target="_blank" rel="noopener" class="text-theme-muted">FoxDesk</a>
     </div>
@@ -47,7 +47,7 @@ if ('serviceWorker' in navigator) {
         // Only show if browser supports push
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
-        pushBtn.style.display = '';
+        pushBtn.classList.remove('is-hidden');
 
         // Check current state
         navigator.serviceWorker.ready.then(function(reg) {
@@ -60,14 +60,14 @@ if ('serviceWorker' in navigator) {
     function updatePushUI(subscribed) {
         if (!pushOn || !pushOff || !pushBtn) return;
         if (subscribed) {
-            pushOn.style.display = '';
-            pushOff.style.display = 'none';
-            pushBtn.style.color = 'var(--accent-primary, #3b82f6)';
+            pushOn.classList.remove('is-hidden');
+            pushOff.classList.add('is-hidden');
+            pushBtn.classList.add('is-active');
             pushBtn.title = <?php echo json_encode(t('Push notifications enabled')); ?>;
         } else {
-            pushOn.style.display = 'none';
-            pushOff.style.display = '';
-            pushBtn.style.color = 'var(--text-muted)';
+            pushOn.classList.add('is-hidden');
+            pushOff.classList.remove('is-hidden');
+            pushBtn.classList.remove('is-active');
             pushBtn.title = <?php echo json_encode(t('Enable push notifications')); ?>;
         }
     }

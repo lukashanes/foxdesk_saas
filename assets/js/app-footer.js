@@ -461,14 +461,12 @@ document.addEventListener('click', function(event) {
         a.appendChild(dot);
 
         var title = document.createElement('span');
-        title.className = 'flex-1 min-w-0 text-xs truncate';
-        title.style.color = 'var(--text-secondary)';
+        title.className = 'flex-1 min-w-0 text-xs truncate text-theme-secondary';
         title.textContent = t.ticket_title || '';
         a.appendChild(title);
 
         var time = document.createElement('span');
-        time.className = 'flex-shrink-0 text-[10px] font-mono font-medium' + (isPaused ? '' : ' timer-display');
-        time.style.color = isPaused ? 'var(--corp-warning, #f59e0b)' : 'var(--corp-success, #10b981)';
+        time.className = 'sidebar-timer-time flex-shrink-0 text-[10px] font-mono font-medium' + (isPaused ? ' sidebar-timer-time--paused' : ' timer-display');
         if (!isPaused) {
             time.dataset.started = t.started_at;
             time.dataset.pausedSeconds = t.paused_seconds || 0;
@@ -480,8 +478,7 @@ document.addEventListener('click', function(event) {
 
         // Pause/Resume toggle button
         var toggleBtn = document.createElement('button');
-        toggleBtn.className = 'flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity';
-        toggleBtn.style.color = 'var(--text-muted)';
+        toggleBtn.className = 'sidebar-icon-action ' + (isPaused ? 'sidebar-icon-action--success' : 'sidebar-icon-action--warning') + ' flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity';
         toggleBtn.title = isPaused ? (cfg.resumeLabel || 'Resume') : (cfg.pauseLabel || 'Pause');
         var toggleSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         toggleSvg.setAttribute('class', 'w-3 h-3');
@@ -495,12 +492,6 @@ document.addEventListener('click', function(event) {
         }
         toggleSvg.appendChild(togglePath);
         toggleBtn.appendChild(toggleSvg);
-        toggleBtn.addEventListener('mouseenter', function() {
-            toggleBtn.style.color = isPaused ? 'var(--corp-success, #10b981)' : 'var(--corp-warning, #f59e0b)';
-        });
-        toggleBtn.addEventListener('mouseleave', function() {
-            toggleBtn.style.color = 'var(--text-muted)';
-        });
         toggleBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -523,8 +514,7 @@ document.addEventListener('click', function(event) {
 
         // Stop button (■) - saves the timer
         var stopBtn = document.createElement('button');
-        stopBtn.className = 'flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity';
-        stopBtn.style.color = 'var(--text-muted)';
+        stopBtn.className = 'sidebar-icon-action sidebar-icon-action--danger flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity';
         stopBtn.title = cfg.stopTimerLabel || 'Stop timer';
         var stopSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         stopSvg.setAttribute('class', 'w-3 h-3');
@@ -539,12 +529,6 @@ document.addEventListener('click', function(event) {
         stopRect.setAttribute('height', '12');
         stopSvg.appendChild(stopRect);
         stopBtn.appendChild(stopSvg);
-        stopBtn.addEventListener('mouseenter', function() {
-            stopBtn.style.color = 'var(--corp-danger, #ef4444)';
-        });
-        stopBtn.addEventListener('mouseleave', function() {
-            stopBtn.style.color = 'var(--text-muted)';
-        });
         stopBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -554,12 +538,9 @@ document.addEventListener('click', function(event) {
 
         // Cancel button (✕)
         var btn = document.createElement('button');
-        btn.className = 'flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity';
-        btn.style.color = 'var(--text-muted)';
+        btn.className = 'sidebar-icon-action sidebar-icon-action--danger flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity';
         btn.title = cfg.cancelTicketTooltip || 'Cancel ticket';
         btn.textContent = '\u00D7';
-        btn.addEventListener('mouseenter', function() { btn.style.color = 'var(--corp-danger, #ef4444)'; });
-        btn.addEventListener('mouseleave', function() { btn.style.color = 'var(--text-muted)'; });
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -575,7 +556,7 @@ document.addEventListener('click', function(event) {
         var list = document.getElementById('sidebar-timers-list');
 
         if (timers.length === 0) {
-            if (section) section.style.display = 'none';
+            if (section) section.classList.add('is-hidden');
             return;
         }
 
@@ -587,12 +568,10 @@ document.addEventListener('click', function(event) {
 
             section = document.createElement('div');
             section.id = 'sidebar-timers';
-            section.className = 'mt-3 pt-3 border-t';
-            section.style.borderColor = 'var(--border-light)';
+            section.className = 'sidebar-timers mt-3 pt-3 border-t';
 
             var header = document.createElement('p');
-            header.className = 'px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5';
-            header.style.color = 'var(--text-muted)';
+            header.className = 'px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5 text-theme-muted';
 
             var dotSpan = document.createElement('span');
             dotSpan.className = 'sidebar-timer-dot';
@@ -613,7 +592,7 @@ document.addEventListener('click', function(event) {
             insertAfter.parentNode.insertBefore(section, insertAfter.nextSibling);
         }
 
-        section.style.display = '';
+        section.classList.remove('is-hidden');
 
         // Update count
         var countEl = section.querySelector('.sidebar-timer-count');

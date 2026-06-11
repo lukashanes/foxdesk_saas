@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-04T19:26:19.988Z",
+  "generatedAt": "2026-06-09T13:20:31.503Z",
   "scanRoots": [
     "pages",
     "includes"
@@ -22,44 +22,20 @@
     "pages/reset-password.php"
   ],
   "totals": {
-    "files": 34,
+    "files": 31,
     "styleBlocks": 0,
-    "inlineStyles": 434,
+    "inlineStyles": 219,
     "unversionedThemeLinks": 0,
     "unversionedTailwindLinks": 0,
-    "priorityFiles": 10,
+    "priorityFiles": 8,
     "risk": {
       "critical": 0,
-      "high": 5,
-      "medium": 29,
+      "high": 1,
+      "medium": 30,
       "low": 0
     }
   },
   "records": {
-    "pages/admin/reports.php": {
-      "styleBlocks": 0,
-      "inlineStyles": 93,
-      "unversionedThemeLinks": 0,
-      "unversionedTailwindLinks": 0
-    },
-    "pages/tickets.php": {
-      "styleBlocks": 0,
-      "inlineStyles": 67,
-      "unversionedThemeLinks": 0,
-      "unversionedTailwindLinks": 0
-    },
-    "pages/ticket-detail.php": {
-      "styleBlocks": 0,
-      "inlineStyles": 34,
-      "unversionedThemeLinks": 0,
-      "unversionedTailwindLinks": 0
-    },
-    "includes/header.php": {
-      "styleBlocks": 0,
-      "inlineStyles": 39,
-      "unversionedThemeLinks": 0,
-      "unversionedTailwindLinks": 0
-    },
     "pages/admin/activity.php": {
       "styleBlocks": 0,
       "inlineStyles": 27,
@@ -78,6 +54,18 @@
       "unversionedThemeLinks": 0,
       "unversionedTailwindLinks": 0
     },
+    "pages/admin/reports.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 12,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
+    "pages/tickets.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 6,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
     "pages/new-ticket.php": {
       "styleBlocks": 0,
       "inlineStyles": 4,
@@ -90,19 +78,13 @@
       "unversionedThemeLinks": 0,
       "unversionedTailwindLinks": 0
     },
+    "pages/ticket-detail.php": {
+      "styleBlocks": 0,
+      "inlineStyles": 3,
+      "unversionedThemeLinks": 0,
+      "unversionedTailwindLinks": 0
+    },
     "pages/client.php": {
-      "styleBlocks": 0,
-      "inlineStyles": 1,
-      "unversionedThemeLinks": 0,
-      "unversionedTailwindLinks": 0
-    },
-    "pages/inbox.php": {
-      "styleBlocks": 0,
-      "inlineStyles": 1,
-      "unversionedThemeLinks": 0,
-      "unversionedTailwindLinks": 0
-    },
-    "pages/work.php": {
       "styleBlocks": 0,
       "inlineStyles": 1,
       "unversionedThemeLinks": 0,
@@ -162,15 +144,15 @@
       "unversionedThemeLinks": 0,
       "unversionedTailwindLinks": 0
     },
-    "includes/footer.php": {
+    "pages/profile.php": {
       "styleBlocks": 0,
       "inlineStyles": 6,
       "unversionedThemeLinks": 0,
       "unversionedTailwindLinks": 0
     },
-    "pages/profile.php": {
+    "includes/footer.php": {
       "styleBlocks": 0,
-      "inlineStyles": 6,
+      "inlineStyles": 5,
       "unversionedThemeLinks": 0,
       "unversionedTailwindLinks": 0
     },
