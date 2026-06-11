@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-11T16:42:38.372Z",
+  "generatedAt": "2026-06-11T21:05:06.865Z",
   "scanRoots": [
     "pages",
     "includes"
@@ -22,26 +22,20 @@
     "pages/reset-password.php"
   ],
   "totals": {
-    "files": 29,
+    "files": 28,
     "styleBlocks": 0,
-    "inlineStyles": 171,
+    "inlineStyles": 155,
     "unversionedThemeLinks": 0,
     "unversionedTailwindLinks": 0,
-    "priorityFiles": 7,
+    "priorityFiles": 6,
     "risk": {
       "critical": 0,
       "high": 0,
-      "medium": 29,
+      "medium": 28,
       "low": 0
     }
   },
   "records": {
-    "pages/dashboard.php": {
-      "styleBlocks": 0,
-      "inlineStyles": 16,
-      "unversionedThemeLinks": 0,
-      "unversionedTailwindLinks": 0
-    },
     "pages/admin/reports.php": {
       "styleBlocks": 0,
       "inlineStyles": 12,

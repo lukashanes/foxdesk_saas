@@ -38,6 +38,96 @@ $get_started = dashboard_get_started_state($user);
 // Max items displayed per widget list (default 5). "View all" shown when exceeded.
 $db_list_limit = 5;
 
+function dashboard_scale_class(string $prefix, $value, $max = 100, int $steps = 20): string
+{
+    $value = max(0, (int) $value);
+    $max = max(1, (int) $max);
+    $steps = max(1, $steps);
+    $index = (int) round($steps * $value / $max);
+    if ($value > 0) {
+        $index = max(1, $index);
+    }
+    $index = min($steps, max(0, $index));
+    return $prefix . $index;
+}
+
+function dashboard_width_class($percent): string
+{
+    return dashboard_scale_class('db-width--', $percent, 100, 20);
+}
+
+function dashboard_avatar_class(string $seed): string
+{
+    $seed = trim($seed) !== '' ? trim($seed) : 'user';
+    return 'db-avatar-tone--' . (abs(crc32($seed)) % 12);
+}
+
+function dashboard_status_group(array $ticket): string
+{
+    $status = [
+        'id' => $ticket['status_id'] ?? null,
+        'name' => $ticket['status_name'] ?? '',
+        'is_closed' => $ticket['is_closed'] ?? 0,
+        'status_group' => $ticket['status_group'] ?? null,
+    ];
+    if (function_exists('ticket_status_group_from_status')) {
+        return ticket_status_group_from_status($status);
+    }
+    $name = strtolower(trim((string) ($status['name'] ?? '')));
+    if (!empty($status['is_closed']) || preg_match('/\b(done|closed|resolved|complete|completed|finished)\b/u', $name)) {
+        return 'done';
+    }
+    if (preg_match('/\b(new|open|todo|to do|received|created)\b/u', $name)) {
+        return 'new';
+    }
+    if (preg_match('/\b(wait|waiting|pending|hold|blocked|client|customer|vendor|third party)\b/u', $name)) {
+        return 'waiting';
+    }
+    return 'active';
+}
+
+function dashboard_status_text_class(array $ticket): string
+{
+    return 'db-ticket-status db-ticket-status--' . dashboard_status_group($ticket);
+}
+
+function dashboard_status_dot_class(array $ticket): string
+{
+    return 'db-ticket-status-dot db-ticket-status-dot--' . dashboard_status_group($ticket);
+}
+
+function dashboard_priority_key(string $priority_name): string
+{
+    if (function_exists('ticket_detail_priority_key')) {
+        return ticket_detail_priority_key($priority_name);
+    }
+    $text = function_exists('mb_strtolower') ? mb_strtolower(trim($priority_name), 'UTF-8') : strtolower(trim($priority_name));
+    if (preg_match('/\b(urgent|critical|blocker|highest)\b/u', $text)) {
+        return 'urgent';
+    }
+    if (preg_match('/\b(high|major)\b/u', $text)) {
+        return 'high';
+    }
+    if (preg_match('/\b(low|minor)\b/u', $text)) {
+        return 'low';
+    }
+    return 'medium';
+}
+
+function dashboard_priority_badge_class(string $priority_name): string
+{
+    return 'db-badge db-priority-badge db-priority-badge--' . dashboard_priority_key($priority_name);
+}
+
+function dashboard_notification_type_class(string $type): string
+{
+    $key = strtolower(trim($type));
+    $key = preg_replace('/[^a-z0-9]+/', '-', $key);
+    $key = trim((string) $key, '-');
+    $allowed = ['new-ticket', 'new-comment', 'status-changed', 'assigned-to-you', 'priority-changed', 'ticket-updated', 'due-date-reminder'];
+    return 'dbnotif-type-icon dbnotif-type-icon--' . (in_array($key, $allowed, true) ? $key : 'default');
+}
+
 $selected_agent_id = $is_admin ? max(0, (int) ($_GET['agent_id'] ?? 0)) : 0;
 $selected_agent = null;
 $selected_agent_totals = ['today' => 0, 'week' => 0, 'month' => 0];
@@ -198,7 +288,7 @@ require_once BASE_PATH . '/includes/header.php';
                     ])); ?>
                 </div>
                 <div class="db-onboarding__bar" aria-hidden="true">
-                    <span style="width: <?php echo (int) ($get_started['progress'] ?? 0); ?>%;"></span>
+                    <span class="<?php echo e(dashboard_width_class($get_started['progress'] ?? 0)); ?>"></span>
                 </div>
             </div>
         </div>
@@ -486,11 +576,8 @@ require_once BASE_PATH . '/includes/header.php';
                                 $n_actor_name = trim(($notif['actor_first_name'] ?? '') . ' ' . ($notif['actor_last_name'] ?? ''));
                                 $n_actor_avatar = $notif['actor_avatar'] ?? null;
                                 $n_initials = mb_strtoupper(mb_substr($notif['actor_first_name'] ?? '?', 0, 1));
-                                $avatar_bg = 'hsl(' . abs(crc32($n_actor_name)) % 360 . ', 55%, 60%)';
-
                                 $type_meta = notification_type_meta((string) $notif['type']);
                                 $type_icon = $type_meta['icon'];
-                                $type_color = $type_meta['color'];
                             ?>
                                 <?php if ($group_count > 1): ?>
                                 <!-- Ticket group: primary + collapsed children -->
@@ -500,10 +587,11 @@ require_once BASE_PATH . '/includes/header.php';
                                      id="dbnotif-<?php echo (int)$notif['id']; ?>"
                                      data-id="<?php echo (int)$notif['id']; ?>"
                                      data-action="<?php echo $n_is_action ? '1' : '0'; ?>">
-                                    <a href="<?php echo $n_href; ?>" class="dbnotif-avatar" style="background: <?php echo $avatar_bg; ?>;">
+                                    <a href="<?php echo $n_href; ?>" class="dbnotif-avatar <?php echo e(dashboard_avatar_class($n_actor_name)); ?>">
                                         <?php if ($n_actor_avatar && !str_starts_with($n_actor_avatar, 'data:')): ?>
+                                            <span class="dbnotif-avatar-fallback"><?php echo e($n_initials); ?></span>
                                             <img src="<?php echo e(upload_url($n_actor_avatar)); ?>" alt=""
-                                                 onerror="this.style.display='none';this.parentElement.textContent='<?php echo e($n_initials); ?>'">
+                                                 onerror="this.remove()">
                                         <?php elseif ($n_actor_avatar && str_starts_with($n_actor_avatar, 'data:')): ?>
                                             <img src="<?php echo e($n_actor_avatar); ?>" alt="">
                                         <?php else: ?>
@@ -516,7 +604,7 @@ require_once BASE_PATH . '/includes/header.php';
                                             <div class="dbnotif-snippet"><?php echo e($n_snippet); ?></div>
                                         <?php endif; ?>
                                         <div class="dbnotif-meta">
-                                            <span class="inline-flex items-center" style="color: <?php echo e($type_color); ?>;">
+                                            <span class="<?php echo e(dashboard_notification_type_class((string) $notif['type'])); ?>">
                                                 <?php echo get_icon($type_icon, 'w-3 h-3'); ?>
                                             </span>
                                             <span class="dbnotif-time"><?php echo e($n_time); ?></span>
@@ -562,22 +650,21 @@ require_once BASE_PATH . '/includes/header.php';
                                         }
 
                                         $c_icon = 'bell';
-                                        $c_color = '#6b7280';
                                         switch ($child['type']) {
-                                            case 'new_ticket':       $c_icon = 'plus';                 $c_color = '#10b981'; break;
-                                            case 'new_comment':      $c_icon = 'comment';              $c_color = '#3b82f6'; break;
-                                            case 'status_changed':   $c_icon = 'refresh-cw';           $c_color = '#8b5cf6'; break;
-                                            case 'assigned_to_you':  $c_icon = 'user-plus';            $c_color = '#f59e0b'; break;
-                                            case 'priority_changed': $c_icon = 'exclamation-triangle';  $c_color = '#ef4444'; break;
-                                            case 'ticket_updated':   $c_icon = 'edit';                  $c_color = '#6366f1'; break;
-                                            case 'due_date_reminder': $c_icon = 'clock';               $c_color = '#ef4444'; break;
+                                            case 'new_ticket':       $c_icon = 'plus'; break;
+                                            case 'new_comment':      $c_icon = 'comment'; break;
+                                            case 'status_changed':   $c_icon = 'refresh-cw'; break;
+                                            case 'assigned_to_you':  $c_icon = 'user-plus'; break;
+                                            case 'priority_changed': $c_icon = 'exclamation-triangle'; break;
+                                            case 'ticket_updated':   $c_icon = 'edit'; break;
+                                            case 'due_date_reminder': $c_icon = 'clock'; break;
                                         }
                                     ?>
                                         <a href="<?php echo $c_href; ?>"
                                            class="dbnotif-child-card <?php echo $c_is_read ? '' : 'unread'; ?>"
                                            id="dbnotif-<?php echo (int)$child['id']; ?>"
                                            data-id="<?php echo (int)$child['id']; ?>">
-                                            <span class="inline-flex items-center" style="color: <?php echo e($c_color); ?>;">
+                                            <span class="<?php echo e(dashboard_notification_type_class((string) $child['type'])); ?>">
                                                 <?php echo get_icon($c_icon, 'w-3 h-3'); ?>
                                             </span>
                                             <span class="dbnotif-child-text"><?php echo e($c_text); ?></span>
@@ -708,7 +795,7 @@ require_once BASE_PATH . '/includes/header.php';
                                 <span class="db-time-label"><?php echo e($tp['label']); ?></span>
                                 <span class="db-time-value"><?php echo format_duration_minutes($tp['value']); ?></span>
                                 <div class="db-time-bar-wrap">
-                                    <div class="db-time-bar" style="width: <?php echo $pct; ?>%"></div>
+                                    <div class="db-time-bar <?php echo e(dashboard_width_class($pct)); ?>"></div>
                                 </div>
                             </a>
                         <?php endforeach; ?>
@@ -808,7 +895,7 @@ require_once BASE_PATH . '/includes/header.php';
                                     <span class="db-time-label"><?php echo e($tp['label']); ?></span>
                                     <span class="db-time-value"><?php echo format_duration_minutes($tp['value']); ?></span>
                                     <div class="db-time-bar-wrap">
-                                        <div class="db-time-bar" style="width: <?php echo $pct; ?>%"></div>
+                                        <div class="db-time-bar <?php echo e(dashboard_width_class($pct)); ?>"></div>
                                     </div>
                                 </a>
                             <?php endforeach; ?>
@@ -873,7 +960,7 @@ require_once BASE_PATH . '/includes/header.php';
                     <?php else: ?>
                         <div class="space-y-2">
                             <?php foreach (array_slice($due_week_tickets, 0, $db_list_limit) as $ticket):
-                                $priority_color = $ticket['priority_color'] ?? '#6b7280';
+                                $priority_name = (string) ($ticket['priority_name'] ?? t('Normal'));
                                 $due_label = '';
                                 $due_class = 'bg-gray-100 text-gray-700';
                                 if (!empty($ticket['due_date'])) {
@@ -899,15 +986,13 @@ require_once BASE_PATH . '/includes/header.php';
                                             <span><?php echo get_ticket_code($ticket['id']); ?></span>
                                             <?php if (!empty($ticket['status_name'])): ?>
                                                 <span>&middot;</span>
-                                                <span
-                                                    style="color: <?php echo e($ticket['status_color'] ?? ''); ?>;"><?php echo e($ticket['status_name']); ?></span>
+                                                <span class="<?php echo e(dashboard_status_text_class($ticket)); ?>"><?php echo e($ticket['status_name']); ?></span>
                                             <?php endif; ?>
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-1.5 flex-shrink-0">
-                                        <span class="db-badge"
-                                            style="background-color: <?php echo e($priority_color); ?>20; color: <?php echo e($priority_color); ?>;">
-                                            <?php echo e($ticket['priority_name'] ?? t('Normal')); ?>
+                                        <span class="<?php echo e(dashboard_priority_badge_class($priority_name)); ?>">
+                                            <?php echo e($priority_name); ?>
                                         </span>
                                         <?php if ($due_label): ?>
                                             <span class="db-badge <?php echo $due_class; ?>"><?php echo e($due_label); ?></span>
@@ -993,7 +1078,7 @@ require_once BASE_PATH . '/includes/header.php';
                     <?php else: ?>
                         <div class="space-y-2">
                             <?php foreach (array_slice($recent_tickets, 0, $db_list_limit) as $ticket):
-                                $priority_color = $ticket['priority_color'] ?? '#6b7280';
+                                $priority_name = (string) ($ticket['priority_name'] ?? t('Normal'));
                                 $due_label = '';
                                 $due_class = 'bg-gray-100 text-gray-700';
                                 if (!empty($ticket['due_date'])) {
@@ -1019,8 +1104,7 @@ require_once BASE_PATH . '/includes/header.php';
                                             <span><?php echo get_ticket_code($ticket['id']); ?></span>
                                             <?php if (!empty($ticket['status_name'])): ?>
                                                 <span>&middot;</span>
-                                                <span
-                                                    style="color: <?php echo e($ticket['status_color'] ?? ''); ?>;"><?php echo e($ticket['status_name']); ?></span>
+                                                <span class="<?php echo e(dashboard_status_text_class($ticket)); ?>"><?php echo e($ticket['status_name']); ?></span>
                                             <?php endif; ?>
                                             <?php if (!empty($ticket['assignee_first_name'])): ?>
                                                 <span>&middot;</span>
@@ -1029,9 +1113,8 @@ require_once BASE_PATH . '/includes/header.php';
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-1.5 flex-shrink-0">
-                                        <span class="db-badge"
-                                            style="background-color: <?php echo e($priority_color); ?>20; color: <?php echo e($priority_color); ?>;">
-                                            <?php echo e($ticket['priority_name'] ?? t('Normal')); ?>
+                                        <span class="<?php echo e(dashboard_priority_badge_class($priority_name)); ?>">
+                                            <?php echo e($priority_name); ?>
                                         </span>
                                         <?php if ($due_label): ?>
                                             <span class="db-badge <?php echo $due_class; ?>"><?php echo e($due_label); ?></span>
@@ -1064,7 +1147,7 @@ require_once BASE_PATH . '/includes/header.php';
                         <div class="space-y-2">
                             <?php foreach (array_slice($focus_tickets, 0, $db_list_limit) as $focus_item):
                                 $ticket = $focus_item['ticket'];
-                                $priority_color = $ticket['priority_color'] ?? '#6b7280';
+                                $priority_name = (string) ($ticket['priority_name'] ?? t('Normal'));
                                 $due_label = '';
                                 $due_class = 'bg-gray-100 text-gray-700';
                                 if (!empty($ticket['due_date'])) {
@@ -1090,15 +1173,13 @@ require_once BASE_PATH . '/includes/header.php';
                                             <span><?php echo get_ticket_code($ticket['id']); ?></span>
                                             <?php if (!empty($ticket['status_name'])): ?>
                                                 <span>&middot;</span>
-                                                <span
-                                                    style="color: <?php echo e($ticket['status_color'] ?? ''); ?>;"><?php echo e($ticket['status_name']); ?></span>
+                                                <span class="<?php echo e(dashboard_status_text_class($ticket)); ?>"><?php echo e($ticket['status_name']); ?></span>
                                             <?php endif; ?>
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-1.5 flex-shrink-0">
-                                        <span class="db-badge"
-                                            style="background-color: <?php echo e($priority_color); ?>20; color: <?php echo e($priority_color); ?>;">
-                                            <?php echo e($ticket['priority_name'] ?? t('Normal')); ?>
+                                        <span class="<?php echo e(dashboard_priority_badge_class($priority_name)); ?>">
+                                            <?php echo e($priority_name); ?>
                                         </span>
                                         <?php if ($due_label): ?>
                                             <span class="db-badge <?php echo $due_class; ?>"><?php echo e($due_label); ?></span>
@@ -1140,7 +1221,7 @@ require_once BASE_PATH . '/includes/header.php';
                                 <?php $nonstaff_total = count($recent_tickets); ?>
                                 <div class="divide-y theme-border">
                                     <?php foreach (array_slice($recent_tickets, 0, $db_list_limit) as $ticket):
-                                        $priority_color = $ticket['priority_color'] ?? '#6b7280';
+                                        $priority_name = (string) ($ticket['priority_name'] ?? t('Normal'));
                                         $due_label = '';
                                         $due_class = 'bg-gray-100 text-gray-700';
                                         if (!empty($ticket['due_date'])) {
@@ -1163,15 +1244,13 @@ require_once BASE_PATH . '/includes/header.php';
                                             <div class="flex items-start justify-between gap-3">
                                                 <div class="min-w-0 flex-1">
                                                     <div class="flex items-center gap-2 min-w-0">
-                                                        <span class="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
-                                                            style="background-color: <?php echo e($ticket['status_color']); ?>"></span>
+                                                        <span class="<?php echo e(dashboard_status_dot_class($ticket)); ?>"></span>
                                                         <span class="font-medium truncate theme-text"><?php echo e($ticket['title']); ?></span>
                                                     </div>
                                                     <div class="text-xs mt-1 flex flex-wrap items-center gap-1.5 theme-text-muted">
                                                         <span><?php echo get_ticket_code($ticket['id']); ?></span>
                                                         <span>&middot;</span>
-                                                        <span
-                                                            style="color: <?php echo e($ticket['status_color']); ?>;"><?php echo e($ticket['status_name']); ?></span>
+                                                        <span class="<?php echo e(dashboard_status_text_class($ticket)); ?>"><?php echo e($ticket['status_name']); ?></span>
                                                         <?php if (!empty($ticket['assignee_first_name'])): ?>
                                                             <span>&middot;</span>
                                                             <span><?php echo e($ticket['assignee_first_name'] . ' ' . mb_substr((string) $ticket['assignee_last_name'], 0, 1) . '.'); ?></span>
@@ -1179,9 +1258,8 @@ require_once BASE_PATH . '/includes/header.php';
                                                     </div>
                                                 </div>
                                                 <div class="flex flex-col items-end gap-1 flex-shrink-0">
-                                                    <span class="db-badge"
-                                                        style="background-color: <?php echo e($priority_color); ?>20; color: <?php echo e($priority_color); ?>;">
-                                                        <?php echo e($ticket['priority_name'] ?? t('Normal')); ?>
+                                                    <span class="<?php echo e(dashboard_priority_badge_class($priority_name)); ?>">
+                                                        <?php echo e($priority_name); ?>
                                                     </span>
                                                     <?php if ($due_label): ?>
                                                         <span class="db-badge <?php echo $due_class; ?>"><?php echo e($due_label); ?></span>
@@ -1238,7 +1316,7 @@ require_once BASE_PATH . '/includes/header.php';
                                             <span><?php echo get_ticket_code($ticket['id']); ?></span>
                                             <?php if (!empty($ticket['status_name'])): ?>
                                                 <span>&middot;</span>
-                                                <span style="color: <?php echo e($ticket['status_color'] ?? ''); ?>;"><?php echo e($ticket['status_name']); ?></span>
+                                                <span class="<?php echo e(dashboard_status_text_class($ticket)); ?>"><?php echo e($ticket['status_name']); ?></span>
                                             <?php endif; ?>
                                             <?php if (!empty($ticket['assignee_first_name'])): ?>
                                                 <span>&middot;</span>
@@ -1301,10 +1379,10 @@ require_once BASE_PATH . '/includes/header.php';
             }
             if (match) {
                 visible++;
-                el.style.display = (shown < limit) ? '' : 'none';
+                el.classList.toggle('is-hidden', shown >= limit);
                 shown++;
             } else {
-                el.style.display = 'none';
+                el.classList.add('is-hidden');
             }
         });
         var empty = list.querySelector('.completed-empty');
@@ -1314,7 +1392,7 @@ require_once BASE_PATH . '/includes/header.php';
             empty.textContent = '<?php echo e(t('No completed tickets')); ?>';
             list.appendChild(empty);
         }
-        empty.style.display = visible === 0 ? '' : 'none';
+        empty.classList.toggle('is-hidden', visible !== 0);
         // "View all" footer
         var va = document.getElementById('completed-viewall');
         var vc = document.getElementById('completed-viewall-count');
@@ -1526,7 +1604,7 @@ require_once BASE_PATH . '/includes/header.php';
             var id = w.dataset.widget;
             if (id) {
                 order.push(id);
-                if (w.classList.contains('is-hidden') || w.style.display === 'none') hidden.push(id);
+                if (w.classList.contains('is-hidden')) hidden.push(id);
                 sizes[id] = w.getAttribute('data-size') || 'full';
             }
         });
@@ -1539,7 +1617,7 @@ require_once BASE_PATH . '/includes/header.php';
 
     window.dismissGetStarted = function() {
         var panel = document.querySelector('[data-onboarding]');
-        if (panel) panel.style.display = 'none';
+        if (panel) panel.classList.add('is-hidden');
         try {
             localStorage.setItem('foxdesk_get_started_hidden', '1');
         } catch (e) {}
@@ -1551,7 +1629,7 @@ require_once BASE_PATH . '/includes/header.php';
         var forceShow = new URLSearchParams(window.location.search).has('signup');
         try {
             if (!forceShow && localStorage.getItem('foxdesk_get_started_hidden') === '1') {
-                panel.style.display = 'none';
+                panel.classList.add('is-hidden');
             }
         } catch (e) {}
     })();
@@ -1612,10 +1690,10 @@ require_once BASE_PATH . '/includes/header.php';
         if (delta === 0) c = 0;
         else c = Math.max(0, c + delta);
         if (c <= 0) {
-            badge.style.display = 'none';
+            badge.classList.add('is-hidden');
         } else {
             badge.textContent = c > 99 ? '99+' : c;
-            badge.style.display = '';
+            badge.classList.remove('is-hidden');
         }
     }
 
@@ -1633,13 +1711,12 @@ require_once BASE_PATH . '/includes/header.php';
     function applyFilter(f) {
         document.querySelectorAll('.dbnotif-card').forEach(function(card) {
             var isAction = card.getAttribute('data-action') === '1';
-            if (f === 'all') { card.style.display = ''; }
-            else if (f === 'action') { card.style.display = isAction ? '' : 'none'; }
-            else { card.style.display = isAction ? 'none' : ''; }
+            var showCard = f === 'all' || (f === 'action' ? isAction : !isAction);
+            card.classList.toggle('is-hidden', !showCard);
         });
         document.querySelectorAll('.dbnotif-ticket-group').forEach(function(g) {
             var primary = g.querySelector('.dbnotif-card');
-            g.style.display = (primary && primary.style.display !== 'none') ? '' : 'none';
+            g.classList.toggle('is-hidden', !(primary && !primary.classList.contains('is-hidden')));
         });
     }
     (function() {

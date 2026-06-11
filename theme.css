@@ -9343,6 +9343,28 @@ a.db-time-row:last-child,
     min-width: 2px;
 }
 
+.db-width--0 { width: 0; }
+.db-width--1 { width: 5%; }
+.db-width--2 { width: 10%; }
+.db-width--3 { width: 15%; }
+.db-width--4 { width: 20%; }
+.db-width--5 { width: 25%; }
+.db-width--6 { width: 30%; }
+.db-width--7 { width: 35%; }
+.db-width--8 { width: 40%; }
+.db-width--9 { width: 45%; }
+.db-width--10 { width: 50%; }
+.db-width--11 { width: 55%; }
+.db-width--12 { width: 60%; }
+.db-width--13 { width: 65%; }
+.db-width--14 { width: 70%; }
+.db-width--15 { width: 75%; }
+.db-width--16 { width: 80%; }
+.db-width--17 { width: 85%; }
+.db-width--18 { width: 90%; }
+.db-width--19 { width: 95%; }
+.db-width--20 { width: 100%; }
+
 /* ─── Team Table ─── */
 .db-team-table {
     width: 100%;
@@ -9617,6 +9639,78 @@ img.db-avatar {
     line-height: 1.5;
 }
 
+.db-ticket-status {
+    font-weight: 650;
+}
+
+.db-ticket-status--new {
+    color: #1d4ed8;
+}
+
+.db-ticket-status--active {
+    color: #4338ca;
+}
+
+.db-ticket-status--waiting {
+    color: #b45309;
+}
+
+.db-ticket-status--done {
+    color: #047857;
+}
+
+.db-ticket-status--archived {
+    color: var(--text-secondary);
+}
+
+.db-ticket-status-dot {
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    flex-shrink: 0;
+}
+
+.db-ticket-status-dot--new {
+    background: #2563eb;
+}
+
+.db-ticket-status-dot--active {
+    background: #4f46e5;
+}
+
+.db-ticket-status-dot--waiting {
+    background: #d97706;
+}
+
+.db-ticket-status-dot--done {
+    background: #059669;
+}
+
+.db-ticket-status-dot--archived {
+    background: var(--text-muted);
+}
+
+.db-priority-badge--low {
+    background: rgba(5, 150, 105, 0.09);
+    color: #047857;
+}
+
+.db-priority-badge--medium {
+    background: rgba(37, 99, 235, 0.08);
+    color: #1d4ed8;
+}
+
+.db-priority-badge--high {
+    background: rgba(217, 119, 6, 0.09);
+    color: #b45309;
+}
+
+.db-priority-badge--urgent {
+    background: rgba(220, 38, 38, 0.09);
+    color: #b91c1c;
+}
+
 /* ─── Timer ─── */
 .db-timer-row {
     display: flex;
@@ -9644,11 +9738,42 @@ img.db-avatar {
     background: var(--primary-soft, rgba(59,130,246,0.04));
 }
 .dbnotif-avatar {
-    width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 600; color: #fff; overflow: hidden;
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    overflow: hidden;
 }
-.dbnotif-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.dbnotif-avatar img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.dbnotif-avatar-fallback {
+    position: relative;
+    z-index: 0;
+}
+.db-avatar-tone--0 { background: #2563eb; }
+.db-avatar-tone--1 { background: #0891b2; }
+.db-avatar-tone--2 { background: #059669; }
+.db-avatar-tone--3 { background: #7c3aed; }
+.db-avatar-tone--4 { background: #db2777; }
+.db-avatar-tone--5 { background: #ea580c; }
+.db-avatar-tone--6 { background: #0f766e; }
+.db-avatar-tone--7 { background: #4f46e5; }
+.db-avatar-tone--8 { background: #be123c; }
+.db-avatar-tone--9 { background: #0369a1; }
+.db-avatar-tone--10 { background: #65a30d; }
+.db-avatar-tone--11 { background: #9333ea; }
 .dbnotif-content { flex: 1; min-width: 0; text-decoration: none; }
 .dbnotif-text { font-size: 0.8125rem; line-height: 1.35; color: var(--text-primary); }
 .dbnotif-card.unread .dbnotif-text { font-weight: 600; }
@@ -9658,6 +9783,18 @@ img.db-avatar {
 }
 .dbnotif-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
 .dbnotif-time { font-size: 0.6875rem; color: var(--text-muted); }
+.dbnotif-type-icon {
+    display: inline-flex;
+    align-items: center;
+}
+.dbnotif-type-icon--new-ticket { color: #10b981; }
+.dbnotif-type-icon--new-comment { color: #3b82f6; }
+.dbnotif-type-icon--status-changed { color: #8b5cf6; }
+.dbnotif-type-icon--assigned-to-you { color: #f59e0b; }
+.dbnotif-type-icon--priority-changed { color: #ef4444; }
+.dbnotif-type-icon--ticket-updated { color: #6366f1; }
+.dbnotif-type-icon--due-date-reminder { color: #ef4444; }
+.dbnotif-type-icon--default { color: #6b7280; }
 .dbnotif-action-badge {
     display: inline-flex; align-items: center; font-size: 0.5625rem;
     font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
