@@ -86,6 +86,39 @@ function pv_page_icon($pg) {
     return $icons[$pg] ?? 'file';
 }
 
+function pv_scale_class($prefix, $value, $max, $steps) {
+    $value = max(0, (int) $value);
+    $max = max(1, (int) $max);
+    $steps = max(1, (int) $steps);
+    $index = (int) round($steps * $value / $max);
+    if ($value > 0) {
+        $index = max(1, $index);
+    }
+    $index = min($steps, max(0, $index));
+    return $prefix . $index;
+}
+
+function pv_meter_class($value, $max) {
+    return pv_scale_class('act-meter--', $value, $max, 20);
+}
+
+function pv_spark_class($value, $max) {
+    return pv_scale_class('act-spark-bar--', $value, $max, 10);
+}
+
+function pv_avatar_class($name) {
+    $seed = trim((string) $name);
+    if ($seed === '') {
+        $seed = 'user';
+    }
+    return 'act-avatar--' . (abs(crc32($seed)) % 12);
+}
+
+function pv_role_class($role) {
+    $role = strtolower((string) ($role ?: 'user'));
+    return in_array($role, ['admin', 'agent', 'user'], true) ? 'act-role-' . $role : 'act-role-user';
+}
+
 // ── Fetch data ───────────────────────────────────────────────────────
 // Total counts
 $total_views = (int) (db_fetch_one("SELECT COUNT(*) as c FROM page_views WHERE created_at >= ? AND tenant_id = ?", [$range_date, current_tenant_id()])['c'] ?? 0);
@@ -167,15 +200,13 @@ require_once BASE_PATH . '/includes/header.php';
             <div class="act-stat-label"><?php echo e(t('Active users ({days}d)', ['days' => $range_days])); ?></div>
         </div>
         <div class="act-card">
-            <div class="act-stat-label" style="margin-bottom: 4px;"><?php echo e(t('Daily trend')); ?></div>
+            <div class="act-stat-label act-stat-label--spark"><?php echo e(t('Daily trend')); ?></div>
             <?php if (!empty($daily_views)):
                 $max_day = max(array_column($daily_views, 'views'));
             ?>
                 <div class="act-spark" title="<?php echo e(t('Daily page views')); ?>">
-                    <?php foreach ($daily_views as $dv):
-                        $h = $max_day > 0 ? max(3, round(28 * $dv['views'] / $max_day)) : 3;
-                    ?>
-                        <div class="act-spark-bar" style="height: <?php echo $h; ?>px; flex: 1;"
+                    <?php foreach ($daily_views as $dv): ?>
+                        <div class="act-spark-bar <?php echo e(pv_spark_class($dv['views'], $max_day)); ?>"
                              title="<?php echo e($dv['day'] . ': ' . $dv['views']); ?>"></div>
                     <?php endforeach; ?>
                 </div>
@@ -210,7 +241,7 @@ require_once BASE_PATH . '/includes/header.php';
                                 </span>
                             </div>
                             <div class="act-bar-bg">
-                                <div class="act-bar" style="width: <?php echo round(100 * $pp['views'] / $max_views); ?>%;"></div>
+                                <div class="act-bar <?php echo e(pv_meter_class($pp['views'], $max_views)); ?>"></div>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -219,7 +250,7 @@ require_once BASE_PATH . '/includes/header.php';
         </div>
 
         <!-- User activity -->
-        <div class="act-card" style="overflow: hidden; padding: 0;">
+        <div class="act-card act-card--flush">
             <div class="px-5 pt-4 pb-2">
                 <h3 class="text-xs font-semibold uppercase tracking-wider text-theme-muted">
                     <?php echo e(t('User Activity')); ?>
@@ -228,14 +259,14 @@ require_once BASE_PATH . '/includes/header.php';
             <?php if (empty($user_activity)): ?>
                 <div class="px-5 pb-4 text-sm text-theme-muted"><?php echo e(t('No data yet.')); ?></div>
             <?php else: ?>
-                <div style="overflow-x: auto;">
+                <div class="act-table-wrap">
                     <table class="act-table">
                         <thead>
                             <tr>
                                 <th><?php echo e(t('User')); ?></th>
                                 <th><?php echo e(t('Role')); ?></th>
-                                <th style="text-align:right;"><?php echo e(t('Views')); ?></th>
-                                <th style="text-align:right;"><?php echo e(t('Pages')); ?></th>
+                                <th class="act-th--numeric"><?php echo e(t('Views')); ?></th>
+                                <th class="act-th--numeric"><?php echo e(t('Pages')); ?></th>
                                 <th><?php echo e(t('Last Active')); ?></th>
                             </tr>
                         </thead>
@@ -243,14 +274,13 @@ require_once BASE_PATH . '/includes/header.php';
                             <?php foreach ($user_activity as $ua):
                                 $ua_name = trim(($ua['first_name'] ?? '') . ' ' . ($ua['last_name'] ?? ''));
                                 $ua_initials = mb_strtoupper(mb_substr($ua['first_name'] ?? '?', 0, 1));
-                                $ua_bg = 'hsl(' . abs(crc32($ua_name)) % 360 . ', 55%, 60%)';
-                                $role_class = 'act-role-' . ($ua['role'] ?? 'user');
+                                $role_class = pv_role_class($ua['role'] ?? 'user');
                             ?>
                                 <tr>
                                     <td>
                                         <a href="<?php echo url('admin', ['section' => 'activity', 'tab' => 'user', 'uid' => $ua['user_id'], 'range' => $range]); ?>"
-                                           class="flex items-center gap-2" style="text-decoration: none; color: var(--text-primary);">
-                                            <div class="act-avatar" style="background: <?php echo $ua_bg; ?>;">
+                                           class="act-person-link flex items-center gap-2">
+                                            <div class="act-avatar <?php echo e(pv_avatar_class($ua_name)); ?>">
                                                 <?php if (!empty($ua['avatar']) && !str_starts_with($ua['avatar'], 'data:')): ?>
                                                     <img src="<?php echo e(upload_url($ua['avatar'])); ?>" alt="">
                                                 <?php else: ?>
@@ -264,9 +294,9 @@ require_once BASE_PATH . '/includes/header.php';
                                         </a>
                                     </td>
                                     <td><span class="act-role-badge <?php echo $role_class; ?>"><?php echo e($ua['role']); ?></span></td>
-                                    <td style="text-align:right; font-variant-numeric: tabular-nums;"><?php echo number_format($ua['views']); ?></td>
-                                    <td style="text-align:right; font-variant-numeric: tabular-nums;"><?php echo $ua['pages_used']; ?></td>
-                                    <td class="whitespace-nowrap" style="color: var(--text-muted); font-size: 0.75rem;">
+                                    <td class="act-td--numeric"><?php echo number_format($ua['views']); ?></td>
+                                    <td class="act-td--numeric"><?php echo $ua['pages_used']; ?></td>
+                                    <td class="act-muted-cell whitespace-nowrap">
                                         <?php echo e(notification_time_ago($ua['last_active'])); ?>
                                     </td>
                                 </tr>
@@ -289,7 +319,6 @@ require_once BASE_PATH . '/includes/header.php';
     else:
         $du_name = trim(($detail_user['first_name'] ?? '') . ' ' . ($detail_user['last_name'] ?? ''));
         $du_initials = mb_strtoupper(mb_substr($detail_user['first_name'] ?? '?', 0, 1));
-        $du_bg = 'hsl(' . abs(crc32($du_name)) % 360 . ', 55%, 60%)';
 
         $du_pages = db_fetch_all("
             SELECT page, section, COUNT(*) as views
@@ -306,13 +335,13 @@ require_once BASE_PATH . '/includes/header.php';
         $du_total = (int) (db_fetch_one("SELECT COUNT(*) as c FROM page_views WHERE user_id = ? AND created_at >= ? AND tenant_id = ?", [$uid, $range_date, current_tenant_id()])['c'] ?? 0);
     ?>
     <a href="<?php echo url('admin', ['section' => 'activity', 'range' => $range]); ?>"
-       class="inline-flex items-center gap-1 text-sm mb-3" style="color: var(--primary); text-decoration: none;">
+       class="act-back-link inline-flex items-center gap-1 text-sm mb-3">
         <?php echo get_icon('arrow-left', 'w-3.5 h-3.5'); ?> <?php echo e(t('Back to overview')); ?>
     </a>
 
     <div class="act-card mb-4">
         <div class="flex items-center gap-3">
-            <div class="act-avatar" style="width: 40px; height: 40px; border-radius: 10px; font-size: 16px; background: <?php echo $du_bg; ?>;">
+            <div class="act-avatar act-avatar--lg <?php echo e(pv_avatar_class($du_name)); ?>">
                 <?php if (!empty($detail_user['avatar']) && !str_starts_with($detail_user['avatar'], 'data:')): ?>
                     <img src="<?php echo e(upload_url($detail_user['avatar'])); ?>" alt="">
                 <?php else: ?>
@@ -323,7 +352,7 @@ require_once BASE_PATH . '/includes/header.php';
                 <div class="font-bold text-base text-theme-primary"><?php echo e($du_name); ?></div>
                 <div class="text-xs text-theme-muted">
                     <?php echo e($detail_user['email']); ?> ·
-                    <span class="act-role-badge act-role-<?php echo e($detail_user['role']); ?>"><?php echo e($detail_user['role']); ?></span> ·
+                    <span class="act-role-badge <?php echo e(pv_role_class($detail_user['role'])); ?>"><?php echo e($detail_user['role']); ?></span> ·
                     <?php echo number_format($du_total); ?> <?php echo e(t('views in {days}d', ['days' => $range_days])); ?>
                 </div>
             </div>
@@ -352,7 +381,7 @@ require_once BASE_PATH . '/includes/header.php';
                                 <span class="text-xs tabular-nums text-theme-muted"><?php echo number_format($dp['views']); ?></span>
                             </div>
                             <div class="act-bar-bg">
-                                <div class="act-bar" style="width: <?php echo round(100 * $dp['views'] / $du_max); ?>%;"></div>
+                                <div class="act-bar <?php echo e(pv_meter_class($dp['views'], $du_max)); ?>"></div>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -361,13 +390,13 @@ require_once BASE_PATH . '/includes/header.php';
         </div>
 
         <!-- Recent activity -->
-        <div class="act-card" style="overflow: hidden; padding: 0;">
+        <div class="act-card act-card--flush">
             <div class="px-5 pt-4 pb-2">
                 <h3 class="text-xs font-semibold uppercase tracking-wider text-theme-muted">
                     <?php echo e(t('Recent Activity')); ?>
                 </h3>
             </div>
-            <div style="overflow-x: auto;">
+            <div class="act-table-wrap">
                 <table class="act-table">
                     <thead>
                         <tr>
@@ -378,7 +407,7 @@ require_once BASE_PATH . '/includes/header.php';
                     <tbody>
                         <?php foreach ($du_recent as $dr): ?>
                             <tr>
-                                <td class="whitespace-nowrap" style="color: var(--text-muted); font-size: 0.75rem;">
+                                <td class="act-muted-cell whitespace-nowrap">
                                     <?php echo date('d.m. H:i', strtotime($dr['created_at'])); ?>
                                 </td>
                                 <td>
@@ -466,11 +495,10 @@ require_once BASE_PATH . '/includes/header.php';
                 <?php endforeach; ?>
             </select>
 
-            <button type="submit" class="text-sm font-medium px-3 py-1.5 rounded-lg"
-                    style="background: var(--primary); color: #fff;"><?php echo e(t('Filter')); ?></button>
+            <button type="submit" class="act-filter-submit text-sm font-medium px-3 py-1.5 rounded-lg"><?php echo e(t('Filter')); ?></button>
             <?php if ($log_user || $log_page_filter !== ''): ?>
                 <a href="<?php echo url('admin', ['section' => 'activity', 'tab' => 'log', 'range' => $range]); ?>"
-                   class="text-sm" style="color: var(--text-muted);"><?php echo e(t('Clear')); ?></a>
+                   class="act-clear-link text-sm"><?php echo e(t('Clear')); ?></a>
             <?php endif; ?>
 
             <span class="text-xs ml-auto text-theme-muted">
@@ -480,8 +508,8 @@ require_once BASE_PATH . '/includes/header.php';
     </div>
 
     <!-- Log table -->
-    <div class="act-card" style="overflow: hidden; padding: 0;">
-        <div style="overflow-x: auto;">
+    <div class="act-card act-card--flush">
+        <div class="act-table-wrap">
             <table class="act-table">
                 <thead>
                     <tr>
@@ -497,16 +525,16 @@ require_once BASE_PATH . '/includes/header.php';
                     <?php else: ?>
                         <?php foreach ($log_entries as $le): ?>
                             <tr>
-                                <td class="whitespace-nowrap" style="color: var(--text-muted); font-size: 0.75rem;">
+                                <td class="act-muted-cell whitespace-nowrap">
                                     <?php echo date('d.m. H:i:s', strtotime($le['created_at'])); ?>
                                 </td>
                                 <td>
                                     <a href="<?php echo url('admin', ['section' => 'activity', 'tab' => 'user', 'uid' => $le['user_id'], 'range' => $range]); ?>"
-                                       style="color: var(--text-primary); text-decoration: none; font-size: 0.8125rem;">
+                                       class="act-log-user-link">
                                         <?php echo e(trim(($le['first_name'] ?? '') . ' ' . ($le['last_name'] ?? ''))); ?>
                                     </a>
                                 </td>
-                                <td><span class="act-role-badge act-role-<?php echo e($le['role'] ?? 'user'); ?>"><?php echo e($le['role'] ?? ''); ?></span></td>
+                                <td><span class="act-role-badge <?php echo e(pv_role_class($le['role'] ?? 'user')); ?>"><?php echo e($le['role'] ?? ''); ?></span></td>
                                 <td>
                                     <span class="act-page-pill">
                                         <?php echo get_icon(pv_page_icon($le['page']), 'w-3 h-3'); ?>
@@ -529,14 +557,14 @@ require_once BASE_PATH . '/includes/header.php';
                     <?php if ($page_num > 1): ?>
                         <a href="<?php echo url('admin', array_merge(['section' => 'activity', 'tab' => 'log', 'range' => $range, 'p' => $page_num - 1],
                             $log_user ? ['uid' => $log_user] : [], $log_page_filter !== '' ? ['fp' => $log_page_filter] : [])); ?>"
-                           class="px-3 py-1 text-xs rounded border" style="border-color: var(--border-light); color: var(--text-secondary); text-decoration: none;">
+                           class="act-page-link px-3 py-1 text-xs rounded border">
                             ← <?php echo e(t('Previous')); ?>
                         </a>
                     <?php endif; ?>
                     <?php if ($page_num < $log_pages): ?>
                         <a href="<?php echo url('admin', array_merge(['section' => 'activity', 'tab' => 'log', 'range' => $range, 'p' => $page_num + 1],
                             $log_user ? ['uid' => $log_user] : [], $log_page_filter !== '' ? ['fp' => $log_page_filter] : [])); ?>"
-                           class="px-3 py-1 text-xs rounded border" style="border-color: var(--border-light); color: var(--text-secondary); text-decoration: none;">
+                           class="act-page-link px-3 py-1 text-xs rounded border">
                             <?php echo e(t('Next')); ?> →
                         </a>
                     <?php endif; ?>
@@ -552,7 +580,7 @@ require_once BASE_PATH . '/includes/header.php';
     $oldest = db_fetch_one("SELECT MIN(created_at) as oldest FROM page_views WHERE tenant_id = ?", [current_tenant_id()]);
     $oldest_date = $oldest['oldest'] ?? null;
     ?>
-    <div class="act-card" style="max-width: 500px;">
+    <div class="act-card act-card--compact">
         <h3 class="text-sm font-semibold mb-3 text-theme-primary">
             <?php echo e(t('Data Management')); ?>
         </h3>
