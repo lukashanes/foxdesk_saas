@@ -35,14 +35,14 @@ Files:
 - `tests/csp-ui-baseline.test.js`: fails when a file adds more inline/page
   styling than the baseline allows.
 
-Current baseline after the public beta hardening pass:
+Current baseline after technical debt milestone 4:
 
-- Affected files: 25
+- Affected files: 23
 - `<style>` blocks: 0
-- Inline `style=""` attributes: 115
+- Inline `style=""` attributes: 106
 - Unversioned `theme.css` links: 0
 - Unversioned `tailwind.min.css` links: 0
-- Priority files affected: 5
+- Priority files affected: 3
 
 Email-only HTML templates are deliberately excluded from the web CSP count:
 
@@ -179,6 +179,20 @@ Completed in public beta hardening:
   reported separately from web UI CSP debt.
 - `tests/csp-ui-baseline.test.js`: verifies the email allowlist and the reduced
   baseline before release.
+
+Completed in technical debt milestone 4:
+
+- `pages/tickets.php`: status and priority badges now use semantic CSS modifier
+  classes plus `data-tone-class`/`data-row-accent-class` update targets instead
+  of inline `style=""` attributes. Search suggestions no longer write inline
+  colors.
+- `pages/ticket-detail.php`: edit-history avatar background, generated CC
+  dropdown muted text, toast hiding, edited indicators, and comment removal now
+  use CSS classes instead of inline styles or direct color/opacity writes.
+- `theme.css`: shared tone, detail-muted, history-avatar, toast hiding, and
+  comment-removal states were added.
+- `docs/csp-ui-baseline.json`: web UI baseline was reduced from 115 to 106
+  inline style attributes, with no page-level style blocks.
 
 ## Priority Order
 

@@ -3170,6 +3170,15 @@ font-weight: 600;
 line-height: 1.4;
 white-space: nowrap;
 }
+.ticket-detail-muted {
+color: var(--text-muted);
+}
+.ticket-history-avatar {
+background: var(--surface-tertiary);
+}
+.ticket-toast.is-hiding {
+opacity: 0;
+}
 .ticket-sidebar {
 display: flex;
 flex-direction: column;
@@ -3848,6 +3857,7 @@ width: 120px;
 }
 .ticket-status-accent {
 border-left: 5px solid var(--border-light);
+border-left-color: var(--ticket-row-accent, var(--border-light));
 }
 .ticket-status-accent--new {
 border-left-color: #2563eb;
@@ -3941,6 +3951,52 @@ color: #b45309;
 .ticket-priority-inline--urgent {
 background: rgba(220, 38, 38, 0.09);
 color: #b91c1c;
+}
+.ticket-status-option--new {
+color: #1d4ed8;
+}
+.ticket-status-option--active {
+color: #4338ca;
+}
+.ticket-status-option--waiting {
+color: #b45309;
+}
+.ticket-status-option--done {
+color: #047857;
+}
+.ticket-status-option--archived {
+color: var(--text-secondary);
+}
+.ticket-priority-dot {
+background: var(--text-muted);
+}
+.ticket-priority-dot--low,
+.ticket-priority-option--low {
+color: #047857;
+}
+.ticket-priority-dot--medium,
+.ticket-priority-option--medium {
+color: #1d4ed8;
+}
+.ticket-priority-dot--high,
+.ticket-priority-option--high {
+color: #b45309;
+}
+.ticket-priority-dot--urgent,
+.ticket-priority-option--urgent {
+color: #b91c1c;
+}
+.ticket-priority-dot--low {
+background: #047857;
+}
+.ticket-priority-dot--medium {
+background: #1d4ed8;
+}
+.ticket-priority-dot--high {
+background: #b45309;
+}
+.ticket-priority-dot--urgent {
+background: #b91c1c;
 }
 .ticket-active-tags-bar {
 display: flex;
@@ -7034,6 +7090,11 @@ display: none;
     text-decoration: underline dotted;
     text-underline-offset: 2px;
 }
+.badge-inline.tl-edit-trigger,
+.ticket-status-inline.tl-edit-trigger,
+.ticket-priority-inline.tl-edit-trigger {
+    text-decoration: none;
+}
 .ticket-subject-link.tl-inline-text {
     cursor: text;
 }
@@ -7955,6 +8016,11 @@ display: none;
         padding: 1rem;
         border-bottom: 1px solid var(--border-light);
         transition: background 0.12s ease;
+    }
+
+    .ticket-comment.is-removing {
+        opacity: 0;
+        transition: opacity 0.3s;
     }
 
     .ticket-comment:hover {

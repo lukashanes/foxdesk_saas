@@ -74,6 +74,16 @@ $assert(!str_contains($page, 'row.style.display'), 'Quick add row visibility mus
 $assert(!str_contains($page, "tableRow.style.background"), 'Bulk selection must use classes, not inline table-row backgrounds.');
 $assert(!str_contains($page, "mobileCard.style.background"), 'Bulk selection must use classes, not inline mobile-card backgrounds.');
 $assert(!str_contains($page, 'style="border-left: 5px solid'), 'Ticket status accents must use status classes, not inline colors.');
+$assert(!str_contains($page, 'style="background-color: <?php echo e($ticket[\'status_color\']); ?>20;'), 'Ticket status badges must use tone classes, not inline DB colors.');
+$assert(!str_contains($page, 'style="background-color: <?php echo e($priority_color); ?>20;'), 'Ticket priority badges must use tone classes, not inline DB colors.');
+$assert(!str_contains($page, "btn.querySelector('.rounded-full')?.style.background"), 'Inline ticket updates must use CSS modifier classes, not computed inline dot styles.');
+$assert(str_contains($page, 'data-tone-class="ticket-status-inline--'), 'Status dropdown items must expose target CSS class.');
+$assert(str_contains($page, 'data-row-accent-class="ticket-status-accent--'), 'Status dropdown items must expose row accent CSS class.');
+$assert(str_contains($page, 'data-tone-class="ticket-priority-inline--'), 'Priority dropdown items must expose target CSS class.');
+$assert(str_contains($page, 'replaceModifierClass(container'), 'Inline ticket updates must swap CSS modifier classes.');
+$assert(str_contains($theme, '.ticket-status-option--active'), 'theme.css must define status option classes.');
+$assert(str_contains($theme, '.ticket-priority-option--urgent'), 'theme.css must define priority option classes.');
+$assert(str_contains($theme, '.ticket-priority-dot--urgent'), 'theme.css must define priority dot classes.');
 $assert(!str_contains($page, 'style="border-color: var(--border-light); background: var(--surface-secondary);"'), 'Ticket surface bars must use CSS classes, not inline token styles.');
 $assert(!str_contains($page, '<span style="opacity:0.4'), 'Empty ticket values must use the shared empty-value class.');
 $assert(!str_contains($page, '<span style="opacity:0.6'), 'Muted ticket values must use the shared muted-value class.');

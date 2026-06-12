@@ -466,8 +466,12 @@ $ticket_registry_status_dot_class = static function (string $group, string $base
 $ticket_registry_status_badge_class = static function (array $ticket) use ($ticket_registry_status_group_from_ticket): string {
     return 'badge-inline ticket-status-inline ticket-status-inline--' . $ticket_registry_status_group_from_ticket($ticket);
 };
-$ticket_registry_priority_badge_class = static function (string $priority_name, string $base = 'badge-inline ticket-priority-inline'): string {
+$ticket_registry_priority_key = static function (string $priority_name): string {
     $key = function_exists('ticket_detail_priority_key') ? ticket_detail_priority_key($priority_name) : 'medium';
+    return in_array($key, ['low', 'medium', 'high', 'urgent'], true) ? $key : 'medium';
+};
+$ticket_registry_priority_badge_class = static function (string $priority_name, string $base = 'badge-inline ticket-priority-inline') use ($ticket_registry_priority_key): string {
+    $key = $ticket_registry_priority_key($priority_name);
     return $base . ' ticket-priority-inline--' . $key;
 };
 
@@ -1458,16 +1462,18 @@ foreach ($board_closed_statuses as $status_item) {
                             <td class="px-2 py-2.5 whitespace-nowrap align-top">
                                 <?php if (is_agent() || is_admin()): ?>
                                 <div class="tl-inline-edit tl-inline-anchor">
-                                    <span class="badge-inline tl-edit-trigger" data-ticket="<?php echo (int)$ticket['id']; ?>" data-field="status" data-ticket-field="status"
-                                        style="background-color: <?php echo e($ticket['status_color']); ?>20; color: <?php echo e($ticket['status_color']); ?>;"
+                                    <span class="<?php echo e($ticket_registry_status_badge_class($ticket)); ?> tl-edit-trigger" data-ticket="<?php echo (int)$ticket['id']; ?>" data-field="status" data-ticket-field="status"
                                         title="<?php echo e(t('Click to change')); ?>">
                                         <?php echo e($ticket['status_name']); ?>
                                     </span>
                                     <div class="tl-dropdown hidden" data-dropdown="status-<?php echo (int)$ticket['id']; ?>">
                                         <?php foreach ($statuses as $st): ?>
-                                        <button type="button" class="tl-dropdown-item" onclick="inlineUpdate(<?php echo (int)$ticket['id']; ?>, 'status', <?php echo (int)$st['id']; ?>, this)"
-                                            style="color: <?php echo e($st['color']); ?>;">
-                                            <span class="w-2 h-2 rounded-full inline-block mr-1.5" style="background:<?php echo e($st['color']); ?>;"></span>
+                                        <?php $status_group = $ticket_registry_status_group_from_status($st); ?>
+                                        <button type="button" class="tl-dropdown-item ticket-status-option ticket-status-option--<?php echo e($status_group); ?>"
+                                            data-tone-class="ticket-status-inline--<?php echo e($status_group); ?>"
+                                            data-row-accent-class="ticket-status-accent--<?php echo e($status_group); ?>"
+                                            onclick="inlineUpdate(<?php echo (int)$ticket['id']; ?>, 'status', <?php echo (int)$st['id']; ?>, this)">
+                                            <span class="<?php echo e($ticket_registry_status_dot_class($status_group)); ?> mr-1.5"></span>
                                             <?php echo e($st['name']); ?>
                                         </button>
                                         <?php endforeach; ?>
@@ -1482,16 +1488,17 @@ foreach ($board_closed_statuses as $status_item) {
                             <td class="px-2 py-2.5 whitespace-nowrap align-top">
                                 <?php if (is_agent() || is_admin()): ?>
                                 <div class="tl-inline-edit tl-inline-anchor">
-                                    <span class="badge-inline tl-edit-trigger" data-ticket="<?php echo (int)$ticket['id']; ?>" data-field="priority" data-ticket-field="priority"
-                                        style="background-color: <?php echo e($priority_color); ?>20; color: <?php echo e($priority_color); ?>;"
+                                    <span class="<?php echo e($ticket_registry_priority_badge_class($priority_name)); ?> tl-edit-trigger" data-ticket="<?php echo (int)$ticket['id']; ?>" data-field="priority" data-ticket-field="priority"
                                         title="<?php echo e(t('Click to change')); ?>">
                                         <?php echo e($priority_name); ?>
                                     </span>
                                     <div class="tl-dropdown hidden" data-dropdown="priority-<?php echo (int)$ticket['id']; ?>">
                                         <?php foreach ($priorities as $pr): ?>
-                                        <button type="button" class="tl-dropdown-item" onclick="inlineUpdate(<?php echo (int)$ticket['id']; ?>, 'priority', <?php echo (int)$pr['id']; ?>, this)"
-                                            style="color: <?php echo e($pr['color']); ?>;">
-                                            <span class="w-2 h-2 rounded-full inline-block mr-1.5" style="background:<?php echo e($pr['color']); ?>;"></span>
+                                        <?php $priority_option_key = $ticket_registry_priority_key($pr['name']); ?>
+                                        <button type="button" class="tl-dropdown-item ticket-priority-option ticket-priority-option--<?php echo e($priority_option_key); ?>"
+                                            data-tone-class="ticket-priority-inline--<?php echo e($priority_option_key); ?>"
+                                            onclick="inlineUpdate(<?php echo (int)$ticket['id']; ?>, 'priority', <?php echo (int)$pr['id']; ?>, this)">
+                                            <span class="ticket-priority-dot ticket-priority-dot--<?php echo e($priority_option_key); ?> w-2 h-2 rounded-full inline-block mr-1.5"></span>
                                             <?php echo e($pr['name']); ?>
                                         </button>
                                         <?php endforeach; ?>
@@ -1907,8 +1914,6 @@ foreach ($board_closed_statuses as $status_item) {
 
             const status = document.createElement('span');
             status.className = 'suggest-status';
-            status.style.background = t.status_color ? t.status_color + '20' : 'transparent';
-            status.style.color = t.status_color || 'inherit';
             status.textContent = t.status_name;
 
             a.appendChild(code);
@@ -2094,16 +2099,15 @@ foreach ($board_closed_statuses as $status_item) {
                 if (res.success) {
                     var row = btn.closest('tr');
                     if (!row) { location.reload(); return; }
-                    var color = btn.querySelector('.rounded-full')?.style.background || '';
                     var name = btn.textContent.trim();
+                    var toneClass = btn.dataset.toneClass || '';
                     var container = row.querySelector('.tl-edit-trigger[data-field="' + field + '"]');
                     if (container) {
                         container.textContent = name;
-                        container.style.backgroundColor = color + '20';
-                        container.style.color = color;
+                        replaceModifierClass(container, field === 'status' ? 'ticket-status-inline' : 'ticket-priority-inline', toneClass);
                     }
                     if (field === 'status') {
-                        row.style.borderLeftColor = color;
+                        replaceModifierClass(row, 'ticket-status-accent', btn.dataset.rowAccentClass || '');
                     }
                     if (window.showAppToast) window.showAppToast(res.message || '<?php echo e(t('Saved')); ?>', 'success');
                 } else {
@@ -2114,6 +2118,18 @@ foreach ($board_closed_statuses as $status_item) {
                 if (window.showAppToast) window.showAppToast('<?php echo e(t('Error')); ?>', 'error');
             });
         };
+
+        function replaceModifierClass(element, prefix, nextClass) {
+            if (!element) return;
+            Array.from(element.classList).forEach(function(className) {
+                if (className.indexOf(prefix + '--') === 0) {
+                    element.classList.remove(className);
+                }
+            });
+            if (nextClass) {
+                element.classList.add(nextClass);
+            }
+        }
     })();
 
     // ─── Generic quick-edit helper + new field inline editors ───────────

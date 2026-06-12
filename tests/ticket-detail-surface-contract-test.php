@@ -52,6 +52,16 @@ foreach ([
 $assert(!str_contains($page, 'class="inline-flex items-center gap-1 hover:underline" style="color: var(--text-muted);"'), 'Back link must use ticket-back-link instead of inline styles.');
 $assert(!str_contains($page, 'style="background-color: <?php echo e($ticket[\'status_color\']); ?>15;'), 'Top status pill must not use inline DB colors.');
 $assert(!str_contains($page, 'style="background-color: <?php echo e($ticket[\'status_color\']); ?>20;'), 'Sidebar status pill must not use inline DB colors.');
+$assert(!str_contains($page, 'style="background: var(--surface-tertiary);"'), 'Edit-history avatar must use a CSS class, not inline token background.');
+$assert(!str_contains($page, 'style="color: var(--text-muted)"'), 'Ticket detail generated text must use CSS classes, not inline muted styles.');
+$assert(!str_contains($page, "toast.style.opacity = '0'"), 'Ticket detail toast hiding must use CSS classes, not inline opacity writes.');
+$assert(!str_contains($page, "commentEl.style.opacity = '0'"), 'Comment removal must use CSS classes, not inline opacity writes.');
+$assert(str_contains($page, 'ticket-history-avatar'), 'Ticket detail must use ticket-history-avatar class.');
+$assert(str_contains($page, 'ticket-detail-muted'), 'Ticket detail generated muted text must use ticket-detail-muted class.');
+$assert(str_contains($theme, '.ticket-history-avatar'), 'theme.css must define ticket-history-avatar.');
+$assert(str_contains($theme, '.ticket-detail-muted'), 'theme.css must define ticket-detail-muted.');
+$assert(str_contains($theme, '.ticket-comment.is-removing'), 'theme.css must define comment removal state.');
+$assert(str_contains($theme, '.ticket-toast.is-hiding'), 'theme.css must define toast hiding state.');
 $assert(!str_contains($page, "toolbarBtn.className = 'td-tool-btn"), 'Timer JS must not downgrade the primary action into legacy toolbar styling.');
 
 echo "Ticket detail surface contract OK\n";

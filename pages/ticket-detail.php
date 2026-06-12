@@ -307,8 +307,7 @@ require_once BASE_PATH . '/includes/header.php';
                                             $is_attachment_event = in_array($history['field_name'], ['attachment_added', 'attachment_unlinked'], true);
                                             ?>
                                             <div class="flex items-start gap-3 text-xs p-2 rounded-lg bg-theme-secondary">
-                                                <div class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center"
-                                                    style="background: var(--surface-tertiary);">
+                                                <div class="ticket-history-avatar flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center">
                                                     <span class="font-medium text-xs text-theme-secondary">
                                                         <?php echo strtoupper(substr($history['first_name'] ?? 'U', 0, 1)); ?>
                                                     </span>
@@ -1791,7 +1790,7 @@ require_once BASE_PATH . '/includes/header.php';
             .then(response => response.json())
             .then(users => {
                 if (users.length === 0) {
-                    ccDropdown.innerHTML = '<div class="px-3 py-2 text-sm" style="color: var(--text-muted)"><?php echo e(t('No users found.')); ?></div>';
+                    ccDropdown.innerHTML = '<div class="px-3 py-2 text-sm ticket-detail-muted"><?php echo e(t('No users found.')); ?></div>';
                     ccDropdown.classList.remove('hidden');
                     return;
                 }
@@ -1805,7 +1804,7 @@ require_once BASE_PATH . '/includes/header.php';
 
                     const div = document.createElement('div');
                     div.className = 'px-3 py-2 cursor-pointer text-sm tr-hover';
-                    div.innerHTML = '<strong>' + escapeHtml(user.name) + '</strong><br><span class="text-xs" style="color: var(--text-muted)">' + escapeHtml(user.email) + '</span>';
+                    div.innerHTML = '<strong>' + escapeHtml(user.name) + '</strong><br><span class="text-xs ticket-detail-muted">' + escapeHtml(user.email) + '</span>';
                     div.onclick = () => addCCUser(user);
                     ccDropdown.appendChild(div);
                 });
@@ -2364,10 +2363,10 @@ require_once BASE_PATH . '/includes/header.php';
             if (window.appNotificationPrefs && window.appNotificationPrefs.inAppEnabled === false) return;
 
             const toast = document.createElement('div');
-            toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-sm font-medium z-50 transition-opacity duration-300 ${type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`;
+            toast.className = `ticket-toast fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-sm font-medium z-50 transition-opacity duration-300 ${type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`;
             toast.textContent = message;
             document.body.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+            setTimeout(() => { toast.classList.add('is-hiding'); setTimeout(() => toast.remove(), 300); }, 3000);
         }
     })();
 
@@ -2507,11 +2506,10 @@ require_once BASE_PATH . '/includes/header.php';
                         // Add edited indicator if not already present
                         const commentEl = document.getElementById('comment-' + commentId);
                         if (commentEl && !commentEl.querySelector('.edited-indicator')) {
-                            const timestampSpan = commentEl.querySelector('.text-sm[style*="--text-muted"]');
+                            const timestampSpan = commentEl.querySelector('.ticket-comment__date');
                             if (timestampSpan) {
                                 const editedSpan = document.createElement('span');
-                                editedSpan.className = 'text-xs italic edited-indicator ml-1';
-                                editedSpan.style.color = 'var(--text-muted)';
+                                editedSpan.className = 'ticket-comment__edited edited-indicator';
                                 editedSpan.textContent = '(<?php echo e(t("edited")); ?>)';
                                 timestampSpan.parentNode.insertBefore(editedSpan, timestampSpan.nextSibling);
                             }
@@ -2550,8 +2548,7 @@ require_once BASE_PATH . '/includes/header.php';
                 // Remove the comment from the DOM
                 const commentEl = document.getElementById('comment-' + commentId);
                 if (commentEl) {
-                    commentEl.style.opacity = '0';
-                    commentEl.style.transition = 'opacity 0.3s';
+                    commentEl.classList.add('is-removing');
                     setTimeout(() => commentEl.remove(), 300);
                 }
 
