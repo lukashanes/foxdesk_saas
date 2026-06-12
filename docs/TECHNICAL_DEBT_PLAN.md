@@ -432,6 +432,33 @@ php tests/email-notification-contract-test.php
 php tests/notification-policy-test.php
 ```
 
+Completed in technical debt milestone 6:
+
+- Web UI, agent API, mobile/app API, quick-edit API, and due-date scheduler now
+  route in-app ticket notifications through `ticket_event_dispatch_in_app()`.
+- Stable ticket event names now cover public replies, internal notes,
+  assignments, status changes, priority changes, due reminders, and legacy
+  notification names.
+- Notification policy now exposes `ticket_email_action_plan()` for the
+  one-action-one-email contract, including self-assignment, internal requester
+  confirmations, status-plus-reply, and internal-note suppression.
+- Cloudflare Email Routing ingest is gated to SaaS/cloud editions while IMAP
+  remains available for self-hosted installs.
+- Email HTML-to-text conversion now preserves safe links as readable text and
+  URL pairs.
+
+Verified with:
+
+```bash
+./bin/run-php.sh tests/email-format-test.php
+./bin/run-php.sh tests/email-notification-contract-test.php
+./bin/run-php.sh tests/notification-policy-test.php
+./bin/run-php.sh tests/email-routing-plus-address-contract-test.php
+npm run lint:php
+npm run test:app-frontend
+npm run local:smoke
+```
+
 ### Milestone 7 - Billing State Matrix
 
 Owner track: SaaS only

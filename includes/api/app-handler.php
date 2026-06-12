@@ -318,9 +318,9 @@ function api_app_add_comment()
         }
     }
 
-    if (!$is_internal && function_exists('dispatch_ticket_notifications')) {
+    if (!$is_internal && function_exists('ticket_event_dispatch_in_app')) {
         $preview = mb_strlen($content) > 80 ? mb_substr($content, 0, 77) . '...' : $content;
-        dispatch_ticket_notifications('new_comment', $ticket_id, (int) $user['id'], [
+        ticket_event_dispatch_in_app(ticket_event_comment_name($user, false), $ticket_id, (int) $user['id'], [
             'comment_preview' => strip_tags($preview),
             'comment_id' => (int) $comment_id,
         ]);

@@ -262,14 +262,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // In-app notifications
-            if (function_exists('dispatch_ticket_notifications')) {
+            if (function_exists('ticket_event_dispatch_in_app')) {
                 $desc_preview = strip_tags($description);
                 $desc_preview = mb_strlen($desc_preview) > 80 ? mb_substr($desc_preview, 0, 77) . '...' : $desc_preview;
-                dispatch_ticket_notifications('new_ticket', $ticket_id, $user['id'], [
+                ticket_event_dispatch_in_app('ticket.created', $ticket_id, $user['id'], [
                     'comment_preview' => $desc_preview,
                 ]);
                 if ($assignee_id) {
-                    dispatch_ticket_notifications('assigned_to_you', $ticket_id, $user['id'], [
+                    ticket_event_dispatch_in_app('ticket.assigned', $ticket_id, $user['id'], [
                         'assignee_id' => $assignee_id,
                     ]);
                 }

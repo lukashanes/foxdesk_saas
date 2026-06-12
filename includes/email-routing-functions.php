@@ -17,6 +17,45 @@ function foxdesk_email_env_or_constant(string $name, string $default = ''): stri
     return $value !== false ? (string) $value : $default;
 }
 
+function foxdesk_email_env_bool(string $name, bool $default = false): bool
+{
+    if (defined($name)) {
+        return (bool) constant($name);
+    }
+
+    $value = getenv($name);
+    if ($value === false || trim((string) $value) === '') {
+        return $default;
+    }
+
+    return in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'on'], true);
+}
+
+function foxdesk_app_edition_value(): string
+{
+    $edition = foxdesk_email_env_or_constant('FOXDESK_EDITION', '');
+    if ($edition === '') {
+        $edition = foxdesk_email_env_or_constant('FOXDESK_APP_EDITION', '');
+    }
+
+    return strtolower(trim($edition));
+}
+
+function foxdesk_cloudflare_email_ingest_enabled(): bool
+{
+    $flag = getenv('FOXDESK_CLOUDFLARE_EMAIL_INGEST_ENABLED');
+    if (defined('FOXDESK_CLOUDFLARE_EMAIL_INGEST_ENABLED') || ($flag !== false && trim((string) $flag) !== '')) {
+        return foxdesk_email_env_bool('FOXDESK_CLOUDFLARE_EMAIL_INGEST_ENABLED', false);
+    }
+
+    $edition = foxdesk_app_edition_value();
+    if ($edition !== '') {
+        return in_array($edition, ['saas', 'cloud', 'managed'], true);
+    }
+
+    return defined('APP_MARKETING_HOST');
+}
+
 function foxdesk_ticket_email_domain(): string
 {
     $domain = strtolower(trim(foxdesk_email_env_or_constant('FOXDESK_TICKET_EMAIL_DOMAIN', 'tickets.foxdesk.net')));

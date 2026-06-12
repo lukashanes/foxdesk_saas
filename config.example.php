@@ -14,6 +14,7 @@ define('DB_PASS', 'your_database_password');
 define('SECRET_KEY', 'generate_64_hex_secret_here');
 
 define('APP_NAME', 'FoxDesk');
+define('FOXDESK_EDITION', 'self-hosted');
 define('APP_HOST', 'your-domain.tld');
 define('PLATFORM_HOST', 'platform.your-domain.tld');
 define('APP_URL', 'https://your-domain.tld');
@@ -52,6 +53,7 @@ define('FOXDESK_TICKET_EMAIL_DOMAIN', 'tickets.foxdesk.net');
 define('FOXDESK_TICKET_EMAIL_LOCAL_PART', '');
 define('FOXDESK_EMAIL_ROUTE_SECRET', SECRET_KEY);
 define('FOXDESK_EMAIL_ALLOW_UNKNOWN_SENDERS', false);
+define('FOXDESK_CLOUDFLARE_EMAIL_INGEST_ENABLED', false);
 
 // Incoming email ingest (IMAP)
 define('IMAP_ENABLED', false);

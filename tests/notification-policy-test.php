@@ -66,4 +66,33 @@ assert_policy(should_send_ticket_confirmation_email($customer_ticket, $customer,
 assert_policy(!should_send_ticket_assignment_email($self_ticket, $admin, $admin), 'Self-assignment should not send an assignment email.');
 assert_policy(should_send_ticket_assignment_email($customer_ticket, $agent, $admin), 'Assignment to another agent should still send an email.');
 
+$self_create_plan = ticket_email_action_plan([
+    'ticket.created',
+    'ticket.created.confirmation',
+    'ticket.assigned',
+], [
+    'requester_is_staff' => true,
+    'assignment_is_self' => true,
+    'created_by_staff' => true,
+    'actor_is_only_staff_recipient' => true,
+]);
+assert_policy($self_create_plan['email_count'] === 0, 'Creating and assigning a ticket to self should not fan out multiple emails.');
+assert_policy(($self_create_plan['suppressed']['ticket.assigned'] ?? '') === 'self_assignment', 'Self-assignment suppression reason should be explicit.');
+assert_policy(($self_create_plan['suppressed']['ticket.created.confirmation'] ?? '') === 'internal_requester_confirmation', 'Internal requester confirmation suppression reason should be explicit.');
+
+$status_comment_plan = ticket_email_action_plan([
+    'ticket.status_changed',
+    'ticket.agent_replied',
+], [
+    'ticket' => $ticket,
+    'actor' => $actor,
+    'comment_text' => 'Done with details.',
+]);
+assert_policy($status_comment_plan['email_count'] === 1, 'Status plus comment should be one actionable email.');
+assert_policy($status_comment_plan['email_events'] === ['ticket.agent_replied'], 'Status plus comment should prefer the reply email.');
+
+$internal_note_plan = ticket_email_action_plan(['ticket.internal_note'], ['actor' => $actor]);
+assert_policy($internal_note_plan['email_count'] === 0, 'Internal notes should not send customer-facing email.');
+assert_policy(($internal_note_plan['suppressed']['ticket.internal_note'] ?? '') === 'internal_note_no_email', 'Internal note suppression reason should be explicit.');
+
 echo "Notification policy tests passed\n";

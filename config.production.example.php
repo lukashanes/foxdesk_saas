@@ -27,6 +27,7 @@ define('DB_PASS', foxdesk_env('DB_PASS'));
 define('SECRET_KEY', foxdesk_env('SECRET_KEY'));
 
 define('APP_NAME', foxdesk_env('APP_NAME', 'FoxDesk'));
+define('FOXDESK_EDITION', foxdesk_env('FOXDESK_EDITION', 'saas'));
 define('APP_HOST', foxdesk_env('APP_HOST', 'app.foxdesk.net'));
 define('PLATFORM_HOST', foxdesk_env('PLATFORM_HOST', 'platform.foxdesk.net'));
 define('APP_MARKETING_HOST', foxdesk_env('APP_MARKETING_HOST', 'foxdesk.net'));
@@ -65,6 +66,7 @@ define('FOXDESK_TICKET_EMAIL_DOMAIN', foxdesk_env('FOXDESK_TICKET_EMAIL_DOMAIN',
 define('FOXDESK_TICKET_EMAIL_LOCAL_PART', foxdesk_env('FOXDESK_TICKET_EMAIL_LOCAL_PART', 'tickets'));
 define('FOXDESK_EMAIL_ROUTE_SECRET', foxdesk_env('FOXDESK_EMAIL_ROUTE_SECRET', SECRET_KEY));
 define('FOXDESK_EMAIL_ALLOW_UNKNOWN_SENDERS', foxdesk_env_bool('FOXDESK_EMAIL_ALLOW_UNKNOWN_SENDERS', false));
+define('FOXDESK_CLOUDFLARE_EMAIL_INGEST_ENABLED', foxdesk_env_bool('FOXDESK_CLOUDFLARE_EMAIL_INGEST_ENABLED', true));
 
 define('IMAP_ENABLED', foxdesk_env_bool('IMAP_ENABLED', false));
 define('IMAP_HOST', foxdesk_env('IMAP_HOST'));

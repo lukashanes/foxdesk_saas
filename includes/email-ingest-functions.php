@@ -2295,6 +2295,19 @@ function email_ingest_html_to_text($html)
     }
 
     $html = preg_replace('/<(script|st' . 'yle|head)\b[^>]*>.*?<\/\1>/is', '', $html);
+    $html = preg_replace_callback('/<a\b[^>]*\bhref\s*=\s*([\'"])(.*?)\1[^>]*>(.*?)<\/a>/is', static function (array $match): string {
+        $href = html_entity_decode(trim((string) $match[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $label = trim(strip_tags((string) $match[3]));
+        $label = html_entity_decode($label, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if ($href === '' || !preg_match('/^(https?:\/\/|mailto:)/i', $href)) {
+            return $label;
+        }
+        if ($label === '' || strcasecmp($label, $href) === 0) {
+            return $href;
+        }
+
+        return $label . ' (' . $href . ')';
+    }, $html);
     $html = preg_replace('/<\s*wbr\s*\/?>/i', '', $html);
     $html = preg_replace('/<\s*br\s*\/?>/i', "\n", $html);
     $html = preg_replace('/<\s*(p|div|section|article|header|footer|blockquote|pre|h[1-6])\b[^>]*>/i', "\n", $html);

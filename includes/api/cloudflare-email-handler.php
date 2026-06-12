@@ -83,6 +83,10 @@ function api_cloudflare_email_ingest(): void
         api_error('Method not allowed', 405);
     }
 
+    if (function_exists('foxdesk_cloudflare_email_ingest_enabled') && !foxdesk_cloudflare_email_ingest_enabled()) {
+        api_error('Cloudflare email ingest is disabled for this FoxDesk edition', 404);
+    }
+
     $body = file_get_contents('php://input');
     if (!is_string($body) || trim($body) === '') {
         api_error('Missing request body', 400);

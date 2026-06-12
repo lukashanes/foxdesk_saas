@@ -1229,8 +1229,8 @@ function process_due_date_notifications(): array
         $due_formatted = function_exists('format_date') ? format_date($ticket['due_date'], 'd.m.Y H:i') : $ticket['due_date'];
 
         // Dispatch in-app notification
-        if (function_exists('dispatch_ticket_notifications')) {
-            dispatch_ticket_notifications('due_date_reminder', $tid, 0, [
+        if (function_exists('ticket_event_dispatch_in_app')) {
+            ticket_event_dispatch_in_app('ticket.due_soon', $tid, 0, [
                 'due_date' => $due_formatted,
                 'is_overdue' => $is_overdue,
             ]);

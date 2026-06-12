@@ -352,14 +352,14 @@ function api_agent_create_ticket()
     }
 
     // In-app notifications
-    if (function_exists('dispatch_ticket_notifications')) {
+    if (function_exists('ticket_event_dispatch_in_app')) {
         $desc_text = strip_tags($input['description'] ?? '');
         $desc_preview = mb_strlen($desc_text) > 80 ? mb_substr($desc_text, 0, 77) . '...' : $desc_text;
-        dispatch_ticket_notifications('new_ticket', $ticket_id, $user['id'], [
+        ticket_event_dispatch_in_app('ticket.created', $ticket_id, $user['id'], [
             'comment_preview' => $desc_preview,
         ]);
         if (!empty($input['assignee_id'])) {
-            dispatch_ticket_notifications('assigned_to_you', $ticket_id, $user['id'], [
+            ticket_event_dispatch_in_app('ticket.assigned', $ticket_id, $user['id'], [
                 'assignee_id' => (int) $input['assignee_id'],
             ]);
         }
@@ -596,9 +596,9 @@ function api_agent_add_comment()
     }
 
     // In-app notification for new comment (skip internal notes)
-    if (!$is_internal && function_exists('dispatch_ticket_notifications')) {
+    if (!$is_internal && function_exists('ticket_event_dispatch_in_app')) {
         $preview = mb_strlen($input['content']) > 80 ? mb_substr($input['content'], 0, 77) . '...' : $input['content'];
-        dispatch_ticket_notifications('new_comment', $ticket_id, $user['id'], [
+        ticket_event_dispatch_in_app(ticket_event_comment_name($user, false), $ticket_id, $user['id'], [
             'comment_preview' => strip_tags($preview),
             'comment_id' => $comment_id,
         ]);
@@ -658,9 +658,9 @@ function api_agent_update_status()
     }
 
     // In-app notification for status change
-    if (function_exists('dispatch_ticket_notifications')) {
+    if (function_exists('ticket_event_dispatch_in_app')) {
         $old_status_row = api_agent_status_by_id((int) $ticket['status_id']);
-        dispatch_ticket_notifications('status_changed', $ticket_id, $user['id'], [
+        ticket_event_dispatch_in_app('ticket.status_changed', $ticket_id, $user['id'], [
             'old_status' => $old_status_row['name'] ?? '',
             'new_status' => $status['name'] ?? '',
         ]);
