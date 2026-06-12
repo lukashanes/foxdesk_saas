@@ -989,9 +989,8 @@ include BASE_PATH . '/includes/components/page-header.php';
 <?php endif; ?>
 
 <!-- Quill Editor -->
-<!-- Quill 1.3.7 (stable version) -->
-<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
-<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<link href="assets/vendor/quill/2.0.2/quill.snow.css?v=<?php echo APP_VERSION; ?>" rel="stylesheet">
+<script src="assets/vendor/quill/2.0.2/quill.js?v=<?php echo APP_VERSION; ?>"></script>
 <script src="assets/js/quill-image-upload.js?v=<?php echo APP_VERSION; ?>"></script>
 <script>
     // Initialize Quill Editor

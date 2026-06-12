@@ -199,16 +199,16 @@ function send_security_headers()
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()');
 
-    // Content Security Policy - Only enable in production
-    // For development on localhost, CSP can interfere with Tailwind CDN
+    // Content Security Policy - Only enable in production.
+    // Runtime libraries are self-hosted in assets/vendor; Turnstile remains external.
     $is_localhost = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', 'localhost:8081', '127.0.0.1', '127.0.0.1:8081']);
 
     if (!$is_localhost) {
         header("Content-Security-Policy: default-src 'self'; " .
             "base-uri 'self'; object-src 'none'; form-action 'self'; " .
-            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.quilljs.com https://cdn.jsdelivr.net https://challenges.cloudflare.com; " .
-            "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.quilljs.com https://cdn.jsdelivr.net; " .
-            "font-src 'self' https://cdnjs.cloudflare.com data:; " .
+            "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; " .
+            "style-src 'self' 'unsafe-inline'; " .
+            "font-src 'self' data:; " .
             "img-src 'self' data: https:; " .
             "connect-src 'self' https://challenges.cloudflare.com; " .
             "frame-src https://challenges.cloudflare.com; " .

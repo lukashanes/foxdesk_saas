@@ -179,8 +179,8 @@ $priority_color = $ticket['priority_color'] ?? get_priority_color($ticket['prior
 require_once BASE_PATH . '/includes/header.php';
 ?>
 
-<!-- Quill Editor CSS (1.3.7 stable) -->
-<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<!-- Quill Editor CSS -->
+<link href="assets/vendor/quill/2.0.2/quill.snow.css?v=<?php echo APP_VERSION; ?>" rel="stylesheet">
 
 <div class="ticket-detail-page" data-ticket-detail-surface data-ticket-id="<?php echo (int) $ticket_id; ?>">
     <!-- Main Content -->
@@ -2795,8 +2795,8 @@ require_once BASE_PATH . '/includes/header.php';
 </script>
 <?php endif; ?>
 
-<!-- Quill Editor JS (1.3.7 stable) -->
-<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+<!-- Quill Editor JS -->
+<script src="assets/vendor/quill/2.0.2/quill.js?v=<?php echo APP_VERSION; ?>"></script>
 <script src="assets/js/quill-image-upload.js?v=<?php echo APP_VERSION; ?>"></script>
 <script>
     // Quill toolbar configuration

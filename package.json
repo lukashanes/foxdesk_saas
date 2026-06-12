@@ -31,5 +31,13 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0"
+  },
+  "dependencies": {
+    "alpinejs": "3.14.8",
+    "chart.js": "4.4.0",
+    "flatpickr": "4.6.13",
+    "qrcode": "1.5.3",
+    "quill": "2.0.2",
+    "sortablejs": "1.15.0"
   }
 }

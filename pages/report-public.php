@@ -116,7 +116,7 @@ $extract_report_tags = static function ($value) {
     <link href="index.php?page=report-theme&amp;token=<?php echo e(rawurlencode($token)); ?>&amp;v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
 
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="assets/vendor/chartjs/4.4.0/chart.umd.js?v=<?php echo e((string) APP_VERSION); ?>"></script>
 </head>
 
 <body class="report-public-page bg-gray-50">

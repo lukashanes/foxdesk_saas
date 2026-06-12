@@ -44,6 +44,7 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
     <script>
         window.csrfToken = <?php echo json_encode(csrf_token()); ?>;
         window.appName = <?php echo json_encode($app_name); ?>;
+        window.appVersion = <?php echo json_encode(APP_VERSION); ?>;
         window.originalPageTitle = <?php echo json_encode(($page_title ?? t('Dashboard')) . ' - ' . $app_name); ?>;
         window.appNotificationPrefs = {
             inAppEnabled: <?php echo $in_app_notifications_enabled ? 'true' : 'false'; ?>,
@@ -123,7 +124,7 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
 
     <?php $theme_asset_version = (string) APP_VERSION . '-' . (string) (@filemtime(BASE_PATH . '/theme.css') ?: '0'); ?>
     <link href="theme.css?v=<?php echo e($theme_asset_version); ?>" rel="stylesheet">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+    <script defer src="assets/vendor/alpinejs/3.14.8/alpine.min.js?v=<?php echo APP_VERSION; ?>"></script>
     <script defer src="assets/js/app-header.js?v=<?php echo APP_VERSION; ?>"></script>
     <script defer src="assets/js/shortcuts.js?v=<?php echo APP_VERSION; ?>"></script>
 
@@ -136,15 +137,15 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                 fpLoaded = true;
                 var theme = document.documentElement.getAttribute('data-theme');
                 var cssHref = theme === 'dark'
-                    ? 'https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/themes/dark.css'
-                    : 'https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css';
+                    ? 'assets/vendor/flatpickr/4.6.13/themes/dark.css?v=<?php echo APP_VERSION; ?>'
+                    : 'assets/vendor/flatpickr/4.6.13/flatpickr.min.css?v=<?php echo APP_VERSION; ?>';
                 var link = document.createElement('link');
                 link.rel = 'stylesheet';
                 link.id = 'flatpickr-theme-css';
                 link.href = cssHref;
                 document.head.appendChild(link);
                 var script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js';
+                script.src = 'assets/vendor/flatpickr/4.6.13/flatpickr.min.js?v=<?php echo APP_VERSION; ?>';
                 script.onload = function() { initDatePickers(document); };
                 document.head.appendChild(script);
             }
