@@ -33,6 +33,7 @@ function buildChecks() {
   const stripeDoc = read('docs/STRIPE_PUBLIC_BETA_SETUP.md');
   const prodEnvDoc = read('docs/PRODUCTION_ENV_VALUES.md');
   const launchReadinessDoc = exists('docs/LAUNCH_READINESS.md') ? read('docs/LAUNCH_READINESS.md') : '';
+  const goNoGoDoc = exists('docs/PUBLIC_BETA_GO_NO_GO.md') ? read('docs/PUBLIC_BETA_GO_NO_GO.md') : '';
   const technicalDebtDoc = exists('docs/TECHNICAL_DEBT_PLAN.md') ? read('docs/TECHNICAL_DEBT_PLAN.md') : '';
 
   const requiredScripts = [
@@ -40,6 +41,7 @@ function buildChecks() {
     'e2e',
     'local:smoke',
     'prod:smoke',
+    'launch:go-no-go',
     'test:csp-ui',
     'cutover:preflight',
     'cutover:postcheck',
@@ -103,6 +105,16 @@ function buildChecks() {
       has(launchReadinessDoc, 'Public Beta') || has(launchReadinessDoc, 'Launch'),
       'warn',
       'docs/LAUNCH_READINESS.md exists and should remain the release checklist'
+    ),
+    check(
+      'Launch go/no-go checklist',
+      has(goNoGoDoc, 'Private Beta GO') &&
+        has(goNoGoDoc, 'Paid Public Beta GO') &&
+        has(goNoGoDoc, 'app.foxdesk.net') &&
+        has(goNoGoDoc, 'platform.foxdesk.net') &&
+        has(goNoGoDoc, 'foxdesk.net'),
+      'blocked',
+      'docs/PUBLIC_BETA_GO_NO_GO.md defines the human launch decision gates'
     ),
     check(
       'Technical debt plan',

@@ -129,8 +129,10 @@ FOXDESK_EMAIL_ROUTE_SECRET=...
 The public beta gate is green when these local checks pass:
 
 ```bash
+npm run launch:go-no-go
 npm run beta:gate
 npm run test:csp-ui
+node tests/launch-go-no-go.test.js
 node tests/public-beta-gate.test.js
 node tests/stripe-beta-configurator.test.js
 ```
@@ -193,6 +195,8 @@ Current beta verification covers:
 ```bash
 npm run lint:php
 npm run e2e
+npm run launch:go-no-go
+npm run beta:gate
 npm run prod:smoke
 ```
 

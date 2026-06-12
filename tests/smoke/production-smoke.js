@@ -72,6 +72,7 @@ async function assertLoginLayout() {
   await assertOk(`${publicUrl}/index.php?page=cloud`, 'FoxDesk Cloud');
   await assertOk(`${publicUrl}/index.php?page=legal&type=privacy`, 'Privacy Policy');
   await assertOk(`${publicUrl}/index.php?page=legal&type=terms`, 'Terms of Service');
+  await assertOk(`${publicUrl}/index.php?page=legal&type=dpa`, 'Data Processing Addendum');
   await assertOk(`${publicUrl}/index.php?page=legal&type=refunds`, 'Refund and Cancellation Policy');
   await assertOk(`${publicUrl}/index.php?page=legal&type=security`, 'Security');
 
