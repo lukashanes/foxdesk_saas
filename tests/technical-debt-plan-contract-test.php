@@ -5,8 +5,9 @@ $root = dirname(__DIR__);
 $plan = file_get_contents($root . '/docs/TECHNICAL_DEBT_PLAN.md');
 $readme = file_get_contents($root . '/README.md');
 $release = file_get_contents($root . '/docs/RELEASE_CHANNELS.md');
+$monolith_inventory = file_get_contents($root . '/docs/MONOLITH_EXIT_INVENTORY.md');
 
-if ($plan === false || $readme === false || $release === false) {
+if ($plan === false || $readme === false || $release === false || $monolith_inventory === false) {
     fwrite(STDERR, "Unable to read technical debt planning files.\n");
     exit(1);
 }
@@ -28,9 +29,14 @@ $assert(str_contains($plan, 'Billing State Matrix'), 'Plan must include SaaS bil
 $assert(str_contains($plan, 'CSP Inline Style Reduction'), 'Plan must include CSP/UI runtime debt.');
 $assert(str_contains($plan, 'Storage Finalization For SaaS'), 'Plan must include SaaS storage debt.');
 $assert(str_contains($plan, 'Email Event Unification'), 'Plan must include email and notification debt.');
+$assert(str_contains($plan, 'docs/MONOLITH_EXIT_INVENTORY.md'), 'Plan must link the monolith exit inventory.');
 
 $assert(str_contains($readme, 'This repository is the **SaaS/managed deployment** repository.'), 'README must keep the SaaS release boundary.');
 $assert(str_contains($release, 'FoxDesk SaaS / Cloud'), 'Release channel docs must keep SaaS channel.');
 $assert(str_contains($release, 'must not include'), 'Release channel docs must keep public update exclusions.');
+
+$assert(str_contains($monolith_inventory, 'pages/ticket-detail.php'), 'Inventory must include ticket-detail.');
+$assert(str_contains($monolith_inventory, 'pages/admin/reports.php'), 'Inventory must include admin reports.');
+$assert(str_contains($monolith_inventory, 'pages/admin/settings.php'), 'Inventory must include admin settings.');
 
 echo "Technical debt plan contract OK\n";

@@ -293,17 +293,20 @@ Tasks:
 
 Done when:
 
-- Inventory is committed in docs.
+- Inventory is committed in `docs/MONOLITH_EXIT_INVENTORY.md`.
 - Each high-risk page has a named target module.
 - No implementation starts without a test target.
+- `tests/monolith-exit-inventory-contract-test.php` protects the page inventory,
+  target modules, and test-first rule.
 
 Verification:
 
 ```bash
+npm run test:monolith-inventory
 npm run lint:php
-php tests/app-shell-contract-test.php
-php tests/reporting-flow-contract-test.php
-php tests/ticket-detail-actions-test.php
+./bin/run-php.sh tests/app-shell-contract-test.php
+./bin/run-php.sh tests/reporting-flow-contract-test.php
+./bin/run-php.sh tests/ticket-detail-actions-test.php
 ```
 
 ### Milestone 3 - SaaS Tenant Guard Rails

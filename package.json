@@ -29,7 +29,8 @@
     "audit:csp-ui": "node bin/audit-csp-ui.js",
     "test:csp-ui": "node tests/csp-ui-baseline.test.js",
     "test:app-frontend": "node tests/app-frontend-contract.test.js",
-    "test:launch-go-no-go": "node tests/launch-go-no-go.test.js"
+    "test:launch-go-no-go": "node tests/launch-go-no-go.test.js",
+    "test:monolith-inventory": "./bin/run-php.sh tests/monolith-exit-inventory-contract-test.php"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0"
