@@ -375,7 +375,7 @@ async function expectWork(page, viewportName) {
   await assertStyledShell(page, `${viewportName} work`, {
     shell: '.workspace-queue-shell',
     panel: '.workspace-queue-panel',
-    queueList: '.work-queue-list',
+    queueRail: '.workspace-queue-rail',
   });
   await screenshot(page, `${viewportName}-work`);
 }
@@ -385,7 +385,7 @@ async function expectInbox(page, viewportName) {
   await assertStyledShell(page, `${viewportName} inbox`, {
     shell: '.workspace-queue-shell',
     panel: '.workspace-queue-panel',
-    list: '.inbox-list',
+    list: '.workspace-ticket-list',
   });
   await screenshot(page, `${viewportName}-inbox`);
 }
