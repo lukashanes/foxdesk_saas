@@ -22,6 +22,7 @@ const requireSearchCounts = prepareFixtures || process.env.FOXDESK_CUTOVER_REQUI
 const searchQuery = process.env.FOXDESK_CUTOVER_SEARCH_QUERY ||
   (prepareFixtures ? 'Cutover searchable' : '');
 const reportTimeRange = process.env.FOXDESK_CUTOVER_REPORT_TIME_RANGE || 'last_month';
+const reportOrgHint = process.env.FOXDESK_CUTOVER_REPORT_ORG || searchQuery;
 const screenshotRoot = process.env.FOXDESK_CUTOVER_SCREENSHOT_DIR ||
   path.join(os.tmpdir(), `foxdesk-cutover-gate-${new Date().toISOString().replace(/[:.]/g, '-')}`);
 const startedAt = new Date();
@@ -553,7 +554,21 @@ async function expectReports(page) {
     filters: '#report-filters',
   }, { allowStyleTags: true });
 
-  const orgOption = await page.locator('.reporting-flow-card select[name="organizations[]"] option:not([value=""])').first().getAttribute('value').catch(() => null);
+  const orgOption = await page.locator('.reporting-flow-card select[name="organizations[]"]').evaluate((select, hint) => {
+    const options = [...select.querySelectorAll('option:not([value=""])')].map(option => ({
+      value: option.value,
+      text: option.textContent.trim(),
+    }));
+    if (!options.length) return null;
+    if (hint) {
+      const normalizedHint = String(hint).trim().toLowerCase();
+      const matched = options.find(option =>
+        option.value === normalizedHint || option.text.toLowerCase().includes(normalizedHint)
+      );
+      if (matched) return matched.value;
+    }
+    return options[0].value;
+  }, reportOrgHint).catch(() => null);
   if (!orgOption) {
     throw new Error('Reports billing review has no client option.');
   }
