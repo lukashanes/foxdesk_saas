@@ -7100,6 +7100,7 @@ display: none;
         border-radius: var(--radius-lg);
         overflow: hidden;
         background: var(--surface-primary);
+        min-height: 8rem;
     }
 
     .editor-wrapper--internal {
@@ -7112,6 +7113,7 @@ display: none;
     #edit-description-editor,
     #edit-comment-editor {
         border: none !important;
+        min-height: 7rem;
     }
 
     #comment-editor .ql-toolbar,
