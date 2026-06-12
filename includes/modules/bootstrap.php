@@ -18,5 +18,6 @@ require_once __DIR__ . '/search/global-search.php';
 require_once __DIR__ . '/clients/client-overview.php';
 require_once __DIR__ . '/reports/reporting-flow.php';
 require_once __DIR__ . '/reports/billing-review.php';
+require_once __DIR__ . '/app/app-contract.php';
 require_once __DIR__ . '/app/app-shell.php';
 require_once __DIR__ . '/app/app-feed.php';

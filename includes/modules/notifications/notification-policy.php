@@ -62,6 +62,11 @@ function should_send_new_ticket_admin_email(array $ticket, array $admin, array $
         return false;
     }
 
+    $assignee_id = (int) ($ticket['assignee_id'] ?? 0);
+    if ($assignee_id > 0 && $admin_id > 0 && $admin_id === $assignee_id) {
+        return false;
+    }
+
     return should_send_ticket_email('ticket.created', $ticket, $requester, $context);
 }
 

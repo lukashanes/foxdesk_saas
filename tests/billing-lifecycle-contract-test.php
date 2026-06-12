@@ -44,6 +44,9 @@ $assert(str_contains($billing, "'past_due_grace'"), 'Workspace access must allow
 $assert(str_contains($billing, 'billing_suspend_past_due_tenants((int) $tenant'), 'Access checks must enforce overdue suspension before allowing app pages.');
 $assert(str_contains($billing, 'COALESCE(suspended_at, NOW())'), 'Past-due start time should be preserved or initialized once.');
 $assert(str_contains($billing, "\$updates['suspended_at'] = \$past_due_started_at"), 'Failed invoices must preserve the original past-due start time.');
+$assert(str_contains($billing, 'foxdesk_platform_url'), 'Platform admins must return from Stripe portal to the platform host.');
+$assert(str_contains($billing, 'foxdesk_workspace_url'), 'Workspace admins must return from Stripe portal to the workspace host.');
+$assert(!str_contains($billing, "? APP_URL . '/index.php?page=platform'"), 'Stripe portal return must not send platform admins to APP_URL.');
 $assert(str_contains($maintenance, "'past_due_suspension'"), 'Maintenance JSON must include past-due suspension results.');
 $assert(str_contains($cron, 'billing_suspend_past_due_tenants'), 'Pseudo-cron must run past-due suspension.');
 $assert(str_contains($docs, 'BILLING_PAST_DUE_GRACE_DAYS'), 'Stripe billing docs must document past-due grace.');
@@ -105,6 +108,7 @@ $billing_page = file_get_contents($root . '/pages/billing.php');
 $header = file_get_contents($root . '/includes/header.php');
 $assert($billing_page !== false && $header !== false, 'Unable to read billing UI files.');
 $assert(!str_contains($billing_page, 'Start paid subscription'), 'Billing page must not use the old paid subscription CTA.');
+$assert(!str_contains($billing_page, 'Billing is off for this workspace. Platform admins can enable it from production settings.'), 'Billing page must not render a duplicate billing-off alert outside the action state notice.');
 $assert(!str_contains($header, 'Activate FoxDesk'), 'Header must not show the old Activate FoxDesk CTA.');
 
 echo "Billing lifecycle contract OK\n";

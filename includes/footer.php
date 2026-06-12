@@ -12,6 +12,8 @@
     // App config for external JS (bridge PHP → JS)
     window.appConfig = {
         apiUrl: <?php echo json_encode(url('api')); ?>,
+        page: <?php echo json_encode((string) ($page ?? '')); ?>,
+        csrfToken: <?php echo json_encode(csrf_token()); ?>,
         deleteConfirmMsg: <?php echo json_encode(t('Are you sure you want to delete this item?')); ?>,
         invalidFileTypeMsg: <?php echo json_encode(t('Invalid file type.')); ?>,
         isStaff: <?php echo (is_agent() || is_admin()) ? 'true' : 'false'; ?>,
@@ -28,6 +30,15 @@
         resumeLabel: <?php echo json_encode(t('Resume')); ?>
     };
 </script>
+<?php
+$footer_asset_base_version = defined('APP_VERSION') ? (string) APP_VERSION : '1';
+$footer_asset_version = static function (string $path) use ($footer_asset_base_version): string {
+    $absolute_path = (defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__)) . '/' . ltrim($path, '/');
+    return $footer_asset_base_version . '-' . (string) (@filemtime($absolute_path) ?: '0');
+};
+?>
+<script defer src="assets/js/app-api-client.js?v=<?php echo e($footer_asset_version('assets/js/app-api-client.js')); ?>"></script>
+<script defer src="assets/js/app-contract-shell.js?v=<?php echo e($footer_asset_version('assets/js/app-contract-shell.js')); ?>"></script>
 <script>
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function() {});
@@ -175,7 +186,7 @@ function closeImagePreview() {
 }
 function _lbEsc(e) { if (e.key === 'Escape') closeImagePreview(); }
 </script>
-<script defer src="assets/js/app-footer.js?v=<?php echo defined('APP_VERSION') ? APP_VERSION : '1'; ?>"></script>
+<script defer src="assets/js/app-footer.js?v=<?php echo e($footer_asset_version('assets/js/app-footer.js')); ?>"></script>
 </body>
 
 </html>

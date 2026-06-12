@@ -18,10 +18,11 @@ function ticket_registry_render_view_tabs(array $definitions, array $counts, str
             ?>
             <a href="<?php echo e($view_url); ?>"
                class="ticket-view-tab <?php echo $is_active_view ? 'is-active' : ''; ?>"
+               data-ticket-view-key="<?php echo e((string) $view_key); ?>"
                aria-current="<?php echo $is_active_view ? 'page' : 'false'; ?>"
                title="<?php echo e(t((string) ($view_definition['description'] ?? ''))); ?>">
                 <span><?php echo e(t((string) ($view_definition['label'] ?? ucfirst((string) $view_key)))); ?></span>
-                <span class="ticket-view-tab__count"><?php echo e((string) $view_count); ?></span>
+                <span class="ticket-view-tab__count" data-ticket-view-count><?php echo e((string) $view_count); ?></span>
             </a>
         <?php endforeach; ?>
     </nav>

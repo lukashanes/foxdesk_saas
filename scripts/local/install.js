@@ -38,8 +38,16 @@ async function waitForWeb() {
   const started = Date.now();
   while (Date.now() - started < 90_000) {
     try {
-      const response = await fetch(`${baseURL}/install.php`, { redirect: 'manual' });
-      if ([200, 302].includes(response.status)) return;
+      const health = await fetch(`${baseURL}/index.php?page=health`, { redirect: 'manual' });
+      if (health.ok) return;
+    } catch (_) {}
+    try {
+      const login = await fetch(`${baseURL}/index.php?page=login`, { redirect: 'manual' });
+      if ([200, 302].includes(login.status)) return;
+    } catch (_) {}
+    try {
+      const installer = await fetch(`${baseURL}/install.php`, { redirect: 'manual' });
+      if ([200, 302].includes(installer.status)) return;
     } catch (_) {}
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
@@ -65,6 +73,10 @@ async function install() {
 
   const cookies = {};
   let response = await request(cookies, '/install.php');
+  if (response.status === 404) {
+    console.log(`FoxDesk installer is not present; existing app is ready at ${baseURL}`);
+    return;
+  }
   if (response.status === 302) {
     console.log(`FoxDesk already installed at ${baseURL}`);
     return;
@@ -118,4 +130,3 @@ install().catch(error => {
   console.error(error);
   process.exit(1);
 });
-

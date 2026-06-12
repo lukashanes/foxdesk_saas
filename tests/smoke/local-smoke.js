@@ -817,8 +817,8 @@ async function expectTicketDetailSurface(page) {
   } else {
     await expectText(page, 'Dashboard');
   }
-  await expectQueueSurface(page, '/index.php?page=work', '.work-shell', '.work-panel');
-  await expectQueueSurface(page, '/index.php?page=inbox', '.inbox-shell', '.inbox-panel');
+  await expectQueueSurface(page, '/index.php?page=work', '.workspace-queue-shell', '.workspace-queue-panel');
+  await expectQueueSurface(page, '/index.php?page=inbox', '.workspace-queue-shell', '.workspace-queue-panel');
   await expectPlatformSurface(page);
   await expectDashboardSurface(page);
   await expectSettingsSurface(page);

@@ -28,6 +28,8 @@ $assert(str_contains($module, 'function reporting_flow_time_presets'), 'Reportin
 $assert(str_contains($module, 'function reporting_flow_builder_url'), 'Reporting flow builder URL helper is missing.');
 $assert(str_contains($billing, 'function billing_review_adjusted_rate'), 'Billing review adjustment helper is missing.');
 $assert(str_contains($billing, 'function billing_review_rate_from_target_amount'), 'Billing review target total helper is missing.');
+$assert(str_contains($billing, 'function billing_review_total_labels'), 'Billing review API total labels are missing.');
+$assert(str_contains($billing, "'total_labels' => billing_review_total_labels"), 'Billing review payload must expose formatted total labels.');
 $assert(str_contains($billing, "'discount_amount'"), 'Billing review must support amount discounts.');
 $assert(str_contains($reports, 'class="reporting-flow-card"'), 'Reports page must render the compact billing review flow.');
 $assert(str_contains($reports, 'name="organizations[]"'), 'Billing review must submit the selected client as a report filter.');
@@ -40,6 +42,10 @@ $assert(str_contains($reports, 'billing_review_bulk_adjustment_actions()'), 'Bul
 $assert(str_contains($reports, 'name="bulk_discount_amount"'), 'Bulk billing review must allow amount discounts.');
 $assert(str_contains($reports, 'data-entry-amount'), 'Detailed rows must expose row amounts for live totals.');
 $assert(str_contains($reports, 'detail-billable-amount'), 'Detailed report must expose a live billable total.');
+$assert(str_contains($reports, 'data-app-contract-surface="reporting-review"'), 'Detailed report must expose the reporting review contract surface.');
+$assert(str_contains($reports, 'data-report-total="billable_amount"'), 'Detailed report must expose contract total mounts.');
+$assert(str_contains($reports, 'data-report-entry-row'), 'Detailed report rows must expose contract row mounts.');
+$assert(str_contains($reports, 'data-report-entry-field="rate"'), 'Detailed report rows must expose contract rate mounts.');
 $assert(str_contains($reports, "selectedAction === 'discount_amount'"), 'Live totals must handle amount discounts.');
 $assert(str_contains($reports, 'class="report-page-toolbar"'), 'Reports page must use the shared report toolbar surface.');
 $assert(str_contains($reports, 'class="report-filter-pills"'), 'Reports page must use shared filter pills.');

@@ -180,7 +180,9 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
     </script>
 </head>
 
-<body class="app-shell-page antialiased font-sans">
+<body class="app-shell-page antialiased font-sans"
+      data-app-page="<?php echo e((string) ($page ?? '')); ?>"
+      data-app-shell="php">
     <!-- Impersonation Warning Banner -->
     <?php if (function_exists('is_impersonating') && is_impersonating()): ?>
         <div class="bg-red-600 text-white px-4 py-2 flex items-center justify-end gap-4 shadow-md relative z-50">

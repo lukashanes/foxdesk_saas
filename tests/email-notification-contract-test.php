@@ -12,6 +12,7 @@ function assert_contract($condition, $message)
 $mailer = file_get_contents(BASE_PATH . '/includes/mailer.php');
 $cloudflare_email_test = file_get_contents(BASE_PATH . '/bin/test-cloudflare-email.php');
 $ticket_handler = file_get_contents(BASE_PATH . '/includes/components/ticket-form-handlers.php');
+$notification_functions = file_get_contents(BASE_PATH . '/includes/notification-functions.php');
 $pseudo_cron = file_get_contents(BASE_PATH . '/includes/pseudo-cron.php');
 $cron = file_get_contents(BASE_PATH . '/pages/cron.php');
 
@@ -34,6 +35,9 @@ assert_contract(strpos($cloudflare_email_test, '--direct-cloudflare') !== false,
 assert_contract(strpos($cloudflare_email_test, 'This tests the') === false, 'Cloudflare email smoke scenarios should use real-life copy, not lab placeholder text.');
 assert_contract(strpos($ticket_handler, '$will_send_public_comment_notification') !== false, 'Ticket form should detect public comment notifications before status dispatch.');
 assert_contract(strpos($ticket_handler, '!$will_send_public_comment_notification') !== false, 'Status notifications should be suppressed when the same submit sends a public comment.');
+assert_contract(strpos($notification_functions, '$event_type)') !== false, 'Notification dispatcher must be readable by this contract.');
+assert_contract(strpos($notification_functions, "case 'new_ticket':") !== false, 'Notification dispatcher must handle new-ticket events.');
+assert_contract(strpos($notification_functions, 'array_filter($recipients, static fn($id) => (int) $id !== $assignee_id)') !== false, 'New-ticket in-app notifications must skip the assigned agent when an assignment notification will follow.');
 assert_contract(strpos($pseudo_cron, 'pseudo_cron_schedule_inline_email_ingest') !== false, 'Inline email ingest fallback is missing.');
 assert_contract(strpos($pseudo_cron, 'register_shutdown_function') !== false, 'Inline email ingest should run after page response shutdown.');
 assert_contract(strpos($cron, '!empty($cfg[\'enabled\'])') !== false, 'Cron endpoint must respect disabled IMAP setting.');

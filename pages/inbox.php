@@ -53,6 +53,9 @@ workspace_render_queue_page([
     'view_all_url' => $inbox_ticket_list_url($queue_key),
     'primary_action' => workspace_surface_action(url('new-ticket'), 'New ticket'),
     'row_options' => ['show_source' => true],
+    'contract_surface' => 'inbox',
+    'contract_collection' => 'inbox',
+    'contract_limit' => 12,
 ]);
 ?>
 

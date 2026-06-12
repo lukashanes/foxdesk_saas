@@ -29,7 +29,11 @@ $page = 'client';
 require_once BASE_PATH . '/includes/header.php';
 ?>
 
-<div class="client-center">
+<div class="client-center"
+    data-app-contract-surface="client"
+    data-app-contract-action="app-client-overview"
+    data-client-id="<?php echo (int) $org['id']; ?>"
+    data-client-view="<?php echo e($ticket_view); ?>">
     <div class="card client-hero">
         <div class="min-w-0">
             <div class="client-hero__meta">
@@ -59,23 +63,23 @@ require_once BASE_PATH . '/includes/header.php';
     <div class="client-stats">
         <div class="client-stat">
             <div class="client-stat__label"><?php echo e(t('Open')); ?></div>
-            <div class="client-stat__value"><?php echo (int) $counts['open']; ?></div>
+            <div class="client-stat__value" data-client-stat="open"><?php echo (int) $counts['open']; ?></div>
         </div>
         <div class="client-stat">
             <div class="client-stat__label"><?php echo e(t('Waiting')); ?></div>
-            <div class="client-stat__value"><?php echo (int) $counts['waiting']; ?></div>
+            <div class="client-stat__value" data-client-stat="waiting"><?php echo (int) $counts['waiting']; ?></div>
         </div>
         <div class="client-stat">
             <div class="client-stat__label"><?php echo e(t('Done')); ?></div>
-            <div class="client-stat__value"><?php echo (int) $counts['done']; ?></div>
+            <div class="client-stat__value" data-client-stat="done"><?php echo (int) $counts['done']; ?></div>
         </div>
         <div class="client-stat">
             <div class="client-stat__label"><?php echo e(t('Time this month')); ?></div>
-            <div class="client-stat__value"><?php echo e(format_duration_minutes($time['minutes'])); ?></div>
+            <div class="client-stat__value" data-client-stat="time"><?php echo e(format_duration_minutes($time['minutes'])); ?></div>
         </div>
         <div class="client-stat">
             <div class="client-stat__label"><?php echo e(t('Billable this month')); ?></div>
-            <div class="client-stat__value"><?php echo e(format_money($time['billable_amount'])); ?></div>
+            <div class="client-stat__value" data-client-stat="billable"><?php echo e(format_money($time['billable_amount'])); ?></div>
         </div>
     </div>
 
@@ -88,40 +92,47 @@ require_once BASE_PATH . '/includes/header.php';
                 <div class="client-tabs">
                     <?php foreach (['open', 'waiting', 'done', 'all'] as $view_key): ?>
                         <a class="client-tab <?php echo $ticket_view === $view_key ? 'is-active' : ''; ?>"
+                           data-client-view-key="<?php echo e($view_key); ?>"
                            href="<?php echo url('client', ['id' => (int) $org['id'], 'work_view' => $view_key]); ?>">
                             <?php echo e(t(ticket_list_view_definitions(false)[$view_key]['label'] ?? ucfirst($view_key))); ?>
-                            <span><?php echo (int) ($counts[$view_key] ?? 0); ?></span>
+                            <span data-client-view-count><?php echo (int) ($counts[$view_key] ?? 0); ?></span>
                         </a>
                     <?php endforeach; ?>
                 </div>
             </div>
 
-            <?php if (empty($tickets)): ?>
-                <div class="client-empty">
-                    <?php echo e(t('All clear')); ?>
-                </div>
-            <?php else: ?>
-                <?php foreach ($tickets as $ticket): ?>
-                    <a class="client-ticket tr-hover" href="<?php echo url('ticket', ['id' => (int) $ticket['id']]); ?>">
+            <div data-client-ticket-list>
+                <?php if (empty($tickets)): ?>
+                    <div class="client-empty" data-client-empty>
+                        <?php echo e(t('All clear')); ?>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($tickets as $ticket): ?>
+                    <a class="client-ticket tr-hover"
+                       data-client-ticket-row
+                       data-ticket-id="<?php echo (int) $ticket['id']; ?>"
+                       href="<?php echo url('ticket', ['id' => (int) $ticket['id']]); ?>">
                         <div class="min-w-0">
-                            <div class="client-ticket__title"><?php echo e($ticket['title']); ?></div>
+                            <div class="client-ticket__title" data-client-ticket-field="title"><?php echo e($ticket['title']); ?></div>
                             <div class="client-ticket__meta">
-                                <span><?php echo get_ticket_code((int) $ticket['id']); ?></span>
+                                <span data-client-ticket-field="code"><?php echo get_ticket_code((int) $ticket['id']); ?></span>
                                 <?php if (!empty($ticket['assignee_first_name']) || !empty($ticket['assignee_last_name'])): ?>
-                                    <span><?php echo e(trim(($ticket['assignee_first_name'] ?? '') . ' ' . ($ticket['assignee_last_name'] ?? ''))); ?></span>
+                                    <span data-client-ticket-field="assignee"><?php echo e(trim(($ticket['assignee_first_name'] ?? '') . ' ' . ($ticket['assignee_last_name'] ?? ''))); ?></span>
                                 <?php else: ?>
-                                    <span><?php echo e(t('Unassigned')); ?></span>
+                                    <span data-client-ticket-field="assignee"><?php echo e(t('Unassigned')); ?></span>
                                 <?php endif; ?>
-                                <span><?php echo e(format_date($ticket['updated_at'] ?? $ticket['created_at'])); ?></span>
+                                <span data-client-ticket-field="updated"><?php echo e(format_date($ticket['updated_at'] ?? $ticket['created_at'])); ?></span>
                             </div>
                         </div>
                         <span class="badge client-ticket-status"
+                            data-client-ticket-field="status"
                             style="--client-status-color: <?php echo e($ticket['status_color'] ?? '#64748b'); ?>;">
                             <?php echo e($ticket['status_name'] ?? t('Status')); ?>
                         </span>
                     </a>
-                <?php endforeach; ?>
-            <?php endif; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
         </div>
 
         <aside class="space-y-3">
@@ -152,23 +163,27 @@ require_once BASE_PATH . '/includes/header.php';
                     <h2 class="client-section-title"><?php echo e(t('Contacts')); ?></h2>
                     <a href="<?php echo url('admin', ['section' => 'users']); ?>" class="client-manage-link"><?php echo e(t('Manage')); ?></a>
                 </div>
-                <?php if (empty($contacts)): ?>
-                    <p class="client-section-note"><?php echo e(t('No contacts yet.')); ?></p>
-                <?php else: ?>
-                    <?php foreach (array_slice($contacts, 0, 8) as $contact): ?>
-                        <div class="client-contact">
+                <div data-client-contact-list>
+                    <?php if (empty($contacts)): ?>
+                        <p class="client-section-note" data-client-contact-empty><?php echo e(t('No contacts yet.')); ?></p>
+                    <?php else: ?>
+                        <?php foreach (array_slice($contacts, 0, 8) as $contact): ?>
+                        <div class="client-contact"
+                            data-client-contact-row
+                            data-contact-id="<?php echo (int) $contact['id']; ?>">
                             <div class="min-w-0">
-                                <div class="client-contact__name">
+                                <div class="client-contact__name" data-client-contact-field="name">
                                     <?php echo e(trim(($contact['first_name'] ?? '') . ' ' . ($contact['last_name'] ?? ''))); ?>
                                 </div>
-                                <div class="client-contact__email"><?php echo e($contact['email']); ?></div>
+                                <div class="client-contact__email" data-client-contact-field="email"><?php echo e($contact['email']); ?></div>
                             </div>
-                            <span class="badge client-contact__role">
+                            <span class="badge client-contact__role" data-client-contact-field="role">
                                 <?php echo e(ucfirst((string) $contact['role'])); ?>
                             </span>
                         </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
             </div>
         </aside>
     </div>

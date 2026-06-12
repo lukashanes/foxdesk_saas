@@ -1760,24 +1760,35 @@ include BASE_PATH . '/includes/components/page-header.php';
                     <div class="text-sm text-theme-muted"><?php echo e(t('Try adjusting the time range or filters above.')); ?></div>
                 </div>
             <?php else: ?>
+            <div class="reporting-review-surface"
+                data-app-contract-surface="reporting-review"
+                data-app-contract-action="app-reporting-review"
+                data-report-time-range="<?php echo e($time_range); ?>"
+                data-report-from-date="<?php echo e($from_date); ?>"
+                data-report-to-date="<?php echo e($to_date); ?>"
+                data-report-organization-ids="<?php echo e(implode(',', array_filter($selected_orgs, static fn ($id) => (int) $id > 0))); ?>"
+                data-report-agent-ids="<?php echo e(implode(',', array_filter($selected_agents, static fn ($id) => (int) $id > 0))); ?>"
+                data-report-tags="<?php echo e($selected_tags_csv); ?>"
+                data-report-limit="250"
+                data-report-currency="<?php echo e(function_exists('get_currency_label') ? get_currency_label() : 'CZK'); ?>">
             <div class="report-detail-totals" id="report-detail-totals">
                 <div class="report-metric">
                     <div class="report-metric__label"><?php echo e(t('Total time')); ?></div>
-                    <div id="detail-total-time" class="report-metric__value"><?php echo e(format_duration_minutes($totals['minutes'])); ?></div>
+                    <div id="detail-total-time" class="report-metric__value" data-report-total="minutes"><?php echo e(format_duration_minutes($totals['minutes'])); ?></div>
                 </div>
                 <div class="report-metric">
                     <div class="report-metric__label"><?php echo e(t('Billable time')); ?></div>
-                    <div id="detail-billable-time" class="report-metric__value"><?php echo e(format_duration_minutes($totals['billable_minutes'])); ?></div>
+                    <div id="detail-billable-time" class="report-metric__value" data-report-total="billable_minutes"><?php echo e(format_duration_minutes($totals['billable_minutes'])); ?></div>
                 </div>
                 <?php if ($show_money): ?>
                 <div class="report-metric">
                     <div class="report-metric__label"><?php echo e(t('Billable amount')); ?></div>
-                    <div id="detail-billable-amount" class="report-metric__value"><?php echo e(format_money($totals['billable_amount'])); ?></div>
+                    <div id="detail-billable-amount" class="report-metric__value" data-report-total="billable_amount"><?php echo e(format_money($totals['billable_amount'])); ?></div>
                 </div>
                 <?php if ($has_cost_data): ?>
                 <div class="report-metric">
                     <div class="report-metric__label"><?php echo e(t('Profit')); ?></div>
-                    <div id="detail-profit" class="report-metric__value"><?php echo e(format_money($totals['profit'])); ?></div>
+                    <div id="detail-profit" class="report-metric__value" data-report-total="profit"><?php echo e(format_money($totals['profit'])); ?></div>
                 </div>
                 <?php endif; ?>
                 <?php endif; ?>
@@ -1869,6 +1880,8 @@ include BASE_PATH . '/includes/components/page-header.php';
                         <tbody class="divide-y">
                             <?php foreach ($entries as $entry): ?>
                                 <tr class="report-detail-row"
+                                    data-report-entry-row
+                                    data-entry-id="<?php echo (int) $entry['id']; ?>"
                                     data-billable="<?php echo !empty($entry['is_billable']) ? '1' : '0'; ?>"
                                     data-actual-minutes="<?php echo (int) $entry['actual_minutes']; ?>"
                                     data-billable-minutes="<?php echo (int) $entry['billable_minutes']; ?>"
@@ -1880,8 +1893,8 @@ include BASE_PATH . '/includes/components/page-header.php';
                                         <input type="checkbox" class="bulk-entry-check rounded" name="entry_ids[]" value="<?php echo $entry['id']; ?>" form="bulk-billing-form" <?php echo !empty($entry['is_billable']) ? '' : 'disabled'; ?>>
                                     </td>
                                     <?php endif; ?>
-                                    <td class="px-3 py-1.5 text-xs" data-col="ticket"><a href="<?php echo url('ticket', ['id' => $entry['ticket_id']]); ?>" class="text-blue-600 hover:text-blue-800 hover:underline"><?php echo e($entry['ticket_title']); ?></a></td>
-                                    <td class="px-3 py-1.5 text-xs text-theme-secondary" data-col="company">
+                                    <td class="px-3 py-1.5 text-xs" data-col="ticket"><a href="<?php echo url('ticket', ['id' => $entry['ticket_id']]); ?>" class="text-blue-600 hover:text-blue-800 hover:underline" data-report-entry-field="ticket"><?php echo e($entry['ticket_title']); ?></a></td>
+                                    <td class="px-3 py-1.5 text-xs text-theme-secondary" data-col="company" data-report-entry-field="client">
                                         <?php echo e($entry['organization_name'] ?: t('-- No organization --')); ?></td>
                                     <?php if ($tags_supported): ?>
                                         <td class="px-3 py-1.5 text-xs" data-col="tags">
@@ -1897,7 +1910,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                             <?php endif; ?>
                                         </td>
                                     <?php endif; ?>
-                                    <td class="px-3 py-1.5 text-xs text-theme-secondary" data-col="duration">
+                                    <td class="px-3 py-1.5 text-xs text-theme-secondary" data-col="duration" data-report-entry-field="minutes">
                                         <?php echo e(format_duration_minutes($entry['actual_minutes'])); ?></td>
                                     <td class="px-3 py-1.5 text-xs text-theme-secondary" data-col="billable">
                                         <?php if (is_admin()): ?>
@@ -1916,7 +1929,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                             <span class="text-xs"><?php echo e(!empty($entry['is_billable']) ? t('Billable') : t('Non-billable')); ?></span>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="px-3 py-1.5 text-xs text-theme-secondary" data-col="agent">
+                                    <td class="px-3 py-1.5 text-xs text-theme-secondary" data-col="agent" data-report-entry-field="agent">
                                         <?php echo e(trim($entry['first_name'] . ' ' . $entry['last_name'])); ?></td>
                                     <td class="px-3 py-1.5 text-xs" data-col="source">
                                         <?php echo function_exists('render_source_badge') ? render_source_badge($entry['_source'] ?? get_time_entry_source($entry)) : ''; ?></td>
@@ -1926,8 +1939,8 @@ include BASE_PATH . '/includes/components/page-header.php';
                                         <?php echo e($entry['ended_at'] ? format_date($entry['ended_at']) : '-'); ?></td>
                                     <?php if ($show_money): ?>
                                         <td class="px-3 py-1.5 text-xs report-amount-col" data-col="amount">
-                                            <div data-entry-amount><?php echo e(format_money($entry['billable_amount'])); ?></div>
-                                            <div class="text-[11px] text-theme-muted" data-entry-rate><?php echo e(format_money($entry['billable_rate'])); ?>/h</div>
+                                            <div data-entry-amount data-report-entry-field="amount"><?php echo e(format_money($entry['billable_amount'])); ?></div>
+                                            <div class="text-[11px] text-theme-muted" data-entry-rate data-report-entry-field="rate"><?php echo e(format_money($entry['billable_rate'])); ?>/h</div>
                                             <?php if (is_admin()): ?>
                                             <form method="post" class="entry-billing-form mt-1 flex items-center gap-1" data-entry-id="<?php echo $entry['id']; ?>">
                                                 <?php echo csrf_field(); ?>
@@ -1985,6 +1998,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                         </tbody>
                     </table>
                 </div>
+            </div>
             </div>
             <?php endif; ?>
         <?php elseif ($tab === 'worklog'): ?>

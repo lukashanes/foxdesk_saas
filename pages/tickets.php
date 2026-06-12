@@ -768,7 +768,12 @@ foreach ($board_closed_statuses as $status_item) {
 }
 ?>
 
-<div class="ticket-registry-page" data-ticket-registry-surface>
+<div class="ticket-registry-page"
+     data-ticket-registry-surface
+     data-app-contract-surface="tickets"
+     data-app-contract-action="app-ticket-list"
+     data-app-contract-limit="<?php echo max(25, min(100, (int) $total_tickets)); ?>"
+     data-ticket-contract-mode="refresh">
     <div class="ticket-registry-toolbar">
         <?php
         ticket_registry_render_view_tabs(
@@ -1084,7 +1089,9 @@ foreach ($board_closed_statuses as $status_item) {
                 $priority_color = $ticket['priority_color'] ?? get_priority_color($ticket['priority_id'] ?? $ticket['priority'] ?? 'medium');
                 $is_overdue_mobile = is_due_date_overdue($ticket['due_date'] ?? null, !empty($ticket['is_closed']));
                 ?>
-                <div class="p-4 ticket-list-item <?php echo e($ticket_registry_status_accent_class($ticket)); ?><?php echo $is_overdue_mobile ? ' ticket-overdue' : ''; ?>">
+                <div class="p-4 ticket-list-item <?php echo e($ticket_registry_status_accent_class($ticket)); ?><?php echo $is_overdue_mobile ? ' ticket-overdue' : ''; ?>"
+                     data-ticket-contract-row
+                     data-ticket-id="<?php echo (int) $ticket['id']; ?>">
                     <div class="flex items-start gap-3">
                         <?php if ($bulk_actions_enabled): ?>
                             <input type="checkbox" name="ticket_ids[]" value="<?php echo (int) $ticket['id']; ?>"
@@ -1093,12 +1100,12 @@ foreach ($board_closed_statuses as $status_item) {
                             <a href="<?php echo ticket_url($ticket); ?>" class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2 text-xs mb-1 text-theme-muted">
                                     <span class="<?php echo e($ticket_registry_status_dot_class($ticket_registry_status_group_from_ticket($ticket))); ?>"></span>
-                                    <span><?php echo e($ticket['status_name']); ?></span>
-                                    <span class="ticket-code-pill" title="<?php echo e('#' . (int) $ticket['id']); ?>">
+                                    <span data-ticket-field="status"><?php echo e($ticket['status_name']); ?></span>
+                                    <span class="ticket-code-pill" data-ticket-field="code" title="<?php echo e('#' . (int) $ticket['id']); ?>">
                                         <?php echo e(get_ticket_code($ticket['id'])); ?>
                                     </span>
                                 </div>
-                                <div class="font-medium truncate text-theme-primary"><?php echo e($ticket['title']); ?></div>
+                                <div class="font-medium truncate text-theme-primary" data-ticket-field="title"><?php echo e($ticket['title']); ?></div>
                                 <div class="text-sm mt-1 flex flex-wrap items-center gap-2 text-theme-muted">
                                     <span><?php echo format_date($ticket['created_at'], 'd.m.Y'); ?></span>
                                     <?php if (!empty($ticket['due_date'])): ?>
@@ -1113,11 +1120,11 @@ foreach ($board_closed_statuses as $status_item) {
                                             <?php echo date('d.m.', $due_ts); ?>
                                         </span>
                                     <?php endif; ?>
-                                    <span class="<?php echo e($ticket_registry_priority_badge_class($priority_name)); ?>">
+                                    <span class="<?php echo e($ticket_registry_priority_badge_class($priority_name)); ?>" data-ticket-field="priority">
                                         <?php echo e($priority_name); ?>
                                     </span>
                                     <?php if (is_admin() && !empty($ticket['organization_name'])): ?>
-                                        <span class="text-xs text-theme-muted"><?php echo e($ticket['organization_name']); ?></span>
+                                        <span class="text-xs text-theme-muted" data-ticket-field="client"><?php echo e($ticket['organization_name']); ?></span>
                                     <?php endif; ?>
                                     <?php if ($tags_supported && !empty($ticket['tags'])): ?>
                                         <?php foreach (array_slice(get_ticket_tags_array($ticket['tags']), 0, 3) as $tag): ?>
@@ -1375,7 +1382,10 @@ foreach ($board_closed_statuses as $status_item) {
                         $priority_color = $ticket['priority_color'] ?? get_priority_color($ticket['priority_id'] ?? $ticket['priority'] ?? 'medium');
                         $is_overdue = is_due_date_overdue($ticket['due_date'] ?? null, !empty($ticket['is_closed']));
                         ?>
-                        <tr class="ticket-row <?php echo e($ticket_registry_status_accent_class($ticket)); ?><?php echo $is_overdue ? ' ticket-overdue' : ''; ?>" data-href="<?php echo e(ticket_url($ticket)); ?>">
+                        <tr class="ticket-row <?php echo e($ticket_registry_status_accent_class($ticket)); ?><?php echo $is_overdue ? ' ticket-overdue' : ''; ?>"
+                            data-href="<?php echo e(ticket_url($ticket)); ?>"
+                            data-ticket-contract-row
+                            data-ticket-id="<?php echo (int) $ticket['id']; ?>">
                             <td class="px-3 py-2.5 whitespace-nowrap align-top">
                                 <div class="flex items-center gap-1.5">
                                     <?php if ($bulk_actions_enabled): ?>
@@ -1386,7 +1396,7 @@ foreach ($board_closed_statuses as $status_item) {
                                         <a href="<?php echo ticket_url($ticket); ?>" class="ticket-row-date-link" title="<?php echo e(get_ticket_code($ticket['id'])); ?>">
                                             <?php echo date('d.m.', strtotime($ticket['created_at'])); ?>
                                         </a>
-                                        <div class="text-[10px] text-theme-muted"><?php echo e(get_ticket_code($ticket['id'])); ?></div>
+                                        <div class="text-[10px] text-theme-muted" data-ticket-field="code"><?php echo e(get_ticket_code($ticket['id'])); ?></div>
                                     </div>
                                 </div>
                             </td>
@@ -1396,11 +1406,12 @@ foreach ($board_closed_statuses as $status_item) {
                                     <span class="ticket-subject-link truncate tl-inline-text tl-inline-edit"
                                           data-ticket="<?php echo (int)$ticket['id']; ?>"
                                           data-field="subject"
+                                          data-ticket-field="title"
                                           data-value="<?php echo e($ticket['title']); ?>"
                                           title="<?php echo e(t('Click to edit')); ?>"
                                           ><?php echo e($ticket['title']); ?></span>
                                     <?php else: ?>
-                                    <a href="<?php echo ticket_url($ticket); ?>" class="ticket-subject-link truncate">
+                                    <a href="<?php echo ticket_url($ticket); ?>" class="ticket-subject-link truncate" data-ticket-field="title">
                                         <?php echo e($ticket['title']); ?>
                                     </a>
                                     <?php endif; ?>
@@ -1431,7 +1442,7 @@ foreach ($board_closed_statuses as $status_item) {
                                         <?php echo e(get_type_label($ticket['type'])); ?>
                                     <?php endif; ?>
                                     <?php if (!is_admin() && !empty($ticket['organization_name'])): ?>
-                                        <span class="ml-1"><?php echo e($ticket['organization_name']); ?></span>
+                                        <span class="ml-1" data-ticket-field="client"><?php echo e($ticket['organization_name']); ?></span>
                                     <?php endif; ?>
                                     <?php if ($tags_supported && !empty($ticket['tags'])): ?>
                                         <?php foreach (array_slice(get_ticket_tags_array($ticket['tags']), 0, 3) as $tag): ?>
@@ -1447,7 +1458,7 @@ foreach ($board_closed_statuses as $status_item) {
                             <td class="px-2 py-2.5 whitespace-nowrap align-top">
                                 <?php if (is_agent() || is_admin()): ?>
                                 <div class="tl-inline-edit tl-inline-anchor">
-                                    <span class="badge-inline tl-edit-trigger" data-ticket="<?php echo (int)$ticket['id']; ?>" data-field="status"
+                                    <span class="badge-inline tl-edit-trigger" data-ticket="<?php echo (int)$ticket['id']; ?>" data-field="status" data-ticket-field="status"
                                         style="background-color: <?php echo e($ticket['status_color']); ?>20; color: <?php echo e($ticket['status_color']); ?>;"
                                         title="<?php echo e(t('Click to change')); ?>">
                                         <?php echo e($ticket['status_name']); ?>
@@ -1463,7 +1474,7 @@ foreach ($board_closed_statuses as $status_item) {
                                     </div>
                                 </div>
                                 <?php else: ?>
-                                <span class="<?php echo e($ticket_registry_status_badge_class($ticket)); ?>">
+                                <span class="<?php echo e($ticket_registry_status_badge_class($ticket)); ?>" data-ticket-field="status">
                                     <?php echo e($ticket['status_name']); ?>
                                 </span>
                                 <?php endif; ?>
@@ -1471,7 +1482,7 @@ foreach ($board_closed_statuses as $status_item) {
                             <td class="px-2 py-2.5 whitespace-nowrap align-top">
                                 <?php if (is_agent() || is_admin()): ?>
                                 <div class="tl-inline-edit tl-inline-anchor">
-                                    <span class="badge-inline tl-edit-trigger" data-ticket="<?php echo (int)$ticket['id']; ?>" data-field="priority"
+                                    <span class="badge-inline tl-edit-trigger" data-ticket="<?php echo (int)$ticket['id']; ?>" data-field="priority" data-ticket-field="priority"
                                         style="background-color: <?php echo e($priority_color); ?>20; color: <?php echo e($priority_color); ?>;"
                                         title="<?php echo e(t('Click to change')); ?>">
                                         <?php echo e($priority_name); ?>
@@ -1487,7 +1498,7 @@ foreach ($board_closed_statuses as $status_item) {
                                     </div>
                                 </div>
                                 <?php else: ?>
-                                <span class="<?php echo e($ticket_registry_priority_badge_class($priority_name)); ?>">
+                                <span class="<?php echo e($ticket_registry_priority_badge_class($priority_name)); ?>" data-ticket-field="priority">
                                     <?php echo e($priority_name); ?>
                                 </span>
                                 <?php endif; ?>
@@ -1528,6 +1539,7 @@ foreach ($board_closed_statuses as $status_item) {
                                         <span class="tl-edit-trigger tl-company-trigger"
                                               data-ticket="<?php echo (int)$ticket['id']; ?>"
                                               data-field="company"
+                                              data-ticket-field="client"
                                               title="<?php echo e(t('Click to change')); ?>">
                                             <?php if (!empty($ticket['organization_name'])): ?>
                                                 <?php echo e($ticket['organization_name']); ?>
@@ -1556,6 +1568,7 @@ foreach ($board_closed_statuses as $status_item) {
                                         <span class="tl-edit-trigger tl-assign-trigger"
                                               data-ticket="<?php echo (int)$ticket['id']; ?>"
                                               data-field="assign"
+                                              data-ticket-field="assignee"
                                               title="<?php echo e(t('Click to change')); ?>">
                                             <?php if (!empty($ticket['assignee_id'])):
                                                 $_assigned = null;
@@ -1610,6 +1623,7 @@ foreach ($board_closed_statuses as $status_item) {
                                         <span class="tl-edit-trigger tl-assign-trigger"
                                               data-ticket="<?php echo (int)$ticket['id']; ?>"
                                               data-field="assign"
+                                              data-ticket-field="assignee"
                                               title="<?php echo e(t('Click to change')); ?>">
                                             <?php if (!empty($ticket['assignee_id'])):
                                                 $_assigned = null;

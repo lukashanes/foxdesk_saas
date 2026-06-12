@@ -169,10 +169,6 @@ require_once BASE_PATH . '/includes/header.php';
             <?php endif; ?>
         </section>
 
-        <?php if (!billing_enabled()): ?>
-            <div class="alert alert-info mb-5">Billing is off for this workspace. Platform admins can enable it from production settings.</div>
-        <?php endif; ?>
-
         <?php if (!empty($billing_action_state['notice_title']) || !empty($billing_action_state['notice_body'])): ?>
             <?php
             $notice_variant = (string) ($billing_action_state['notice_variant'] ?? 'info');

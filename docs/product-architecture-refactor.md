@@ -102,3 +102,49 @@ into `includes/modules/reports/billing-review.php`. Detailed time reports can
 now review a client and period at item level, set an effective hourly rate,
 apply percent or fixed-amount discounts, set item totals, and keep live totals in
 sync while preserving the current storage model on `ticket_time_entries`.
+
+The tenth behavior change adds a frontend contract bridge. Existing PHP pages
+remain server-rendered, but shared surfaces expose stable data attributes and a
+small JavaScript client consumes the authenticated `app-*` API contracts. This
+creates a clean migration boundary for the SaaS web shell and native apps
+without duplicating business rules in the browser or parsing rendered HTML.
+
+The eleventh behavior change makes Work and Inbox contract-first surfaces. PHP
+still renders a complete fallback, but the shared workspace surface declares its
+active queue and collection, then the frontend bridge refreshes queue counts and
+ticket rows from the `app-home` contract. Work reads `home.work`; Inbox reads
+`home.inbox`. Browser rendering stays DOM-based and does not inject HTML
+strings.
+
+The twelfth behavior change makes the Tickets registry consume the
+`app-ticket-list` contract without replacing the existing inline editing and bulk
+action controls. Ticket rows and mobile cards expose stable field mounts, and the
+frontend bridge refreshes text/status data in place from the API. This keeps the
+page usable if JavaScript or the API fails while moving ticket list reads toward
+the same contract that native apps will consume.
+
+The thirteenth behavior change makes the Client center consume the
+`app-client-overview` contract. The page still renders from PHP, but client
+stats, ticket tabs, recent tickets, contacts, and month billing summaries expose
+stable mount points. The frontend bridge refreshes those values from the shared
+read model in place, so web, SaaS shell, and future native apps use the same
+client overview semantics.
+
+The fourteenth behavior change makes the detailed Reports billing review consume
+the `app-reporting-review` contract. The existing PHP table and item-level
+adjustment forms stay intact, while totals and rows expose stable mounts and the
+frontend bridge verifies them against the shared billing-review read model. This
+keeps rate, discount, target-total, and report-publishing work tied to one
+contract instead of separate web and native interpretations.
+
+The fifteenth behavior change reduces duplicate notification noise. When a
+ticket is created already assigned to a staff member, that staff member receives
+the actionable assignment signal instead of also receiving the generic
+new-ticket signal. The same rule applies to email policy and in-app
+notifications; the activity log remains the full audit trail.
+
+The sixteenth behavior change tightens SaaS host separation. Public marketing,
+customer workspace, and platform console links keep their own hosts, and Stripe
+Billing Portal return URLs send platform admins back to the platform host while
+workspace admins return to the workspace host. Billing state actions must follow
+the tenant lifecycle instead of showing generic activation buttons.

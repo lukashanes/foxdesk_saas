@@ -162,8 +162,14 @@ function route_api_request($action) {
         // App shell contract for web/native clients
         'app-shell' => 'api_app_shell',
         'app-home' => 'api_app_home',
+        'app-ticket-list' => 'api_app_ticket_list',
         'app-ticket-detail' => 'api_app_ticket_detail',
+        'app-ticket-actions' => 'api_app_ticket_actions',
         'app-add-comment' => 'api_app_add_comment',
+        'app-client-overview' => 'api_app_client_overview',
+        'app-reporting-review' => 'api_app_reporting_review',
+        'app-notifications-summary' => 'api_app_notifications_summary',
+        'app-tenant-state' => 'api_app_tenant_state',
 
         // Native mobile app auth and device registration
         'mobile-login' => 'api_mobile_login',

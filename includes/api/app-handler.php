@@ -3,6 +3,29 @@
  * API Handler: application shell contract.
  */
 
+function api_app_contract_envelope(array $data, array $meta = []): array
+{
+    return [
+        'data' => $data,
+        'meta' => array_merge([
+            'schema_version' => 1,
+            'generated_at' => date('c'),
+        ], $meta),
+        'errors' => [],
+    ];
+}
+
+function api_app_contract_success(array $data, array $meta = [], array $legacy = []): void
+{
+    api_success(array_merge($legacy, api_app_contract_envelope($data, $meta)));
+}
+
+function api_app_clamp_limit($value, int $default = 25, int $max = 100): int
+{
+    $limit = (int) ($value ?? $default);
+    return max(1, min($max, $limit));
+}
+
 function api_app_shell()
 {
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -18,9 +41,12 @@ function api_app_shell()
         api_error('App shell is not available.', 500);
     }
 
-    api_success([
-        'app_shell' => app_shell_payload($user),
-    ]);
+    $app_shell = app_shell_payload($user);
+    api_app_contract_success(
+        ['app_shell' => $app_shell],
+        ['resource' => 'app_shell'],
+        ['app_shell' => $app_shell]
+    );
 }
 
 function api_app_home()
@@ -40,10 +66,14 @@ function api_app_home()
 
     $limit = (int) ($_GET['limit'] ?? 5);
 
-    api_success([
-        'app_shell' => app_shell_payload($user),
-        'home' => app_feed_payload($user, $limit),
-    ]);
+    $app_shell = app_shell_payload($user);
+    $home = app_feed_payload($user, $limit);
+
+    api_app_contract_success(
+        ['app_shell' => $app_shell, 'home' => $home],
+        ['resource' => 'app_home'],
+        ['app_shell' => $app_shell, 'home' => $home]
+    );
 }
 
 function api_app_resolve_ticket(array $source, array $user)
@@ -76,47 +106,71 @@ function api_app_resolve_ticket(array $source, array $user)
     return $ticket;
 }
 
-function api_app_ticket_payload(array $ticket): array
+function api_app_ticket_list()
 {
-    $ticket_id = (int) ($ticket['id'] ?? 0);
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        api_error('Method not allowed', 405);
+    }
 
-    return [
-        'id' => $ticket_id,
-        'hash' => $ticket['hash'] ?? null,
-        'code' => function_exists('get_ticket_code') ? get_ticket_code($ticket_id) : ('#' . $ticket_id),
-        'title' => (string) ($ticket['title'] ?? ''),
-        'description_html' => (string) ($ticket['description'] ?? ''),
-        'description_text' => trim(strip_tags((string) ($ticket['description'] ?? ''))),
-        'status' => [
-            'id' => (int) ($ticket['status_id'] ?? 0),
-            'name' => (string) ($ticket['status_name'] ?? ''),
-            'color' => $ticket['status_color'] ?? null,
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+    if (!function_exists('get_tickets') || !function_exists('ticket_list_view_apply_filters')) {
+        api_error('Ticket list contract is not available.', 500);
+    }
+
+    $limit = api_app_clamp_limit($_GET['limit'] ?? null, 25, 100);
+    $offset = max(0, (int) ($_GET['offset'] ?? 0));
+    $view = ticket_list_view_normalize($_GET['view'] ?? $_GET['work_view'] ?? 'open', true);
+    $base_filters = app_contract_ticket_filters_from_request($_GET, $user, $limit, $offset);
+    $filters = ticket_list_view_apply_filters($base_filters, $view);
+
+    $count_filters = $filters;
+    unset($count_filters['limit'], $count_filters['offset']);
+
+    $count_base_filters = $base_filters;
+    unset($count_base_filters['limit'], $count_base_filters['offset']);
+
+    $tickets = array_map('app_contract_ticket_list_item', get_tickets($filters));
+    $total = function_exists('get_tickets_count') ? get_tickets_count($count_filters) : count($tickets);
+    $counts = function_exists('ticket_list_view_counts') ? ticket_list_view_counts($count_base_filters, true) : [];
+    $views = function_exists('ticket_list_view_definitions') ? ticket_list_view_definitions(true) : [];
+
+    api_app_contract_success([
+        'tickets' => $tickets,
+        'view' => $view,
+        'views' => $views,
+        'counts' => $counts,
+        'pagination' => [
+            'limit' => $limit,
+            'offset' => $offset,
+            'total' => $total,
+            'has_more' => ($offset + $limit) < $total,
         ],
-        'priority' => [
-            'id' => isset($ticket['priority_id']) ? (int) $ticket['priority_id'] : null,
-            'name' => (string) ($ticket['priority_name'] ?? ''),
-            'color' => $ticket['priority_color'] ?? null,
+        'filters' => [
+            'search' => (string) ($_GET['search'] ?? ''),
+            'sort' => (string) ($base_filters['sort'] ?? 'last_updated'),
         ],
-        'client' => [
-            'id' => isset($ticket['organization_id']) ? (int) $ticket['organization_id'] : null,
-            'name' => (string) ($ticket['organization_name'] ?? ''),
-        ],
-        'requester' => [
-            'id' => (int) ($ticket['user_id'] ?? 0),
-            'name' => trim((string) (($ticket['first_name'] ?? '') . ' ' . ($ticket['last_name'] ?? ''))),
-        ],
-        'assignee' => [
-            'id' => isset($ticket['assignee_id']) ? (int) $ticket['assignee_id'] : null,
-            'name' => trim((string) (($ticket['assignee_first_name'] ?? '') . ' ' . ($ticket['assignee_last_name'] ?? ''))),
-        ],
-        'source' => (string) ($ticket['source'] ?? 'web'),
-        'tags' => function_exists('normalize_ticket_tags')
-            ? normalize_ticket_tags($ticket['tags'] ?? '', true)
-            : [],
-        'due_date' => $ticket['due_date'] ?? null,
-        'created_at' => $ticket['created_at'] ?? null,
-        'updated_at' => $ticket['updated_at'] ?? null,
-    ];
+    ], ['resource' => 'ticket_list']);
+}
+
+function api_app_ticket_actions()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        api_error('Method not allowed', 405);
+    }
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+
+    $ticket = api_app_resolve_ticket($_GET, $user);
+    api_app_contract_success([
+        'ticket' => app_contract_ticket_payload($ticket),
+        'actions' => app_contract_ticket_actions($ticket, $user),
+    ], ['resource' => 'ticket_actions']);
 }
 
 function api_app_ticket_comments(int $ticket_id, bool $include_internal): array
@@ -207,12 +261,15 @@ function api_app_ticket_detail()
     $ticket_id = (int) $ticket['id'];
     $comments = api_app_ticket_comments($ticket_id, is_agent());
 
-    api_success([
-        'ticket' => api_app_ticket_payload($ticket),
+    $payload = [
+        'ticket' => app_contract_ticket_payload($ticket),
         'comments' => $comments,
         'attachments' => api_app_ticket_attachments($ticket_id, $comments),
         'time_entries' => api_app_ticket_time_entries($ticket_id),
-    ]);
+        'actions' => app_contract_ticket_actions($ticket, $user),
+    ];
+
+    api_app_contract_success($payload, ['resource' => 'ticket_detail'], $payload);
 }
 
 function api_app_add_comment()
@@ -269,5 +326,130 @@ function api_app_add_comment()
         ]);
     }
 
-    api_success($response);
+    api_app_contract_success($response, ['resource' => 'ticket_comment'], $response);
+}
+
+function api_app_client_overview()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        api_error('Method not allowed', 405);
+    }
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+    if (!is_admin() && !is_agent()) {
+        api_error('Forbidden', 403);
+    }
+    if (!function_exists('client_overview')) {
+        api_error('Client overview is not available.', 500);
+    }
+
+    $organization_id = (int) ($_GET['organization_id'] ?? $_GET['client_id'] ?? 0);
+    if ($organization_id <= 0) {
+        api_error('Missing organization_id', 422);
+    }
+
+    $view = function_exists('ticket_list_view_normalize')
+        ? ticket_list_view_normalize($_GET['view'] ?? 'open', true)
+        : 'open';
+    $overview = client_overview($organization_id, $view);
+    if (!$overview) {
+        api_error('Client not found.', 404);
+    }
+
+    $payload = app_contract_client_overview_payload($overview, $view);
+
+    api_app_contract_success($payload, ['resource' => 'client_overview']);
+}
+
+function api_app_reporting_review()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        api_error('Method not allowed', 405);
+    }
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+    if (!is_admin() && (!function_exists('can_view_time') || !can_view_time($user))) {
+        api_error('Forbidden', 403);
+    }
+    if (!function_exists('billing_review_payload') || !function_exists('billing_review_filters_from_request')) {
+        api_error('Billing review is not available.', 500);
+    }
+
+    $limit = api_app_clamp_limit($_GET['limit'] ?? null, 100, 250);
+    $offset = max(0, (int) ($_GET['offset'] ?? 0));
+    $filters = billing_review_filters_from_request($_GET);
+    $payload = billing_review_payload($filters, $user, $limit, $offset);
+
+    api_app_contract_success($payload, ['resource' => 'reporting_review']);
+}
+
+function api_app_notifications_summary()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        api_error('Method not allowed', 405);
+    }
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+
+    $limit = api_app_clamp_limit($_GET['limit'] ?? null, 10, 25);
+    $result = function_exists('get_user_notifications')
+        ? get_user_notifications((int) $user['id'], $limit, 0, true)
+        : ['notifications' => [], 'unread_count' => 0];
+
+    api_app_contract_success([
+        'unread_count' => (int) ($result['unread_count'] ?? 0),
+        'items' => array_map('app_contract_notification_summary_item', $result['notifications'] ?? []),
+    ], ['resource' => 'notifications_summary']);
+}
+
+function api_app_tenant_state()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        api_error('Method not allowed', 405);
+    }
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+
+    $tenant_id = (int) ($_GET['tenant_id'] ?? (function_exists('current_tenant_id') ? current_tenant_id() : 0));
+    if ($tenant_id <= 0 || !function_exists('billing_get_tenant')) {
+        api_error('Tenant is not available.', 500);
+    }
+    if ($tenant_id !== (int) (function_exists('current_tenant_id') ? current_tenant_id() : 0) && (!function_exists('is_platform_admin') || !is_platform_admin($user))) {
+        api_error('Forbidden', 403);
+    }
+
+    $tenant = billing_get_tenant($tenant_id);
+    if (!$tenant) {
+        api_error('Tenant not found.', 404);
+    }
+
+    $access_state = function_exists('billing_workspace_access_state') ? billing_workspace_access_state($tenant) : ['allowed' => true, 'reason' => '', 'message' => ''];
+    $action_state = function_exists('billing_tenant_billing_action_state') ? billing_tenant_billing_action_state($tenant, $access_state) : [];
+    $usage = function_exists('billing_tenant_usage') ? billing_tenant_usage($tenant_id) : [];
+
+    api_app_contract_success([
+        'tenant' => app_contract_tenant_payload($tenant),
+        'access' => $access_state,
+        'billing_actions' => $action_state,
+        'usage' => $usage,
+        'capabilities' => [
+            'manage_billing' => is_admin() || (function_exists('is_platform_admin') && is_platform_admin($user)),
+            'platform_admin' => function_exists('is_platform_admin') && is_platform_admin($user),
+        ],
+        'links' => [
+            'billing' => url('billing', ['tenant_id' => $tenant_id]),
+        ],
+    ], ['resource' => 'tenant_state']);
 }

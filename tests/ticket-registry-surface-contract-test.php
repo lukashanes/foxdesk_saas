@@ -27,6 +27,14 @@ foreach ([
 
 foreach ([
     'data-ticket-registry-surface',
+    'data-ticket-contract-mode="refresh"',
+    'data-ticket-contract-row',
+    'data-ticket-field="title"',
+    'data-ticket-field="status"',
+    'data-ticket-field="priority"',
+    'data-ticket-field="client"',
+    'data-ticket-field="assignee"',
+    'data-ticket-field="code"',
     'ticket_registry_render_view_tabs',
     'ticket_registry_render_filter_summary',
     '$page_header_subtitle = \'\';',

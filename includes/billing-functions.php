@@ -1499,9 +1499,15 @@ function billing_create_portal_session(int $tenant_id): string
     }
 
     $user = function_exists('current_user') ? current_user() : null;
-    $return_url = is_array($user) && is_platform_admin($user)
-        ? APP_URL . '/index.php?page=platform'
-        : APP_URL . '/index.php?page=billing';
+    if (is_array($user) && is_platform_admin($user)) {
+        $return_url = function_exists('foxdesk_platform_url')
+            ? foxdesk_platform_url('index.php?page=platform')
+            : (defined('PLATFORM_URL') ? rtrim((string) PLATFORM_URL, '/') . '/index.php?page=platform' : APP_URL . '/index.php?page=platform');
+    } else {
+        $return_url = function_exists('foxdesk_workspace_url')
+            ? foxdesk_workspace_url('index.php?page=billing')
+            : APP_URL . '/index.php?page=billing';
+    }
     $return_url = billing_append_query($return_url, ['tenant_id' => (string) $tenant_id]);
 
     $params = [

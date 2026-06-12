@@ -15,9 +15,6 @@ font-display: swap;
 src: url(assets/fonts/inter-latin.woff2) format('woff2');
 unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-@view-transition {
-navigation: auto;
-}
 :root {
 --corp-slate-50: #f9fafb;
 --corp-slate-100: #f3f4f6;
@@ -1598,6 +1595,10 @@ font-size: var(--type-sm);
 line-height: 1.35;
 transition: all var(--transition-fast);
 min-height: var(--control-height);
+}
+.desktop-header .header-search-input {
+padding-left: 2.5rem;
+padding-right: 1rem;
 }
 .form-input-sm,
 .form-select-sm {
@@ -3389,6 +3390,21 @@ border-radius: 999px;
 flex: 0 0 auto;
 background: var(--primary);
 }
+.workspace-ticket-row__dot--new {
+background: var(--corp-info);
+}
+.workspace-ticket-row__dot--active {
+background: var(--primary);
+}
+.workspace-ticket-row__dot--waiting {
+background: var(--corp-warning);
+}
+.workspace-ticket-row__dot--done {
+background: var(--corp-success);
+}
+.workspace-ticket-row__dot--archived {
+background: var(--corp-slate-400);
+}
 .workspace-ticket-row__title {
 overflow: hidden;
 color: var(--text-primary);
@@ -3404,6 +3420,9 @@ font-size: 0.75rem;
 line-height: 1.35;
 text-align: right;
 white-space: nowrap;
+}
+.workspace-ticket-row__side span {
+display: block;
 }
 .workspace-empty {
 display: grid;

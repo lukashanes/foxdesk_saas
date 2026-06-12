@@ -31,6 +31,10 @@ $assert(str_contains($page, "redirect('work')"), 'Client users should be redirec
 $assert(str_contains($page, "t('Client tickets')"), 'Client page must show ticket section.');
 $assert(str_contains($page, "t('Contacts')"), 'Client page must show contacts.');
 $assert(str_contains($page, "t('Billable rate')"), 'Client page must show billing context.');
+$assert(str_contains($page, 'data-app-contract-surface="client"'), 'Client page must expose the app-client-overview contract surface.');
+$assert(str_contains($page, 'data-client-ticket-list'), 'Client tickets must expose a stable list mount.');
+$assert(str_contains($page, 'data-client-contact-list'), 'Client contacts must expose a stable list mount.');
+$assert(str_contains($page, 'data-client-stat="billable"'), 'Client billing stat must be contract-addressable.');
 $assert(str_contains($organizations, "url('client'"), 'Organizations list must link to client center.');
 
 echo "Client overview contract OK\n";

@@ -373,8 +373,8 @@ async function assertStyledShell(page, label, selectors, options = {}) {
 async function expectWork(page, viewportName) {
   await page.goto('/index.php?page=work');
   await assertStyledShell(page, `${viewportName} work`, {
-    shell: '.work-shell',
-    panel: '.work-panel',
+    shell: '.workspace-queue-shell',
+    panel: '.workspace-queue-panel',
     queueList: '.work-queue-list',
   });
   await screenshot(page, `${viewportName}-work`);
@@ -383,8 +383,8 @@ async function expectWork(page, viewportName) {
 async function expectInbox(page, viewportName) {
   await page.goto('/index.php?page=inbox');
   await assertStyledShell(page, `${viewportName} inbox`, {
-    shell: '.inbox-shell',
-    panel: '.inbox-panel',
+    shell: '.workspace-queue-shell',
+    panel: '.workspace-queue-panel',
     list: '.inbox-list',
   });
   await screenshot(page, `${viewportName}-inbox`);

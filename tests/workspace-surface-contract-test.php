@@ -23,6 +23,11 @@ foreach ([
     'function workspace_render_ticket_rows',
     'function workspace_render_ticket_row',
     'data-workspace-queue-surface',
+    'data-app-contract-surface',
+    'data-app-contract-collection',
+    'data-work-active-key',
+    'data-work-ticket-list',
+    'data-work-empty-label',
     "t('All clear')",
 ] as $needle) {
     $assert(str_contains($component, $needle), 'Workspace surface component is missing: ' . $needle);
@@ -34,6 +39,7 @@ foreach ([
     '.workspace-queue-rail',
     '.workspace-queue-panel',
     '.workspace-ticket-row',
+    '.workspace-ticket-row__dot--waiting',
     '.workspace-empty',
 ] as $needle) {
     $assert(str_contains($theme, $needle), 'theme.css missing workspace surface selector: ' . $needle);
@@ -41,6 +47,8 @@ foreach ([
 
 $assert(str_contains($work, 'workspace_render_queue_page'), 'Work page must use workspace queue renderer.');
 $assert(str_contains($inbox, 'workspace_render_queue_page'), 'Inbox page must use workspace queue renderer.');
+$assert(str_contains($inbox, "'contract_surface' => 'inbox'"), 'Inbox page must use the inbox contract surface.');
+$assert(str_contains($inbox, "'contract_collection' => 'inbox'"), 'Inbox page must hydrate from home.inbox.');
 
 foreach (['work-shell', 'inbox-shell', 'work-ticket-list', 'inbox-ticket__title'] as $oldSelector) {
     $assert(!str_contains($work, $oldSelector), 'Work page should not keep old queue markup: ' . $oldSelector);
