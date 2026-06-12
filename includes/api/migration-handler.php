@@ -159,6 +159,13 @@ function api_migration_push_attachment(): void
 
     try {
         $result = migration_bridge_import_attachment_upload($connection, $metadata, $tmp);
+        $evidence = migration_bridge_record_attachment_sync_evidence(
+            $connection,
+            $metadata,
+            $result,
+            $calculated ?: $checksum,
+            (int) filesize($tmp)
+        );
         db_update('migration_connections', [
             'status' => 'syncing',
             'last_seen_at' => date('Y-m-d H:i:s'),
@@ -171,6 +178,7 @@ function api_migration_push_attachment(): void
         'source_id' => (int) ($metadata['id'] ?? $metadata['source_id'] ?? 0),
         'checksum' => $calculated,
         'attachment' => $result,
+        'attachment_sync' => $evidence,
         'mapped' => !empty($result['mapped']),
     ]);
 }

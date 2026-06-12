@@ -71,7 +71,18 @@ STORAGE_DRIVER=local
 
 ## Production Check
 
-After deploy, run the R2 roundtrip smoke test:
+Before deploy, Hetzner preflight must pass with:
+
+- `STORAGE_DRIVER=r2`
+- `R2_BUCKET`
+- `R2_ENDPOINT`
+- `R2_ACCESS_KEY_ID`
+- `R2_SECRET_ACCESS_KEY`
+
+`deploy/hetzner/preflight.sh` fails production setup when SaaS storage is not
+R2 or when the R2 endpoint is not the Cloudflare S3 endpoint shape.
+
+After deploy, run the R2 write/read/delete roundtrip smoke test:
 
 ```bash
 php bin/test-r2-storage.php --tenant-id=<test_tenant_id> --json
@@ -90,6 +101,28 @@ Then test the app workflow:
 3. Open the ticket detail and verify image preview works.
 4. Download the same attachment through `attachment.php`.
 5. Delete the test attachment/ticket and confirm the R2 object can be deleted by the storage client.
+
+The public health endpoint reports R2 configuration status under
+`checks.storage_r2`. A write/read/delete health mutation is intentionally
+disabled by default; enable it only for a controlled monitor or manual check:
+
+```env
+FOXDESK_HEALTH_STORAGE_MUTATION=true
+```
+
+## Migration Attachment Evidence
+
+Self-hosted to SaaS sync uploads attachments through the migration bridge.
+Successful unique attachment imports update the migration connection with:
+
+- synced attachment count
+- synced attachment bytes
+- last attachment sync time
+- last attachment storage key
+- last attachment checksum
+
+The platform tenant detail shows this evidence in the migration bridge panel so
+cutover review can confirm attachments were included before switching traffic.
 
 ## Attachment Backup Outside The Server
 

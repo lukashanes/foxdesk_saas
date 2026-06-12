@@ -95,8 +95,10 @@ Required before private beta:
 
 - `STORAGE_DRIVER=r2`
 - production bucket is `foxdesk-production`
+- Hetzner preflight fails if R2 env values are missing or `STORAGE_DRIVER` is not `r2`
 - test upload uses tenant-prefixed keys
 - test object is deleted after smoke
+- migration bridge records synced attachment count and bytes before cutover
 
 Verification on the production server:
 

@@ -741,6 +741,12 @@ function migration_bridge_ensure_connections_table(): void
             status ENUM('issued', 'connected', 'syncing', 'ready_for_cutover', 'cutover_complete', 'revoked') NOT NULL DEFAULT 'issued',
             last_seen_at DATETIME NULL,
             last_plan_json JSON NULL,
+            attachment_sync_count INT NOT NULL DEFAULT 0,
+            attachment_sync_bytes BIGINT NOT NULL DEFAULT 0,
+            attachment_sync_last_at DATETIME NULL,
+            attachment_sync_last_key VARCHAR(700) NULL,
+            attachment_sync_last_checksum CHAR(64) NULL,
+            attachment_sync_last_source_id INT NULL,
             created_by INT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             expires_at DATETIME NULL,
@@ -751,6 +757,21 @@ function migration_bridge_ensure_connections_table(): void
             INDEX idx_source_instance (source_instance_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ");
+
+    $columns = [
+        'attachment_sync_count' => "ALTER TABLE migration_connections ADD COLUMN attachment_sync_count INT NOT NULL DEFAULT 0",
+        'attachment_sync_bytes' => "ALTER TABLE migration_connections ADD COLUMN attachment_sync_bytes BIGINT NOT NULL DEFAULT 0",
+        'attachment_sync_last_at' => "ALTER TABLE migration_connections ADD COLUMN attachment_sync_last_at DATETIME NULL",
+        'attachment_sync_last_key' => "ALTER TABLE migration_connections ADD COLUMN attachment_sync_last_key VARCHAR(700) NULL",
+        'attachment_sync_last_checksum' => "ALTER TABLE migration_connections ADD COLUMN attachment_sync_last_checksum CHAR(64) NULL",
+        'attachment_sync_last_source_id' => "ALTER TABLE migration_connections ADD COLUMN attachment_sync_last_source_id INT NULL",
+    ];
+
+    foreach ($columns as $column => $sql) {
+        if (!column_exists('migration_connections', $column)) {
+            db_query($sql);
+        }
+    }
 }
 
 function migration_bridge_token_hash(string $token): string
@@ -940,6 +961,50 @@ function migration_bridge_record_inventory(array $connection, array $inventory, 
         'last_seen_at' => date('Y-m-d H:i:s'),
         'last_plan_json' => json_encode($plan, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
     ], 'id = ?', [(int) $connection['id']]);
+}
+
+function migration_bridge_record_attachment_sync_evidence(array $connection, array $row, array $result, string $checksum, int $bytes): array
+{
+    migration_bridge_ensure_connections_table();
+
+    $connection_id = (int) $connection['id'];
+    $created = !empty($result['created']);
+    $count_increment = $created ? 1 : 0;
+    $bytes_increment = $created ? max(0, $bytes) : 0;
+    $source_id = (int) ($row['id'] ?? $row['source_id'] ?? 0);
+    $storage_key = substr((string) ($result['storage_key'] ?? ''), 0, 700);
+    $checksum = preg_match('/^[a-f0-9]{64}$/i', $checksum) ? strtolower($checksum) : '';
+    $now = date('Y-m-d H:i:s');
+
+    db_query("
+        UPDATE migration_connections
+        SET status = 'syncing',
+            last_seen_at = ?,
+            attachment_sync_count = COALESCE(attachment_sync_count, 0) + ?,
+            attachment_sync_bytes = COALESCE(attachment_sync_bytes, 0) + ?,
+            attachment_sync_last_at = ?,
+            attachment_sync_last_key = ?,
+            attachment_sync_last_checksum = ?,
+            attachment_sync_last_source_id = ?
+        WHERE id = ?
+    ", [
+        $now,
+        $count_increment,
+        $bytes_increment,
+        $now,
+        $storage_key !== '' ? $storage_key : null,
+        $checksum !== '' ? $checksum : null,
+        $source_id > 0 ? $source_id : null,
+        $connection_id,
+    ]);
+
+    return [
+        'count_increment' => $count_increment,
+        'bytes_increment' => $bytes_increment,
+        'last_at' => $now,
+        'last_source_id' => $source_id,
+        'last_storage_key' => $storage_key,
+    ];
 }
 
 function migration_bridge_ensure_object_map_table(): void

@@ -292,7 +292,8 @@ function platform_tenant_detail_context(int $tenant_id): ?array
         try {
             migration_bridge_ensure_connections_table();
             $migration_connections = db_fetch_all("
-                SELECT id, label, source_url, source_version, status, last_seen_at, created_at, expires_at, cutover_at
+                SELECT id, label, source_url, source_version, status, last_seen_at, created_at, expires_at, cutover_at,
+                       attachment_sync_count, attachment_sync_bytes, attachment_sync_last_at, attachment_sync_last_key
                 FROM migration_connections
                 WHERE tenant_id = ?
                 ORDER BY created_at DESC, id DESC

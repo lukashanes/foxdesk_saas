@@ -515,6 +515,16 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                 <?php endif; ?>
                                 <?php foreach ($selected_detail['migration_connections'] as $connection): ?>
                                     <?php $migration_status = preg_replace('/[^a-z_]/', '', (string) ($connection['status'] ?? 'issued')); ?>
+                                    <?php
+                                        $synced_attachments = (int) ($connection['attachment_sync_count'] ?? 0);
+                                        $synced_bytes = (int) ($connection['attachment_sync_bytes'] ?? 0);
+                                        $synced_label = $synced_attachments > 0
+                                            ? ' · attachments ' . $synced_attachments . ' / ' . (function_exists('format_file_size') ? format_file_size($synced_bytes) : ($synced_bytes . ' B'))
+                                            : '';
+                                        $last_attachment_label = !empty($connection['attachment_sync_last_at'])
+                                            ? ' · last attachment ' . e((string) $connection['attachment_sync_last_at'])
+                                            : '';
+                                    ?>
                                     <div class="op-list-row">
                                         <span>
                                             <span class="op-label"><?php echo e($connection['label'] ?: 'Self-hosted sync'); ?></span>
@@ -523,6 +533,8 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                                 created <?php echo e((string) $connection['created_at']); ?>
                                                 <?php echo !empty($connection['last_seen_at']) ? ' · seen ' . e((string) $connection['last_seen_at']) : ''; ?>
                                                 <?php echo !empty($connection['expires_at']) ? ' · expires ' . e((string) $connection['expires_at']) : ''; ?>
+                                                <?php echo e($synced_label); ?>
+                                                <?php echo $last_attachment_label; ?>
                                             </div>
                                         </span>
                                         <span class="op-pill <?php echo e(in_array($migration_status, ['connected', 'syncing', 'ready_for_cutover', 'cutover_complete'], true) ? 'good' : 'notice'); ?>">

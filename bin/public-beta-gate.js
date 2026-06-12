@@ -60,6 +60,8 @@ function buildChecks() {
     'BILLING_TRIAL_DAYS',
     'R2_BUCKET',
     'R2_ENDPOINT',
+    'R2_ACCESS_KEY_ID',
+    'R2_SECRET_ACCESS_KEY',
     'CLOUDFLARE_EMAIL_API_TOKEN',
   ];
 
@@ -76,6 +78,12 @@ function buildChecks() {
       'blocked',
       has(config, name) ? 'present in config template' : 'missing from config template'
     )),
+    check(
+      'R2 storage smoke command',
+      has(read('bin/test-r2-storage.php'), 'storage_r2_healthcheck') && has(goNoGoDoc, 'php bin/test-r2-storage.php'),
+      'blocked',
+      'R2 write/read/delete roundtrip is documented for production verification'
+    ),
     check(
       'Stripe setup guide',
       has(stripeDoc, '14-day trial without payment') && has(stripeDoc, 'Customer Portal') && has(stripeDoc, 'tax_id_collection'),

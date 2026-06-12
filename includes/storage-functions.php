@@ -216,3 +216,59 @@ function storage_delete_object(array $attachment): bool
     storage_r2_request('DELETE', $key);
     return true;
 }
+
+function storage_r2_healthcheck(int $tenant_id = 1, bool $keep = false): array
+{
+    $tenant_id = max(1, $tenant_id);
+    $result = [
+        'ok' => false,
+        'driver' => storage_driver(),
+        'bucket' => storage_r2_bucket(),
+        'endpoint_configured' => storage_r2_endpoint() !== '',
+        'access_key_configured' => storage_r2_access_key() !== '',
+        'secret_key_configured' => storage_r2_secret_key() !== '',
+        'tenant_id' => $tenant_id,
+        'object_key' => null,
+        'tenant_prefixed' => false,
+        'put' => false,
+        'read' => false,
+        'deleted' => false,
+        'kept' => $keep,
+        'error' => null,
+    ];
+
+    try {
+        storage_r2_assert_configured();
+
+        $payload = 'FoxDesk R2 health ' . gmdate('c') . ' ' . bin2hex(random_bytes(8));
+        $object_key = storage_object_key(
+            $tenant_id,
+            'healthchecks/r2-health-' . gmdate('Ymd-His') . '-' . bin2hex(random_bytes(4)) . '.txt'
+        );
+        $result['object_key'] = $object_key;
+        $result['tenant_prefixed'] = str_starts_with($object_key, 'tenants/' . $tenant_id . '/');
+        if (!$result['tenant_prefixed']) {
+            throw new RuntimeException('R2 health object key is not tenant-prefixed.');
+        }
+
+        storage_r2_request('PUT', $object_key, $payload, 'text/plain; charset=UTF-8');
+        $result['put'] = true;
+
+        $read = storage_r2_request('GET', $object_key)['body'];
+        $result['read'] = hash_equals($payload, $read);
+        if (!$result['read']) {
+            throw new RuntimeException('R2 health read content did not match uploaded content.');
+        }
+
+        if (!$keep) {
+            storage_r2_request('DELETE', $object_key);
+            $result['deleted'] = true;
+        }
+
+        $result['ok'] = true;
+    } catch (Throwable $e) {
+        $result['error'] = $e->getMessage();
+    }
+
+    return $result;
+}

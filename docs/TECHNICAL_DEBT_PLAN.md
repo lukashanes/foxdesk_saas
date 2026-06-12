@@ -391,6 +391,16 @@ npm run local:smoke
 npm run cutover:gate
 ```
 
+Completed in technical debt milestone 5:
+
+- Production preflight now fails SaaS deploys unless `STORAGE_DRIVER=r2` and the
+  R2 endpoint has the Cloudflare S3 endpoint shape.
+- R2 storage exposes a shared write/read/delete health helper used by the CLI
+  smoke test and by opt-in health checks.
+- Health JSON reports R2 configuration status under `checks.storage_r2`.
+- Migration bridge records attachment sync count, bytes, last key, last checksum,
+  and last sync timestamp, and platform tenant detail displays that evidence.
+
 ### Milestone 6 - Email Event Unification
 
 Owner track: SaaS first; self-hosted IMAP kept stable

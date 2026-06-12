@@ -101,7 +101,10 @@ FOXDESK_EMAIL_ROUTE_SECRET=...
 
 - Use Cloudflare R2 for new production attachment storage.
 - Confirm bucket, endpoint, access key, and secret key.
+- Confirm `deploy/hetzner/preflight.sh` passes with `STORAGE_DRIVER=r2`.
+- Run `php bin/test-r2-storage.php --tenant-id=<tenant_id> --json` and keep the output with launch evidence.
 - Run an upload/download test from a real workspace.
+- Confirm migration bridge evidence shows synced attachment count/bytes before cutover.
 - Add backup destination and restore test.
 - Keep old self-hosted files untouched until imported workspace is verified.
 

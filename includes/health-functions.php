@@ -29,6 +29,21 @@ function health_directory_check(string $label, string $path): array
     ];
 }
 
+function health_env_bool(string $name, bool $default = false): bool
+{
+    if (defined($name)) {
+        $value = constant($name);
+    } else {
+        $value = getenv($name);
+    }
+
+    if ($value === false || $value === null || $value === '') {
+        return $default;
+    }
+
+    return in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
+}
+
 function foxdesk_health_status(): array
 {
     $checks = [];
@@ -56,6 +71,52 @@ function foxdesk_health_status(): array
         if (empty($storage_check['exists']) || empty($storage_check['writable'])) {
             $status = 'error';
         }
+    } elseif ($storage_driver === 'r2') {
+        $r2_check = [
+            'name' => 'r2',
+            'configured' => false,
+            'roundtrip' => 'skipped',
+            'ok' => false,
+            'bucket' => function_exists('storage_r2_bucket') ? storage_r2_bucket() : '',
+            'endpoint_configured' => function_exists('storage_r2_endpoint') && storage_r2_endpoint() !== '',
+            'access_key_configured' => function_exists('storage_r2_access_key') && storage_r2_access_key() !== '',
+            'secret_key_configured' => function_exists('storage_r2_secret_key') && storage_r2_secret_key() !== '',
+        ];
+
+        try {
+            if (!function_exists('storage_r2_assert_configured')) {
+                throw new RuntimeException('R2 storage helper is not loaded.');
+            }
+            storage_r2_assert_configured();
+            $r2_check['configured'] = true;
+            $r2_check['ok'] = true;
+
+            if (health_env_bool('FOXDESK_HEALTH_STORAGE_MUTATION', false) && function_exists('storage_r2_healthcheck')) {
+                $roundtrip = storage_r2_healthcheck(1, false);
+                $r2_check['roundtrip'] = !empty($roundtrip['ok']) ? 'passed' : 'failed';
+                $r2_check['object_key'] = $roundtrip['object_key'] ?? null;
+                $r2_check['tenant_prefixed'] = (bool) ($roundtrip['tenant_prefixed'] ?? false);
+                $r2_check['deleted'] = (bool) ($roundtrip['deleted'] ?? false);
+                $r2_check['ok'] = !empty($roundtrip['ok']);
+                if (empty($roundtrip['ok'])) {
+                    $r2_check['error'] = $roundtrip['error'] ?? 'R2 roundtrip failed.';
+                }
+            }
+        } catch (Throwable $e) {
+            $r2_check['error'] = $e->getMessage();
+        }
+
+        $checks['storage_r2'] = $r2_check;
+        if (empty($r2_check['ok'])) {
+            $status = 'error';
+        }
+    } else {
+        $checks['storage_unknown'] = [
+            'name' => 'storage_driver',
+            'ok' => false,
+            'driver' => $storage_driver,
+        ];
+        $status = 'error';
     }
 
     $checks['php'] = [

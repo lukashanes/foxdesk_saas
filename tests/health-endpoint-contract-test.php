@@ -28,6 +28,10 @@ $assert(str_contains($health, 'db_fetch_one("SELECT 1")'), 'Health helper must c
 $assert(str_contains($health, 'health_directory_check'), 'Health helper must check writable directories.');
 $assert(str_contains($health, "'uploads'"), 'Health helper must report upload storage state.');
 $assert(str_contains($health, "'storage_driver'"), 'Health helper must report storage driver state.');
+$assert(str_contains($health, "'storage_r2'"), 'Health helper must report R2 storage state when R2 is configured.');
+$assert(str_contains($health, 'storage_r2_assert_configured()'), 'Health helper must validate R2 configuration.');
+$assert(str_contains($health, 'storage_r2_healthcheck(1, false)'), 'Health helper must support the R2 write/read/delete roundtrip.');
+$assert(str_contains($health, 'FOXDESK_HEALTH_STORAGE_MUTATION'), 'R2 write/read/delete health checks must be opt-in.');
 $assert(str_contains($health, "version_compare(PHP_VERSION, '8.1.0'"), 'Health helper must enforce the PHP runtime baseline.');
 $assert(str_contains($health, "'checks' => \$checks"), 'Health JSON must include machine-readable checks.');
 

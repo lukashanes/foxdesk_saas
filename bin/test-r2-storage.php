@@ -47,29 +47,15 @@ $result = [
 ];
 
 try {
-    storage_r2_assert_configured();
+    $health = storage_r2_healthcheck($tenant_id, $keep);
+    $result['object_key'] = $health['object_key'] ?? null;
+    $result['tenant_prefixed'] = (bool) ($health['tenant_prefixed'] ?? false);
+    $result['deleted'] = (bool) ($health['deleted'] ?? false);
+    if (empty($health['ok'])) {
+        throw new RuntimeException((string) ($health['error'] ?? 'R2 health check failed.'));
+    }
 
     $payload = 'FoxDesk R2 test ' . gmdate('c') . ' ' . bin2hex(random_bytes(8));
-    $object_key = storage_object_key($tenant_id, 'healthchecks/r2-test-' . gmdate('Ymd-His') . '-' . bin2hex(random_bytes(4)) . '.txt');
-    $result['object_key'] = $object_key;
-    $result['tenant_prefixed'] = str_starts_with($object_key, 'tenants/' . $tenant_id . '/');
-
-    if (!$result['tenant_prefixed']) {
-        throw new RuntimeException('R2 object key is not tenant-prefixed.');
-    }
-
-    storage_r2_request('PUT', $object_key, $payload, 'text/plain; charset=UTF-8');
-    $read = storage_r2_request('GET', $object_key)['body'];
-
-    if (!hash_equals($payload, $read)) {
-        throw new RuntimeException('R2 read content did not match uploaded content.');
-    }
-
-    if (!$keep) {
-        storage_r2_request('DELETE', $object_key);
-        $result['deleted'] = true;
-    }
-
     $tmp_path = tempnam(sys_get_temp_dir(), 'foxdesk-r2-');
     if ($tmp_path === false) {
         throw new RuntimeException('Unable to create temporary test file.');

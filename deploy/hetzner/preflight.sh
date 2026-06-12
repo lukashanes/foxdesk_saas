@@ -101,7 +101,12 @@ if [[ -f .env.production ]]; then
   fi
 
   if [[ "$(env_value STORAGE_DRIVER)" != "r2" ]]; then
-    check_warn "STORAGE_DRIVER is not r2; SaaS attachments may stay on local disk"
+    check_fail "STORAGE_DRIVER must be r2 for SaaS production"
+  fi
+
+  r2_endpoint="$(env_value R2_ENDPOINT)"
+  if [[ -n "$r2_endpoint" && "$r2_endpoint" != https://*.r2.cloudflarestorage.com ]]; then
+    check_fail "R2_ENDPOINT must use the Cloudflare R2 S3 endpoint"
   fi
 
   secret_key="$(env_value SECRET_KEY)"
