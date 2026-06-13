@@ -1190,33 +1190,14 @@ function billing_workspace_access_state(?array $tenant = null): array
         $tenant = billing_get_tenant((int) $tenant['id']) ?: $tenant;
     }
 
-    $status = (string) ($tenant['status'] ?? '');
-    $subscription_status = (string) ($tenant['subscription_status'] ?? '');
-    if (billing_subscription_is_manual_access($subscription_status) && in_array($status, ['active', 'trialing'], true)) {
-        return ['allowed' => true, 'reason' => $subscription_status, 'message' => ''];
-    }
+    $state = billing_tenant_lifecycle_state($tenant);
 
-    if ($status === 'active' || ($status === 'trialing' && $subscription_status === 'trialing')) {
-        return ['allowed' => true, 'reason' => $status, 'message' => ''];
-    }
-    if ($status === 'past_due') {
-        return ['allowed' => true, 'reason' => 'past_due_grace', 'message' => ''];
-    }
-
-    $status_reasons = ['past_due', 'trial_expired', 'suspended', 'blocked', 'canceled'];
-    $reason = in_array($status, $status_reasons, true)
-        ? $status
-        : ($subscription_status !== '' ? $subscription_status : $status);
-    $message = match ($reason) {
-        'trial_expired' => 'Your ' . billing_trial_days() . '-day trial has ended. Add billing to keep using FoxDesk.',
-        'past_due' => 'We could not process payment. Update billing to keep using FoxDesk.',
-        'suspended' => 'We could not process payment. Update billing to restore access.',
-        'blocked' => 'This workspace is blocked. Contact support to restore access.',
-        'canceled' => 'This plan was canceled. Start a new plan to keep using FoxDesk.',
-        default => 'This workspace needs a billing review. Open Billing or ask a platform admin.',
-    };
-
-    return ['allowed' => false, 'reason' => $reason, 'message' => $message];
+    return [
+        'allowed' => !empty($state['access_allowed']),
+        'reason' => (string) ($state['access_reason'] ?? $state['code'] ?? ''),
+        'state' => (string) ($state['code'] ?? ''),
+        'message' => (string) ($state['access_message'] ?? ''),
+    ];
 }
 
 function billing_manual_access_subscription_statuses(): array
@@ -1227,6 +1208,222 @@ function billing_manual_access_subscription_statuses(): array
 function billing_subscription_is_manual_access(string $subscription_status): bool
 {
     return in_array($subscription_status, billing_manual_access_subscription_statuses(), true);
+}
+
+function billing_lifecycle_state_matrix(): array
+{
+    return [
+        'trialing' => [
+            'access_allowed' => true,
+            'access_reason' => 'trialing',
+            'access_message' => '',
+            'notice_title' => 'Trial active',
+            'notice_body' => 'Add billing anytime before the trial ends.',
+            'notice_variant' => 'info',
+            'show_checkout' => true,
+            'checkout_label' => 'Add billing',
+            'show_portal' => false,
+            'portal_label' => 'Manage billing',
+            'platform_buttons' => ['extend_trial', 'grant_free_access', 'block_tenant'],
+            'workspace_buttons' => ['checkout'],
+        ],
+        'active' => [
+            'access_allowed' => true,
+            'access_reason' => 'active',
+            'access_message' => '',
+            'notice_title' => 'Your plan is active',
+            'notice_body' => 'Manage invoices, payment method, VAT ID, and cancellation from Billing.',
+            'notice_variant' => 'info',
+            'show_checkout' => false,
+            'checkout_label' => 'Start plan',
+            'show_portal' => true,
+            'portal_label' => 'Manage billing',
+            'platform_buttons' => ['grant_free_access', 'block_tenant'],
+            'workspace_buttons' => ['portal'],
+        ],
+        'manual_free' => [
+            'access_allowed' => true,
+            'access_reason' => 'manual_free',
+            'access_message' => '',
+            'notice_title' => 'All set',
+            'notice_body' => 'This workspace has platform-approved access.',
+            'notice_variant' => 'info',
+            'show_checkout' => false,
+            'checkout_label' => 'Start plan',
+            'show_portal' => true,
+            'portal_label' => 'Manage billing details',
+            'platform_buttons' => ['reactivate_tenant', 'block_tenant'],
+            'workspace_buttons' => ['portal'],
+        ],
+        'past_due_grace' => [
+            'access_allowed' => true,
+            'access_reason' => 'past_due_grace',
+            'access_message' => '',
+            'notice_title' => 'We could not process payment',
+            'notice_body' => 'Update payment to keep this workspace active.',
+            'notice_variant' => 'warning',
+            'show_checkout' => false,
+            'checkout_label' => 'Start plan',
+            'show_portal' => true,
+            'portal_label' => 'Update payment',
+            'platform_buttons' => ['grant_free_access', 'block_tenant'],
+            'workspace_buttons' => ['portal'],
+        ],
+        'suspended' => [
+            'access_allowed' => false,
+            'access_reason' => 'suspended',
+            'access_message' => 'Workspace suspended. Update payment or contact support to restore access.',
+            'notice_title' => 'Workspace suspended',
+            'notice_body' => 'Update payment to restore access.',
+            'notice_variant' => 'warning',
+            'show_checkout' => false,
+            'checkout_label' => 'Start plan',
+            'show_portal' => true,
+            'portal_label' => 'Update payment',
+            'platform_buttons' => ['reactivate_tenant', 'grant_free_access'],
+            'workspace_buttons' => ['portal'],
+        ],
+        'trial_expired' => [
+            'access_allowed' => false,
+            'access_reason' => 'trial_expired',
+            'access_message' => 'Your ' . billing_trial_days() . '-day trial has ended. Add billing to keep using FoxDesk.',
+            'notice_title' => 'Your trial has ended',
+            'notice_body' => 'Add billing to keep using FoxDesk.',
+            'notice_variant' => 'warning',
+            'show_checkout' => true,
+            'checkout_label' => 'Start plan',
+            'show_portal' => false,
+            'portal_label' => 'Manage billing',
+            'platform_buttons' => ['extend_trial', 'grant_free_access', 'block_tenant'],
+            'workspace_buttons' => ['checkout'],
+        ],
+        'cancelled' => [
+            'access_allowed' => false,
+            'access_reason' => 'canceled',
+            'access_message' => 'This plan was canceled. Start a new plan to keep using FoxDesk.',
+            'notice_title' => 'Plan canceled',
+            'notice_body' => 'Restart the plan to restore access.',
+            'notice_variant' => 'warning',
+            'show_checkout' => true,
+            'checkout_label' => 'Restart plan',
+            'show_portal' => false,
+            'portal_label' => 'Manage billing',
+            'platform_buttons' => ['reactivate_tenant', 'grant_free_access'],
+            'workspace_buttons' => ['checkout'],
+        ],
+        'blocked' => [
+            'access_allowed' => false,
+            'access_reason' => 'blocked',
+            'access_message' => 'This workspace is blocked. Contact support to restore access.',
+            'notice_title' => 'Workspace blocked',
+            'notice_body' => 'Contact support to restore access.',
+            'notice_variant' => 'warning',
+            'show_checkout' => false,
+            'checkout_label' => 'Start plan',
+            'show_portal' => false,
+            'portal_label' => 'Manage billing',
+            'platform_buttons' => ['reactivate_tenant', 'grant_free_access'],
+            'workspace_buttons' => [],
+        ],
+        'migrated_pending_cutover' => [
+            'access_allowed' => true,
+            'access_reason' => 'migrated_pending_cutover',
+            'access_message' => '',
+            'notice_title' => 'Migration pending cutover',
+            'notice_body' => 'The workspace can be reviewed before final cutover.',
+            'notice_variant' => 'info',
+            'show_checkout' => false,
+            'checkout_label' => 'Start plan',
+            'show_portal' => false,
+            'portal_label' => 'Manage billing',
+            'platform_buttons' => ['grant_free_access', 'block_tenant'],
+            'workspace_buttons' => [],
+        ],
+    ];
+}
+
+function billing_tenant_lifecycle_state_code(array $tenant, ?array $access_state = null): string
+{
+    $status = strtolower(trim((string) ($tenant['status'] ?? '')));
+    $subscription_status = strtolower(trim((string) ($tenant['subscription_status'] ?? 'manual')));
+    $reason = strtolower(trim((string) ($access_state['reason'] ?? '')));
+
+    if ($status === 'migrated_pending_cutover' || $subscription_status === 'migrated_pending_cutover' || !empty($tenant['migration_pending_cutover'])) {
+        return 'migrated_pending_cutover';
+    }
+
+    if ($status === 'blocked' || $subscription_status === 'blocked') {
+        return 'blocked';
+    }
+
+    if (in_array($status, ['canceled', 'cancelled'], true) || in_array($subscription_status, ['canceled', 'cancelled'], true)) {
+        return 'cancelled';
+    }
+
+    if ($status === 'suspended' || $subscription_status === 'suspended') {
+        return 'suspended';
+    }
+
+    if ($status === 'trial_expired' || $subscription_status === 'trial_expired') {
+        return 'trial_expired';
+    }
+
+    if (billing_subscription_is_manual_access($subscription_status) && in_array($status, ['active', 'trialing'], true)) {
+        return 'manual_free';
+    }
+
+    if ($status === 'trialing' && $subscription_status === 'trialing') {
+        return 'trialing';
+    }
+
+    if ($reason === 'past_due_grace' || $status === 'past_due' || $subscription_status === 'past_due') {
+        return 'past_due_grace';
+    }
+
+    if ($status === 'active' || $subscription_status === 'active') {
+        return 'active';
+    }
+
+    return 'manual_free';
+}
+
+function billing_tenant_lifecycle_state(?array $tenant = null, ?array $access_state = null): array
+{
+    $tenant = $tenant ?: billing_current_tenant();
+    if (!$tenant) {
+        return [
+            'code' => 'missing_tenant',
+            'access_allowed' => true,
+            'access_reason' => 'missing_tenant',
+            'access_message' => '',
+            'notice_title' => 'Billing is unavailable',
+            'notice_body' => 'We could not load billing for this workspace.',
+            'notice_variant' => 'warning',
+            'show_checkout' => false,
+            'checkout_label' => 'Start plan',
+            'show_portal' => false,
+            'portal_label' => 'Manage billing',
+            'platform_buttons' => [],
+            'workspace_buttons' => [],
+        ];
+    }
+
+    $matrix = billing_lifecycle_state_matrix();
+    $code = billing_tenant_lifecycle_state_code($tenant, $access_state);
+    $state = $matrix[$code] ?? $matrix['manual_free'];
+    $state['code'] = $code;
+    $state['tenant_status'] = (string) ($tenant['status'] ?? '');
+    $state['subscription_status'] = (string) ($tenant['subscription_status'] ?? 'manual');
+    $state['billing_override_reason'] = (string) ($tenant['billing_override_reason'] ?? '');
+
+    if ($code === 'suspended' && $state['subscription_status'] === 'past_due') {
+        $state['access_reason'] = 'past_due_suspended';
+        $state['access_message'] = 'We could not process payment. Update payment to restore workspace access.';
+        $state['notice_title'] = 'We could not process payment';
+        $state['notice_body'] = 'Update payment to restore workspace access.';
+    }
+
+    return $state;
 }
 
 function billing_tenant_billing_action_state(?array $tenant = null, ?array $access_state = null): array
@@ -1249,19 +1446,9 @@ function billing_tenant_billing_action_state(?array $tenant = null, ?array $acce
     $has_customer = trim((string) ($tenant['stripe_customer_id'] ?? '')) !== '';
     $has_subscription = trim((string) ($tenant['stripe_subscription_id'] ?? '')) !== '';
     $access_state = $access_state ?: billing_workspace_access_state($tenant);
-    $reason = (string) ($access_state['reason'] ?? '');
+    $state = billing_tenant_lifecycle_state($tenant, $access_state);
 
-    $state = [
-        'show_checkout' => false,
-        'checkout_label' => 'Start plan',
-        'show_portal' => false,
-        'portal_label' => 'Manage billing',
-        'notice_title' => '',
-        'notice_body' => '',
-        'notice_variant' => 'info',
-    ];
-
-    if (billing_subscription_is_manual_access($subscription_status)) {
+    if (($state['code'] ?? '') === 'manual_free') {
         $billing_enabled = billing_enabled();
         $state['show_portal'] = $billing_enabled;
         $state['portal_label'] = 'Manage billing details';
@@ -1278,7 +1465,7 @@ function billing_tenant_billing_action_state(?array $tenant = null, ?array $acce
         return $state;
     }
 
-    if ($subscription_status === 'active' || ($status === 'active' && $has_subscription)) {
+    if (($state['code'] ?? '') === 'active' || $subscription_status === 'active' || ($status === 'active' && $has_subscription)) {
         $state['show_portal'] = $has_customer;
         $state['notice_title'] = 'Your plan is active';
         $state['notice_body'] = $has_customer
@@ -1287,7 +1474,7 @@ function billing_tenant_billing_action_state(?array $tenant = null, ?array $acce
         return $state;
     }
 
-    if ($status === 'trialing' && $subscription_status === 'trialing') {
+    if (($state['code'] ?? '') === 'trialing') {
         $state['show_checkout'] = true;
         $state['checkout_label'] = 'Add billing';
         $state['show_portal'] = $has_customer && $has_subscription;
@@ -1296,7 +1483,7 @@ function billing_tenant_billing_action_state(?array $tenant = null, ?array $acce
         return $state;
     }
 
-    if ($status === 'past_due' || $subscription_status === 'past_due' || $reason === 'past_due_grace') {
+    if (($state['code'] ?? '') === 'past_due_grace') {
         $state['show_portal'] = $has_customer;
         $state['show_checkout'] = !$has_customer;
         $state['checkout_label'] = 'Start plan';
@@ -1309,7 +1496,7 @@ function billing_tenant_billing_action_state(?array $tenant = null, ?array $acce
         return $state;
     }
 
-    if ($status === 'trial_expired' || $subscription_status === 'trial_expired') {
+    if (($state['code'] ?? '') === 'trial_expired') {
         $state['show_checkout'] = true;
         $state['checkout_label'] = 'Start plan';
         $state['notice_title'] = 'Your trial has ended';
@@ -1318,20 +1505,27 @@ function billing_tenant_billing_action_state(?array $tenant = null, ?array $acce
         return $state;
     }
 
-    if ($status === 'suspended') {
+    if (($state['code'] ?? '') === 'suspended') {
         $state['show_portal'] = $has_customer;
         $state['show_checkout'] = !$has_customer;
         $state['checkout_label'] = 'Start plan';
         $state['portal_label'] = 'Update payment';
-        $state['notice_title'] = 'Workspace suspended';
-        $state['notice_body'] = $has_customer
-            ? 'Update payment to restore access.'
-            : 'Start a plan or contact support to restore access.';
+        if ($subscription_status === 'past_due') {
+            $state['notice_title'] = 'We could not process payment';
+            $state['notice_body'] = $has_customer
+                ? 'Update payment to restore workspace access.'
+                : 'Start a plan or contact support to restore access.';
+        } else {
+            $state['notice_title'] = 'Workspace suspended';
+            $state['notice_body'] = $has_customer
+                ? 'Update payment to restore access.'
+                : 'Start a plan or contact support to restore access.';
+        }
         $state['notice_variant'] = 'warning';
         return $state;
     }
 
-    if ($status === 'canceled' || $subscription_status === 'canceled') {
+    if (($state['code'] ?? '') === 'cancelled') {
         $state['show_checkout'] = true;
         $state['checkout_label'] = 'Restart plan';
         $state['notice_title'] = 'Plan canceled';
@@ -1340,7 +1534,7 @@ function billing_tenant_billing_action_state(?array $tenant = null, ?array $acce
         return $state;
     }
 
-    if ($status === 'blocked') {
+    if (($state['code'] ?? '') === 'blocked') {
         $state['notice_title'] = 'Workspace blocked';
         $state['notice_body'] = 'Contact support to restore access.';
         $state['notice_variant'] = 'warning';

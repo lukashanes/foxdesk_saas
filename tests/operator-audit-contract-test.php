@@ -21,6 +21,7 @@ $assert = static function (bool $condition, string $message): void {
 $assert(str_contains($platform_module, 'function platform_log_operator_action'), 'Platform audit helper is missing.');
 $assert(str_contains($platform_module, 'log_security_event($event_type'), 'Platform audit helper must write to the security log.');
 $assert(str_contains($platform_module, "str_replace([';', \"\\r\", \"\\n\"]"), 'Platform audit context must sanitize separators.');
+$assert(str_contains($platform_page, "'reason' => \$reason"), 'Manual billing overrides must write the reason to the audit context.');
 
 foreach ([
     'platform_workspace_created',

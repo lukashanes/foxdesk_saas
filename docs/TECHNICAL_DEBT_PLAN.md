@@ -497,6 +497,38 @@ php tests/billing-review-test.php
 npm run e2e -- tests/e2e/05-saas-control-plane.spec.js
 ```
 
+Completed in technical debt milestone 7:
+
+- Billing lifecycle is now driven by `billing_lifecycle_state_matrix()` for
+  trialing, active, manual free, past-due grace, suspended, cancelled, blocked,
+  trial expired, and migrated-pending-cutover states.
+- Workspace access, banner copy, Checkout visibility, Portal visibility,
+  platform actions, and workspace billing actions now resolve from the same
+  lifecycle contract.
+- Suspended past-due workspaces are blocked from app pages and show the payment
+  failure reason instead of a generic restricted-access message.
+- Active paid workspaces do not show Checkout/activation actions; they show the
+  billing portal when a Stripe customer exists.
+- Platform free/reactivation actions now require and persist an operator reason
+  with `billing_override_reason`, `billing_override_at`, and
+  `billing_override_by`, and audit context includes the reason.
+- App contract payload now exposes the billing override reason for native/client
+  consumers.
+
+Verified with:
+
+```bash
+./bin/run-php.sh tests/billing-lifecycle-contract-test.php
+./bin/run-php.sh tests/billing-review-test.php
+set -e; for test in tests/*.php; do ./bin/run-php.sh "$test"; done
+npm run lint:php
+npm run test:app-frontend
+npm run test:launch-go-no-go
+npm run test:csp-ui
+npm run e2e -- tests/e2e/05-saas-control-plane.spec.js
+npm run local:smoke
+```
+
 ### Milestone 8 - Deployment And Recovery Evidence
 
 Owner track: SaaS only

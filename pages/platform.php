@@ -72,18 +72,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $success = 'Workspace blocked.';
         } elseif ($action === 'reactivate_tenant') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
-            platform_reactivate_tenant($tenant_id);
+            $reason = (string) ($_POST['override_reason'] ?? 'Manual reactivation approved by platform operator.');
+            platform_reactivate_tenant($tenant_id, $reason);
             $selected_tenant_id = $tenant_id;
             platform_log_operator_action('platform_workspace_reactivated', $tenant_id, [
                 'subscription_status' => 'manual',
+                'reason' => $reason,
             ]);
             $success = 'Workspace reactivated manually.';
         } elseif ($action === 'grant_free_access') {
             $tenant_id = (int) ($_POST['tenant_id'] ?? 0);
-            platform_grant_free_access($tenant_id);
+            $reason = (string) ($_POST['override_reason'] ?? 'Operator approved free access.');
+            platform_grant_free_access($tenant_id, $reason);
             $selected_tenant_id = $tenant_id;
             platform_log_operator_action('platform_workspace_free_access_granted', $tenant_id, [
                 'subscription_status' => 'free',
+                'reason' => $reason,
             ]);
             $success = 'Workspace marked free by platform override.';
         } elseif ($action === 'send_owner_reset') {
@@ -343,6 +347,9 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                             <?php echo e(billing_plan_name()); ?> ·
                             <?php if (billing_subscription_is_manual_access((string) ($detail_tenant['subscription_status'] ?? 'manual'))): ?>
                                 platform override
+                                <?php if (!empty($detail_tenant['billing_override_reason'])): ?>
+                                    · <?php echo e($detail_tenant['billing_override_reason']); ?>
+                                <?php endif; ?>
                             <?php else: ?>
                                 <?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/mo
                             <?php endif; ?>
@@ -396,6 +403,10 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                     </div>
                                     <button class="op-btn primary" type="submit">Save lifecycle</button>
                                 </form>
+                                <div class="op-field mt-3">
+                                    <label>Override reason</label>
+                                    <input class="op-input" form="tenant-free-access-form-<?php echo (int) $detail_tenant['id']; ?>" name="override_reason" value="<?php echo e($detail_tenant['billing_override_reason'] ?? 'Operator approved free access.'); ?>" maxlength="500" required>
+                                </div>
                                 <div class="op-actions mt-2 justify-start">
                                     <form method="post">
                                         <?php echo csrf_field(); ?>
@@ -405,7 +416,7 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                         <input class="op-input" style="width: 84px;" type="number" name="days" value="7" min="1" max="90" aria-label="Trial extension days">
                                         <button class="op-btn" type="submit">Extend trial</button>
                                     </form>
-                                    <form method="post">
+                                    <form method="post" id="tenant-free-access-form-<?php echo (int) $detail_tenant['id']; ?>">
                                         <?php echo csrf_field(); ?>
                                         <input type="hidden" name="platform_action" value="grant_free_access">
                                         <input type="hidden" name="tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
@@ -418,6 +429,7 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                             <input type="hidden" name="platform_action" value="reactivate_tenant">
                                             <input type="hidden" name="tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
                                             <input type="hidden" name="return_tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
+                                            <input type="hidden" name="override_reason" value="Manual reactivation approved by platform operator.">
                                             <button class="op-btn primary" type="submit">Reactivate</button>
                                         </form>
                                     <?php else: ?>
@@ -678,6 +690,9 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                         <div class="op-name"><?php echo e(billing_plan_name()); ?></div>
                                         <?php if (billing_subscription_is_manual_access((string) ($tenant['subscription_status'] ?? 'manual'))): ?>
                                             <div class="op-sub">Platform override · no checkout required</div>
+                                            <?php if (!empty($tenant['billing_override_reason'])): ?>
+                                                <div class="op-sub">Reason: <?php echo e($tenant['billing_override_reason']); ?></div>
+                                            <?php endif; ?>
                                         <?php else: ?>
                                             <div class="op-sub"><?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/mo base</div>
                                         <?php endif; ?>
@@ -715,6 +730,7 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                                 <?php echo csrf_field(); ?>
                                                 <input type="hidden" name="platform_action" value="grant_free_access">
                                                 <input type="hidden" name="tenant_id" value="<?php echo $tenant_id; ?>">
+                                                <input type="hidden" name="override_reason" value="Operator approved free access.">
                                                 <button class="op-pill good" type="submit">Free access</button>
                                             </form>
                                             <?php if (($tenant['status'] ?? '') === 'blocked'): ?>
@@ -722,6 +738,7 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                                     <?php echo csrf_field(); ?>
                                                     <input type="hidden" name="platform_action" value="reactivate_tenant">
                                                     <input type="hidden" name="tenant_id" value="<?php echo $tenant_id; ?>">
+                                                    <input type="hidden" name="override_reason" value="Manual reactivation approved by platform operator.">
                                                     <button class="op-pill good" type="submit">Reactivate</button>
                                                 </form>
                                             <?php else: ?>

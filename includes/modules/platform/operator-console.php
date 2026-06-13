@@ -29,6 +29,20 @@ function platform_log_operator_action(string $event_type, int $tenant_id, array 
     log_security_event($event_type, (int) ($_SESSION['user_id'] ?? 0), implode(';', $parts));
 }
 
+function platform_operator_reason(string $reason, string $fallback): string
+{
+    $reason = trim($reason);
+    if ($reason === '') {
+        $reason = $fallback;
+    }
+
+    if (function_exists('mb_substr')) {
+        return mb_substr($reason, 0, 500);
+    }
+
+    return substr($reason, 0, 500);
+}
+
 function platform_update_tenant_lifecycle(int $tenant_id, string $status, string $subscription_status): void
 {
     $status = trim($status);
@@ -82,30 +96,40 @@ function platform_block_tenant(int $tenant_id): void
     ], 'id = ?', [$tenant_id]);
 }
 
-function platform_reactivate_tenant(int $tenant_id): void
+function platform_reactivate_tenant(int $tenant_id, string $reason = ''): void
 {
     if ($tenant_id <= 0) {
         throw new InvalidArgumentException('Invalid workspace.');
     }
 
+    $reason = platform_operator_reason($reason, 'Manual reactivation approved by platform operator.');
+
     db_update('tenants', [
         'status' => 'active',
         'subscription_status' => 'manual',
+        'billing_override_reason' => $reason,
+        'billing_override_at' => date('Y-m-d H:i:s'),
+        'billing_override_by' => (int) ($_SESSION['user_id'] ?? 0),
         'suspended_at' => null,
         'blocked_at' => null,
     ], 'id = ?', [$tenant_id]);
 }
 
-function platform_grant_free_access(int $tenant_id): void
+function platform_grant_free_access(int $tenant_id, string $reason = ''): void
 {
     if ($tenant_id <= 0) {
         throw new InvalidArgumentException('Invalid workspace.');
     }
 
+    $reason = platform_operator_reason($reason, 'Operator approved free access.');
+
     db_update('tenants', [
         'status' => 'active',
         'subscription_status' => 'free',
         'plan' => billing_plan_code(),
+        'billing_override_reason' => $reason,
+        'billing_override_at' => date('Y-m-d H:i:s'),
+        'billing_override_by' => (int) ($_SESSION['user_id'] ?? 0),
         'suspended_at' => null,
         'blocked_at' => null,
     ], 'id = ?', [$tenant_id]);

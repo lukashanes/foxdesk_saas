@@ -104,7 +104,8 @@ The endpoint verifies the `Stripe-Signature` header with `STRIPE_WEBHOOK_SECRET`
 - Customer Portal uses `STRIPE_PORTAL_CONFIGURATION_ID` when present; otherwise it falls back to the first active Stripe Portal configuration.
 - Checkout collects billing address and business tax ID when `STRIPE_TAX_ID_COLLECTION_ENABLED=true`.
 - Checkout enables Stripe automatic tax when `STRIPE_TAX_ENABLED=true`.
-- Platform admins can extend a trial, block a tenant, or manually reactivate a workspace from the workspace catalog.
+- Platform admins can extend a trial, block a tenant, grant free access, or manually reactivate a workspace from the workspace catalog.
+- Free/manual access is a platform override. FoxDesk stores `billing_override_reason`, `billing_override_at`, and `billing_override_by`, and writes the operator action to the security log.
 - Workspace admins can open their own billing page from the user menu.
 - Stripe subscription changes update `tenants.stripe_customer_id`, `tenants.stripe_subscription_id`, `tenants.subscription_status`, and `tenants.status`.
 - Paid invoices reactivate the workspace and clear suspension timestamps. Failed invoices mark the workspace `past_due`, preserve the first failed-payment timestamp in `suspended_at`, and keep app access open through `BILLING_PAST_DUE_GRACE_DAYS`.
@@ -112,6 +113,21 @@ The endpoint verifies the `Stripe-Signature` header with `STRIPE_WEBHOOK_SECRET`
 - Billing and Platform show storage usage, included storage, billable extra GB, and estimated monthly overage.
 - `bin/report-billing-usage.php` reports daily storage meter events to Stripe for tenants with a Stripe customer id.
 - Tenants with `status` set to `trial_expired`, `suspended`, `blocked`, or `canceled` are redirected to Billing instead of normal app pages. `past_due` tenants stay usable until the configured grace period ends.
+
+## Billing state matrix
+
+The app uses `billing_lifecycle_state_matrix()` as the single source for access,
+workspace billing buttons, platform actions, and banner copy.
+
+| State | App access | Workspace action | Platform action |
+| --- | --- | --- | --- |
+| `trialing` | allowed | Add billing | extend trial, grant free, block |
+| `active` | allowed | Manage billing | grant free, block |
+| `manual_free` | allowed | Manage billing details when Stripe billing is enabled | reactivate, block |
+| `past_due_grace` | allowed until grace ends | Update payment | grant free, block |
+| `suspended` | blocked from normal app pages | Update payment or start plan | reactivate or grant free |
+| `cancelled` | blocked from normal app pages | Restart plan | reactivate or grant free |
+| `migrated_pending_cutover` | allowed for review | no checkout action | grant free or block |
 
 ## Usage reporting
 

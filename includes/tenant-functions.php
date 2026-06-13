@@ -103,6 +103,9 @@ function ensure_tenant_baseline(): void
             'subscription_status' => "ALTER TABLE tenants ADD COLUMN subscription_status VARCHAR(50) NOT NULL DEFAULT 'manual' AFTER stripe_subscription_id",
             'max_users' => "ALTER TABLE tenants ADD COLUMN max_users INT NOT NULL DEFAULT 1000000 AFTER subscription_status",
             'max_agents' => "ALTER TABLE tenants ADD COLUMN max_agents INT NOT NULL DEFAULT 1000000 AFTER max_users",
+            'billing_override_reason' => "ALTER TABLE tenants ADD COLUMN billing_override_reason VARCHAR(500) NULL AFTER max_agents",
+            'billing_override_at' => "ALTER TABLE tenants ADD COLUMN billing_override_at DATETIME NULL AFTER billing_override_reason",
+            'billing_override_by' => "ALTER TABLE tenants ADD COLUMN billing_override_by INT NULL AFTER billing_override_at",
             'suspended_at' => "ALTER TABLE tenants ADD COLUMN suspended_at DATETIME NULL AFTER trial_ends_at",
             'blocked_at' => "ALTER TABLE tenants ADD COLUMN blocked_at DATETIME NULL AFTER suspended_at",
         ];

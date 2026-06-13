@@ -77,8 +77,9 @@ foreach ([
 	    "\$organization['contact_email'] ?? \$organization['email']",
 	    "'minutes_label'",
 	    "'billable_amount_label'",
-	    'function app_contract_notification_summary_item',
+    'function app_contract_notification_summary_item',
     'function app_contract_tenant_payload',
+    "'billing_override_reason'",
 ] as $needle) {
     $assert(str_contains($appContract, $needle), 'App contract module missing behavior: ' . $needle);
 }

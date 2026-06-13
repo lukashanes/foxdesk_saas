@@ -245,6 +245,7 @@ function app_contract_tenant_payload(array $tenant): array
         'status' => (string) ($tenant['status'] ?? ''),
         'subscription_status' => (string) ($tenant['subscription_status'] ?? ''),
         'billing_email' => (string) ($tenant['billing_email'] ?? ''),
+        'billing_override_reason' => (string) ($tenant['billing_override_reason'] ?? ''),
         'trial_ends_at' => $tenant['trial_ends_at'] ?? null,
         'suspended_at' => $tenant['suspended_at'] ?? null,
     ];
