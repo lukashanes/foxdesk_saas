@@ -15,15 +15,18 @@ Public self-hosted updates may include:
 - bug fixes for the PHP helpdesk application
 - security fixes
 - compatibility updates
-- migration export tooling that lets an admin create a transfer package for
-  FoxDesk Cloud
+- IMAP ingest stability fixes and pseudo-cron fallback fixes
+- migration bridge tooling that lets an admin sync a self-hosted instance into
+  FoxDesk Cloud and run final cutover
+- migration ZIP export tooling only as a fallback when API sync is unavailable
 
 Public self-hosted updates must not include:
 
 - SaaS platform operator dashboards
 - tenant billing control-plane screens
 - internal SaaS unit economics
-- hosted-only deployment assumptions
+- Stripe customer/subscription administration internals
+- Cloudflare/R2 production deployment secrets or hosted-only assumptions
 
 ## FoxDesk SaaS / Cloud
 
@@ -49,11 +52,20 @@ treated as stable public updater releases for the free PHP app.
 
 ## Transfer path
 
-The transfer from self-hosted FoxDesk to FoxDesk SaaS is intentionally split:
+The transfer from self-hosted FoxDesk to FoxDesk SaaS is intentionally split and
+API sync is the preferred production path:
 
-1. Public self-hosted FoxDesk receives a stable update that adds a migration
-   export page.
-2. The self-hosted admin downloads a `foxdesk-cloud-migration-*.zip` package.
-3. The SaaS platform admin imports that ZIP in the FoxDesk Cloud operator
-   console.
-4. DNS/customer cutover happens only after the imported workspace is verified.
+1. Public self-hosted FoxDesk receives a stable maintenance update that includes
+   the migration bridge client, IMAP fallback fixes, and final cutover controls.
+2. The SaaS platform admin creates a one-time migration token for the target
+   workspace.
+3. The self-hosted admin connects to the SaaS migration bridge and runs data
+   plus attachment sync.
+4. The SaaS platform admin verifies users, tickets, comments, time entries,
+   reports, email data, and attachment evidence.
+5. Final cutover marks SaaS as the single active instance and disables active
+   self-hosted ingest/notification processing.
+6. ZIP export/import is kept only as a fallback when API sync cannot run.
+
+Before any public self-hosted update is published, run the compatibility
+checklist in `docs/SELF_HOSTED_RELEASE_CHECKLIST.md`.

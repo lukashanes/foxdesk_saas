@@ -596,6 +596,17 @@ function mark_notification_read(int $notification_id, int $user_id): bool
 }
 
 /**
+ * Mark a single notification as unread.
+ */
+function mark_notification_unread(int $notification_id, int $user_id): bool
+{
+    if (!notifications_table_exists()) return false;
+
+    db_update('notifications', ['is_read' => 0], 'id = ? AND user_id = ?', [$notification_id, $user_id]);
+    return true;
+}
+
+/**
  * Mark all notifications for a specific ticket as read.
  */
 function mark_ticket_notifications_read(int $ticket_id, int $user_id): bool

@@ -8,7 +8,7 @@ function api_app_contract_envelope(array $data, array $meta = []): array
     return [
         'data' => $data,
         'meta' => array_merge([
-            'schema_version' => 1,
+            'schema_version' => function_exists('app_contract_schema_version') ? app_contract_schema_version() : 1,
             'generated_at' => date('c'),
         ], $meta),
         'errors' => [],
@@ -24,6 +24,20 @@ function api_app_clamp_limit($value, int $default = 25, int $max = 100): int
 {
     $limit = (int) ($value ?? $default);
     return max(1, min($max, $limit));
+}
+
+function api_app_require_write_auth(): void
+{
+    if (empty($GLOBALS['is_mobile_token_auth'])) {
+        require_csrf_token(true);
+    }
+}
+
+function api_app_require_timer_functions(): void
+{
+    if (!function_exists('get_active_ticket_timer') && defined('BASE_PATH') && file_exists(BASE_PATH . '/includes/ticket-time-functions.php')) {
+        require_once BASE_PATH . '/includes/ticket-time-functions.php';
+    }
 }
 
 function api_app_shell()
@@ -210,18 +224,76 @@ function api_app_ticket_attachments(int $ticket_id, array $visible_comments): ar
             continue;
         }
 
-        $attachments[] = [
-            'id' => (int) ($attachment['id'] ?? 0),
-            'comment_id' => $comment_id ?: null,
-            'filename' => (string) ($attachment['original_name'] ?? $attachment['filename'] ?? ''),
-            'mime_type' => $attachment['mime_type'] ?? null,
-            'file_size' => isset($attachment['file_size']) ? (int) $attachment['file_size'] : null,
-            'download_url' => function_exists('attachment_download_url') ? attachment_download_url($attachment) : '',
-            'created_at' => $attachment['created_at'] ?? null,
-        ];
+        $attachments[] = function_exists('app_contract_attachment_payload')
+            ? app_contract_attachment_payload($attachment)
+            : [
+                'id' => (int) ($attachment['id'] ?? 0),
+                'comment_id' => $comment_id ?: null,
+                'filename' => (string) ($attachment['original_name'] ?? $attachment['filename'] ?? ''),
+                'mime_type' => $attachment['mime_type'] ?? null,
+                'file_size' => isset($attachment['file_size']) ? (int) $attachment['file_size'] : null,
+                'download_url' => function_exists('attachment_download_url') ? attachment_download_url($attachment) : '',
+                'created_at' => $attachment['created_at'] ?? null,
+            ];
     }
 
     return $attachments;
+}
+
+function api_app_resolve_attachment(array $source, array $user): array
+{
+    $attachment_id = (int) ($source['attachment_id'] ?? $source['id'] ?? 0);
+    if ($attachment_id <= 0) {
+        api_error('Missing attachment_id.', 422);
+    }
+
+    if (!function_exists('get_attachment') || !function_exists('attachment_user_can_access')) {
+        api_error('Attachment metadata is not available.', 500);
+    }
+
+    $attachment = get_attachment($attachment_id);
+    if (!$attachment) {
+        api_error('Attachment not found.', 404);
+    }
+
+    if (!empty($attachment['comment_id']) && !array_key_exists('comment_is_internal', $attachment)) {
+        try {
+            $comment = db_fetch_one('SELECT is_internal FROM comments WHERE id = ? LIMIT 1', [(int) $attachment['comment_id']]);
+            $attachment['comment_is_internal'] = !empty($comment['is_internal']);
+        } catch (Throwable $e) {
+            $attachment['comment_is_internal'] = false;
+        }
+    }
+
+    if (!attachment_user_can_access($attachment, $user)) {
+        if (function_exists('log_security_event')) {
+            log_security_event('app_attachment_access_denied', (int) ($user['id'] ?? 0), json_encode([
+                'attachment_id' => $attachment_id,
+                'ticket_id' => (int) ($attachment['ticket_id'] ?? 0),
+            ]));
+        }
+        api_error('Forbidden', 403);
+    }
+
+    return $attachment;
+}
+
+function api_app_attachment_metadata()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        api_error('Method not allowed', 405);
+    }
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+
+    $attachment = api_app_resolve_attachment($_GET, $user);
+
+    api_app_contract_success([
+        'attachment' => app_contract_attachment_payload($attachment),
+    ], ['resource' => 'attachment_metadata']);
 }
 
 function api_app_ticket_time_entries(int $ticket_id): array
@@ -278,7 +350,7 @@ function api_app_add_comment()
         api_error('Method not allowed', 405);
     }
 
-    require_csrf_token(true);
+    api_app_require_write_auth();
 
     $user = current_user();
     if (!$user) {
@@ -327,6 +399,131 @@ function api_app_add_comment()
     }
 
     api_app_contract_success($response, ['resource' => 'ticket_comment'], $response);
+}
+
+function api_app_ticket_timer()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        api_error('Method not allowed', 405);
+    }
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+    if (!is_agent() && !is_admin()) {
+        api_error('Forbidden', 403);
+    }
+
+    api_app_require_timer_functions();
+
+    $ticket = api_app_resolve_ticket($_GET, $user);
+
+    api_app_contract_success([
+        'ticket' => app_contract_ticket_payload($ticket),
+        'timer' => app_contract_ticket_timer((int) $ticket['id'], $user),
+    ], ['resource' => 'ticket_timer']);
+}
+
+function api_app_ticket_timer_action()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        api_error('Method not allowed', 405);
+    }
+
+    api_app_require_write_auth();
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+    if (!is_agent() && !is_admin()) {
+        api_error('Forbidden', 403);
+    }
+    api_app_require_timer_functions();
+    if (!function_exists('ticket_time_table_exists') || !ticket_time_table_exists()) {
+        api_error('Time tracking is not available.', 400);
+    }
+
+    $input = get_json_input();
+    $ticket = api_app_resolve_ticket($input, $user);
+    $ticket_id = (int) $ticket['id'];
+    $action = strtolower(trim((string) ($input['action'] ?? '')));
+    $result = ['success' => false];
+
+    if ($action === 'start') {
+        $active = get_active_ticket_timer($ticket_id, (int) $user['id']);
+        if ($active) {
+            api_error('Timer is already running.', 400);
+        }
+
+        $ticket_billable_rate = function_exists('get_ticket_effective_billable_rate')
+            ? get_ticket_effective_billable_rate($ticket, (int) $user['id'])
+            : 0.0;
+        $entry_id = (int) db_insert('ticket_time_entries', [
+            'ticket_id' => $ticket_id,
+            'user_id' => (int) $user['id'],
+            'started_at' => date('Y-m-d H:i:s'),
+            'ended_at' => null,
+            'duration_minutes' => 0,
+            'is_billable' => 1,
+            'billable_rate' => $ticket_billable_rate,
+            'cost_rate' => (float) ($user['cost_rate'] ?? 0),
+            'is_manual' => 0,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+        log_activity($ticket_id, (int) $user['id'], 'time_started', 'Timer started');
+        if (function_exists('log_ticket_history')) {
+            log_ticket_history($ticket_id, (int) $user['id'], 'timer_started', null, date('Y-m-d H:i:s'));
+        }
+        $result = ['success' => true, 'entry_id' => $entry_id];
+    } elseif ($action === 'pause') {
+        $result = pause_ticket_timer($ticket_id, (int) $user['id']);
+        if (!empty($result['success'])) {
+            log_activity($ticket_id, (int) $user['id'], 'time_paused', 'Timer paused');
+        }
+    } elseif ($action === 'resume') {
+        $result = resume_ticket_timer($ticket_id, (int) $user['id']);
+        if (!empty($result['success'])) {
+            log_activity($ticket_id, (int) $user['id'], 'time_resumed', 'Timer resumed');
+        }
+    } elseif ($action === 'stop') {
+        $active = get_active_ticket_timer($ticket_id, (int) $user['id']);
+        if (!$active) {
+            api_error('No active timer found.', 400);
+        }
+        $elapsed = calculate_timer_elapsed($active);
+        $duration = max(1, (int) floor($elapsed / 60));
+        db_update('ticket_time_entries', [
+            'ended_at' => date('Y-m-d H:i:s'),
+            'duration_minutes' => $duration,
+            'paused_at' => null,
+        ], 'id = ?', [(int) $active['id']]);
+        log_activity($ticket_id, (int) $user['id'], 'time_stopped', "Timer stopped ({$duration} min)");
+        $result = [
+            'success' => true,
+            'entry_id' => (int) $active['id'],
+            'duration_minutes' => $duration,
+        ];
+    } elseif ($action === 'discard') {
+        $result = discard_ticket_timer($ticket_id, (int) $user['id']);
+        if (!empty($result['success'])) {
+            log_activity($ticket_id, (int) $user['id'], 'time_discarded', 'Timer discarded');
+        }
+    } else {
+        api_error('Unsupported timer action.', 422);
+    }
+
+    if (empty($result['success'])) {
+        api_error((string) ($result['error'] ?? 'Timer action failed.'), 400);
+    }
+
+    api_app_contract_success([
+        'ticket' => app_contract_ticket_payload($ticket),
+        'timer' => app_contract_ticket_timer($ticket_id, $user),
+        'action' => $action,
+        'result' => $result,
+    ], ['resource' => 'timer_action']);
 }
 
 function api_app_client_overview()
@@ -409,6 +606,88 @@ function api_app_notifications_summary()
         'unread_count' => (int) ($result['unread_count'] ?? 0),
         'items' => array_map('app_contract_notification_summary_item', $result['notifications'] ?? []),
     ], ['resource' => 'notifications_summary']);
+}
+
+function api_app_notifications()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        api_error('Method not allowed', 405);
+    }
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+
+    $limit = api_app_clamp_limit($_GET['limit'] ?? null, 25, 100);
+    $offset = max(0, (int) ($_GET['offset'] ?? 0));
+    $include_resolved = (int) ($_GET['include_resolved'] ?? 0) === 1;
+    $result = function_exists('get_user_notifications')
+        ? get_user_notifications((int) $user['id'], $limit, $offset, !$include_resolved)
+        : ['notifications' => [], 'unread_count' => 0];
+    $items = array_map('app_contract_notification_summary_item', $result['notifications'] ?? []);
+
+    api_app_contract_success([
+        'unread_count' => (int) ($result['unread_count'] ?? 0),
+        'items' => $items,
+        'pagination' => [
+            'limit' => $limit,
+            'offset' => $offset,
+            'has_more' => count($items) === $limit,
+        ],
+    ], ['resource' => 'notifications']);
+}
+
+function api_app_notification_read_state()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        api_error('Method not allowed', 405);
+    }
+
+    api_app_require_write_auth();
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+
+    $input = get_json_input();
+    $scope = strtolower(trim((string) ($input['scope'] ?? 'notification')));
+    $is_read = array_key_exists('is_read', $input) ? (bool) $input['is_read'] : true;
+    $updated = false;
+
+    if ($scope === 'notification') {
+        $notification_id = (int) ($input['notification_id'] ?? $input['id'] ?? 0);
+        if ($notification_id <= 0) {
+            api_error('Missing notification_id.', 422);
+        }
+        $updated = $is_read
+            ? mark_notification_read($notification_id, (int) $user['id'])
+            : (function_exists('mark_notification_unread') && mark_notification_unread($notification_id, (int) $user['id']));
+    } elseif ($scope === 'ticket') {
+        if (!$is_read) {
+            api_error('Ticket notification groups can only be marked read.', 422);
+        }
+        $ticket_id = (int) ($input['ticket_id'] ?? 0);
+        if ($ticket_id <= 0) {
+            api_error('Missing ticket_id.', 422);
+        }
+        $updated = mark_ticket_notifications_read($ticket_id, (int) $user['id']);
+    } elseif ($scope === 'all') {
+        if (!$is_read) {
+            api_error('All notifications can only be marked read.', 422);
+        }
+        $updated = mark_all_notifications_read((int) $user['id']);
+    } else {
+        api_error('Unsupported notification scope.', 422);
+    }
+
+    api_app_contract_success([
+        'unread_count' => function_exists('get_unread_notification_count')
+            ? get_unread_notification_count((int) $user['id'])
+            : 0,
+        'updated' => (bool) $updated,
+    ], ['resource' => 'notification_read_state']);
 }
 
 function api_app_tenant_state()

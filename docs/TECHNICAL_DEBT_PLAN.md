@@ -612,6 +612,35 @@ Verification:
 php tests/mobile-api-contract-test.php
 php tests/app-shell-contract-test.php
 php tests/app-home-contract-test.php
+php tests/native-app-api-freeze-contract-test.php
+```
+
+Completed in technical debt milestone 9:
+
+- Native app response envelopes now use the shared app contract schema version
+  helper and keep a frozen response-key registry in
+  `app_contract_frozen_response_keys()`.
+- Native endpoint docs are published in `docs/NATIVE_APP_API.md` for auth, app
+  shell, app home, ticket list/detail, comments, attachments, timers, and
+  notifications.
+- Attachment metadata is available through `app-attachment-metadata` with stable
+  preview/download metadata and no storage secrets.
+- Timer state and timer actions are available through `app-ticket-timer` and
+  `app-ticket-timer-action`.
+- Notification list and read/unread state are available through
+  `app-notifications` and `app-notification-read-state`.
+- App write endpoints keep CSRF for cookie sessions while allowing authenticated
+  mobile Bearer-token writes, so mobile sessions remain independent from browser
+  sessions.
+
+Verified with:
+
+```bash
+./bin/run-php.sh tests/mobile-api-contract-test.php
+./bin/run-php.sh tests/app-shell-contract-test.php
+./bin/run-php.sh tests/app-home-contract-test.php
+./bin/run-php.sh tests/app-contract-api-test.php
+./bin/run-php.sh tests/native-app-api-freeze-contract-test.php
 ```
 
 ### Milestone 10 - Self-Hosted Final Maintenance Gate
@@ -642,6 +671,27 @@ php tests/cloud-migration-bridge-contract-test.php
 php tests/pseudo-cron-email-test.php
 ```
 
+Completed in technical debt milestone 10:
+
+- Release-channel docs now state that API sync is the preferred self-hosted to
+  SaaS transfer path and ZIP export/import is fallback only.
+- `docs/SELF_HOSTED_RELEASE_CHECKLIST.md` defines the allowed self-hosted
+  maintenance scope and explicitly excludes SaaS platform operator screens,
+  billing internals, unit economics, and hosted production secrets.
+- Cloud migration bridge contract coverage verifies connect, plan, status,
+  table sync, attachment sync, attachment evidence, one-time token handling, and
+  single-active-instance cutover language.
+- Pseudo-cron/IMAP contract coverage verifies manual/CLI/pseudo-cron ingest
+  paths, disabled IMAP handling, five-minute page-load fallback, and release
+  checklist coverage.
+
+Verified with:
+
+```bash
+./bin/run-php.sh tests/cloud-migration-bridge-contract-test.php
+./bin/run-php.sh tests/pseudo-cron-email-test.php
+```
+
 ## Execution Order
 
 1. Finish Milestone 1 immediately.
@@ -653,6 +703,6 @@ php tests/pseudo-cron-email-test.php
 
 ## Current Next Action
 
-Start Milestone 9 next: freeze the native app API surface before beginning the
-iOS implementation. Keep Milestone 10 active as the final public self-hosted
-maintenance gate.
+Run the milestone 9 and 10 verification set, then start native iOS
+implementation in a dedicated app thread. Keep the self-hosted maintenance gate
+active for every future public PHP release.

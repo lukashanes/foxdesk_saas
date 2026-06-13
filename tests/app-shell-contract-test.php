@@ -32,7 +32,7 @@ $assert(str_contains($module, 'function app_shell_work_queues'), 'App shell work
 $assert(str_contains($module, 'function app_shell_inbox_queues'), 'App shell inbox queue helper is missing.');
 $assert(str_contains($module, 'function app_shell_search_sections'), 'App shell search sections helper is missing.');
 $assert(str_contains($module, 'function app_shell_reporting'), 'App shell reporting helper is missing.');
-$assert(str_contains($module, "'schema_version' => 1"), 'App shell payload must expose a schema version.');
+$assert(str_contains($module, 'app_contract_schema_version()'), 'App shell payload must use the shared schema version helper.');
 $assert(str_contains($module, "'key' => 'work'"), 'Work navigation item is missing.');
 $assert(str_contains($module, "'key' => 'inbox'"), 'Inbox navigation item is missing.');
 $assert(str_contains($module, "'key' => 'reports'"), 'Reports navigation item is missing.');

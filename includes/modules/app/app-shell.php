@@ -174,7 +174,7 @@ function app_shell_capabilities(array $user): array
 function app_shell_payload(array $user): array
 {
     return [
-        'schema_version' => 1,
+        'schema_version' => function_exists('app_contract_schema_version') ? app_contract_schema_version() : 1,
         'generated_at' => date('c'),
         'home_page' => function_exists('foxdesk_authenticated_home_page') ? foxdesk_authenticated_home_page() : 'work',
         'user' => app_shell_user($user),

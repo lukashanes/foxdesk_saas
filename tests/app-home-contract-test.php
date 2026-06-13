@@ -32,7 +32,7 @@ $assert(str_contains($feed, 'function app_feed_active_timers'), 'Active timer fo
 $assert(str_contains($feed, 'function app_feed_notifications'), 'Notification formatter is missing.');
 $assert(str_contains($feed, 'work_queue_summary($user, $limit)'), 'App home must reuse Work queue module.');
 $assert(str_contains($feed, 'inbox_summary($user, $limit)'), 'App home must reuse Inbox module.');
-$assert(str_contains($feed, "'schema_version' => 1"), 'App home payload must expose a schema version.');
+$assert(str_contains($feed, 'app_contract_schema_version()'), 'App home payload must use the shared schema version helper.');
 $assert(str_contains($docs, 'seventh behavior change adds an authenticated `app-home` API contract'), 'Architecture docs must describe milestone 7.');
 
 echo "App home contract OK\n";

@@ -123,7 +123,7 @@ function app_feed_payload(array $user, int $limit = 5): array
     $limit = max(1, min(20, $limit));
 
     return [
-        'schema_version' => 1,
+        'schema_version' => function_exists('app_contract_schema_version') ? app_contract_schema_version() : 1,
         'generated_at' => date('c'),
         'limit' => $limit,
         'work' => function_exists('work_queue_summary')

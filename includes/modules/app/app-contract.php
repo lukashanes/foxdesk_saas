@@ -6,6 +6,47 @@
  * Endpoint handlers stay thin: auth, permissions, and response wrapping only.
  */
 
+function app_contract_schema_version(): int
+{
+    return 1;
+}
+
+function app_contract_frozen_response_keys(): array
+{
+    return [
+        'envelope' => ['data', 'meta', 'errors'],
+        'app_shell' => [
+            'schema_version',
+            'generated_at',
+            'home_page',
+            'user',
+            'navigation',
+            'capabilities',
+            'work_queues',
+            'inbox_queues',
+            'search_sections',
+            'reporting',
+        ],
+        'app_home' => [
+            'schema_version',
+            'generated_at',
+            'limit',
+            'work',
+            'inbox',
+            'timers',
+            'notifications',
+        ],
+        'ticket_detail' => ['ticket', 'comments', 'attachments', 'time_entries', 'actions'],
+        'add_comment' => ['comment_id', 'time_entry_id'],
+        'attachment_metadata' => ['attachment'],
+        'ticket_timer' => ['ticket', 'timer'],
+        'timer_action' => ['ticket', 'timer', 'action', 'result'],
+        'notifications' => ['unread_count', 'items', 'pagination'],
+        'notification_read_state' => ['unread_count', 'updated'],
+        'mobile_session' => ['token_type', 'access_token', 'refresh_token', 'expires_in', 'refresh_expires_in'],
+    ];
+}
+
 function app_contract_ticket_payload(array $ticket): array
 {
     $ticket_id = (int) ($ticket['id'] ?? 0);
@@ -128,6 +169,46 @@ function app_contract_ticket_timer(int $ticket_id, array $user): array
         'entry_id' => $entry_id,
         'elapsed_minutes' => $elapsed_minutes,
         'elapsed_label' => function_exists('format_duration_minutes') ? format_duration_minutes($elapsed_minutes) : ($elapsed_minutes . ' min'),
+    ];
+}
+
+function app_contract_attachment_can_preview(array $attachment): bool
+{
+    $mime_type = strtolower(trim((string) ($attachment['mime_type'] ?? '')));
+    if ($mime_type === '') {
+        return false;
+    }
+
+    if (str_starts_with($mime_type, 'image/')) {
+        return true;
+    }
+
+    return in_array($mime_type, [
+        'application/pdf',
+        'text/plain',
+        'text/csv',
+    ], true);
+}
+
+function app_contract_attachment_payload(array $attachment): array
+{
+    $file_size = isset($attachment['file_size']) ? (int) $attachment['file_size'] : null;
+    $download_url = function_exists('attachment_download_url') ? attachment_download_url($attachment) : '';
+    $can_preview = app_contract_attachment_can_preview($attachment);
+
+    return [
+        'id' => (int) ($attachment['id'] ?? 0),
+        'ticket_id' => (int) ($attachment['ticket_id'] ?? 0),
+        'comment_id' => !empty($attachment['comment_id']) ? (int) $attachment['comment_id'] : null,
+        'filename' => (string) ($attachment['original_name'] ?? $attachment['filename'] ?? ''),
+        'mime_type' => $attachment['mime_type'] ?? null,
+        'file_size' => $file_size,
+        'file_size_label' => ($file_size !== null && function_exists('format_file_size')) ? format_file_size($file_size) : null,
+        'storage_driver' => (string) ($attachment['storage_driver'] ?? 'local'),
+        'download_url' => $download_url,
+        'preview_url' => $can_preview ? $download_url : null,
+        'can_preview' => $can_preview,
+        'created_at' => $attachment['created_at'] ?? null,
     ];
 }
 

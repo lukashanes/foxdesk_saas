@@ -166,9 +166,14 @@ function route_api_request($action) {
         'app-ticket-detail' => 'api_app_ticket_detail',
         'app-ticket-actions' => 'api_app_ticket_actions',
         'app-add-comment' => 'api_app_add_comment',
+        'app-attachment-metadata' => 'api_app_attachment_metadata',
+        'app-ticket-timer' => 'api_app_ticket_timer',
+        'app-ticket-timer-action' => 'api_app_ticket_timer_action',
         'app-client-overview' => 'api_app_client_overview',
         'app-reporting-review' => 'api_app_reporting_review',
+        'app-notifications' => 'api_app_notifications',
         'app-notifications-summary' => 'api_app_notifications_summary',
+        'app-notification-read-state' => 'api_app_notification_read_state',
         'app-tenant-state' => 'api_app_tenant_state',
 
         // Native mobile app auth and device registration
