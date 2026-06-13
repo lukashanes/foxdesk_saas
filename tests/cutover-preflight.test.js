@@ -44,6 +44,12 @@ function makeEvidence(overrides = {}) {
   return { dir, resultPath };
 }
 
+function writeJson(dir, name, value) {
+  const file = path.join(dir, name);
+  fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
+  return file;
+}
+
 {
   const { dir, resultPath } = makeEvidence();
   const approved = buildPreflight(resultPath, {
@@ -64,6 +70,68 @@ function makeEvidence(overrides = {}) {
   const output = writePreflight(approved, dir);
   assert(fs.existsSync(output.jsonPath), 'preflight json should be written');
   assert(fs.existsSync(output.reportPath), 'preflight markdown should be written');
+}
+
+{
+  const { dir, resultPath } = makeEvidence();
+  const restoreEvidencePath = writeJson(dir, 'restore-latest.json', {
+    status: 'passed',
+    testedAt: new Date().toISOString(),
+    sourceBackup: '/var/backups/foxdesk/db/foxdesk-db-test.sql.gz',
+    restoreTarget: 'restore-test-db',
+    checks: [{ name: 'database_restore', status: 'passed' }],
+  });
+  const deployEvidencePath = writeJson(dir, 'deployment-evidence.json', {
+    status: 'passed',
+    decision: 'deploy_complete_allowed',
+    generatedAt: new Date().toISOString(),
+    productionSmoke: { status: 'passed' },
+    restoreEvidence: { status: 'passed' },
+  });
+  const approved = buildPreflight(resultPath, {
+    maxAgeHours: 24,
+    skipProdSmoke: false,
+    deployEvidencePath,
+    restoreEvidencePath,
+    productionSmoke: {
+      command: 'mocked production smoke',
+      status: 'passed',
+      exitCode: 0,
+      startedAt: new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      stdout: 'Production smoke OK',
+      stderr: '',
+    },
+  }, root);
+  assert.strictEqual(approved.status, 'passed');
+  assert.strictEqual(approved.deploymentEvidence.status, 'passed');
+  assert.strictEqual(approved.restoreEvidence.status, 'passed');
+}
+
+{
+  const { dir, resultPath } = makeEvidence();
+  const deployEvidencePath = writeJson(dir, 'deployment-evidence.json', {
+    status: 'failed',
+    decision: 'deploy_blocked',
+    productionSmoke: { status: 'passed' },
+    restoreEvidence: { status: 'passed' },
+  });
+  const preflight = buildPreflight(resultPath, {
+    maxAgeHours: 24,
+    skipProdSmoke: false,
+    deployEvidencePath,
+    productionSmoke: {
+      command: 'mocked production smoke',
+      status: 'passed',
+      exitCode: 0,
+      startedAt: new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      stdout: '',
+      stderr: '',
+    },
+  }, root);
+  assert.strictEqual(preflight.status, 'failed');
+  assert(preflight.failures.some((failure) => failure.includes('Deployment evidence status')));
 }
 
 {

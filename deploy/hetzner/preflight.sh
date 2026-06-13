@@ -47,6 +47,31 @@ require_env() {
   check_ok "Configured $key"
 }
 
+require_https_env() {
+  local key="$1"
+  local value
+  value="$(env_value "$key")"
+  require_env "$key"
+  if [[ -n "$value" && "$value" != https://* ]]; then
+    check_fail "$key must be a https URL"
+    return
+  fi
+  if [[ "$value" == *localhost* || "$value" == *127.0.0.1* || "$value" == *"[::1]"* ]]; then
+    check_fail "$key must not point at a local URL"
+    return
+  fi
+}
+
+require_absolute_env() {
+  local key="$1"
+  local value
+  value="$(env_value "$key")"
+  require_env "$key"
+  if [[ -n "$value" && "$value" != /* ]]; then
+    check_fail "$key must be an absolute path"
+  fi
+}
+
 require_file .env.production
 require_file config.php
 require_file docker-compose.prod.yml
@@ -65,10 +90,30 @@ else
   check_fail "Docker Compose plugin is not available"
 fi
 
+if command -v npm >/dev/null 2>&1; then
+  check_ok "npm available for deployment evidence"
+else
+  check_fail "npm is required for deployment evidence. Run bootstrap/setup and npm ci."
+fi
+
+if [[ -d node_modules ]]; then
+  check_ok "Node dependencies installed"
+else
+  check_fail "Missing node_modules. Run npm ci before production deploy."
+fi
+
+if [[ -x node_modules/.bin/playwright ]]; then
+  check_ok "Playwright available for production smoke"
+else
+  check_fail "Missing Playwright binary. Run npm ci && npx playwright install --with-deps chromium."
+fi
+
 if [[ -f .env.production ]]; then
   required_env=(
     APP_HOST
     APP_URL
+    PROD_BASE_URL
+    PROD_PUBLIC_URL
     DB_NAME
     DB_USER
     DB_PASS
@@ -84,10 +129,23 @@ if [[ -f .env.production ]]; then
     R2_ENDPOINT
     R2_ACCESS_KEY_ID
     R2_SECRET_ACCESS_KEY
+    FOXDESK_BACKUP_DIR
+    FOXDESK_RESTORE_EVIDENCE_PATH
+    FOXDESK_DEPLOY_EVIDENCE_DIR
+    FOXDESK_MONITORING_HEALTH_URL
+    FOXDESK_MONITORING_ALERT_EMAIL
   )
 
   for key in "${required_env[@]}"; do
     require_env "$key"
+  done
+
+  for key in APP_URL PROD_BASE_URL PROD_PUBLIC_URL FOXDESK_MONITORING_HEALTH_URL; do
+    require_https_env "$key"
+  done
+
+  for key in FOXDESK_BACKUP_DIR FOXDESK_RESTORE_EVIDENCE_PATH FOXDESK_DEPLOY_EVIDENCE_DIR; do
+    require_absolute_env "$key"
   done
 
   if [[ "$(env_value BILLING_ENABLED)" == "true" ]]; then
@@ -98,6 +156,10 @@ if [[ -f .env.production ]]; then
     require_env STRIPE_STORAGE_METER_EVENT_NAME
   else
     check_warn "BILLING_ENABLED is not true; paid signup will not be live"
+  fi
+
+  if [[ "$(env_value MAIL_PROVIDER)" != "cloudflare" ]]; then
+    check_fail "MAIL_PROVIDER must be cloudflare for SaaS production"
   fi
 
   if [[ "$(env_value STORAGE_DRIVER)" != "r2" ]]; then
@@ -112,6 +174,14 @@ if [[ -f .env.production ]]; then
   secret_key="$(env_value SECRET_KEY)"
   if [[ -n "$secret_key" && ${#secret_key} -lt 32 ]]; then
     check_fail "SECRET_KEY should be at least 32 characters"
+  fi
+
+  if [[ "$(env_value STRIPE_SECRET_KEY)" == sk_test_* ]]; then
+    check_fail "STRIPE_SECRET_KEY must be a live key for paid production"
+  fi
+
+  if [[ "$(env_value FOXDESK_RESTORE_EVIDENCE_PATH)" != *.json ]]; then
+    check_fail "FOXDESK_RESTORE_EVIDENCE_PATH must point to a JSON evidence file"
   fi
 fi
 

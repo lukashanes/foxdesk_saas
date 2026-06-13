@@ -7,7 +7,7 @@ const { readResult, verifyEvidence } = require('./verify-cutover-evidence.js');
 
 function usage() {
   return [
-    'Usage: node bin/cutover-preflight.js <result.json> [--output-dir=/path] [--max-age-hours=24] [--skip-prod-smoke]',
+    'Usage: node bin/cutover-preflight.js <result.json> [--output-dir=/path] [--max-age-hours=24] [--skip-prod-smoke] [--deploy-evidence=/path/deployment-evidence.json] [--restore-evidence=/path/restore.json]',
     '',
     'Runs the final manual cutover preflight. It does not perform DNS, ingest, or migration cutover changes.',
   ].join('\n');
@@ -19,6 +19,8 @@ function parseArgs(argv) {
     outputDir: process.env.FOXDESK_CUTOVER_PREFLIGHT_DIR || '',
     maxAgeHours: 24,
     skipProdSmoke: process.env.FOXDESK_CUTOVER_SKIP_PROD_SMOKE === '1',
+    deployEvidencePath: process.env.FOXDESK_DEPLOY_EVIDENCE_PATH || '',
+    restoreEvidencePath: process.env.FOXDESK_RESTORE_EVIDENCE_PATH || '',
   };
 
   for (const arg of argv) {
@@ -38,6 +40,14 @@ function parseArgs(argv) {
       options.maxAgeHours = Number(arg.slice('--max-age-hours='.length));
       continue;
     }
+    if (arg.startsWith('--deploy-evidence=')) {
+      options.deployEvidencePath = arg.slice('--deploy-evidence='.length);
+      continue;
+    }
+    if (arg.startsWith('--restore-evidence=')) {
+      options.restoreEvidencePath = arg.slice('--restore-evidence='.length);
+      continue;
+    }
     if (!arg.startsWith('--') && !options.resultPath) {
       options.resultPath = arg;
       continue;
@@ -50,6 +60,120 @@ function parseArgs(argv) {
   }
 
   return options;
+}
+
+function readOptionalJson(filePath, label) {
+  if (!filePath) {
+    return {
+      status: 'skipped',
+      path: '',
+      failures: [],
+      summary: null,
+    };
+  }
+
+  if (!fs.existsSync(filePath)) {
+    return {
+      status: 'failed',
+      path: filePath,
+      failures: [`${label} evidence file does not exist: ${filePath}`],
+      summary: null,
+    };
+  }
+
+  try {
+    const value = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return {
+      status: 'loaded',
+      path: filePath,
+      value,
+      failures: [],
+      summary: null,
+    };
+  } catch (error) {
+    return {
+      status: 'failed',
+      path: filePath,
+      failures: [`${label} evidence JSON is invalid: ${error.message}`],
+      summary: null,
+    };
+  }
+}
+
+function validateDeploymentEvidence(filePath) {
+  const evidence = readOptionalJson(filePath, 'Deployment');
+  if (evidence.status !== 'loaded') {
+    return evidence;
+  }
+
+  const value = evidence.value;
+  const failures = [];
+  if (value.status !== 'passed') {
+    failures.push(`Deployment evidence status must be "passed"; got "${value.status || ''}".`);
+  }
+  if (value.decision !== 'deploy_complete_allowed') {
+    failures.push(`Deployment evidence decision must be "deploy_complete_allowed"; got "${value.decision || ''}".`);
+  }
+  if (value.productionSmoke?.status !== 'passed') {
+    failures.push('Deployment evidence must include passed production smoke.');
+  }
+  if (value.restoreEvidence?.status !== 'passed') {
+    failures.push('Deployment evidence must include passed restore evidence.');
+  }
+
+  return {
+    status: failures.length === 0 ? 'passed' : 'failed',
+    path: filePath,
+    failures,
+    summary: {
+      generatedAt: value.generatedAt || '',
+      decision: value.decision || '',
+      productionSmoke: value.productionSmoke?.status || '',
+      restoreEvidence: value.restoreEvidence?.status || '',
+    },
+  };
+}
+
+function validateRestoreEvidence(filePath) {
+  const evidence = readOptionalJson(filePath, 'Restore');
+  if (evidence.status !== 'loaded') {
+    return evidence;
+  }
+
+  const value = evidence.value;
+  const failures = [];
+  if (value.status !== 'passed') {
+    failures.push(`Restore evidence status must be "passed"; got "${value.status || ''}".`);
+  }
+  if (!value.testedAt && !value.completedAt) {
+    failures.push('Restore evidence must include testedAt or completedAt.');
+  }
+  if (!value.sourceBackup) {
+    failures.push('Restore evidence must include sourceBackup.');
+  }
+  if (!value.restoreTarget) {
+    failures.push('Restore evidence must include restoreTarget.');
+  }
+  if (!Array.isArray(value.checks) || value.checks.length === 0) {
+    failures.push('Restore evidence must include checks.');
+  } else {
+    const failedChecks = value.checks.filter((check) => !['pass', 'passed'].includes(String(check.status || '').toLowerCase()));
+    if (failedChecks.length > 0) {
+      failures.push(`Restore evidence has failing checks: ${failedChecks.map((check) => check.name || check.label || 'unnamed').join(', ')}`);
+    }
+  }
+
+  return {
+    status: failures.length === 0 ? 'passed' : 'failed',
+    path: filePath,
+    failures,
+    summary: {
+      testedAt: value.testedAt || value.completedAt || '',
+      sourceBackup: value.sourceBackup || '',
+      restoreTarget: value.restoreTarget || '',
+      checkCount: Array.isArray(value.checks) ? value.checks.length : 0,
+    },
+  };
 }
 
 function runProductionSmoke(rootDir) {
@@ -79,6 +203,8 @@ function buildPreflight(resultPath, options, rootDir) {
     maxAgeHours: options.maxAgeHours,
     allowLocalTarget: false,
   });
+  const deploymentEvidence = validateDeploymentEvidence(options.deployEvidencePath || '');
+  const restoreEvidence = validateRestoreEvidence(options.restoreEvidencePath || '');
   const smoke = options.productionSmoke || (options.skipProdSmoke
     ? {
         command: 'skipped',
@@ -94,6 +220,12 @@ function buildPreflight(resultPath, options, rootDir) {
   const failures = [];
   for (const failure of evidenceFailures) {
     failures.push(`Evidence: ${failure}`);
+  }
+  for (const failure of deploymentEvidence.failures || []) {
+    failures.push(`Deployment evidence: ${failure}`);
+  }
+  for (const failure of restoreEvidence.failures || []) {
+    failures.push(`Restore evidence: ${failure}`);
   }
   if (smoke.status !== 'passed') {
     failures.push(options.skipProdSmoke
@@ -116,6 +248,8 @@ function buildPreflight(resultPath, options, rootDir) {
       checklist: evidence.checklist || [],
       screenshots: evidence.screenshots || [],
     },
+    deploymentEvidence,
+    restoreEvidence,
     productionSmoke: smoke,
     failures,
     nextSteps: failures.length === 0
@@ -143,6 +277,8 @@ function renderMarkdown(preflight) {
     `Evidence: ${preflight.resultPath}`,
     `Target: ${preflight.evidence.baseURL || ''}`,
     `Evidence ended: ${preflight.evidence.endedAt || ''}`,
+    `Deployment evidence: ${preflight.deploymentEvidence.status}`,
+    `Restore evidence: ${preflight.restoreEvidence.status}`,
     `Production smoke: ${preflight.productionSmoke.status}`,
     '',
     '## Verdict',
@@ -165,6 +301,12 @@ function renderMarkdown(preflight) {
   lines.push('', '## Evidence Checklist', '');
   for (const item of preflight.evidence.checklist || []) {
     lines.push(`- ${item.passed ? '[x]' : '[ ]'} ${item.label || '(unknown)'}`);
+  }
+
+  if (preflight.deploymentEvidence.status !== 'skipped' || preflight.restoreEvidence.status !== 'skipped') {
+    lines.push('', '## Deployment And Restore Evidence', '');
+    lines.push(`- Deployment evidence: ${preflight.deploymentEvidence.status} ${preflight.deploymentEvidence.path || ''}`.trim());
+    lines.push(`- Restore evidence: ${preflight.restoreEvidence.status} ${preflight.restoreEvidence.path || ''}`.trim());
   }
 
   lines.push('', '## Next Steps', '');
@@ -233,4 +375,6 @@ module.exports = {
   buildPreflight,
   renderMarkdown,
   writePreflight,
+  validateDeploymentEvidence,
+  validateRestoreEvidence,
 };

@@ -32,6 +32,7 @@ function buildChecks() {
   const billing = read('includes/billing-functions.php');
   const stripeDoc = read('docs/STRIPE_PUBLIC_BETA_SETUP.md');
   const prodEnvDoc = read('docs/PRODUCTION_ENV_VALUES.md');
+  const envExample = read('.env.production.example');
   const launchReadinessDoc = exists('docs/LAUNCH_READINESS.md') ? read('docs/LAUNCH_READINESS.md') : '';
   const goNoGoDoc = exists('docs/PUBLIC_BETA_GO_NO_GO.md') ? read('docs/PUBLIC_BETA_GO_NO_GO.md') : '';
   const technicalDebtDoc = exists('docs/TECHNICAL_DEBT_PLAN.md') ? read('docs/TECHNICAL_DEBT_PLAN.md') : '';
@@ -41,6 +42,7 @@ function buildChecks() {
     'e2e',
     'local:smoke',
     'prod:smoke',
+    'prod:deploy:evidence',
     'launch:go-no-go',
     'test:csp-ui',
     'cutover:preflight',
@@ -64,6 +66,15 @@ function buildChecks() {
     'R2_SECRET_ACCESS_KEY',
     'CLOUDFLARE_EMAIL_API_TOKEN',
   ];
+  const requiredDeployEnv = [
+    'PROD_BASE_URL',
+    'PROD_PUBLIC_URL',
+    'FOXDESK_BACKUP_DIR',
+    'FOXDESK_RESTORE_EVIDENCE_PATH',
+    'FOXDESK_DEPLOY_EVIDENCE_DIR',
+    'FOXDESK_MONITORING_HEALTH_URL',
+    'FOXDESK_MONITORING_ALERT_EMAIL',
+  ];
 
   return [
     ...requiredScripts.map((script) => check(
@@ -77,6 +88,12 @@ function buildChecks() {
       has(config, name) && has(prodEnvDoc, name),
       'blocked',
       has(config, name) ? 'present in config template' : 'missing from config template'
+    )),
+    ...requiredDeployEnv.map((name) => check(
+      `deployment env: ${name}`,
+      has(envExample, name) && has(prodEnvDoc, name),
+      'blocked',
+      has(envExample, name) ? 'present in env template' : 'missing from env template'
     )),
     check(
       'R2 storage smoke command',

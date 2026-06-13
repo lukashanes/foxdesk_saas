@@ -106,6 +106,8 @@ FOXDESK_EMAIL_ROUTE_SECRET=...
 - Run an upload/download test from a real workspace.
 - Confirm migration bridge evidence shows synced attachment count/bytes before cutover.
 - Add backup destination and restore test.
+- Store dated restore evidence at `FOXDESK_RESTORE_EVIDENCE_PATH`.
+- Run `npm run prod:deploy:evidence` and keep the archive/checksum.
 - Keep old self-hosted files untouched until imported workspace is verified.
 
 ### 6. Security and Operations
@@ -116,6 +118,7 @@ FOXDESK_EMAIL_ROUTE_SECRET=...
 - Confirm secure cookies behind proxy.
 - Confirm upload denylist and max upload limits.
 - Add monitoring for health, cron, backups, webhook failures, and disk usage.
+- Confirm deployment evidence passes before marking any production deploy complete.
 - Keep platform admin access limited to your operator account.
 
 ### 7. Migration From Self-Hosted

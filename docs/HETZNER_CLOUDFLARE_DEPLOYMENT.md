@@ -42,13 +42,15 @@ This is the recommended first deployment path for FoxDesk SaaS work. It keeps th
 6. Copy `.env.production.example` to `.env.production`.
 7. Fill production secrets in `.env.production`.
 8. Copy `config.production.example.php` to `config.php`.
-9. Run `deploy/hetzner/preflight.sh`.
-10. Run `deploy/hetzner/deploy.sh`.
-11. Visit `https://app.foxdesk.net/install.php` for first install or run existing migration flow.
-12. Use `https://platform.foxdesk.net/index.php?page=platform` only for the operator console.
-13. Enable Cloudflare WAF/rate limiting rules.
-14. Configure backups and restore test.
-15. Add monitoring and uptime checks.
+9. Run `npm ci && npx playwright install --with-deps chromium`.
+10. Run `deploy/hetzner/preflight.sh`.
+11. Run `deploy/hetzner/deploy.sh`.
+12. Visit `https://app.foxdesk.net/install.php` for first install or run existing migration flow.
+13. Use `https://platform.foxdesk.net/index.php?page=platform` only for the operator console.
+14. Enable Cloudflare WAF/rate limiting rules.
+15. Configure backups and restore test.
+16. Run `npm run prod:deploy:evidence` and store the archive outside the app server.
+17. Add monitoring and uptime checks.
 
 ## Production Files
 
@@ -60,8 +62,9 @@ The prepared production files are:
 - `docker/prod/Dockerfile`: production PHP/Apache image.
 - `docker/caddy/Caddyfile`: reverse proxy and security headers for `app.foxdesk.net`.
 - `deploy/hetzner/bootstrap.sh`: base Docker/firewall setup for a fresh Ubuntu server.
-- `deploy/hetzner/deploy.sh`: build, deploy, and health-check.
+- `deploy/hetzner/deploy.sh`: build, deploy, health-check, and deployment evidence gate.
 - `deploy/hetzner/backup-db.sh`: local DB backup with short retention.
+- `bin/deployment-evidence.js`: production smoke plus restore evidence archive.
 
 Do not commit `.env.production` or `config.php`.
 
@@ -76,6 +79,8 @@ sudo git clone https://github.com/lukashanes/foxdesk_saas.git
 cd foxdesk_saas
 sudo cp .env.production.example .env.production
 sudo cp config.production.example.php config.php
+npm ci
+sudo npx playwright install --with-deps chromium
 sudo nano .env.production
 sudo deploy/hetzner/preflight.sh
 sudo deploy/hetzner/deploy.sh
@@ -86,6 +91,19 @@ Database backup:
 ```bash
 deploy/hetzner/backup-db.sh
 ```
+
+Restore evidence and deployment archive:
+
+```bash
+sudo mkdir -p /var/lib/foxdesk/evidence/deployments
+sudo cp docs/operations/backup-restore-evidence.template.json /var/lib/foxdesk/evidence/restore-latest.json
+sudo nano /var/lib/foxdesk/evidence/restore-latest.json
+npm run prod:deploy:evidence
+```
+
+The deploy is not complete until `deployment-evidence.json`,
+`deployment-evidence.md`, `foxdesk-deploy-evidence-*.tar.gz`, and the matching
+`.sha256` file exist in `FOXDESK_DEPLOY_EVIDENCE_DIR`.
 
 Suggested root crontab:
 

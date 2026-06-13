@@ -15,6 +15,7 @@ Run:
 npm run launch:go-no-go
 npm run beta:gate
 npm run prod:smoke
+npm run prod:deploy:evidence
 ```
 
 For paid public beta, run strict mode after the manual launch checks are complete:
@@ -82,11 +83,13 @@ Required before each production deploy is considered complete:
 - app container is healthy
 - public site and login layout smoke pass
 - legal pages return 200
+- deployment evidence archive exists with smoke output and restore evidence
 
 Verification:
 
 ```bash
 npm run prod:smoke
+npm run prod:deploy:evidence
 ```
 
 ## Storage
@@ -153,6 +156,7 @@ Required before paid public beta:
 - DB backup exists outside the running container
 - attachment backup path is defined
 - restore test has dated evidence
+- deployment evidence archive and SHA256 checksum are stored outside the app server
 - monitoring covers health, cron, disk, backups, webhook failures, R2 failures, and email failures
 - operator access is limited to Aenze platform admins
 
@@ -160,6 +164,7 @@ Verification:
 
 ```bash
 deploy/hetzner/backup-db.sh
+npm run prod:deploy:evidence
 npm run cutover:postcheck
 ```
 

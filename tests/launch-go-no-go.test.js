@@ -7,12 +7,14 @@ const root = path.resolve(__dirname, '..');
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 assert(pkg.scripts['launch:go-no-go'], 'package.json must expose launch:go-no-go.');
+assert(pkg.scripts['prod:deploy:evidence'], 'package.json must expose prod:deploy:evidence.');
 
 const script = fs.readFileSync(path.join(root, 'bin/launch-go-no-go.js'), 'utf8');
 assert(script.includes('FOXDESK_ACK_LEGAL_APPROVED'), 'Launch gate must require legal acknowledgement for paid public beta.');
 assert(script.includes('FOXDESK_ACK_STRIPE_LIVE_TESTED'), 'Launch gate must require Stripe live-flow acknowledgement.');
 assert(script.includes('FOXDESK_ACK_INBOUND_EMAIL_TESTED'), 'Launch gate must require inbound email acknowledgement.');
 assert(script.includes('FOXDESK_ACK_RESTORE_MONITORING_READY'), 'Launch gate must require restore/monitoring acknowledgement.');
+assert(script.includes('prod:deploy:evidence'), 'Launch gate must require deployment evidence script.');
 
 const doc = fs.readFileSync(path.join(root, 'docs/PUBLIC_BETA_GO_NO_GO.md'), 'utf8');
 for (const required of [
@@ -23,6 +25,7 @@ for (const required of [
   'platform.foxdesk.net',
   'Aenze s.r.o.',
   'foxdesk-email-archive',
+  'prod:deploy:evidence',
 ]) {
   assert(doc.includes(required), `Go/no-go doc must include ${required}.`);
 }
@@ -38,6 +41,7 @@ assert(result.warnings >= 1, 'Default private beta launch gate should expose pai
 assert.strictEqual(result.blocked, 0, 'Default private beta launch gate should not be blocked when code checks pass.');
 assert(result.checks.some((check) => check.name === 'Public footer links legal documents'), 'Legal footer check is missing.');
 assert(result.checks.some((check) => check.name === 'Production smoke covers public legal and app health'), 'Production smoke coverage check is missing.');
+assert(result.checks.some((check) => check.name === 'Deployment evidence gate is documented'), 'Deployment evidence gate check is missing.');
 
 const strictRun = spawnSync('node', ['bin/launch-go-no-go.js', '--json', '--strict-paid'], {
   cwd: root,

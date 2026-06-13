@@ -60,8 +60,8 @@ function buildChecks() {
     ),
     check(
       'Launch scripts are available',
-      all(Object.keys(scripts).join('\n'), ['beta:gate', 'prod:smoke', 'launch:go-no-go']),
-      'package.json must expose beta:gate, prod:smoke, and launch:go-no-go.'
+      all(Object.keys(scripts).join('\n'), ['beta:gate', 'prod:smoke', 'prod:deploy:evidence', 'launch:go-no-go']),
+      'package.json must expose beta:gate, prod:smoke, prod:deploy:evidence, and launch:go-no-go.'
     ),
     check(
       'Domain roles are documented',
@@ -125,6 +125,17 @@ function buildChecks() {
         'type=security',
       ]),
       'Production smoke must verify health, signup, and all public legal pages.'
+    ),
+    check(
+      'Deployment evidence gate is documented',
+      exists('docs/DEPLOYMENT_RECOVERY_EVIDENCE.md') &&
+        all(read('docs/DEPLOYMENT_RECOVERY_EVIDENCE.md'), [
+          'npm run prod:deploy:evidence',
+          'FOXDESK_RESTORE_EVIDENCE_PATH',
+          'deployment-evidence.json',
+          'foxdesk-deploy-evidence-*.tar.gz',
+        ]),
+      'Deployment evidence docs must require restore evidence, production smoke, and an archived evidence bundle.'
     ),
     check(
       'R2 and email production checks are documented',

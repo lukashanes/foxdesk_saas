@@ -7,7 +7,7 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 apt-get update
-apt-get install -y ca-certificates curl git ufw
+apt-get install -y ca-certificates curl git nodejs npm ufw
 
 install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
@@ -27,4 +27,4 @@ ufw --force enable
 
 mkdir -p /opt/foxdesk_saas
 
-echo "Server base setup complete. Next: clone the repo into /opt/foxdesk_saas, copy .env.production.example to .env.production, copy config.production.example.php to config.php, then run deploy/hetzner/deploy.sh."
+echo "Server base setup complete. Next: clone the repo into /opt/foxdesk_saas, copy .env.production.example to .env.production, copy config.production.example.php to config.php, run npm ci && npx playwright install --with-deps chromium, then run deploy/hetzner/deploy.sh."

@@ -551,8 +551,41 @@ Verification:
 
 ```bash
 npm run prod:smoke
+npm run prod:deploy:evidence
 npm run cutover:preflight
 npm run cutover:postcheck
+```
+
+Completed in technical debt milestone 8:
+
+- Hetzner preflight now fails when production Stripe, R2, Cloudflare mail,
+  database, health URL, backup path, restore evidence path, deploy evidence
+  path, or monitoring contact values are missing, local-only, placeholders, or
+  production-unsafe.
+- `.env.production.example` now includes production smoke URLs, backup paths,
+  restore evidence settings, deployment evidence directory, and monitoring
+  values.
+- `bin/deployment-evidence.js` validates production env values without printing
+  secrets, verifies dated restore evidence, runs production smoke, writes JSON
+  and Markdown evidence, copies restore evidence, and creates a tar.gz archive
+  with a SHA256 checksum.
+- `deploy/hetzner/deploy.sh` now refuses to mark a deploy complete unless the
+  app passes container health and `npm run prod:deploy:evidence`.
+- Backup restore evidence has a reusable template at
+  `docs/operations/backup-restore-evidence.template.json`.
+- Cutover preflight can optionally require deployment evidence and restore
+  evidence files before manual cutover approval.
+- Public beta and launch gates now include the deployment evidence script and
+  documented recovery evidence requirements.
+
+Verified with:
+
+```bash
+node tests/deployment-evidence.test.js
+node tests/cutover-preflight.test.js
+./bin/run-php.sh tests/deployment-recovery-contract-test.php
+node tests/launch-go-no-go.test.js
+npm run beta:gate -- --json
 ```
 
 ### Milestone 9 - Native App API Freeze
@@ -620,5 +653,6 @@ php tests/pseudo-cron-email-test.php
 
 ## Current Next Action
 
-Start with Milestone 1. After that, create the ownership inventory from
-Milestone 2 and use it as the working queue for technical debt cleanup.
+Start Milestone 9 next: freeze the native app API surface before beginning the
+iOS implementation. Keep Milestone 10 active as the final public self-hosted
+maintenance gate.

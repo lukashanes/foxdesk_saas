@@ -21,6 +21,8 @@ APP_MARKETING_HOST=foxdesk.net
 APP_URL=https://app.foxdesk.net
 PLATFORM_URL=https://platform.foxdesk.net
 APP_MARKETING_URL=https://foxdesk.net
+PROD_BASE_URL=https://app.foxdesk.net
+PROD_PUBLIC_URL=https://foxdesk.net
 APP_NAME=FoxDesk
 TRUST_PROXY=true
 MAIL_PROVIDER=cloudflare
@@ -47,6 +49,13 @@ STRIPE_TAX_ID_COLLECTION_ENABLED=true
 STRIPE_TAX_ID_COLLECTION_REQUIRED=
 STORAGE_DRIVER=r2
 R2_BUCKET=foxdesk-production
+FOXDESK_BACKUP_DIR=/var/backups/foxdesk/db
+FOXDESK_ATTACHMENT_BACKUP_PREFIX=backups/attachments
+FOXDESK_RESTORE_EVIDENCE_PATH=/var/lib/foxdesk/evidence/restore-latest.json
+FOXDESK_RESTORE_EVIDENCE_MAX_AGE_DAYS=30
+FOXDESK_DEPLOY_EVIDENCE_DIR=/var/lib/foxdesk/evidence/deployments
+FOXDESK_MONITORING_HEALTH_URL=https://app.foxdesk.net/index.php?page=health
+FOXDESK_MONITORING_ALERT_EMAIL=ops@aenze.com
 ```
 
 ## Generate Locally
@@ -99,6 +108,7 @@ Production smoke tests:
 ```bash
 php bin/test-r2-storage.php --tenant-id=<test_tenant_id> --json
 php bin/test-cloudflare-email.php --to=<your_email> --scenario=all --json
+npm run prod:deploy:evidence
 ```
 
 The R2 test must report `tenant_prefixed: true`. The email test sends signup, password reset, new-ticket, ticket-reply, and billing delivery probes through the configured provider.
@@ -133,3 +143,22 @@ For EU VAT payers, enable Stripe Tax, set the product tax code to SaaS business 
 - IMAP inbound email values for self-hosted fallback.
 - Turnstile keys.
 - R2 backup credentials separate from attachment credentials.
+
+## Deployment And Recovery Evidence
+
+Before a deploy can be marked complete, keep a dated restore evidence file at
+`FOXDESK_RESTORE_EVIDENCE_PATH` and run:
+
+```bash
+npm run prod:deploy:evidence
+```
+
+The deployment evidence command verifies production env values, checks the
+restore evidence, runs production smoke, writes JSON/Markdown evidence, and
+creates a tar.gz archive with a SHA256 checksum.
+
+Template:
+
+```bash
+docs/operations/backup-restore-evidence.template.json
+```

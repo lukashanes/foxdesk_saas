@@ -1,0 +1,31 @@
+{
+  "status": "passed",
+  "testedAt": "2026-06-13T00:00:00Z",
+  "operator": "Aenze operator name",
+  "sourceBackup": "/var/backups/foxdesk/db/foxdesk-db-YYYYMMDD-HHMMSS.sql.gz",
+  "restoreTarget": "restore-test host or temporary database name",
+  "restoreMethod": "Restored database dump into an isolated target and verified app health plus sample records.",
+  "checks": [
+    {
+      "name": "backup_file_present",
+      "status": "passed",
+      "detail": "Backup file exists outside the running container."
+    },
+    {
+      "name": "database_restore",
+      "status": "passed",
+      "detail": "Database restored into an isolated target without errors."
+    },
+    {
+      "name": "health_after_restore",
+      "status": "passed",
+      "detail": "Restored app health endpoint returned status ok."
+    },
+    {
+      "name": "sample_workspace_records",
+      "status": "passed",
+      "detail": "Sample tenant, users, tickets, comments, and attachments were readable."
+    }
+  ],
+  "notes": "Replace this template with real dated restore evidence before production deploy completion."
+}

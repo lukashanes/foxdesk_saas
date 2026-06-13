@@ -23,6 +23,7 @@
     "cutover:archive": "node bin/cutover-archive.js",
     "prod:cutover:gate": "FOXDESK_CUTOVER_MODE=production FOXDESK_CUTOVER_BASE_URL=${PROD_BASE_URL:-https://app.foxdesk.net} node tests/smoke/cutover-gate.js",
     "prod:smoke": "node tests/smoke/production-smoke.js",
+    "prod:deploy:evidence": "node bin/deployment-evidence.js",
     "launch:go-no-go": "node bin/launch-go-no-go.js",
     "beta:gate": "node bin/public-beta-gate.js",
     "stripe:beta:configure": "node bin/configure-stripe-beta.js",
