@@ -72,8 +72,8 @@ if (!headers_sent()) {
     </header>
 
     <main class="fd-main">
-        <section class="fd-section fd-hero" id="cloud">
-            <div class="fd-hero-copy">
+        <section class="fd-section fd-hero fd-grid-12 fd-grid-center" id="cloud">
+            <div class="fd-hero-copy fd-span-5">
                 <h1>Helpdesk & time tracking</h1>
                 <p>Track support tickets and billable hours for your team and your AI agents. One app. No per-agent or client fees, ever.</p>
                 <div class="fd-hero-actions">
@@ -87,7 +87,7 @@ if (!headers_sent()) {
                 </div>
             </div>
 
-            <div class="fd-hero-product" aria-label="FoxDesk Cloud product preview">
+            <div class="fd-hero-product fd-span-7" aria-label="FoxDesk Cloud product preview">
                 <div class="fd-product-frame">
                     <div class="fd-product-toolbar">
                         <div class="fd-window-dots"><span></span><span></span><span></span></div>
@@ -104,16 +104,16 @@ if (!headers_sent()) {
                 <h2>Support work in one place.</h2>
                 <p>The core FoxDesk workflow hosted as a managed SaaS, without per-seat pricing.</p>
             </div>
-            <div class="fd-grid">
-                <article class="fd-card">
+            <div class="fd-grid fd-grid-12">
+                <article class="fd-card fd-span-4">
                     <h3>Tickets</h3>
                     <p>Manage requests, assignments, comments, attachments, priorities, and client visibility.</p>
                 </article>
-                <article class="fd-card">
+                <article class="fd-card fd-span-4">
                     <h3>Time tracking</h3>
                     <p>Track billable hours on tickets and turn work into clear client reports.</p>
                 </article>
-                <article class="fd-card">
+                <article class="fd-card fd-span-4">
                     <h3>AI agents</h3>
                     <p>Let AI agents create tickets, add updates, and log work beside your team.</p>
                 </article>
@@ -121,8 +121,8 @@ if (!headers_sent()) {
         </section>
 
         <section class="fd-section">
-            <div class="fd-feature-section">
-                <div class="fd-feature-copy">
+            <div class="fd-feature-section fd-grid-12 fd-grid-center">
+                <div class="fd-feature-copy fd-span-5">
                     <div class="fd-feature-icon">T</div>
                     <h3>Ticket lifecycle management.</h3>
                     <p>Run daily support from one workspace: statuses, priorities, assignments, comments, attachments, and client visibility.</p>
@@ -132,14 +132,14 @@ if (!headers_sent()) {
                         <li><span class="fd-check">✓</span><span><strong>Attachments:</strong> keep files connected to the ticket history.</span></li>
                     </ul>
                 </div>
-                <div class="fd-feature-media">
+                <div class="fd-feature-media fd-span-7">
                     <img class="fd-light-img" src="assets/public/ticket-detail-light.webp" alt="FoxDesk ticket detail" width="1200" height="675" loading="lazy" decoding="async">
                     <img class="fd-dark-img" src="assets/public/ticket-detail-dark.webp" alt="FoxDesk ticket detail in dark mode" width="1200" height="675" loading="lazy" decoding="async">
                 </div>
             </div>
 
-            <div class="fd-feature-section reverse">
-                <div class="fd-feature-copy">
+            <div class="fd-feature-section reverse fd-grid-12 fd-grid-center">
+                <div class="fd-feature-copy fd-span-5">
                     <div class="fd-feature-icon">⏱</div>
                     <h3>Time tracking and client reports.</h3>
                     <p>Track billable work directly on tickets, review time by client, and prepare reports without exporting support data into a second tool.</p>
@@ -149,7 +149,7 @@ if (!headers_sent()) {
                         <li><span class="fd-check">✓</span><span><strong>Quick timer controls:</strong> start, pause, resume, and stop from the app.</span></li>
                     </ul>
                 </div>
-                <div class="fd-feature-media">
+                <div class="fd-feature-media fd-span-7">
                     <img class="fd-light-img" src="assets/public/time-report-light.webp" alt="FoxDesk time reporting" width="1200" height="675" loading="lazy" decoding="async">
                     <img class="fd-dark-img" src="assets/public/time-report-dark.webp" alt="FoxDesk time reporting in dark mode" width="1200" height="675" loading="lazy" decoding="async">
                 </div>
@@ -159,15 +159,15 @@ if (!headers_sent()) {
                 <h2>Built for support teams, agencies, and automation.</h2>
                 <p>Everything your team needs to support clients, track work, and automate the routine parts.</p>
             </div>
-            <div class="fd-capability-grid">
-                <article class="fd-capability"><span>A</span><h4>AI Agent API</h4><p>Create tickets, post updates, and log work from AI agents or internal tools.</p></article>
-                <article class="fd-capability"><span>✉</span><h4>Email tickets</h4><p>Turn support emails into tickets and keep replies in the thread.</p></article>
-                <article class="fd-capability"><span>O</span><h4>Organizations</h4><p>Group clients, tickets, time, reports, and permissions by account.</p></article>
-                <article class="fd-capability"><span>🔒</span><h4>Permissions</h4><p>Control admins, agents, client access, 2FA, and audit logs.</p></article>
-                <article class="fd-capability"><span>🌐</span><h4>Languages</h4><p>Use FoxDesk across localized app and customer-facing text.</p></article>
-                <article class="fd-capability"><span>🔔</span><h4>Notifications</h4><p>Keep teams and clients informed about ticket activity.</p></article>
-                <article class="fd-capability"><span>📎</span><h4>Files</h4><p>Attach files, keep history, and share what clients need.</p></article>
-                <article class="fd-capability"><span>⚙</span><h4>Admin settings</h4><p>Customize statuses, priorities, ticket types, users, clients, and reports.</p></article>
+            <div class="fd-capability-grid fd-grid-12">
+                <article class="fd-capability fd-span-3"><span>A</span><h4>AI Agent API</h4><p>Create tickets, post updates, and log work from AI agents or internal tools.</p></article>
+                <article class="fd-capability fd-span-3"><span>✉</span><h4>Email tickets</h4><p>Turn support emails into tickets and keep replies in the thread.</p></article>
+                <article class="fd-capability fd-span-3"><span>O</span><h4>Organizations</h4><p>Group clients, tickets, time, reports, and permissions by account.</p></article>
+                <article class="fd-capability fd-span-3"><span>🔒</span><h4>Permissions</h4><p>Control admins, agents, client access, 2FA, and audit logs.</p></article>
+                <article class="fd-capability fd-span-3"><span>🌐</span><h4>Languages</h4><p>Use FoxDesk across localized app and customer-facing text.</p></article>
+                <article class="fd-capability fd-span-3"><span>🔔</span><h4>Notifications</h4><p>Keep teams and clients informed about ticket activity.</p></article>
+                <article class="fd-capability fd-span-3"><span>📎</span><h4>Files</h4><p>Attach files, keep history, and share what clients need.</p></article>
+                <article class="fd-capability fd-span-3"><span>⚙</span><h4>Admin settings</h4><p>Customize statuses, priorities, ticket types, users, clients, and reports.</p></article>
             </div>
         </section>
 
@@ -176,7 +176,7 @@ if (!headers_sent()) {
                 <h2>One plan for your support team.</h2>
                 <p>Start free for 14 days. No card required. Unlimited users, clients, tickets, and AI agents.</p>
             </div>
-            <div class="fd-pricing">
+            <div class="fd-pricing fd-grid-12">
                 <div class="fd-price-card">
                     <div class="fd-price-top">
                         <div>
@@ -204,11 +204,11 @@ if (!headers_sent()) {
                 <h2>See FoxDesk in action.</h2>
                 <p>Preview the dashboard and ticket detail your team will use every day.</p>
             </div>
-            <div class="fd-preview-stack">
-                <img class="fd-light-img" src="assets/public/dashboard-light.webp" alt="FoxDesk dashboard" width="1200" height="675" loading="lazy" decoding="async">
-                <img class="fd-dark-img" src="assets/public/dashboard-dark.webp" alt="FoxDesk dashboard in dark mode" width="1200" height="675" loading="lazy" decoding="async">
-                <img class="fd-light-img" src="assets/public/ticket-detail-light.webp" alt="FoxDesk ticket detail" width="1200" height="675" loading="lazy" decoding="async">
-                <img class="fd-dark-img" src="assets/public/ticket-detail-dark.webp" alt="FoxDesk ticket detail in dark mode" width="1200" height="675" loading="lazy" decoding="async">
+            <div class="fd-preview-stack fd-grid-12">
+                <img class="fd-light-img fd-span-6" src="assets/public/dashboard-light.webp" alt="FoxDesk dashboard" width="1200" height="675" loading="lazy" decoding="async">
+                <img class="fd-dark-img fd-span-6" src="assets/public/dashboard-dark.webp" alt="FoxDesk dashboard in dark mode" width="1200" height="675" loading="lazy" decoding="async">
+                <img class="fd-light-img fd-span-6" src="assets/public/ticket-detail-light.webp" alt="FoxDesk ticket detail" width="1200" height="675" loading="lazy" decoding="async">
+                <img class="fd-dark-img fd-span-6" src="assets/public/ticket-detail-dark.webp" alt="FoxDesk ticket detail in dark mode" width="1200" height="675" loading="lazy" decoding="async">
             </div>
         </section>
 
