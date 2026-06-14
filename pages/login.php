@@ -12,7 +12,10 @@ if (is_logged_in()) {
 
 // If the PHP session was lost (for example after an app/container restart),
 // restore the user from the persistent remember-me cookie before showing login.
-if (empty($_SESSION['2fa_pending']) && !empty($_COOKIE['foxdesk_remember']) && validate_remember_token()) {
+$remember_cookie_name = function_exists('foxdesk_remember_cookie_name')
+    ? foxdesk_remember_cookie_name()
+    : 'foxdesk_remember';
+if (empty($_SESSION['2fa_pending']) && !empty($_COOKIE[$remember_cookie_name]) && validate_remember_token()) {
     $redirect_page = function_exists('foxdesk_authenticated_home_page') ? foxdesk_authenticated_home_page() : 'dashboard';
     header('Location: index.php?page=' . $redirect_page);
     exit;

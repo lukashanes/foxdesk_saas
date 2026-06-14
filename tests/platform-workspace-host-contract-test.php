@@ -46,6 +46,8 @@ $assert($index !== false && str_contains($index, 'foxdesk_is_marketing_host()'),
 $assert($functions !== false && str_contains($functions, 'foxdesk_platform_url'), 'URL helper must support platform host links.');
 $assert($functions !== false && str_contains($functions, 'foxdesk_marketing_url'), 'URL helper must support public marketing host links.');
 $assert($login !== false && str_contains($login, 'platform_login_rejected'), 'Login must reject workspace users on the platform host.');
+$assert($login !== false && str_contains($login, 'foxdesk_remember_cookie_name()'), 'Login remember-me restore must use the host-specific remember cookie.');
+$assert($login !== false && !str_contains($login, "!empty(\$_COOKIE['foxdesk_remember'])"), 'Login must not check the legacy hard-coded remember cookie.');
 $assert($tenant !== false && str_contains($tenant, 'platform_login_rejected=1'), 'Platform admin guard must not redirect non-platform users back to platform.');
 $assert($tenant !== false && str_contains($tenant, 'foxdesk_platform_url'), 'Platform admin guard must send non-platform-host attempts to the platform login.');
 
