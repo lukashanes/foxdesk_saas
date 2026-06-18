@@ -35,7 +35,7 @@ require_once BASE_PATH . '/includes/header.php';
     data-client-id="<?php echo (int) $org['id']; ?>"
     data-client-view="<?php echo e($ticket_view); ?>">
     <div class="card client-hero">
-        <div class="min-w-0">
+        <div class="client-hero__summary min-w-0">
             <div class="client-hero__meta">
                 <a href="<?php echo url('admin', ['section' => 'organizations']); ?>" class="client-back-link">
                     <?php echo get_icon('arrow-left', 'w-3.5 h-3.5'); ?>
@@ -46,7 +46,7 @@ require_once BASE_PATH . '/includes/header.php';
                     <span><?php echo e($org['contact_email']); ?></span>
                 <?php endif; ?>
             </div>
-            <h1 class="client-title"><?php echo e($org['name']); ?></h1>
+            <h1 class="client-title" title="<?php echo e($org['name']); ?>"><?php echo e($org['name']); ?></h1>
         </div>
         <div class="client-actions">
             <a href="<?php echo url('tickets', ['organization_id' => (int) $org['id']]); ?>" class="btn btn-secondary">

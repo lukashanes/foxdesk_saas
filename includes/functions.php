@@ -21,6 +21,8 @@ require_once BASE_PATH . '/includes/components/date-input.php';
 require_once BASE_PATH . '/includes/components/workspace-surface.php';
 require_once BASE_PATH . '/includes/components/ticket-registry-surface.php';
 require_once BASE_PATH . '/includes/components/ticket-detail-surface.php';
+require_once BASE_PATH . '/includes/components/admin-settings-tabs.php';
+require_once BASE_PATH . '/includes/components/admin-workflow-card.php';
 
 /**
  * Escape HTML output

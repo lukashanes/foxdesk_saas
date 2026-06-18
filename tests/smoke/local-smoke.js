@@ -665,7 +665,7 @@ async function expectClientSurface(page) {
   if (layout.inlineClientStyles) {
     throw new Error(`Client detail still contains page-level layout styles: ${JSON.stringify(layout)}`);
   }
-  if (layout.heroDisplay !== 'flex' || layout.statsDisplay !== 'grid' || layout.gridDisplay !== 'grid') {
+  if (layout.heroDisplay !== 'grid' || layout.statsDisplay !== 'grid' || layout.gridDisplay !== 'grid') {
     throw new Error(`Client detail layout is unstyled: ${JSON.stringify(layout)}`);
   }
   if (layout.tabsDisplay !== 'flex') {
@@ -701,6 +701,7 @@ async function expectTicketDetailSurface(page) {
     const commentForm = document.querySelector('#comment-form');
     const timelineOverlay = document.querySelector('#timeline-overlay');
     const workPanel = document.querySelector('.ticket-work-panel');
+    const workActions = document.querySelector('.ticket-work-panel__actions');
     const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
     const rect = (element) => {
       const bounds = element.getBoundingClientRect();
@@ -714,6 +715,8 @@ async function expectTicketDetailSurface(page) {
       editorBorderWidth: editor ? getComputedStyle(editor).borderTopWidth : null,
       commentFormRect: commentForm ? rect(commentForm) : null,
       workPanelDisplay: workPanel ? getComputedStyle(workPanel).display : null,
+      workActionsBorderStyle: workActions ? getComputedStyle(workActions).borderTopStyle : null,
+      workActionsBorderWidth: workActions ? getComputedStyle(workActions).borderTopWidth : null,
       timelineDisplay: timelineOverlay ? getComputedStyle(timelineOverlay).display : null,
       timelineAriaHidden: timelineOverlay ? timelineOverlay.getAttribute('aria-hidden') : null,
       themeLinks,
@@ -732,8 +735,11 @@ async function expectTicketDetailSurface(page) {
   if (!layout.commentFormRect) {
     throw new Error(`Ticket detail comment form is missing: ${JSON.stringify(layout)}`);
   }
-  if (layout.workPanelDisplay !== 'flex') {
+  if (layout.workPanelDisplay !== 'grid') {
     throw new Error(`Ticket detail work panel is unstyled: ${JSON.stringify(layout)}`);
+  }
+  if (layout.workActionsBorderStyle === 'none' || layout.workActionsBorderWidth === '0px') {
+    throw new Error(`Ticket detail action bar is not separated from the title: ${JSON.stringify(layout)}`);
   }
   if (layout.timelineDisplay !== null && layout.timelineDisplay !== 'none') {
     throw new Error(`Ticket timeline overlay should be hidden by default: ${JSON.stringify(layout)}`);

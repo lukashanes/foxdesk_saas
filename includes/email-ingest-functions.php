@@ -1871,7 +1871,7 @@ function email_ingest_add_inbound_comment($ticket_id, $user_id, $body_text)
     ]);
 
     // Touch ticket so "Last updated" sorting works
-    db_query("UPDATE tickets SET updated_at = NOW() WHERE id = ?", [$ticket_id]);
+    db_update('tickets', ['updated_at' => date('Y-m-d H:i:s')], 'id = ?', [$ticket_id]);
 
     return $id;
 }

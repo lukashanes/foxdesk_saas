@@ -7,7 +7,6 @@
  */
 
 $current_section = isset($_GET['section']) ? (string) $_GET['section'] : 'statuses';
-$show_migration_export = !(function_exists('foxdesk_is_app_host') && foxdesk_is_app_host());
 $admin_nav_groups = [
     [
         'label' => t('People'),
@@ -41,10 +40,6 @@ $admin_nav_groups = [
         ],
     ],
 ];
-
-if ($show_migration_export) {
-    $admin_nav_groups[2]['items']['migration-export'] = ['label' => t('Cloud migration'), 'icon' => 'cloud-upload-alt'];
-}
 ?>
 
 <nav class="admin-page-nav" aria-label="<?php echo e(t('Admin sections')); ?>">

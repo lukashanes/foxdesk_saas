@@ -101,8 +101,8 @@ if (!headers_sent()) {
 
         <section class="fd-section fd-band" id="features">
             <div class="fd-heading">
-                <h2>Support work in one place.</h2>
-                <p>The core FoxDesk workflow hosted as a managed SaaS, without per-seat pricing.</p>
+                <h2>Helpdesk & time tracking.</h2>
+                <p>Tickets, billable hours, clients, and AI agents without per-seat pricing.</p>
             </div>
             <div class="fd-grid fd-grid-12">
                 <article class="fd-card fd-span-4">

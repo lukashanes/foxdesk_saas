@@ -268,6 +268,8 @@ Tasks:
 
 Done when:
 
+- `docs/EDITION_PARITY_MATRIX.md` defines shared, SaaS-only, self-hosted-only,
+  and legacy ownership for the main workflow and platform surfaces.
 - `docs/TECHNICAL_DEBT_PLAN.md` exists.
 - Contract test verifies SaaS primary boundary and self-hosted maintenance
   boundary.

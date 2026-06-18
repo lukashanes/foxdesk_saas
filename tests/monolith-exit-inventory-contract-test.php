@@ -36,13 +36,33 @@ foreach ($all_page_files as $file) {
 }
 
 $priority_targets = [
+    'pages/tickets.php' => [
+        'max_lines' => 1465,
+        'modules' => [
+            'includes/modules/tickets/ticket-bulk-actions.php',
+            'includes/modules/tickets/ticket-list-filters.php',
+            'includes/modules/tickets/ticket-list-views.php',
+            'includes/modules/tickets/ticket-row-view-model.php',
+            'assets/js/ticket-list.js',
+        ],
+        'tests' => [
+            'tests/ticket-bulk-actions-contract-test.php',
+            'tests/ticket-list-filter-contract-test.php',
+            'tests/ticket-row-view-model-contract-test.php',
+            'tests/ticket-list-js-contract-test.php',
+            'tests/shared-workflow-contract-test.php',
+            'tests/core-ux-flow-parity-contract-test.php',
+        ],
+    ],
     'pages/ticket-detail.php' => [
+        'max_lines' => 665,
         'modules' => [
             'includes/modules/tickets/ticket-detail-context.php',
             'includes/modules/tickets/ticket-detail-timeline.php',
-            'includes/modules/tickets/ticket-detail-sidebar.php',
-            'includes/modules/tickets/ticket-detail-composer.php',
             'includes/modules/tickets/ticket-share-state.php',
+            'includes/components/ticket-detail-composer.php',
+            'includes/components/ticket-detail-modals.php',
+            'includes/components/ticket-detail-sidebar.php',
             'assets/js/ticket-detail.js',
         ],
         'tests' => [
@@ -50,12 +70,16 @@ $priority_targets = [
             'tests/ticket-detail-surface-contract-test.php',
             'tests/ticket-activity-surface-contract-test.php',
             'tests/ticket-composer-surface-contract-test.php',
+            'tests/ticket-detail-modals-contract-test.php',
             'tests/ticket-sidebar-surface-contract-test.php',
             'tests/ticket-detail-context-contract-test.php',
             'tests/ticket-detail-timeline-contract-test.php',
+            'tests/ticket-share-state-contract-test.php',
+            'tests/ticket-detail-js-contract-test.php',
         ],
     ],
     'pages/admin/reports.php' => [
+        'max_lines' => 3000,
         'modules' => [
             'includes/modules/reports/report-filters.php',
             'includes/modules/reports/report-query.php',
@@ -73,6 +97,7 @@ $priority_targets = [
         ],
     ],
     'pages/admin/settings.php' => [
+        'max_lines' => 2950,
         'modules' => [
             'includes/modules/settings/settings-actions.php',
             'includes/modules/settings/settings-email.php',
@@ -80,7 +105,9 @@ $priority_targets = [
             'includes/modules/settings/settings-workflow.php',
             'includes/modules/settings/settings-security.php',
             'includes/modules/settings/settings-view-model.php',
+            'includes/modules/settings/settings-templates.php',
             'includes/components/admin-settings-tabs.php',
+            'includes/components/admin-workflow-card.php',
         ],
         'tests' => [
             'tests/admin-settings-surface-contract-test.php',
@@ -89,11 +116,68 @@ $priority_targets = [
             'tests/settings-action-contract-test.php',
             'tests/settings-email-contract-test.php',
             'tests/settings-update-contract-test.php',
+            'tests/settings-render-contract-test.php',
+        ],
+    ],
+    'pages/admin/users.php' => [
+        'max_lines' => 2400,
+        'modules' => [
+            'includes/modules/team/team-users.php',
+        ],
+        'tests' => [
+            'tests/team-users-contract-test.php',
+        ],
+    ],
+    'pages/dashboard.php' => [
+        'max_lines' => 1600,
+        'modules' => [
+            'includes/modules/app/dashboard-compat.php',
+            'includes/modules/app/app-shell.php',
+            'includes/modules/app/app-feed.php',
+        ],
+        'tests' => [
+            'tests/dashboard-compat-contract-test.php',
+        ],
+    ],
+    'pages/admin/statuses-content.php' => [
+        'max_lines' => 325,
+        'modules' => [
+            'includes/admin-crud-helper.php',
+            'includes/components/admin-workflow-card.php',
+        ],
+        'tests' => [
+            'tests/workflow-crud-contract-test.php',
+            'tests/settings-render-contract-test.php',
+        ],
+    ],
+    'pages/admin/priorities-content.php' => [
+        'max_lines' => 310,
+        'modules' => [
+            'includes/admin-crud-helper.php',
+            'includes/components/admin-workflow-card.php',
+        ],
+        'tests' => [
+            'tests/workflow-crud-contract-test.php',
+            'tests/settings-render-contract-test.php',
+        ],
+    ],
+    'pages/admin/ticket-types-content.php' => [
+        'max_lines' => 350,
+        'modules' => [
+            'includes/admin-crud-helper.php',
+            'includes/components/admin-workflow-card.php',
+        ],
+        'tests' => [
+            'tests/workflow-crud-contract-test.php',
+            'tests/settings-render-contract-test.php',
         ],
     ],
 ];
 
 foreach ($priority_targets as $page => $targets) {
+    $page_path = $root . '/' . $page;
+    $line_count = count(file($page_path) ?: []);
+    $assert($line_count <= $targets['max_lines'], "{$page} has {$line_count} lines; expected at most {$targets['max_lines']}.");
     $assert(str_contains($inventory, "`{$page}`"), "Inventory must include priority page {$page}.");
     foreach ($targets['modules'] as $module) {
         $assert(str_contains($inventory, "`{$module}`"), "{$page} must name target module {$module}.");
@@ -102,6 +186,37 @@ foreach ($priority_targets as $page => $targets) {
         $assert(str_contains($inventory, "`{$test}`"), "{$page} must name contract test {$test}.");
     }
 }
+
+foreach ([
+    'includes/components/ticket-detail-sidebar.php',
+    'includes/components/ticket-detail-composer.php',
+    'includes/components/ticket-detail-modals.php',
+    'includes/modules/tickets/ticket-detail-context.php',
+    'includes/modules/tickets/ticket-detail-read-model.php',
+    'includes/modules/tickets/ticket-share-state.php',
+    'includes/modules/tickets/ticket-bulk-actions.php',
+    'includes/modules/tickets/ticket-list-filters.php',
+    'includes/modules/tickets/ticket-row-view-model.php',
+    'assets/js/ticket-list.js',
+    'assets/js/ticket-detail.js',
+    'includes/modules/settings/settings-templates.php',
+    'includes/components/admin-workflow-card.php',
+    'assets/js/report-billing-review.js',
+    'includes/modules/team/team-users.php',
+    'includes/modules/app/dashboard-compat.php',
+    'includes/admin-crud-helper.php',
+] as $extracted_path) {
+    $assert(is_file($root . '/' . $extracted_path), "Extracted module/component missing: {$extracted_path}.");
+}
+
+$ticket_page = file_get_contents($root . '/pages/ticket-detail.php');
+$assert($ticket_page !== false, 'Ticket detail page must be readable.');
+$assert(str_contains($ticket_page, "/includes/components/ticket-detail-sidebar.php"), 'Ticket detail page must include the extracted sidebar component.');
+$assert(str_contains($ticket_page, "/includes/components/ticket-detail-composer.php"), 'Ticket detail page must include the extracted composer component.');
+$assert(str_contains($ticket_page, "/includes/components/ticket-detail-modals.php"), 'Ticket detail page must include the extracted modals component.');
+$assert(!str_contains($ticket_page, 'data-ticket-sidebar-surface'), 'Sidebar markup must not move back into the route file.');
+$assert(!str_contains($ticket_page, 'data-ticket-composer-surface'), 'Composer markup must not move back into the route file.');
+$assert(!str_contains($ticket_page, '<div id="edit-ticket-modal"'), 'Modal markup must not move back into the route file.');
 
 $assert(
     str_contains($inventory, 'Every extraction starts with a named contract test.'),

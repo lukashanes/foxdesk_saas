@@ -85,6 +85,12 @@ $billing_action_state = function_exists('billing_tenant_billing_action_state')
         'notice_body' => '',
         'notice_variant' => 'info',
     ];
+$access_label = function_exists('billing_lifecycle_display_label')
+    ? billing_lifecycle_display_label($tenant, $access_state)
+    : 'Active';
+$payment_label = function_exists('billing_payment_display_label')
+    ? billing_payment_display_label($tenant, $access_state)
+    : 'Included access';
 $checkout_state = (string) ($_GET['checkout'] ?? $_GET['billing'] ?? '');
 $storage_percent = $usage['included_storage_bytes'] > 0
     ? min(100, (int) round(($usage['storage_bytes'] / $usage['included_storage_bytes']) * 100))
@@ -111,8 +117,8 @@ require_once BASE_PATH . '/includes/header.php';
 
         <dl class="billing-summary-grid">
             <div class="billing-fact"><dt>Plan</dt><dd><?php echo e(billing_plan_name()); ?></dd></div>
-            <div class="billing-fact"><dt>Workspace status</dt><dd><?php echo e($tenant['status']); ?></dd></div>
-            <div class="billing-fact"><dt>Subscription</dt><dd><?php echo e($tenant['subscription_status'] ?? 'manual'); ?></dd></div>
+            <div class="billing-fact"><dt><?php echo e(t('Access')); ?></dt><dd><?php echo e(t($access_label)); ?></dd></div>
+            <div class="billing-fact"><dt><?php echo e(t('Payment')); ?></dt><dd><?php echo e(t($payment_label)); ?></dd></div>
             <div class="billing-fact"><dt>Billing email</dt><dd><?php echo e($tenant['billing_email'] ?? ''); ?></dd></div>
             <?php if ((string) ($tenant['subscription_status'] ?? '') === 'trialing' && $trial_days_remaining !== null): ?>
                 <div class="billing-fact">

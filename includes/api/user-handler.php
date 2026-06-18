@@ -25,14 +25,20 @@ function api_search_users() {
 
     // Search in first_name, last_name, and email
     $search_term = '%' . $query . '%';
-    $users = db_fetch_all("
+    $params = [$search_term, $search_term, $search_term];
+    $sql = "
         SELECT id, first_name, last_name, email
         FROM users
         WHERE is_active = 1
-          AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)
+          AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)";
+    if (function_exists('tenant_sql_filter')) {
+        $sql .= tenant_sql_filter('users', '', $params);
+    }
+    $sql .= "
         ORDER BY first_name, last_name
         LIMIT 10
-    ", [$search_term, $search_term, $search_term]);
+    ";
+    $users = db_fetch_all($sql, $params);
 
     // Format results — flat array format expected by CC autocomplete
     $results = [];
@@ -338,10 +344,7 @@ function api_save_dashboard_layout() {
         $save = json_encode(['order' => $order, 'hidden' => [], 'sizes' => []]);
     }
 
-    db_query("UPDATE users SET dashboard_layout = ? WHERE id = ?", [
-        $save,
-        $user['id']
-    ]);
+    db_update('users', ['dashboard_layout' => $save], 'id = ?', [$user['id']]);
 
     api_success(['saved' => true]);
 }

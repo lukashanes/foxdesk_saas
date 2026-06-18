@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS users (
     role ENUM('user', 'agent', 'admin') DEFAULT 'user',
     is_platform_admin TINYINT(1) NOT NULL DEFAULT 0,
     cost_rate DECIMAL(10,2) DEFAULT 0,
+    billable_rate DECIMAL(10,2) DEFAULT 0,
     permissions TEXT,
     dashboard_layout TEXT NULL,
     organization_id INT,

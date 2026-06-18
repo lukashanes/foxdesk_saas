@@ -85,7 +85,7 @@ foreach (['manual', 'free', 'comped'] as $manual_status) {
     $assert(!empty($manual_action['show_portal']), "{$manual_status} workspaces should allow billing detail management.");
     $assert(($manual_action['portal_label'] ?? '') === 'Manage billing details', "{$manual_status} portal label should clarify billing details.");
     $assert(($manual_action['notice_title'] ?? '') === 'All set', "{$manual_status} notice title should say no action is needed.");
-    $assert(str_contains((string) ($manual_action['notice_body'] ?? ''), 'platform-approved access'), "{$manual_status} notice should explain platform-approved access.");
+    $assert(str_contains((string) ($manual_action['notice_body'] ?? ''), 'active access'), "{$manual_status} notice should explain active access without internal platform wording.");
 }
 
 $trial_action = billing_tenant_billing_action_state([

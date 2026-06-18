@@ -487,13 +487,6 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                     <?php echo get_icon('cog', 'w-4 h-4'); ?>
                     <span><?php echo e(t('Settings')); ?></span>
                 </a>
-                <?php if (!(function_exists('foxdesk_is_app_host') && foxdesk_is_app_host())): ?>
-                    <a href="<?php echo url('admin', ['section' => 'migration-export']); ?>" role="menuitem"
-                        class="sidebar-user-menu__item flex items-center gap-3 px-4 py-2.5 text-sm transition-colors sidebar-hover">
-                        <?php echo get_icon('cloud-upload-alt', 'w-4 h-4'); ?>
-                        <span>Cloud migration</span>
-                    </a>
-                <?php endif; ?>
                 <a href="<?php echo url('admin', ['section' => 'recurring-tasks']); ?>" role="menuitem"
                     class="sidebar-user-menu__item flex items-center gap-3 px-4 py-2.5 text-sm transition-colors sidebar-hover">
                     <?php echo get_icon('sync-alt', 'w-4 h-4'); ?>

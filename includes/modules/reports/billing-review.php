@@ -263,6 +263,9 @@ function billing_review_payload(array $filters, array $user, int $limit = 100, i
     $ticket_custom_rate_select = (function_exists('column_exists') && column_exists('tickets', 'custom_billable_rate'))
         ? 't.custom_billable_rate AS ticket_custom_billable_rate,'
         : 'NULL AS ticket_custom_billable_rate,';
+    $user_billable_rate_select = (function_exists('column_exists') && column_exists('users', 'billable_rate'))
+        ? 'u.billable_rate AS user_billable_rate,'
+        : 'NULL AS user_billable_rate,';
 
     $sql = "SELECT tte.*,
                    t.title AS ticket_title,
@@ -276,6 +279,7 @@ function billing_review_payload(array $filters, array $user, int $limit = 100, i
                    o.billable_rate AS org_billable_rate,
                    u.first_name,
                    u.last_name,
+                   {$user_billable_rate_select}
                    u.cost_rate AS user_cost_rate
                    {$ticket_tags_select}
             FROM ticket_time_entries tte

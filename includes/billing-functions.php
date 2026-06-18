@@ -1246,7 +1246,7 @@ function billing_lifecycle_state_matrix(): array
             'access_reason' => 'manual_free',
             'access_message' => '',
             'notice_title' => 'All set',
-            'notice_body' => 'This workspace has platform-approved access.',
+            'notice_body' => 'Your workspace has active access.',
             'notice_variant' => 'info',
             'show_checkout' => false,
             'checkout_label' => 'Start plan',
@@ -1426,6 +1426,42 @@ function billing_tenant_lifecycle_state(?array $tenant = null, ?array $access_st
     return $state;
 }
 
+function billing_lifecycle_display_label(?array $tenant = null, ?array $access_state = null): string
+{
+    $state = billing_tenant_lifecycle_state($tenant, $access_state);
+
+    return match ((string) ($state['code'] ?? '')) {
+        'trialing' => 'Trial active',
+        'active' => 'Active',
+        'manual_free' => 'Active',
+        'past_due_grace' => 'Payment attention',
+        'suspended' => 'Payment needed',
+        'trial_expired' => 'Trial ended',
+        'cancelled' => 'Plan canceled',
+        'blocked' => 'Contact support',
+        'migrated_pending_cutover' => 'Ready for review',
+        default => 'Active',
+    };
+}
+
+function billing_payment_display_label(?array $tenant = null, ?array $access_state = null): string
+{
+    $state = billing_tenant_lifecycle_state($tenant, $access_state);
+
+    return match ((string) ($state['code'] ?? '')) {
+        'trialing' => 'Trial, no payment yet',
+        'active' => 'Paid plan',
+        'manual_free' => 'Included access',
+        'past_due_grace' => 'Payment update needed',
+        'suspended' => 'Payment required',
+        'trial_expired' => 'Plan required',
+        'cancelled' => 'Canceled',
+        'blocked' => 'Support required',
+        'migrated_pending_cutover' => 'Not billing yet',
+        default => 'Included access',
+    };
+}
+
 function billing_tenant_billing_action_state(?array $tenant = null, ?array $access_state = null): array
 {
     $tenant = $tenant ?: billing_current_tenant();
@@ -1454,14 +1490,14 @@ function billing_tenant_billing_action_state(?array $tenant = null, ?array $acce
         $state['portal_label'] = 'Manage billing details';
         $state['notice_title'] = 'All set';
         $state['notice_body'] = $billing_enabled
-            ? 'This workspace has platform-approved access. Billing details, address, and VAT ID can still be managed in Stripe.'
-            : 'This workspace has platform-approved access.';
+            ? 'Your workspace has active access. You can still update billing details, address, and VAT ID.'
+            : 'Your workspace has active access.';
         return $state;
     }
 
     if (!billing_enabled()) {
-        $state['notice_title'] = 'Billing is off';
-        $state['notice_body'] = 'Platform admins can enable billing from production settings.';
+        $state['notice_title'] = 'Billing is unavailable';
+        $state['notice_body'] = 'Contact support to manage billing for this workspace.';
         return $state;
     }
 

@@ -960,7 +960,7 @@ function migration_bridge_record_inventory(array $connection, array $inventory, 
         'status' => $status,
         'last_seen_at' => date('Y-m-d H:i:s'),
         'last_plan_json' => json_encode($plan, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-    ], 'id = ?', [(int) $connection['id']]);
+    ], 'id = ? AND tenant_id = ?', [(int) $connection['id'], (int) $connection['tenant_id']]);
 }
 
 function migration_bridge_record_attachment_sync_evidence(array $connection, array $row, array $result, string $checksum, int $bytes): array
@@ -986,7 +986,7 @@ function migration_bridge_record_attachment_sync_evidence(array $connection, arr
             attachment_sync_last_key = ?,
             attachment_sync_last_checksum = ?,
             attachment_sync_last_source_id = ?
-        WHERE id = ?
+        WHERE id = ? AND tenant_id = ?
     ", [
         $now,
         $count_increment,
@@ -996,6 +996,7 @@ function migration_bridge_record_attachment_sync_evidence(array $connection, arr
         $checksum !== '' ? $checksum : null,
         $source_id > 0 ? $source_id : null,
         $connection_id,
+        (int) $connection['tenant_id'],
     ]);
 
     return [
@@ -1064,8 +1065,8 @@ function migration_bridge_store_map(int $connection_id, int $tenant_id, string $
     $source_updated_at = $row['updated_at'] ?? $row['created_at'] ?? null;
     $row_hash = hash('sha256', json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
     $existing = db_fetch_one(
-        "SELECT id FROM migration_object_map WHERE connection_id = ? AND source_table = ? AND source_id = ? LIMIT 1",
-        [$connection_id, $table, $source_id]
+        "SELECT id FROM migration_object_map WHERE connection_id = ? AND tenant_id = ? AND source_table = ? AND source_id = ? LIMIT 1",
+        [$connection_id, $tenant_id, $table, $source_id]
     );
 
     $data = [
@@ -1075,7 +1076,7 @@ function migration_bridge_store_map(int $connection_id, int $tenant_id, string $
         'row_hash' => $row_hash,
     ];
     if ($existing) {
-        db_update('migration_object_map', $data, 'id = ?', [(int) $existing['id']]);
+        db_update('migration_object_map', $data, 'id = ? AND tenant_id = ?', [(int) $existing['id'], $tenant_id]);
         return;
     }
 

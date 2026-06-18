@@ -259,6 +259,7 @@ function api_quick_start() {
         'title' => t('Quick ticket'),
         'description' => '',
         'user_id' => $user['id'],
+        'organization_id' => null,
         'assignee_id' => $user['id'],
     ]);
 
@@ -917,7 +918,7 @@ function api_quick_log_time() {
             'time_spent' => $duration,
             'created_at' => date('Y-m-d H:i:s'),
         ]);
-        db_query("UPDATE tickets SET updated_at = NOW() WHERE id = ?", [$ticket_id]);
+        db_update('tickets', ['updated_at' => date('Y-m-d H:i:s')], 'id = ?', [$ticket_id]);
     }
 
     $insert = [

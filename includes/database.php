@@ -120,6 +120,10 @@ function db_update($table, $data, $where, $where_params = [])
         validate_sql_identifier($col);
     }
 
+    if (function_exists('tenant_scope_mutation_where')) {
+        $where = tenant_scope_mutation_where($table, $where, $where_params);
+    }
+
     $db = get_db();
     $set = implode(' = ?, ', array_keys($data)) . ' = ?';
 
@@ -136,6 +140,10 @@ function db_update($table, $data, $where, $where_params = [])
 function db_delete($table, $where, $params = [])
 {
     validate_sql_identifier($table);
+    if (function_exists('tenant_scope_mutation_where')) {
+        $where = tenant_scope_mutation_where($table, $where, $params);
+    }
+
     $sql = "DELETE FROM {$table} WHERE {$where}";
     return db_query($sql, $params)->rowCount();
 }

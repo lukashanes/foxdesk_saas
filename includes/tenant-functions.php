@@ -165,6 +165,24 @@ function ensure_tenant_baseline(): void
             }
         }
 
+        if (table_exists('allowed_senders') && column_exists('allowed_senders', 'tenant_id')) {
+            try {
+                if (db_fetch_one("SHOW INDEX FROM allowed_senders WHERE Key_name = 'uniq_type_value'")) {
+                    db_query("ALTER TABLE allowed_senders DROP INDEX uniq_type_value");
+                }
+            } catch (Throwable $e) {
+                error_log('FoxDesk allowed_senders legacy unique key migration skipped: ' . $e->getMessage());
+            }
+
+            try {
+                if (!db_fetch_one("SHOW INDEX FROM allowed_senders WHERE Key_name = 'uniq_tenant_type_value'")) {
+                    db_query("ALTER TABLE allowed_senders ADD UNIQUE KEY uniq_tenant_type_value (tenant_id, type, value)");
+                }
+            } catch (Throwable $e) {
+                error_log('FoxDesk allowed_senders tenant unique key migration skipped: ' . $e->getMessage());
+            }
+        }
+
         $allow_platform_bootstrap = defined('FOXDESK_AUTO_BOOTSTRAP_PLATFORM_ADMIN')
             && (bool) FOXDESK_AUTO_BOOTSTRAP_PLATFORM_ADMIN;
         if ($allow_platform_bootstrap && table_exists('users') && column_exists('users', 'is_platform_admin')) {
@@ -228,6 +246,21 @@ function tenant_sql_filter(string $table, string $alias, array &$params): string
     $prefix = $alias !== '' ? $alias . '.' : '';
     $params[] = current_tenant_id();
     return " AND {$prefix}tenant_id = ?";
+}
+
+function tenant_where_has_scope(string $where): bool
+{
+    return (bool) preg_match('/(^|[^A-Za-z0-9_])tenant_id([^A-Za-z0-9_]|$)/i', $where);
+}
+
+function tenant_scope_mutation_where(string $table, string $where, array &$params): string
+{
+    if (!tenant_scoped_table_has_column($table) || tenant_where_has_scope($where)) {
+        return $where;
+    }
+
+    $params[] = current_tenant_id();
+    return '(' . $where . ') AND tenant_id = ?';
 }
 
 function tenant_value_for_insert(array $data = []): int

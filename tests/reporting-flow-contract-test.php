@@ -6,6 +6,7 @@ $module = file_get_contents($root . '/includes/modules/reports/reporting-flow.ph
 $billing = file_get_contents($root . '/includes/modules/reports/billing-review.php');
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
 $reports = file_get_contents($root . '/pages/admin/reports.php');
+$billing_js = file_get_contents($root . '/assets/js/report-billing-review.js');
 $builder = file_get_contents($root . '/pages/admin/report-builder.php');
 $theme = file_get_contents($root . '/theme.css');
 
@@ -46,7 +47,7 @@ $assert(str_contains($reports, 'data-app-contract-surface="reporting-review"'), 
 $assert(str_contains($reports, 'data-report-total="billable_amount"'), 'Detailed report must expose contract total mounts.');
 $assert(str_contains($reports, 'data-report-entry-row'), 'Detailed report rows must expose contract row mounts.');
 $assert(str_contains($reports, 'data-report-entry-field="rate"'), 'Detailed report rows must expose contract rate mounts.');
-$assert(str_contains($reports, "selectedAction === 'discount_amount'"), 'Live totals must handle amount discounts.');
+$assert($billing_js !== false && str_contains($billing_js, "selectedAction === 'discount_amount'"), 'Live totals must handle amount discounts.');
 $assert(str_contains($reports, 'class="report-page-toolbar"'), 'Reports page must use the shared report toolbar surface.');
 $assert(str_contains($reports, 'class="report-filter-pills"'), 'Reports page must use shared filter pills.');
 $assert(str_contains($reports, 'class="card-header report-filter-summary"'), 'Reports page must use the shared filter summary surface.');
@@ -54,8 +55,9 @@ $assert(str_contains($reports, 'class="report-summary-strip"'), 'Summary report 
 $assert(str_contains($reports, 'class="report-detail-totals"'), 'Detailed report totals must use the shared detail totals strip.');
 $assert(str_contains($reports, 'class="report-bulk-billing px-4 py-3 border-b"'), 'Bulk billing form must use the shared billing surface.');
 $assert(str_contains($reports, 'class="range-preset-btn <?php echo $time_range === $preset_val ? \'is-active\' : \'\'; ?>"'), 'Range presets must use an active class, not inline styles.');
-$assert(str_contains($reports, 'function report_width_class'), 'Reports page must normalize dynamic widths through CSS classes.');
-$assert(str_contains($reports, 'function report_tone_class'), 'Reports page must normalize chart colors through CSS classes.');
+$assert(str_contains($bootstrap, '/reports/report-totals.php'), 'Module bootstrap must load report totals.');
+$assert(str_contains(file_get_contents($root . '/includes/modules/reports/report-totals.php'), 'function report_width_class'), 'Report totals module must normalize dynamic widths through CSS classes.');
+$assert(str_contains(file_get_contents($root . '/includes/modules/reports/report-totals.php'), 'function report_tone_class'), 'Report totals module must normalize chart colors through CSS classes.');
 $assert(str_contains($reports, 'report-mini-progress__bar--org <?php echo e(report_width_class($org_pct)); ?>'), 'Organization progress bars must use width classes.');
 $assert(str_contains($reports, 'report-week-segment <?php echo e(report_width_class($seg_pct)); ?>'), 'Weekly stacked bars must use width classes.');
 $assert(str_contains($reports, "cell.classList.toggle('is-hidden', !visible)"), 'Column picker must use CSS classes, not inline display writes.');

@@ -21,7 +21,7 @@ function api_migration_connect(): void
         db_update('migration_connections', [
             'status' => 'connected',
             'last_seen_at' => date('Y-m-d H:i:s'),
-        ], 'id = ?', [(int) $connection['id']]);
+        ], 'id = ? AND tenant_id = ?', [(int) $connection['id'], (int) $connection['tenant_id']]);
     }
 
     api_success([
@@ -75,7 +75,7 @@ function api_migration_status(): void
     $connection = migration_bridge_authenticate();
     db_update('migration_connections', [
         'last_seen_at' => date('Y-m-d H:i:s'),
-    ], 'id = ?', [(int) $connection['id']]);
+    ], 'id = ? AND tenant_id = ?', [(int) $connection['id'], (int) $connection['tenant_id']]);
 
     api_success([
         'connection' => [
@@ -117,7 +117,7 @@ function api_migration_push_table(): void
         db_update('migration_connections', [
             'status' => 'syncing',
             'last_seen_at' => date('Y-m-d H:i:s'),
-        ], 'id = ?', [(int) $connection['id']]);
+        ], 'id = ? AND tenant_id = ?', [(int) $connection['id'], (int) $connection['tenant_id']]);
     } catch (Throwable $e) {
         api_error($e->getMessage(), 422);
     }
@@ -169,7 +169,7 @@ function api_migration_push_attachment(): void
         db_update('migration_connections', [
             'status' => 'syncing',
             'last_seen_at' => date('Y-m-d H:i:s'),
-        ], 'id = ?', [(int) $connection['id']]);
+        ], 'id = ? AND tenant_id = ?', [(int) $connection['id'], (int) $connection['tenant_id']]);
     } catch (Throwable $e) {
         api_error($e->getMessage(), 422);
     }

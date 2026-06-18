@@ -305,7 +305,7 @@ if (is_logged_in() && !in_array($page, ['billing', 'profile', 'logout', 'stripe-
         ? billing_workspace_access_state($tenant)
         : ['allowed' => true, 'message' => ''];
     if ($tenant && empty($access_state['allowed']) && !is_platform_admin()) {
-        flash($access_state['message'] ?: t('Workspace access is restricted. Please update billing to continue.'), 'error');
+        flash($access_state['message'] ?: t('Billing needs attention. Open Billing to continue.'), 'error');
         header('Location: index.php?page=' . (is_admin() ? 'billing' : 'logout'));
         exit;
     }
@@ -462,13 +462,6 @@ switch ($page) {
                 break;
             case 'activity':
                 require_once BASE_PATH . '/pages/admin/activity.php';
-                break;
-            case 'migration-export':
-                if (foxdesk_is_app_host()) {
-                    header('Location: ' . url('admin', ['section' => 'settings']));
-                    exit;
-                }
-                require_once BASE_PATH . '/pages/admin/migration-export.php';
                 break;
             default:
                 require_once BASE_PATH . '/pages/admin/statuses.php';

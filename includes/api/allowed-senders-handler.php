@@ -13,11 +13,20 @@ function api_allowed_senders_list() {
         api_error('Forbidden', 403);
     }
 
+    $params = [];
+    $where = 'WHERE 1 = 1';
+    if (function_exists('tenant_sql_filter')) {
+        $where .= tenant_sql_filter('allowed_senders', 's', $params);
+    }
+
     $senders = db_fetch_all(
         "SELECT s.*, CONCAT(u.first_name, ' ', u.last_name) AS user_name
          FROM allowed_senders s
-         LEFT JOIN users u ON s.user_id = u.id
-         ORDER BY s.type, s.value"
+         LEFT JOIN users u ON s.user_id = u.id" .
+            (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('users') ? " AND u.tenant_id = s.tenant_id" : "") . "
+         {$where}
+         ORDER BY s.type, s.value",
+        $params
     );
 
     api_success(['senders' => $senders]);
@@ -52,11 +61,30 @@ function api_allowed_senders_add() {
         $value = ltrim($value, '@');
     }
 
-    db_query(
-        "INSERT INTO allowed_senders (type, value, user_id, active) VALUES (?, ?, ?, 1)
-         ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), active = 1, updated_at = NOW()",
-        [$type, $value, $user_id]
-    );
+    if ($user_id !== null) {
+        $params = [$user_id];
+        $user_sql = "SELECT id FROM users WHERE id = ?";
+        if (function_exists('tenant_sql_filter')) {
+            $user_sql .= tenant_sql_filter('users', '', $params);
+        }
+        if (!db_fetch_one($user_sql . " LIMIT 1", $params)) {
+            api_error(t('User not found'), 404);
+        }
+    }
+
+    if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('allowed_senders')) {
+        db_query(
+            "INSERT INTO allowed_senders (tenant_id, type, value, user_id, active) VALUES (?, ?, ?, ?, 1)
+             ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), active = 1, updated_at = NOW()",
+            [current_tenant_id(), $type, $value, $user_id]
+        );
+    } else {
+        db_query(
+            "INSERT INTO allowed_senders (type, value, user_id, active) VALUES (?, ?, ?, 1)
+             ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), active = 1, updated_at = NOW()",
+            [$type, $value, $user_id]
+        );
+    }
 
     api_success(['message' => t('Sender added')]);
 }
@@ -74,7 +102,7 @@ function api_allowed_senders_delete() {
         api_error(t('Invalid ID'));
     }
 
-    db_query("DELETE FROM allowed_senders WHERE id = ?", [$id]);
+    db_delete('allowed_senders', 'id = ?', [$id]);
 
     api_success(['message' => t('Sender deleted')]);
 }
@@ -92,7 +120,17 @@ function api_allowed_senders_toggle() {
         api_error(t('Invalid ID'));
     }
 
-    db_query("UPDATE allowed_senders SET active = NOT active WHERE id = ?", [$id]);
+    $params = [$id];
+    $sql = "SELECT id, active FROM allowed_senders WHERE id = ?";
+    if (function_exists('tenant_sql_filter')) {
+        $sql .= tenant_sql_filter('allowed_senders', '', $params);
+    }
+    $sender = db_fetch_one($sql . " LIMIT 1", $params);
+    if (!$sender) {
+        api_error(t('Sender not found'), 404);
+    }
+
+    db_update('allowed_senders', ['active' => empty($sender['active']) ? 1 : 0], 'id = ?', [$id]);
 
     api_success(['message' => t('Saved')]);
 }

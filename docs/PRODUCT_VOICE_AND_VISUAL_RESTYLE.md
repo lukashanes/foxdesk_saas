@@ -47,6 +47,11 @@ Done when:
 - Billing warnings explain what happened and what to do next.
 - No customer-facing page uses internal setup language.
 
+Verification:
+
+- `npm run test:product-copy`
+- `npm run test:edition-parity`
+
 ### Milestone 2: Design Tokens
 
 Done when:
