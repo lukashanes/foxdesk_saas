@@ -275,17 +275,6 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                     <span><?php echo e(t('Work')); ?></span>
                 </a>
 
-                <?php if (is_admin() || is_agent()): ?>
-                <?php $is_inbox = ($page ?? '') === 'inbox'; ?>
-                <a href="<?php echo url('inbox'); ?>"
-                    class="nav-item <?php echo $is_inbox ? 'active' : ''; ?>"
-                    title="<?php echo e(t('Inbox')); ?>"
-                    <?php echo $is_inbox ? 'aria-current="page"' : ''; ?>>
-                    <?php echo get_icon('inbox', 'nav-item__icon'); ?>
-                    <span><?php echo e(t('Inbox')); ?></span>
-                </a>
-                <?php endif; ?>
-
                 <?php $is_dashboard = ($page ?? '') === 'dashboard'; ?>
                 <a href="<?php echo url('dashboard'); ?>"
                     class="nav-item <?php echo $is_dashboard ? 'active' : ''; ?>"
@@ -595,7 +584,7 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                 <span class="app-shell-context"><?php echo e(t('Workspace')); ?></span>
             </div>
             <div class="flex items-center space-x-4">
-                <form action="<?php echo url('tickets'); ?>" method="get" class="relative">
+                <form action="<?php echo url('tickets'); ?>" method="get" class="header-search-form relative">
                     <input type="hidden" name="page" value="tickets">
                     <input type="text" name="search" id="header-search" placeholder="<?php echo e(t('Search...')); ?>"
                         class="form-input pr-4 header-search-input">

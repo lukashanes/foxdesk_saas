@@ -99,3 +99,35 @@ Done when:
 - Browser screenshots pass desktop and mobile review for public web, login, Work, Inbox, Tickets, Billing, Reports, Client, and Platform.
 - Automated smoke tests pass locally and in production.
 - The CSS audit shows fewer unique font sizes, radii, and shadow styles than the baseline.
+
+Verification:
+
+- `npm run test:visual-qa`
+- `npm run css:visual-audit`
+- `npm run visual:qa`
+- `npm run local:smoke`
+- `npm run prod:smoke`
+
+Completed:
+
+- CSS visual audit baseline is stored in `docs/visual-style-baseline.json`.
+- `npm run test:visual-qa` verifies that unique font sizes, radii, and shadows
+  stay below the pre-token baseline.
+- `npm run visual:qa` captures desktop and mobile screenshots for public web,
+  login, Work, Inbox, Tickets, Billing, Reports, Client, Ticket detail, and
+  Platform.
+- Production deployment requires `npm run prod:deploy:evidence`, which runs
+  production smoke after container health.
+
+Latest verified gate set:
+
+```bash
+npm run test:visual-qa
+npm run visual:qa
+npm run test:app-shell-visual
+npm run test:app-frontend
+npm run lint:php
+npm run local:smoke
+npm run test:csp-ui
+npm run prod:smoke
+```

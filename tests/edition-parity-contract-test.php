@@ -24,7 +24,7 @@ $assert($matrix !== false && $release !== false && $technical_plan !== false, 'U
 
 foreach ([
     '| Work | shared |',
-    '| Inbox | shared |',
+    '| Intake queues | shared internal |',
     '| Tickets | shared |',
     '| Ticket detail | shared |',
     '| New ticket | shared |',

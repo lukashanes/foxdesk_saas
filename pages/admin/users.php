@@ -34,6 +34,10 @@ try {
     $organizations = [];
 }
 $valid_organization_ids = team_users_valid_organization_ids($organizations);
+$organization_names_by_id = [];
+foreach ($organizations as $organization) {
+    $organization_names_by_id[(int) ($organization['id'] ?? 0)] = (string) ($organization['name'] ?? '');
+}
 
 $email_pref_column_exists = $user_table_capabilities['email_notifications'];
 $in_app_pref_column_exists = $user_table_capabilities['in_app_notifications'];
@@ -491,6 +495,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ai_model = trim($_POST['ai_model'] ?? '');
         $cost_rate_input = trim($_POST['cost_rate'] ?? '');
         $cost_rate = $cost_rate_input !== '' ? (float) str_replace(',', '.', $cost_rate_input) : 0;
+        $permission_input = $_POST;
+        if (!isset($permission_input['ticket_scope'])) {
+            $permission_input['ticket_scope'] = 'assigned';
+        }
+        $organization_assignment = team_users_normalize_organization_assignment(
+            $permission_input['organization_id'] ?? null,
+            $permission_input['scope_organization_ids'] ?? [],
+            $valid_organization_ids
+        );
+        $organization_id = $organization_assignment['organization_id'];
+        $organization_membership_ids = $organization_assignment['organization_membership_ids'];
+        $permissions_data = team_users_permission_payload(
+            'agent',
+            $organization_id,
+            $organization_membership_ids,
+            $permission_input,
+            $valid_organization_ids
+        );
 
         if (empty($agent_name)) {
             flash(t('Please fill in all required fields.'), 'error');
@@ -511,11 +533,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'is_ai_agent' => 1,
                 'ai_model' => $ai_model !== '' ? $ai_model : null,
                 'cost_rate' => $cost_rate,
+                'organization_id' => $organization_id,
+                'permissions' => $permissions_data !== null ? json_encode($permissions_data) : null,
             ], 'id = ? AND tenant_id = ?', [$user_id, current_tenant_id()]);
 
                 // Auto-generate API token
                 if (function_exists('generate_api_token')) {
-                    $token_result = generate_api_token($user_id, $agent_name);
+                    $token_scopes = function_exists('team_ai_agent_token_scopes_from_input')
+                        ? team_ai_agent_token_scopes_from_input($permission_input)
+                        : null;
+                    $token_result = generate_api_token($user_id, $agent_name, null, $token_scopes);
                     if ($token_result && !empty($token_result['token'])) {
                         $_SESSION['new_ai_agent_token'] = $token_result['token'];
                         $_SESSION['new_ai_agent_id'] = $user_id;
@@ -531,13 +558,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Update AI agent
-    if (isset($_POST['update_ai_agent']) && $ai_agent_col_exists) {
+    if ((isset($_POST['update_ai_agent']) || isset($_POST['save_and_generate_agent_token'])) && $ai_agent_col_exists) {
         $id = (int) $_POST['id'];
         $agent_name = trim($_POST['agent_name'] ?? '');
         $ai_model = trim($_POST['ai_model'] ?? '');
         $cost_rate_input = trim($_POST['cost_rate'] ?? '');
         $cost_rate = $cost_rate_input !== '' ? (float) str_replace(',', '.', $cost_rate_input) : 0;
         $is_active = isset($_POST['is_active']) ? 1 : 0;
+        $permission_input = $_POST;
+        if (!isset($permission_input['ticket_scope'])) {
+            $permission_input['ticket_scope'] = 'assigned';
+        }
+        $organization_assignment = team_users_normalize_organization_assignment(
+            $permission_input['organization_id'] ?? null,
+            $permission_input['scope_organization_ids'] ?? [],
+            $valid_organization_ids
+        );
+        $organization_id = $organization_assignment['organization_id'];
+        $organization_membership_ids = $organization_assignment['organization_membership_ids'];
+        $permissions_data = team_users_permission_payload(
+            'agent',
+            $organization_id,
+            $organization_membership_ids,
+            $permission_input,
+            $valid_organization_ids
+        );
 
         if ($id > 0 && !empty($agent_name)) {
             db_update('users', [
@@ -545,8 +590,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'ai_model' => $ai_model !== '' ? $ai_model : null,
                 'cost_rate' => $cost_rate,
                 'is_active' => $is_active,
+                'organization_id' => $organization_id,
+                'permissions' => $permissions_data !== null ? json_encode($permissions_data) : null,
             ], 'id = ? AND is_ai_agent = 1 AND tenant_id = ?', [$id, current_tenant_id()]);
-            flash(t('Settings saved.'), 'success');
+
+            if (isset($_POST['save_and_generate_agent_token']) && function_exists('generate_api_token')) {
+                if (function_exists('team_ai_agent_revoke_active_tokens')) {
+                    team_ai_agent_revoke_active_tokens($id);
+                }
+                $token_scopes = function_exists('team_ai_agent_token_scopes_from_input')
+                    ? team_ai_agent_token_scopes_from_input($permission_input)
+                    : null;
+                $token_result = generate_api_token($id, $agent_name, null, $token_scopes);
+                if ($token_result && !empty($token_result['token'])) {
+                    $_SESSION['new_ai_agent_token'] = $token_result['token'];
+                    $_SESSION['new_ai_agent_id'] = $id;
+                    flash(t('API token generated. Copy it now.'), 'success');
+                } else {
+                    flash(t('Failed to generate token.'), 'error');
+                }
+            } else {
+                flash(t('Settings saved.'), 'success');
+            }
         }
         redirect('admin', ['section' => 'users', 'tab' => 'ai_agents']);
     }
@@ -556,7 +621,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int) $_POST['id'];
         $agent = db_fetch_one("SELECT id, first_name, is_ai_agent FROM users WHERE id = ? AND is_ai_agent = 1 AND tenant_id = ?", [$id, current_tenant_id()]);
         if ($agent && function_exists('generate_api_token')) {
-            $token_result = generate_api_token($id, $agent['first_name']);
+            if (function_exists('team_ai_agent_revoke_active_tokens')) {
+                team_ai_agent_revoke_active_tokens($id);
+            }
+            $token_scopes = function_exists('team_ai_agent_token_scopes_from_input')
+                ? team_ai_agent_token_scopes_from_input($_POST)
+                : null;
+            $token_result = generate_api_token($id, $agent['first_name'], null, $token_scopes);
             if ($token_result && !empty($token_result['token'])) {
                 $_SESSION['new_ai_agent_token'] = $token_result['token'];
                 $_SESSION['new_ai_agent_id'] = $id;
@@ -647,6 +718,12 @@ if ($ai_agent_col_exists) {
     $ai_agents = team_ai_agents_fetch($deleted_at_column_exists);
     $ai_agent_tokens = team_ai_agent_tokens_fetch($ai_agents);
 }
+$ai_agent_token_scope_groups = function_exists('team_ai_agent_token_scope_groups') ? team_ai_agent_token_scope_groups() : [];
+$ai_agent_token_default_scope_groups = function_exists('team_ai_agent_token_default_scope_groups') ? team_ai_agent_token_default_scope_groups() : [];
+$ai_agent_token_group_scopes = [];
+foreach ($ai_agent_token_scope_groups as $group_key => $group) {
+    $ai_agent_token_group_scopes[$group_key] = $group['scopes'] ?? [];
+}
 
 // Show new AI agent token if just generated
 $new_ai_token = $_SESSION['new_ai_agent_token'] ?? null;
@@ -705,14 +782,15 @@ include BASE_PATH . '/includes/components/page-header.php';
                         <h3 class="font-semibold text-theme-primary"><?php echo e(t('AI agents')); ?>
                             (<?php echo count($ai_agents); ?>)</h3>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full tickets-table">
+                    <div class="admin-responsive-table-wrap">
+                        <table class="admin-responsive-table admin-ai-agents-table tickets-table">
                             <thead class="bg-theme-secondary">
                                 <tr class="border-b">
                                     <th class="px-4 py-2 text-left th-label whitespace-nowrap"><?php echo e(t('Name')); ?></th>
                                     <th class="px-4 py-2 text-left th-label whitespace-nowrap w-28"><?php echo e(t('Model')); ?></th>
                                     <th class="px-4 py-2 text-left th-label whitespace-nowrap w-20"><?php echo e(t('Rate/h')); ?></th>
                                     <th class="px-4 py-2 text-left th-label whitespace-nowrap w-32"><?php echo e(t('API token')); ?></th>
+                                    <th class="px-4 py-2 text-left th-label whitespace-nowrap w-44"><?php echo e(t('Access')); ?></th>
                                     <th class="px-4 py-2 text-left th-label whitespace-nowrap w-20"><?php echo e(t('Status')); ?></th>
                                     <th class="px-4 py-2 text-right th-label whitespace-nowrap w-28"><?php echo e(t('Actions')); ?></th>
                                 </tr>
@@ -720,7 +798,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                             <tbody class="divide-y">
                                 <?php if (empty($ai_agents)): ?>
                                         <tr>
-                                            <td colspan="6" class="px-4 py-6 text-center text-sm text-theme-muted">
+                                            <td colspan="7" class="px-4 py-6 text-center text-sm text-theme-muted">
                                                 <?php echo e(t('No AI agents yet.')); ?>
                                             </td>
                                         </tr>
@@ -735,18 +813,43 @@ include BASE_PATH . '/includes/components/page-header.php';
                                             break;
                                         }
                                     }
+                                    $agent_permissions = [];
+                                    if (!empty($agent['permissions'])) {
+                                        $decoded_permissions = json_decode((string) $agent['permissions'], true);
+                                        if (is_array($decoded_permissions)) {
+                                            $agent_permissions = $decoded_permissions;
+                                        }
+                                    }
+                                    $agent_scope = $agent_permissions['ticket_scope'] ?? 'assigned';
+                                    $agent_org_ids = normalize_organization_ids($agent_permissions['organization_ids'] ?? []);
+                                    if (empty($agent_org_ids) && !empty($agent['organization_id'])) {
+                                        $agent_org_ids = [(int) $agent['organization_id']];
+                                    }
+                                    $agent_org_names = [];
+                                    foreach ($agent_org_ids as $org_id) {
+                                        if (!empty($organization_names_by_id[$org_id])) {
+                                            $agent_org_names[] = $organization_names_by_id[$org_id];
+                                        }
+                                    }
+                                    $scope_labels = [
+                                        'all' => t('All tickets'),
+                                        'assigned' => t('Assigned tickets only'),
+                                        'organization' => t('Tickets from selected organizations'),
+                                        'own' => t('Own tickets only'),
+                                    ];
+                                    $access_label = $scope_labels[$agent_scope] ?? $agent_scope;
                                     ?>
                                         <tr class="tr-hover <?php echo $agent['is_active'] ? '' : 'opacity-50'; ?>">
-                                            <td class="px-4 py-2.5">
+                                            <td class="px-4 py-2.5 admin-responsive-primary" data-label="<?php echo e(t('Name')); ?>">
                                                 <div class="flex items-center space-x-2">
                                                     <div
                                                         class="w-7 h-7 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
                                                         <?php echo get_icon('bot', 'w-4 h-4 text-purple-600'); ?>
                                                     </div>
-                                                    <span class="font-medium text-sm text-theme-primary"><?php echo e($agent['first_name']); ?></span>
+                                                    <span class="admin-cell-title text-sm"><?php echo e($agent['first_name']); ?></span>
                                                 </div>
                                             </td>
-                                            <td class="px-4 py-2.5">
+                                            <td class="px-4 py-2.5" data-label="<?php echo e(t('Model')); ?>">
                                                 <?php if (!empty($agent['ai_model'])): ?>
                                                         <span
                                                             class="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded"><?php echo e($agent['ai_model']); ?></span>
@@ -754,10 +857,10 @@ include BASE_PATH . '/includes/components/page-header.php';
                                                         <span class="text-theme-muted">-</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td class="px-4 py-2.5 text-sm text-theme-secondary">
+                                            <td class="px-4 py-2.5 text-sm text-theme-secondary" data-label="<?php echo e(t('Rate/h')); ?>">
                                                 <?php echo (float) $agent['cost_rate'] > 0 ? e(format_money($agent['cost_rate'])) . '/h' : '<span class="text-theme-muted">-</span>'; ?>
                                             </td>
-                                            <td class="px-4 py-2.5 text-xs">
+                                            <td class="px-4 py-2.5 text-xs" data-label="<?php echo e(t('API token')); ?>">
                                                 <?php if ($active_token): ?>
                                                         <code
                                                             class="text-theme-muted"><?php echo e($active_token['token_prefix'] ?? '???'); ?>...</code>
@@ -765,7 +868,15 @@ include BASE_PATH . '/includes/components/page-header.php';
                                                         <span class="text-orange-500"><?php echo e(t('No token')); ?></span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td class="px-4 py-2.5">
+                                            <td class="px-4 py-2.5 text-xs text-theme-secondary" data-label="<?php echo e(t('Access')); ?>">
+                                                <div class="font-medium text-theme-primary"><?php echo e($access_label); ?></div>
+                                                <?php if ($agent_scope === 'organization'): ?>
+                                                        <div class="text-theme-muted">
+                                                            <?php echo !empty($agent_org_names) ? e(implode(', ', $agent_org_names)) : e(t('No clients selected')); ?>
+                                                        </div>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="px-4 py-2.5" data-label="<?php echo e(t('Status')); ?>">
                                                 <?php if ($agent['is_active']): ?>
                                                         <span
                                                             class="text-xs px-2 py-0.5 rounded bg-green-100 text-green-600"><?php echo e(t('Active')); ?></span>
@@ -773,7 +884,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                                         <span class="text-xs px-2 py-0.5 rounded bg-theme-tertiary text-theme-secondary"><?php echo e(t('Inactive')); ?></span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td class="px-4 py-2.5 text-right">
+                                            <td class="px-4 py-2.5 text-right admin-responsive-actions" data-label="<?php echo e(t('Actions')); ?>">
                                                 <div class="flex items-center justify-end gap-1 relative z-10">
                                                     <a href="<?php echo url('admin', ['section' => 'agent-connect', 'id' => $agent['id']]); ?>"
                                                         class="p-1.5 rounded hover:bg-purple-50 text-purple-500 hover:text-purple-700 transition-colors"
@@ -781,15 +892,12 @@ include BASE_PATH . '/includes/components/page-header.php';
                                                         <?php echo get_icon('link', 'w-4 h-4'); ?>
                                                     </a>
                                                     <?php if (!$active_token): ?>
-                                                            <form method="post" class="inline">
-                                                                <?php echo csrf_field(); ?>
-                                                                <input type="hidden" name="id" value="<?php echo $agent['id']; ?>">
-                                                                <button type="submit" name="generate_agent_token"
-                                                                    class="p-1.5 rounded hover:bg-green-50 text-green-500 hover:text-green-700 transition-colors"
-                                                                    title="<?php echo e(t('Generate token')); ?>">
-                                                                    <?php echo get_icon('key', 'w-4 h-4'); ?>
-                                                                </button>
-                                                            </form>
+                                                            <button type="button"
+                                                                onclick='editAiAgent(<?php echo json_encode($agent, JSON_HEX_APOS | JSON_HEX_QUOT); ?>, null)'
+                                                                class="p-1.5 rounded hover:bg-green-50 text-green-500 hover:text-green-700 transition-colors"
+                                                                title="<?php echo e(t('Create token with access')); ?>">
+                                                                <?php echo get_icon('key', 'w-4 h-4'); ?>
+                                                            </button>
                                                     <?php endif; ?>
                                                     <button type="button"
                                                         onclick='editAiAgent(<?php echo json_encode($agent, JSON_HEX_APOS | JSON_HEX_QUOT); ?>, <?php echo json_encode($active_token, JSON_HEX_APOS | JSON_HEX_QUOT); ?>)'
@@ -821,7 +929,7 @@ include BASE_PATH . '/includes/components/page-header.php';
             <div class="admin-side-column">
                 <div class="card card-body">
                     <h3 class="font-semibold mb-4 text-theme-primary"><?php echo e(t('Add AI agent')); ?></h3>
-                    <form method="post" class="space-y-4">
+                    <form method="post" id="aiAddAgentForm" class="space-y-4">
                         <?php echo csrf_field(); ?>
                         <div>
                             <label class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Name')); ?> *</label>
@@ -836,6 +944,74 @@ include BASE_PATH . '/includes/components/page-header.php';
                             <label class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Rate/h')); ?></label>
                             <input type="number" name="cost_rate" step="0.01" min="0" class="form-input" placeholder="0.00">
                         </div>
+                        <div class="border-t border-theme-light pt-3">
+                            <h4 class="text-sm font-semibold mb-2 text-theme-secondary">
+                                <?php echo e(t('Access')); ?>
+                            </h4>
+                            <div class="space-y-2">
+                                <label class="flex items-center text-sm">
+                                    <input type="radio" name="ticket_scope" value="assigned" class="mr-2" checked>
+                                    <?php echo e(t('Assigned tickets only')); ?>
+                                </label>
+                                <label class="flex items-center text-sm">
+                                    <input type="radio" name="ticket_scope" value="organization" class="mr-2">
+                                    <?php echo e(t('Tickets from selected organizations')); ?>
+                                </label>
+                                <label class="flex items-center text-sm">
+                                    <input type="radio" name="ticket_scope" value="all" class="mr-2">
+                                    <?php echo e(t('All tickets')); ?>
+                                </label>
+                            </div>
+                            <?php if (!empty($organizations)): ?>
+                                    <div id="ai_add_org_select" class="mt-2 hidden">
+                                        <label class="block text-xs mb-1 text-theme-muted">
+                                            <?php echo e(t('Select organizations (multiple allowed)')); ?>
+                                        </label>
+                                        <select name="scope_organization_ids[]" multiple size="5" class="form-select text-sm">
+                                            <?php foreach ($organizations as $org): ?>
+                                                    <option value="<?php echo $org['id']; ?>"><?php echo e($org['name']); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                            <?php endif; ?>
+                            <div class="mt-3 space-y-2">
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" name="can_view_time" class="mr-2" checked>
+                                    <?php echo e(t('Can view time entries')); ?>
+                                </label>
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" name="can_view_timeline" class="mr-2" checked>
+                                    <?php echo e(t('Can view activity timeline')); ?>
+                                </label>
+                            </div>
+                        </div>
+                        <?php if (!empty($ai_agent_token_scope_groups)): ?>
+                                <div class="border-t border-theme-light pt-3">
+                                    <h4 class="text-sm font-semibold mb-1 text-theme-secondary">
+                                        <?php echo e(t('Token actions')); ?>
+                                    </h4>
+                                    <p class="text-xs mb-2 text-theme-muted">
+                                        <?php echo e(t('Choose what this token can do.')); ?>
+                                    </p>
+                                    <div class="space-y-2">
+                                        <?php foreach ($ai_agent_token_scope_groups as $group_key => $group): ?>
+                                                <label class="flex items-start gap-2 text-sm rounded-lg border border-theme-light p-2 cursor-pointer">
+                                                    <input type="checkbox" name="api_token_scope_groups[]"
+                                                        value="<?php echo e($group_key); ?>" class="mt-0.5 rounded"
+                                                        <?php echo in_array($group_key, $ai_agent_token_default_scope_groups, true) ? 'checked' : ''; ?>>
+                                                    <span>
+                                                        <span class="font-medium text-theme-primary">
+                                                            <?php echo e(t($group['label'])); ?>
+                                                        </span>
+                                                        <span class="block text-xs text-theme-muted">
+                                                            <?php echo e(t($group['description'])); ?>
+                                                        </span>
+                                                    </span>
+                                                </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                        <?php endif; ?>
                         <button type="submit" name="add_ai_agent" class="btn btn-primary w-full">
                             <?php echo e(t('Add AI agent')); ?>
                         </button>
@@ -848,9 +1024,8 @@ include BASE_PATH . '/includes/components/page-header.php';
         <div id="editAiAgentModal"
             class="fixed inset-0 bg-black bg-opacity-50 hidden items-start sm:items-center justify-center z-50 overflow-y-auto p-2 sm:p-3"
             role="dialog" aria-modal="true" aria-labelledby="edit-ai-agent-title">
-            <div class="rounded-xl shadow-xl w-full max-w-md max-h-[calc(100vh-1rem)] overflow-hidden flex flex-col bg-theme-primary">
-                <div class="px-4 sm:px-6 py-3.5 border-b flex items-center justify-between"
-                    style="border-color: var(--border-light); background: var(--surface-primary);">
+            <div class="rounded-xl shadow-xl w-full max-w-lg max-h-[calc(100vh-1rem)] overflow-hidden flex flex-col bg-theme-primary">
+                <div class="px-4 sm:px-6 py-3.5 border-b border-theme-light flex items-center justify-between bg-theme-primary">
                     <h3 id="edit-ai-agent-title" class="font-semibold text-theme-primary">
                         <?php echo e(t('Edit AI agent')); ?>
                     </h3>
@@ -859,7 +1034,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                     </button>
                 </div>
                 <div class="p-4 sm:p-5 overflow-y-auto space-y-4">
-                    <form method="post" class="space-y-3.5">
+                    <form method="post" id="editAiAgentForm" class="space-y-3.5">
                         <?php echo csrf_field(); ?>
                         <input type="hidden" name="id" id="ai_edit_id">
                         <div>
@@ -876,31 +1051,114 @@ include BASE_PATH . '/includes/components/page-header.php';
                             <label for="ai_edit_cost_rate" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Rate/h')); ?></label>
                             <input type="number" name="cost_rate" id="ai_edit_cost_rate" step="0.01" min="0" class="form-input">
                         </div>
+                        <div class="border-t border-theme-light pt-3">
+                            <h4 class="text-sm font-semibold mb-2 text-theme-secondary">
+                                <?php echo e(t('Access')); ?>
+                            </h4>
+                            <div class="space-y-2">
+                                <label class="flex items-center text-sm">
+                                    <input type="radio" name="ticket_scope" value="assigned" id="ai_edit_scope_assigned" class="mr-2">
+                                    <?php echo e(t('Assigned tickets only')); ?>
+                                </label>
+                                <label class="flex items-center text-sm">
+                                    <input type="radio" name="ticket_scope" value="organization" id="ai_edit_scope_org" class="mr-2">
+                                    <?php echo e(t('Tickets from selected organizations')); ?>
+                                </label>
+                                <label class="flex items-center text-sm">
+                                    <input type="radio" name="ticket_scope" value="all" id="ai_edit_scope_all" class="mr-2">
+                                    <?php echo e(t('All tickets')); ?>
+                                </label>
+                            </div>
+                            <?php if (!empty($organizations)): ?>
+                                    <div id="ai_edit_org_select" class="mt-2 hidden">
+                                        <label class="block text-xs mb-1 text-theme-muted">
+                                            <?php echo e(t('Select organizations (multiple allowed)')); ?>
+                                        </label>
+                                        <select name="scope_organization_ids[]" id="ai_edit_scope_organization_ids" multiple
+                                            size="5" class="form-select text-sm">
+                                            <?php foreach ($organizations as $org): ?>
+                                                    <option value="<?php echo $org['id']; ?>"><?php echo e($org['name']); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                            <?php endif; ?>
+                            <div class="mt-3 space-y-2">
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" name="can_view_time" id="ai_edit_can_view_time" class="mr-2">
+                                    <?php echo e(t('Can view time entries')); ?>
+                                </label>
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" name="can_view_timeline" id="ai_edit_can_view_timeline" class="mr-2">
+                                    <?php echo e(t('Can view activity timeline')); ?>
+                                </label>
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" name="can_view_edit_history" id="ai_edit_can_view_edit_history" class="mr-2">
+                                    <?php echo e(t('Can view edit history')); ?>
+                                </label>
+                            </div>
+                        </div>
+                        <?php if (!empty($ai_agent_token_scope_groups)): ?>
+                                <div class="border-t border-theme-light pt-3">
+                                    <h4 class="text-sm font-semibold mb-1 text-theme-secondary">
+                                        <?php echo e(t('Token actions')); ?>
+                                    </h4>
+                                    <p class="text-xs mb-2 text-theme-muted">
+                                        <?php echo e(t('Choose what this token can do.')); ?>
+                                    </p>
+                                    <div class="space-y-2">
+                                        <?php foreach ($ai_agent_token_scope_groups as $group_key => $group): ?>
+                                                <label class="flex items-start gap-2 text-sm rounded-lg border border-theme-light p-2 cursor-pointer">
+                                                    <input type="checkbox" name="api_token_scope_groups[]"
+                                                        value="<?php echo e($group_key); ?>" class="mt-0.5 rounded ai-token-scope-group"
+                                                        data-group="<?php echo e($group_key); ?>"
+                                                        <?php echo in_array($group_key, $ai_agent_token_default_scope_groups, true) ? 'checked' : ''; ?>>
+                                                    <span>
+                                                        <span class="font-medium text-theme-primary">
+                                                            <?php echo e(t($group['label'])); ?>
+                                                        </span>
+                                                        <span class="block text-xs text-theme-muted">
+                                                            <?php echo e(t($group['description'])); ?>
+                                                        </span>
+                                                    </span>
+                                                </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                        <?php endif; ?>
                         <div>
                             <label class="flex items-center space-x-2 text-sm">
                                 <input type="checkbox" name="is_active" id="ai_edit_is_active" value="1">
                                 <span><?php echo e(t('Active')); ?></span>
                             </label>
                         </div>
-                        <button type="submit" name="update_ai_agent" class="btn btn-primary w-full">
-                            <?php echo e(t('Save')); ?>
-                        </button>
+                        <div class="border-t border-theme-light pt-3">
+                            <h4 class="text-sm font-semibold mb-1 text-theme-secondary">
+                                <?php echo e(t('API token')); ?>
+                            </h4>
+                            <div id="ai_edit_token_status"></div>
+                            <p class="text-xs mt-2 text-theme-muted">
+                                <?php echo e(t('The new token uses the access and actions selected above. Creating a new token revokes older active tokens for this agent.')); ?>
+                            </p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+                                <button type="submit" name="update_ai_agent" class="btn btn-secondary w-full">
+                                    <?php echo e(t('Save access')); ?>
+                                </button>
+                                <button type="submit" name="save_and_generate_agent_token" class="btn btn-primary w-full">
+                                    <?php echo e(t('Save access and create token')); ?>
+                                </button>
+                            </div>
+                        </div>
                     </form>
 
-                    <!-- Token management -->
-                    <div class="border-t pt-3 mt-3">
-                        <h4 class="text-sm font-medium mb-2 text-theme-secondary">
-                            <?php echo e(t('API token')); ?>
-                        </h4>
-                        <div id="ai_edit_token_status"></div>
-                        <div id="ai_edit_token_actions"></div>
-                    </div>
+                    <div id="ai_edit_token_actions"></div>
                 </div>
             </div>
         </div>
 
         <script>
             var _aiAgentReturnFocus = null;
+            var _aiAgentTokenGroupScopes = <?php echo json_encode($ai_agent_token_group_scopes, JSON_UNESCAPED_SLASHES); ?>;
+            var _aiAgentDefaultTokenGroups = <?php echo json_encode($ai_agent_token_default_scope_groups, JSON_UNESCAPED_SLASHES); ?>;
 
             /**
              * Double-confirmation for deleting an agent.
@@ -919,6 +1177,8 @@ include BASE_PATH . '/includes/components/page-header.php';
                 document.getElementById('ai_edit_model').value = agent.ai_model || '';
                 document.getElementById('ai_edit_cost_rate').value = agent.cost_rate || '';
                 document.getElementById('ai_edit_is_active').checked = agent.is_active == 1;
+                setAiAgentAccess(agent);
+                setAiAgentTokenScopeGroups(token);
 
                 var statusEl = document.getElementById('ai_edit_token_status');
                 var actionsEl = document.getElementById('ai_edit_token_actions');
@@ -937,31 +1197,23 @@ include BASE_PATH . '/includes/components/page-header.php';
                     p.appendChild(code);
                     statusEl.appendChild(p);
 
-                    // Revoke + Generate new buttons
+                    // Revoke button stays separate; creating a new token is submitted through the main form
+                    // so it always uses the access and actions selected above.
                     var csrf = <?php echo json_encode($_SESSION['csrf_token'] ?? ''); ?>;
                     var revokeConfirm = '<?php echo addslashes(e(t('Revoke this token? The agent will lose API access.'))); ?>';
                     var revokeConfirm2 = '<?php echo addslashes(e(t('Are you sure? This cannot be undone.'))); ?>';
                     actionsEl.insertAdjacentHTML('beforeend',
-                        '<form method="post" class="flex gap-2 mt-2" onsubmit="return confirm(\'' + revokeConfirm + '\') && confirm(\'' + revokeConfirm2 + '\')">' +
+                        '<form method="post" class="mt-2" onsubmit="return confirm(\'' + revokeConfirm + '\') && confirm(\'' + revokeConfirm2 + '\')">' +
                         '<input type="hidden" name="csrf_token" value="' + csrf + '">' +
                         '<input type="hidden" name="id" value="' + agent.id + '">' +
                         '<input type="hidden" name="token_id" value="' + token.id + '">' +
-                        '<button type="submit" name="revoke_agent_token" class="btn btn-warning btn-sm flex-1"><?php echo e(t('Revoke')); ?></button>' +
-                        '<button type="submit" name="generate_agent_token" class="btn btn-secondary btn-sm flex-1"><?php echo e(t('Generate new')); ?></button>' +
+                        '<button type="submit" name="revoke_agent_token" class="btn btn-warning btn-sm w-full"><?php echo e(t('Revoke token')); ?></button>' +
                         '</form>');
                 } else {
                     var p = document.createElement('p');
                     p.className = 'text-xs text-orange-500 mb-1';
                     p.textContent = '<?php echo e(t('No active token')); ?>';
                     statusEl.appendChild(p);
-
-                    var csrf = <?php echo json_encode($_SESSION['csrf_token'] ?? ''); ?>;
-                    actionsEl.insertAdjacentHTML('beforeend',
-                        '<form method="post" class="mt-2">' +
-                        '<input type="hidden" name="csrf_token" value="' + csrf + '">' +
-                        '<input type="hidden" name="id" value="' + agent.id + '">' +
-                        '<button type="submit" name="generate_agent_token" class="btn btn-primary btn-sm w-full"><?php echo e(t('Generate token')); ?></button>' +
-                        '</form>');
                 }
 
                 var modal = document.getElementById('editAiAgentModal');
@@ -981,7 +1233,130 @@ include BASE_PATH . '/includes/components/page-header.php';
                 if (_aiAgentReturnFocus) { _aiAgentReturnFocus.focus(); _aiAgentReturnFocus = null; }
             }
 
+            function parseAiAgentPermissions(agent) {
+                var permissions = {};
+                if (agent && agent.permissions) {
+                    try {
+                        permissions = typeof agent.permissions === 'string' ? JSON.parse(agent.permissions) : agent.permissions;
+                    } catch (e) {
+                        permissions = {};
+                    }
+                }
+                if (!permissions || typeof permissions !== 'object') {
+                    permissions = {};
+                }
+                return permissions;
+            }
+
+            function parseAiTokenScopes(token) {
+                if (!token || !token.scopes_json) {
+                    return [];
+                }
+                try {
+                    var scopes = typeof token.scopes_json === 'string' ? JSON.parse(token.scopes_json) : token.scopes_json;
+                    return Array.isArray(scopes) ? scopes : [];
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            function setAiAgentTokenScopeGroups(token) {
+                var form = document.getElementById('editAiAgentForm');
+                if (!form) {
+                    return;
+                }
+                var tokenScopes = parseAiTokenScopes(token);
+                var useDefaults = tokenScopes.length === 0;
+                var hasWildcard = tokenScopes.indexOf('*') !== -1;
+                var tokenScopeSet = new Set(tokenScopes);
+
+                form.querySelectorAll('input[name="api_token_scope_groups[]"]').forEach(function (checkbox) {
+                    var group = checkbox.getAttribute('data-group') || checkbox.value;
+                    var groupScopes = _aiAgentTokenGroupScopes[group] || [];
+                    checkbox.checked = useDefaults
+                        ? _aiAgentDefaultTokenGroups.indexOf(group) !== -1
+                        : (hasWildcard || groupScopes.some(function (scope) { return tokenScopeSet.has(scope); }));
+                });
+            }
+
+            function setAiAgentAccess(agent) {
+                var form = document.getElementById('editAiAgentForm');
+                if (!form) {
+                    return;
+                }
+
+                var permissions = parseAiAgentPermissions(agent);
+                var scope = permissions.ticket_scope || 'assigned';
+                if (!['assigned', 'organization', 'all'].includes(scope)) {
+                    scope = 'assigned';
+                }
+
+                form.querySelectorAll('input[name="ticket_scope"]').forEach(function (radio) {
+                    radio.checked = radio.value === scope;
+                });
+
+                var selectedIds = Array.isArray(permissions.organization_ids)
+                    ? permissions.organization_ids
+                    : (permissions.organization_ids ? [permissions.organization_ids] : []);
+                if (selectedIds.length === 0 && agent && agent.organization_id) {
+                    selectedIds = [agent.organization_id];
+                }
+                var selected = new Set(selectedIds.map(function (id) {
+                    return parseInt(id, 10);
+                }).filter(function (id) {
+                    return !Number.isNaN(id) && id > 0;
+                }));
+
+                var orgSelect = document.getElementById('ai_edit_scope_organization_ids');
+                if (orgSelect) {
+                    for (var option of orgSelect.options) {
+                        option.selected = selected.has(parseInt(option.value, 10));
+                    }
+                }
+
+                var timeCheckbox = document.getElementById('ai_edit_can_view_time');
+                if (timeCheckbox) {
+                    timeCheckbox.checked = permissions.can_view_time !== false;
+                }
+                var timelineCheckbox = document.getElementById('ai_edit_can_view_timeline');
+                if (timelineCheckbox) {
+                    timelineCheckbox.checked = permissions.can_view_timeline !== false;
+                }
+                var historyCheckbox = document.getElementById('ai_edit_can_view_edit_history');
+                if (historyCheckbox) {
+                    historyCheckbox.checked = permissions.can_view_edit_history === true;
+                }
+
+                syncAiAgentScope('editAiAgentForm', 'ai_edit_org_select');
+            }
+
+            function syncAiAgentScope(formId, orgContainerId) {
+                var form = document.getElementById(formId);
+                var orgContainer = document.getElementById(orgContainerId);
+                if (!form || !orgContainer) {
+                    return;
+                }
+                var checked = form.querySelector('input[name="ticket_scope"]:checked');
+                orgContainer.classList.toggle('hidden', !(checked && checked.value === 'organization'));
+            }
+
+            function bindAiAgentScope(formId, orgContainerId) {
+                var form = document.getElementById(formId);
+                if (!form) {
+                    return;
+                }
+                form.querySelectorAll('input[name="ticket_scope"]').forEach(function (radio) {
+                    radio.addEventListener('change', function () {
+                        syncAiAgentScope(formId, orgContainerId);
+                    });
+                });
+                syncAiAgentScope(formId, orgContainerId);
+            }
+
             document.addEventListener('DOMContentLoaded', function () {
+                bindAiAgentScope('aiAddAgentForm', 'ai_add_org_select');
+                bindAiAgentScope('editAiAgentForm', 'ai_edit_org_select');
+
                 var modal = document.getElementById('editAiAgentModal');
                 if (modal) {
                     modal.addEventListener('click', function (e) {
@@ -1049,7 +1424,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                         </form>
                     </div>
 
-                    <div class="overflow-x-auto">
+                    <div class="admin-responsive-table-wrap">
                         <form method="get" id="user-filter-form" class="hidden">
                             <input type="hidden" name="page" value="admin">
                             <input type="hidden" name="section" value="users">
@@ -1063,7 +1438,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                     <input type="hidden" name="to_date" value="<?php echo e($to_date); ?>">
                             <?php endif; ?>
                         </form>
-                        <table class="w-full tickets-table">
+                        <table class="admin-responsive-table admin-users-table tickets-table">
                             <thead class="bg-theme-secondary">
                                 <tr class="border-b">
                                     <th class="px-4 py-2 text-left th-label">
@@ -1142,7 +1517,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                             <tbody class="divide-y">
                                 <?php foreach ($users as $u): ?>
                                         <tr class="tr-hover">
-                                            <td class="px-4 py-2.5">
+                                            <td class="px-4 py-2.5 admin-responsive-primary" data-label="<?php echo e(t('Name')); ?>">
                                                 <div class="flex items-center space-x-2">
                                                     <?php if (!empty($u['avatar'])): ?>
                                                             <img src="<?php echo e(upload_url($u['avatar'])); ?>" alt=""
@@ -1154,43 +1529,42 @@ include BASE_PATH . '/includes/components/page-header.php';
                                                                     class="text-blue-600 text-xs font-medium"><?php echo strtoupper(substr($u['first_name'], 0, 1)); ?></span>
                                                             </div>
                                                     <?php endif; ?>
-                                                    <div>
-                                                        <span class="font-medium text-sm text-theme-primary"><?php echo e($u['first_name'] . ' ' . $u['last_name']); ?></span>
-                                                        <div class="text-xs text-theme-muted">
+                                                    <div class="admin-cell-main">
+                                                        <span class="admin-cell-title text-sm"><?php echo e($u['first_name'] . ' ' . $u['last_name']); ?></span>
+                                                        <div class="admin-cell-subtitle text-xs">
                                                             <?php echo e($u['email']); ?>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td class="px-4 py-2.5 text-xs text-theme-secondary">
+                                            <td class="px-4 py-2.5 text-xs text-theme-secondary" data-label="<?php echo e(t('Company')); ?>">
                                                 <?php if (!empty($u['organization_name'])): ?>
-                                                        <span
-                                                            class="text-theme-secondary"><?php echo e($u['organization_name']); ?></span>
+                                                        <span class="admin-cell-muted"><?php echo e($u['organization_name']); ?></span>
                                                 <?php else: ?>
                                                         <span class="text-theme-muted">-</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td class="px-4 py-2.5">
+                                            <td class="px-4 py-2.5" data-label="<?php echo e(t('Role')); ?>">
                                                 <?php
                                                 $role_labels = ['user' => t('User'), 'agent' => t('Agent'), 'admin' => t('Admin')];
                                                 $role_badge = [
-                                                    'user' => ['class' => '', 'style' => 'background: var(--surface-secondary); color: var(--text-secondary);'],
-                                                    'agent' => ['class' => 'bg-blue-100 text-blue-600', 'style' => ''],
-                                                    'admin' => ['class' => 'bg-purple-100 text-purple-600', 'style' => '']
+                                                    'user' => 'team-user-badge--muted',
+                                                    'agent' => 'bg-blue-100 text-blue-600',
+                                                    'admin' => 'bg-purple-100 text-purple-600'
                                                 ];
-                                                $badge = $role_badge[$u['role']] ?? $role_badge['user'];
+                                                $badge_class = $role_badge[$u['role']] ?? $role_badge['user'];
                                                 ?>
-                                                <span class="badge text-xs <?php echo $badge['class']; ?>" <?php echo $badge['style'] ? ' style="' . $badge['style'] . '"' : ''; ?>>
+                                                <span class="badge text-xs <?php echo e($badge_class); ?>">
                                                     <?php echo e($role_labels[$u['role']] ?? $u['role']); ?>
                                                 </span>
                                             </td>
-                                            <td class="px-4 py-2.5 text-xs text-theme-secondary">
+                                            <td class="px-4 py-2.5 text-xs text-theme-secondary" data-label="<?php echo e(t('Logged time')); ?>">
                                                 <?php
                                                 $total_minutes = $time_totals[$u['id']] ?? 0;
                                                 echo $total_minutes > 0 ? e(format_duration_minutes($total_minutes)) : '<span class="text-theme-muted">-</span>';
                                                 ?>
                                             </td>
-                                            <td class="px-4 py-2.5">
+                                            <td class="px-4 py-2.5" data-label="<?php echo e(t('Status')); ?>">
                                                 <?php if ($u['is_active']): ?>
                                                         <span
                                                             class="text-xs px-2 py-0.5 rounded bg-green-100 text-green-600"><?php echo e(t('Active')); ?></span>
@@ -1198,7 +1572,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                                         <span class="text-xs px-2 py-1 rounded bg-theme-tertiary text-theme-secondary"><?php echo e(t('Archived')); ?></span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td class="px-4 py-2.5 text-right">
+                                            <td class="px-4 py-2.5 text-right admin-responsive-actions" data-label="<?php echo e(t('Actions')); ?>">
                                                 <div class="flex items-center justify-end gap-1 relative z-10">
                                                     <?php if ($u['id'] != $_SESSION['user_id'] && (int) ($u['is_active'] ?? 0) === 1): ?>
                                                             <form method="post" action="index.php?page=impersonate" class="inline">
@@ -1213,7 +1587,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                                             </form>
                                                     <?php endif; ?>
                                                     <a href="<?php echo url('user-profile', ['id' => $u['id']]); ?>"
-                                                        class="p-1.5 rounded transition-colors" style="color: var(--text-muted);"
+                                                        class="p-1.5 rounded transition-colors text-theme-muted hover:text-theme-secondary"
                                                         title="<?php echo e(t('Ticket history')); ?>">
                                                         <?php echo get_icon('clock', 'w-4 h-4'); ?>
                                                     </a>
@@ -1443,7 +1817,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                             </div>
                         </div>
 
-                        <div class="border-t pt-4 mt-4" style="border-color: var(--border-primary);">
+                        <div class="border-t border-theme-light pt-4 mt-4">
                             <label class="flex items-center text-sm cursor-pointer">
                                 <input type="checkbox" name="send_welcome_email" class="mr-2">
                                 <?php echo e(t('Send login credentials via email')); ?>
@@ -1543,20 +1917,20 @@ include BASE_PATH . '/includes/components/page-header.php';
 
                                     // Scope colors (class + style pairs)
                                     $scope_colors = [
-                                        'all' => ['class' => 'bg-green-100 text-green-700', 'style' => ''],
-                                        'assigned' => ['class' => 'bg-yellow-100 text-yellow-700', 'style' => ''],
-                                        'organization' => ['class' => 'bg-blue-100 text-blue-700', 'style' => ''],
-                                        'own' => ['class' => '', 'style' => 'background: var(--surface-secondary); color: var(--text-secondary);']
+                                        'all' => 'bg-green-100 text-green-700',
+                                        'assigned' => 'bg-yellow-100 text-yellow-700',
+                                        'organization' => 'bg-blue-100 text-blue-700',
+                                        'own' => 'team-user-badge--muted'
                                     ];
-                                    $scope_color_data = $scope_colors[$ticket_scope] ?? ['class' => '', 'style' => 'background: var(--surface-secondary); color: var(--text-secondary);'];
+                                    $scope_color_class = $scope_colors[$ticket_scope] ?? 'team-user-badge--muted';
 
                                     // Role colors (class + style pairs)
                                     $role_colors = [
-                                        'admin' => ['class' => 'bg-purple-100 text-purple-700', 'style' => ''],
-                                        'agent' => ['class' => 'bg-blue-100 text-blue-700', 'style' => ''],
-                                        'user' => ['class' => '', 'style' => 'background: var(--surface-secondary); color: var(--text-secondary);']
+                                        'admin' => 'bg-purple-100 text-purple-700',
+                                        'agent' => 'bg-blue-100 text-blue-700',
+                                        'user' => 'team-user-badge--muted'
                                     ];
-                                    $role_color_data = $role_colors[$u['role']] ?? ['class' => '', 'style' => 'background: var(--surface-secondary); color: var(--text-secondary);'];
+                                    $role_color_class = $role_colors[$u['role']] ?? 'team-user-badge--muted';
                                     ?>
                                         <tr class="tr-hover <?php echo $u['is_active'] ? '' : 'opacity-50'; ?>">
                                             <td class="px-4 py-3">
@@ -1579,13 +1953,12 @@ include BASE_PATH . '/includes/components/page-header.php';
                                                 </div>
                                             </td>
                                             <td class="px-4 py-3">
-                                                <span class="text-xs px-2 py-0.5 rounded <?php echo $role_color_data['class']; ?>" <?php echo $role_color_data['style'] ? ' style="' . $role_color_data['style'] . '"' : ''; ?>>
+                                                <span class="text-xs px-2 py-0.5 rounded <?php echo e($role_color_class); ?>">
                                                     <?php echo e(ucfirst($u['role'])); ?>
                                                 </span>
                                             </td>
                                             <td class="px-4 py-3">
-                                                <span class="text-xs px-2 py-0.5 rounded <?php echo $scope_color_data['class']; ?>"
-                                                    <?php echo $scope_color_data['style'] ? ' style="' . $scope_color_data['style'] . '"' : ''; ?>>
+                                                <span class="text-xs px-2 py-0.5 rounded <?php echo e($scope_color_class); ?>">
                                                     <?php echo e($scope_label); ?>
                                                 </span>
                                             </td>
@@ -1688,8 +2061,7 @@ include BASE_PATH . '/includes/components/page-header.php';
         <div id="editModal"
             class="fixed inset-0 bg-black bg-opacity-50 hidden items-start sm:items-center justify-center z-50 overflow-y-auto p-2 sm:p-3">
             <div class="rounded-xl shadow-xl w-full max-w-2xl max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-1.5rem)] overflow-hidden flex flex-col bg-theme-primary">
-                <div class="px-4 sm:px-6 py-3.5 border-b flex items-center justify-between sticky top-0 z-10"
-                    style="border-color: var(--border-light); background: var(--surface-primary);">
+                <div class="px-4 sm:px-6 py-3.5 border-b border-theme-light flex items-center justify-between sticky top-0 z-10 bg-theme-primary">
                     <h3 class="font-semibold text-theme-primary"><?php echo e(t('Edit user')); ?></h3>
                     <button type="button" onclick="closeModal()" class="p-1 text-theme-muted"
                         aria-label="<?php echo e(t('Cancel')); ?>">
@@ -1724,7 +2096,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                 <p id="user-avatar-edit-filename" class="text-xs mt-1 hidden text-theme-secondary"></p>
                             </form>
                             <div class="flex items-center gap-2">
-                                <form method="post" id="remove_avatar_form" class="inline" style="display:none;">
+                                <form method="post" id="remove_avatar_form" class="inline hidden">
                                     <?php echo csrf_field(); ?>
                                     <input type="hidden" name="user_id" id="remove_avatar_user_id">
                                     <button type="submit" name="remove_user_avatar"
@@ -2146,17 +2518,16 @@ include BASE_PATH . '/includes/components/page-header.php';
                     img.alt = '';
                     img.className = 'w-14 h-14 rounded-full object-cover';
                     avatarPreview.appendChild(img);
-                    removeAvatarForm.style.display = 'inline';
+                    removeAvatarForm.classList.remove('hidden');
                 } else {
                     const wrapper = document.createElement('div');
-                    wrapper.className = 'w-14 h-14 rounded-full flex items-center justify-center';
-                    wrapper.style.cssText = 'background: var(--surface-tertiary); color: var(--text-secondary);';
+                    wrapper.className = 'w-14 h-14 rounded-full flex items-center justify-center bg-theme-tertiary text-theme-secondary';
                     const span = document.createElement('span');
                     span.className = 'text-lg font-bold';
                     span.textContent = ((user.first_name || '?').charAt(0)).toUpperCase();
                     wrapper.appendChild(span);
                     avatarPreview.appendChild(wrapper);
-                    removeAvatarForm.style.display = 'none';
+                    removeAvatarForm.classList.add('hidden');
                 }
 
                 const contactPhoneInput = document.getElementById('edit_contact_phone');

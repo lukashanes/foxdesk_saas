@@ -2,7 +2,7 @@
 
 FoxDesk public beta uses one Stripe product, one base recurring price, one metered storage price, Stripe Tax, Customer Portal, and signed webhooks.
 
-The app side is prepared for:
+The app implements:
 
 - 14-day trial without payment during signup
 - Checkout subscription activation after trial

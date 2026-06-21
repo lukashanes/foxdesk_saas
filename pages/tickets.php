@@ -407,7 +407,8 @@ $kanban_main_statuses = $ticket_kanban_model['main_statuses'];
 $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuses'];
 ?>
 
-<div class="ticket-registry-page"
+<div class="workflow-surface workflow-surface--registry ticket-registry-page"
+     data-core-workflow-surface="tickets"
      data-ticket-registry-surface
      data-app-contract-surface="tickets"
      data-app-contract-action="app-ticket-list"

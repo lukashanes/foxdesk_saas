@@ -74,8 +74,9 @@ for (const needle of [
 ]) {
   assert(workspaceSurface.includes(needle), `Work surface missing contract mount: ${needle}`);
 }
-assert(inboxPage.includes("'contract_surface' => 'inbox'"), 'Inbox page must opt into the inbox contract surface.');
-assert(inboxPage.includes("'contract_collection' => 'inbox'"), 'Inbox page must hydrate from app-home inbox data.');
+assert(inboxPage.includes("redirect('work'"), 'Legacy inbox page must redirect into Work.');
+assert(!inboxPage.includes("'contract_surface' => 'inbox'"), 'Inbox page must not mount a separate inbox contract surface.');
+assert(!inboxPage.includes("'contract_collection' => 'inbox'"), 'Inbox page must not hydrate a separate inbox collection.');
 
 assert(ticketsPage.includes('data-app-contract-surface="tickets"'), 'Tickets page must expose app-ticket-list contract surface.');
 assert(ticketsPage.includes('data-app-contract-action="app-ticket-list"'), 'Tickets page must declare app-ticket-list contract action.');
@@ -112,7 +113,6 @@ for (const needle of [
   'createWorkspaceTicketRow',
   'document.createElement',
   'replaceChildren',
-	  'data-app-contract-surface="inbox"',
 	  'hydrateTicketRegistry',
 	  'syncTicketRegistryRows',
 	  'updateTicketRegistryRow',
@@ -142,7 +142,7 @@ for (const needle of [
 
 assert(!shellBridge.includes('.innerHTML'), 'Contract shell bridge must not rerender PHP surfaces through innerHTML.');
 assert(docs.includes('The tenth behavior change adds a frontend contract bridge'), 'Architecture docs must describe the frontend contract bridge.');
-assert(docs.includes('The eleventh behavior change makes Work and Inbox contract-first surfaces'), 'Architecture docs must describe contract-first Work/Inbox surfaces.');
+assert(docs.includes('The eleventh behavior change makes Work the contract-first workspace surface'), 'Architecture docs must describe the contract-first Work surface.');
 assert(docs.includes('The thirteenth behavior change makes the Client center consume the'), 'Architecture docs must describe the client center contract refresh.');
 assert(docs.includes('The fourteenth behavior change makes the detailed Reports billing review'), 'Architecture docs must describe the reporting review contract refresh.');
 assert(docs.includes('The fifteenth behavior change reduces duplicate notification noise'), 'Architecture docs must describe notification dedupe.');

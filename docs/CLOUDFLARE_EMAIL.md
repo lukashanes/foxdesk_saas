@@ -119,6 +119,6 @@ separate `foxdesk-production` bucket.
 
 Useful Cloudflare docs:
 
-- [Email Service](https://developers.cloudflare.com/email-service/)
+- [Cloudflare Email Service / Email Sending](https://developers.cloudflare.com/email-service/)
 - [Email Routing to Workers](https://developers.cloudflare.com/email-service/api/route-emails/email-handler/)
 - [Email Routing subdomains](https://developers.cloudflare.com/email-routing/setup/subdomains/)

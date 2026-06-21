@@ -72,7 +72,7 @@ $page_header_subtitle = t('User activity and ticket history.');
 include BASE_PATH . '/includes/components/page-header.php';
 ?>
 
-<div class="admin-legacy-page">
+<div class="workflow-surface workflow-surface--reports admin-legacy-page" data-core-workflow-surface="reports">
     <?php if (is_admin()): ?>
     <section class="reporting-flow-card">
         <div class="reporting-flow-main">

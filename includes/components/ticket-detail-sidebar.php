@@ -32,23 +32,23 @@
                         </span>
                     </div>
             <?php endif; ?>
-            <dl class="space-y-3">
-                <div class="flex justify-between">
-                    <dt class="text-xs text-theme-muted">ID</dt>
-                    <dd class="text-xs font-mono font-medium text-theme-primary">
+            <dl class="ticket-side-list">
+                <div class="ticket-side-row">
+                    <dt class="ticket-side-label">ID</dt>
+                    <dd class="ticket-side-value ticket-side-value--mono">
                         <?php echo get_ticket_code($ticket_id); ?>
                     </dd>
                 </div>
-                <div class="flex justify-between items-center">
-                    <dt class="text-xs text-theme-muted"><?php echo e(t('Status')); ?></dt>
-                    <dd>
+                <div class="ticket-side-row">
+                    <dt class="ticket-side-label"><?php echo e(t('Status')); ?></dt>
+                    <dd class="ticket-side-value">
                         <?php ticket_detail_render_status_pill($ticket, $statuses); ?>
                     </dd>
                 </div>
                 <?php if (is_agent()): ?>
-                <div class="flex justify-between items-center">
-                    <dt class="text-xs text-theme-muted"><?php echo e(t('Assigned')); ?></dt>
-                    <dd>
+                <div class="ticket-side-row">
+                    <dt class="ticket-side-label"><?php echo e(t('Assigned')); ?></dt>
+                    <dd class="ticket-side-value">
                         <select class="ticket-side-select" onchange="quickEditField('quick-assign', {assignee_id: this.value})">
                             <option value=""><?php echo e(t('-- Unassigned --')); ?></option>
                             <?php foreach ($_sidebar_agents as $_ag): ?>
@@ -60,9 +60,9 @@
                     </dd>
                 </div>
                 <?php endif; ?>
-                <div class="flex justify-between items-center">
-                    <dt class="text-xs text-theme-muted"><?php echo e(t('Priority')); ?></dt>
-                    <dd>
+                <div class="ticket-side-row">
+                    <dt class="ticket-side-label"><?php echo e(t('Priority')); ?></dt>
+                    <dd class="ticket-side-value">
                         <?php if (is_agent()): ?>
                         <select class="ticket-side-select" onchange="quickEditField('quick-priority', {priority_id: this.value})">
                             <option value=""><?php echo e(t('-- Select --')); ?></option>
@@ -77,9 +77,9 @@
                         <?php endif; ?>
                     </dd>
                 </div>
-                <div class="flex justify-between items-center">
-                    <dt class="text-xs text-theme-muted"><?php echo e(t('Type')); ?></dt>
-                    <dd>
+                <div class="ticket-side-row">
+                    <dt class="ticket-side-label"><?php echo e(t('Type')); ?></dt>
+                    <dd class="ticket-side-value">
                         <?php if (is_agent()): ?>
                         <select class="ticket-side-select" onchange="quickEditField('quick-type', {type: this.value})">
                             <option value=""><?php echo e(t('-- Select --')); ?></option>
@@ -90,13 +90,13 @@
                             <?php endforeach; ?>
                         </select>
                         <?php else: ?>
-                        <span class="text-xs text-theme-primary"><?php echo e(get_type_label($ticket['type'])); ?></span>
+                        <span><?php echo e(get_type_label($ticket['type'])); ?></span>
                         <?php endif; ?>
                     </dd>
                 </div>
                 <?php if ($tags_supported): ?>
-                <div class="space-y-1" id="sidebar-tags-section">
-                    <dt class="text-xs flex items-center justify-between text-theme-muted">
+                <div class="ticket-side-row ticket-side-row--stack" id="sidebar-tags-section">
+                    <dt class="ticket-side-label ticket-side-label--wide">
                         <?php echo e(t('Tags')); ?>
                         <?php if (can_edit_ticket($ticket, $user)): ?>
                             <button type="button" id="sidebar-tags-edit-btn"
@@ -106,7 +106,7 @@
                         <?php endif; ?>
                     </dt>
                     <!-- Display mode -->
-                    <dd id="sidebar-tags-display" class="flex flex-wrap gap-1 justify-end">
+                    <dd id="sidebar-tags-display" class="ticket-side-value ticket-side-tags">
                         <?php if (!empty($ticket_tags)): ?>
                             <?php foreach ($ticket_tags as $tag): ?>
                                 <a href="<?php echo e($ticket_tag_filter_url($tag)); ?>" class="ticket-tag-pill"
@@ -115,7 +115,7 @@
                                 </a>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <span class="text-xs text-theme-muted">—</span>
+                            <span class="ticket-side-empty">—</span>
                         <?php endif; ?>
                     </dd>
                     <!-- Edit mode -->
@@ -142,15 +142,15 @@
                     <?php endif; ?>
                 </div>
                 <?php endif; ?>
-                <div class="flex justify-between">
-                    <dt class="text-xs text-theme-muted"><?php echo e(t('Created')); ?></dt>
-                    <dd class="text-xs text-theme-primary">
+                <div class="ticket-side-row">
+                    <dt class="ticket-side-label"><?php echo e(t('Created')); ?></dt>
+                    <dd class="ticket-side-value">
                         <?php echo format_date($ticket['created_at']); ?></dd>
                 </div>
                 <?php if (!empty($ticket['due_date'])): ?>
-                        <div class="flex justify-between">
-                            <dt class="text-xs text-theme-muted"><?php echo e(t('Due date')); ?></dt>
-                            <dd class="text-xs">
+                        <div class="ticket-side-row">
+                            <dt class="ticket-side-label"><?php echo e(t('Due date')); ?></dt>
+                            <dd class="ticket-side-value">
                                 <?php
                                 $is_overdue = is_due_date_overdue($ticket['due_date'], !empty($ticket['is_closed']));
                                 ?>
@@ -161,23 +161,23 @@
                         </div>
                 <?php endif; ?>
                 <?php if (!empty($attachment_list)): ?>
-                        <div class="flex justify-between">
-                            <dt class="text-xs text-theme-muted"><?php echo e(t('Attachments')); ?></dt>
-                            <dd class="text-xs text-theme-primary"><?php echo count($attachment_list); ?>
+                        <div class="ticket-side-row">
+                            <dt class="ticket-side-label"><?php echo e(t('Attachments')); ?></dt>
+                            <dd class="ticket-side-value"><?php echo count($attachment_list); ?>
                                 <?php echo e(t('files')); ?>
                             </dd>
                         </div>
                 <?php endif; ?>
                 <?php if ($time_tracking_available && can_view_time($user)): ?>
-                        <div class="flex justify-between items-center">
-                            <dt class="text-xs text-theme-muted"><?php echo e(t('Logged time')); ?></dt>
-                            <dd>
+                        <div class="ticket-side-row">
+                            <dt class="ticket-side-label"><?php echo e(t('Logged time')); ?></dt>
+                            <dd class="ticket-side-value">
                                 <?php if ($total_time_minutes > 0): ?>
                                         <span class="badge-inline bg-blue-50 text-blue-700">
                                             <?php echo get_icon('clock', 'mr-1'); ?>                <?php echo e(format_duration_minutes($total_time_minutes)); ?>
                                         </span>
                                 <?php else: ?>
-                                        <span class="text-xs text-theme-muted">-</span>
+                                        <span class="ticket-side-empty">-</span>
                                 <?php endif; ?>
                             </dd>
                         </div>
@@ -194,9 +194,9 @@
                         <?php endif; ?>
                 <?php endif; ?>
                 <?php if (is_admin()): ?>
-                        <div class="flex justify-between items-center">
-                            <dt class="text-xs text-theme-muted"><?php echo e(t('Billable rate')); ?></dt>
-                            <dd class="text-xs font-medium text-theme-primary">
+                        <div class="ticket-side-row">
+                            <dt class="ticket-side-label"><?php echo e(t('Billable rate')); ?></dt>
+                            <dd class="ticket-side-value">
                                 <?php echo format_money($ticket_effective_billable_rate); ?>
                             </dd>
                         </div>

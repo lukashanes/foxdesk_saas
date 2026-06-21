@@ -12,6 +12,7 @@ const {
   port,
   baseURL,
   platformBaseURL,
+  publicBaseURL,
   admin
 } = require('./env');
 
@@ -109,6 +110,8 @@ define('APP_NAME', 'FoxDesk E2E');
 define('APP_URL', '${baseURL}');
 define('PLATFORM_HOST', 'platform.localhost');
 define('PLATFORM_URL', '${platformBaseURL}');
+define('APP_MARKETING_HOST', 'public.localhost');
+define('APP_MARKETING_URL', '${publicBaseURL}');
 define('APP_DEBUG', true);
 define('BILLING_ENABLED', false);
 define('STRIPE_SECRET_KEY', 'sk_test_e2e');

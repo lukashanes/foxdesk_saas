@@ -1,6 +1,7 @@
 # Technical Debt Plan
 
-Status: active
+Status: active; milestones 1-10 are implemented as guarded baselines and remain
+maintenance gates for future work.
 Primary product track: FoxDesk SaaS
 Secondary track: public self-hosted PHP FoxDesk for compatibility, updates, and
 self-hosted to SaaS migration only.
@@ -193,7 +194,8 @@ Done means:
 
 Problem:
 
-- Billing is prepared but must be impossible to confuse with workspace admin.
+- Billing is implemented, but must stay impossible to confuse with workspace
+  administration.
 - Trial, paid, free/manual, past-due, suspended, cancelled, and migration states
   need consistent UI actions.
 
@@ -429,9 +431,9 @@ Done when:
 Verification:
 
 ```bash
-php tests/email-format-test.php
-php tests/email-notification-contract-test.php
-php tests/notification-policy-test.php
+./bin/run-php.sh tests/email-format-test.php
+./bin/run-php.sh tests/email-notification-contract-test.php
+./bin/run-php.sh tests/notification-policy-test.php
 ```
 
 Completed in technical debt milestone 6:
@@ -494,8 +496,8 @@ Done when:
 Verification:
 
 ```bash
-php tests/billing-lifecycle-contract-test.php
-php tests/billing-review-test.php
+./bin/run-php.sh tests/billing-lifecycle-contract-test.php
+./bin/run-php.sh tests/billing-review-test.php
 npm run e2e -- tests/e2e/05-saas-control-plane.spec.js
 ```
 
@@ -611,10 +613,10 @@ Done when:
 Verification:
 
 ```bash
-php tests/mobile-api-contract-test.php
-php tests/app-shell-contract-test.php
-php tests/app-home-contract-test.php
-php tests/native-app-api-freeze-contract-test.php
+./bin/run-php.sh tests/mobile-api-contract-test.php
+./bin/run-php.sh tests/app-shell-contract-test.php
+./bin/run-php.sh tests/app-home-contract-test.php
+./bin/run-php.sh tests/native-app-api-freeze-contract-test.php
 ```
 
 Completed in technical debt milestone 9:
@@ -669,8 +671,8 @@ Verification:
 
 ```bash
 npm run lint:php
-php tests/cloud-migration-bridge-contract-test.php
-php tests/pseudo-cron-email-test.php
+./bin/run-php.sh tests/cloud-migration-bridge-contract-test.php
+./bin/run-php.sh tests/pseudo-cron-email-test.php
 ```
 
 Completed in technical debt milestone 10:
@@ -694,17 +696,34 @@ Verified with:
 ./bin/run-php.sh tests/pseudo-cron-email-test.php
 ```
 
-## Execution Order
+## Execution Order For Future Work
 
-1. Finish Milestone 1 immediately.
-2. Run Milestones 2, 3, and 4 before large UI or mobile work.
-3. Run Milestones 5, 7, and 8 before paid production launch.
-4. Run Milestone 6 before using SaaS email for real customers.
-5. Run Milestone 9 before starting native iOS implementation.
-6. Keep Milestone 10 active for public self-hosted releases.
+1. Keep the release-channel and parity docs updated before moving behavior
+   between SaaS and self-hosted.
+2. Keep monolith extraction contract tests green before changing heavy pages.
+3. Keep tenant/security boundaries green before adding API, billing, migration,
+   or mobile behavior.
+4. Keep CSP/UI and visual QA gates green before deploying UI changes.
+5. Keep R2, email, billing, deployment evidence, and restore evidence green
+   before production deploys.
+6. Keep the native API freeze green before starting native iOS/Android screens.
+7. Keep the self-hosted maintenance gate active for every public PHP release.
 
 ## Current Next Action
 
-Run the milestone 9 and 10 verification set, then start native iOS
-implementation in a dedicated app thread. Keep the self-hosted maintenance gate
-active for every future public PHP release.
+Prepare paid public beta evidence:
+
+- legal approval and final public legal copy review
+- live Stripe checkout/portal/VAT/cancellation/recovery test evidence
+- real Cloudflare inbound reply test with attachment archive evidence
+- external monitoring for health, cron, backups, webhook failures, R2, email,
+  disk, and SSL/DNS
+- at least one real self-hosted to SaaS API sync with attachment evidence and
+  final cutover
+
+Run after every deploy:
+
+```bash
+npm run prod:smoke
+npm run prod:deploy:evidence
+```

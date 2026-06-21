@@ -5,6 +5,7 @@ const runId = process.env.E2E_RUN_ID || 'foxdesk-e2e';
 const port = Number(process.env.E2E_PORT || 8090);
 const baseURL = process.env.E2E_BASE_URL || `http://127.0.0.1:${port}`;
 const platformBaseURL = process.env.E2E_PLATFORM_BASE_URL || `http://platform.localhost:${port}`;
+const publicBaseURL = process.env.E2E_PUBLIC_BASE_URL || `http://public.localhost:${port}`;
 const tmpDir = process.env.E2E_TMP_DIR || `/tmp/${runId}`;
 const network = `${runId}-net`;
 const dbContainer = `${runId}-db`;
@@ -22,6 +23,7 @@ module.exports = {
   port,
   baseURL,
   platformBaseURL,
+  publicBaseURL,
   tmpDir,
   network,
   dbContainer,

@@ -1,0 +1,14 @@
+{
+  "generatedAt": "2026-06-21T00:00:00.000Z",
+  "source": "pre-milestone-7 git HEAD for theme.css and assets/public/cloud.css",
+  "files": [
+    "theme.css",
+    "assets/public/cloud.css"
+  ],
+  "metrics": {
+    "uniqueFontSizes": 57,
+    "uniqueBorderRadii": 39,
+    "uniqueBoxShadows": 71
+  },
+  "rule": "Milestone 7 passes only when current unique font-size, border-radius, and box-shadow declaration values are lower than this baseline. Values that reference CSS variables count as tokenized and are excluded from unique ad-hoc counts."
+}

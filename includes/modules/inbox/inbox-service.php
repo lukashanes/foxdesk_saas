@@ -1,22 +1,22 @@
 <?php
 /**
- * Inbox triage service.
+ * Internal intake queue service.
  *
- * Inbox is not the whole ticket registry. It is the place for items that need a
- * decision: assign, start work, wait, merge, or close.
+ * These queues feed Work and API clients. They are not a separate navigation
+ * surface in the web app.
  */
 
 function inbox_queue_definitions(): array
 {
     return [
         'triage' => [
-            'label' => 'Triage',
+            'label' => 'New tickets',
         ],
         'customer_replies' => [
-            'label' => 'Customer replies',
+            'label' => 'Client replies',
         ],
         'email_imports' => [
-            'label' => 'Email imports',
+            'label' => 'Email tickets',
         ],
     ];
 }

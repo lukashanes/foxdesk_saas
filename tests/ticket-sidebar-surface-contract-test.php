@@ -2,7 +2,7 @@
 
 $root = dirname(__DIR__);
 $component = file_get_contents($root . '/includes/components/ticket-detail-surface.php');
-$page = file_get_contents($root . '/pages/ticket-detail.php');
+$page = file_get_contents($root . '/includes/components/ticket-detail-sidebar.php');
 $theme = file_get_contents($root . '/theme.css');
 
 $assert = static function (bool $condition, string $message): void {
@@ -25,6 +25,10 @@ foreach ([
 foreach ([
     'data-ticket-sidebar-surface',
     'ticket-client-pill',
+    'ticket-side-list',
+    'ticket-side-row',
+    'ticket-side-label',
+    'ticket-side-value',
     'ticket-side-select',
     'ticket-side-edit-button',
     'ticket-date-value',
@@ -37,6 +41,11 @@ foreach ([
 
 foreach ([
     '.ticket-side-card',
+    '.ticket-sidebar > .card',
+    '.ticket-side-list',
+    '.ticket-side-row',
+    '.ticket-side-label',
+    '.ticket-side-value',
     '.ticket-client-pill',
     '.ticket-side-select',
     '.ticket-side-action-button',
@@ -48,14 +57,11 @@ foreach ([
     $assert(str_contains($theme, $needle), 'theme.css missing sidebar selector: ' . $needle);
 }
 
-$sidebar_start = strpos($page, 'data-ticket-sidebar-surface');
-$modal_start = strpos($page, '<!-- Edit Ticket Modal -->');
-$assert($sidebar_start !== false && $modal_start !== false && $modal_start > $sidebar_start, 'Unable to isolate ticket sidebar markup.');
-$sidebar_markup = substr($page, $sidebar_start, $modal_start - $sidebar_start);
-
-$assert(!str_contains($sidebar_markup, 'style='), 'Ticket sidebar surface must not use inline style attributes.');
-$assert(!str_contains($sidebar_markup, 'onmouseover='), 'Ticket sidebar surface must not use inline mouseover styling.');
-$assert(!str_contains($sidebar_markup, 'onmouseout='), 'Ticket sidebar surface must not use inline mouseout styling.');
-$assert(!str_contains($sidebar_markup, 'text-xs py-0.5 px-1 rounded border-0 cursor-pointer'), 'Quick property selects must use ticket-side-select.');
+$assert(!str_contains($page, 'style='), 'Ticket sidebar surface must not use inline style attributes.');
+$assert(!str_contains($page, 'onmouseover='), 'Ticket sidebar surface must not use inline mouseover styling.');
+$assert(!str_contains($page, 'onmouseout='), 'Ticket sidebar surface must not use inline mouseout styling.');
+$assert(!str_contains($page, 'text-xs py-0.5 px-1 rounded border-0 cursor-pointer'), 'Quick property selects must use ticket-side-select.');
+$assert(!str_contains($theme, '.ticket-sidebar > .card:first-child'), 'Ticket sidebar cards must not use merged-card first-child styling.');
+$assert(!str_contains($theme, '.ticket-sidebar > .card + .card'), 'Ticket sidebar cards must keep normal card spacing.');
 
 echo "Ticket sidebar surface contract OK\n";

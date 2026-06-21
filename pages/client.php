@@ -29,7 +29,8 @@ $page = 'client';
 require_once BASE_PATH . '/includes/header.php';
 ?>
 
-<div class="client-center"
+<div class="workflow-surface workflow-surface--client client-center"
+    data-core-workflow-surface="client"
     data-app-contract-surface="client"
     data-app-contract-action="app-client-overview"
     data-client-id="<?php echo (int) $org['id']; ?>"

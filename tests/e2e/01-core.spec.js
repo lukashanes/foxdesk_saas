@@ -92,6 +92,7 @@ test('page load triggers throttled pseudo-cron email fallback', async ({ page })
     INSERT INTO settings (setting_key, setting_value) VALUES
       ('pseudo_cron_enabled', '1'),
       ('pseudo_cron_last_email', '0'),
+      ('pseudo_cron_last_email_attempt', '0'),
       ('pseudo_cron_email_inline_lock', '0'),
       ('imap_enabled', '0')
     ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
@@ -188,10 +189,13 @@ test('admin can set a per-agent client billable rate for time reports', async ({
   await login(page);
   await page.goto('/index.php?page=admin&section=reports&tab=rates');
   await expect(page.locator('body')).toContainText('Agent client rates');
-  await page.locator('select[name="organization_id"]').selectOption(String(ids.org_id));
-  await page.locator('select[name="user_id"]').selectOption(String(ids.agent_id));
-  await page.locator('input[name="billable_rate"]').fill('750');
-  await page.locator('button[name="save_agent_client_rate"]').click();
+  const agentClientRateForm = page.locator('form').filter({
+    has: page.locator('button[name="save_agent_client_rate"]')
+  });
+  await agentClientRateForm.locator('select[name="organization_id"]').selectOption(String(ids.org_id));
+  await agentClientRateForm.locator('select[name="user_id"]').selectOption(String(ids.agent_id));
+  await agentClientRateForm.locator('input[name="billable_rate"]').fill('750');
+  await agentClientRateForm.locator('button[name="save_agent_client_rate"]').click();
   await expect(page).toHaveURL(/tab=rates/);
   await expect(page.locator('body')).toContainText(orgName);
   await expect(page.locator('body')).toContainText('Rate Agent');

@@ -119,7 +119,10 @@ require_once BASE_PATH . '/includes/header.php';
 <!-- Quill Editor CSS -->
 <link href="assets/vendor/quill/2.0.2/quill.snow.css?v=<?php echo APP_VERSION; ?>" rel="stylesheet">
 
-<div class="ticket-detail-page" data-ticket-detail-surface data-ticket-id="<?php echo (int) $ticket_id; ?>">
+<div class="workflow-surface workflow-surface--ticket-detail ticket-detail-page"
+    data-core-workflow-surface="ticket-detail"
+    data-ticket-detail-surface
+    data-ticket-id="<?php echo (int) $ticket_id; ?>">
     <!-- Main Content -->
     <div class="ticket-detail-main">
         <!-- Ticket Work Panel -->
@@ -154,8 +157,10 @@ require_once BASE_PATH . '/includes/header.php';
             <div class="ticket-work-panel__actions" aria-label="<?php echo e(t('Primary actions')); ?>">
                 <?php foreach ($ticket_primary_actions as $action): ?>
                     <?php $action_class = ticket_detail_primary_action_class($action); ?>
+                    <?php $action_title = t($action['title'] ?? $action['label']); ?>
                     <?php if ($action['type'] === 'anchor'): ?>
-                        <a href="<?php echo e($action['href']); ?>" class="<?php echo e($action_class); ?>">
+                        <a href="<?php echo e($action['href']); ?>" class="<?php echo e($action_class); ?>"
+                           title="<?php echo e($action_title); ?>" aria-label="<?php echo e($action_title); ?>">
                             <?php echo get_icon($action['icon'], 'w-4 h-4'); ?>
                             <span><?php echo e(t($action['label'])); ?></span>
                         </a>
@@ -163,7 +168,8 @@ require_once BASE_PATH . '/includes/header.php';
                         <form method="post" class="ticket-primary-action-form">
                             <?php echo csrf_field(); ?>
                             <input type="hidden" name="status_id" value="<?php echo (int) $action['status_id']; ?>">
-                            <button type="submit" name="<?php echo e($action['name']); ?>" class="<?php echo e($action_class); ?>">
+                            <button type="submit" name="<?php echo e($action['name']); ?>" class="<?php echo e($action_class); ?>"
+                                    title="<?php echo e($action_title); ?>" aria-label="<?php echo e($action_title); ?>">
                                 <?php echo get_icon($action['icon'], 'w-4 h-4'); ?>
                                 <span><?php echo e(t($action['label'])); ?></span>
                             </button>
@@ -172,6 +178,7 @@ require_once BASE_PATH . '/includes/header.php';
                         <button type="button"
                             <?php if (!empty($action['id'])): ?>id="<?php echo e($action['id']); ?>"<?php endif; ?>
                             <?php if (!empty($action['onclick'])): ?>onclick="<?php echo e($action['onclick']); ?>"<?php endif; ?>
+                            title="<?php echo e($action_title); ?>" aria-label="<?php echo e($action_title); ?>"
                             class="<?php echo e($action_class); ?>">
                             <?php echo get_icon($action['icon'], 'w-4 h-4'); ?>
                             <span><?php echo e(t($action['label'])); ?></span>
@@ -557,9 +564,14 @@ $ticket_detail_js_config = [
         'visibleAgents' => t('Visible to agents only'),
         'visibleCustomer' => t('Visible to customer'),
         'startTimer' => t('Start timer'),
+        'startTimerHelp' => t('Start a timer for this ticket.'),
         'startingTimer' => t('Starting...'),
         'pauseTimer' => t('Pause timer'),
+        'pauseTimerHelp' => t('Pause this timer without logging time yet.'),
         'resumeTimer' => t('Resume timer'),
+        'resumeTimerHelp' => t('Resume the paused timer.'),
+        'completeHelp' => t('Mark this ticket as done.'),
+        'completeTimerHelp' => t('Mark this ticket as done and stop the active timer.'),
         'confirmDiscardTimer' => t('Discard this timer? The tracked time will be lost.'),
         'paused' => t('Paused'),
         'timerStarted' => t('Timer started.'),

@@ -2,55 +2,57 @@
 
 ## Current State
 
-- SaaS repository is initialized and published.
+- SaaS production is deployed on Hetzner behind Cloudflare:
+  - public site: `https://foxdesk.net`
+  - workspace app: `https://app.foxdesk.net`
+  - platform console: `https://platform.foxdesk.net`
 - Local Docker deployment is available and smoke-tested.
-- Multi-tenant baseline exists: tenants, workspace signup, tenant-aware users, tenant isolation checks, and platform admin console.
-- E2E baseline is active and currently covers core app flows, security regressions, permissions, SaaS signup, billing webhook handling, and blocked tenant access.
-- Stripe billing foundation is prepared: Checkout, Customer Portal, signed webhooks, tenant subscription state, and billing documentation.
-- Metered storage usage reporting is prepared with dry-run mode, idempotent local report rows, and a Stripe validation command for test-mode meter checks.
-- Billing lifecycle rules are prepared: trial grace, failed-payment grace, suspension after grace, and paid-invoice reactivation.
-- Usage counters now split local/R2 attachment storage and expose monthly email/API volume for abuse monitoring.
-- Platform console now includes operator tenant detail, subscription history, usage overview, manual lifecycle controls, and owner reset/invite flow.
-- Public signup, login, and password reset forms have optional Cloudflare Turnstile guards that stay disabled until production keys are configured.
-- Platform lifecycle actions and billing checkout/portal actions are written to the security log with sanitized operator context.
-- The public health endpoint now checks database connectivity, writable upload/storage paths, PHP baseline, host mode, version, and timestamp for uptime monitoring.
+- Multi-tenant workspace baseline is active: tenants, hosted signup, tenant-aware
+  users/data, tenant isolation checks, and platform admin console.
+- Stripe billing is implemented for the public SaaS model: 14-day trial without
+  card, Checkout, Customer Portal, signed webhooks, VAT ID/tax support, billing
+  lifecycle matrix, failed-payment grace, manual free override, and metered
+  storage usage reporting.
+- R2 is the production storage target for new customer attachments, with
+  tenant-prefixed keys and smoke-test coverage.
+- Cloudflare Email is the SaaS path for outbound transactional email and inbound
+  plus-address ticket replies.
+- Agent/API control is implemented through Profile API access, scoped Bearer
+  tokens, idempotency keys, audit logging, and local Codex/Claude/MCP examples.
+- Native/mobile API contracts exist for app shell, app home, ticket detail,
+  comments, attachments, timers, and notifications.
+- Product voice, app shell, and visual QA gates are active, including CSS token
+  reduction and desktop/mobile screenshot smoke.
+- Production deploys are gated by preflight, Docker build/restart, app health,
+  production smoke, restore evidence, and deployment evidence archive.
 
 ## Immediate Next Steps
 
-0. Follow the technical-debt execution plan in
-   `docs/TECHNICAL_DEBT_PLAN.md`. SaaS is the primary product track; the
-   self-hosted PHP app is maintained as a separate compatibility, update, and
-   migration channel.
-1. Create real Stripe test products, recurring prices, and storage meter for FoxDesk Cloud.
-2. Add production-style environment handling for secrets on Hetzner: app config, database credentials, Stripe keys, webhook secret, mail credentials, and backup credentials.
-3. Validate Stripe usage reporting end to end:
-   - set `STRIPE_SECRET_KEY`, `STRIPE_PRICE_STORAGE_OVERAGE`, and `STRIPE_STORAGE_METER_EVENT_NAME` in the local or staging config
-   - run `php bin/validate-stripe-usage.php --tenant-id=<tenant_id> --live --json`
-   - verify the Stripe meter event was accepted, then re-run after Stripe aggregation catches up if summaries or invoice preview lag
-4. Validate billing lifecycle against real Stripe test data:
-   - test-mode checkout
-   - failed invoice webhook
-   - paid invoice webhook after suspension
-   - trial expiration after configured grace period
-5. Move attachments/backups toward object storage:
-   - first add storage abstraction
-   - then support local disk and Cloudflare R2
-   - finally switch production to R2
-6. Prepare real Hetzner + Cloudflare deployment:
-   - reverse proxy
-   - TLS through Cloudflare
-   - DB backups
-   - app backups
-   - cron jobs
-   - health checks
-   - deploy/update script
-7. Harden public endpoints:
-   - rate limiting
-   - configure Cloudflare Turnstile production keys for signup/login/reset
-8. Add production observability:
-   - point an external uptime monitor at `https://app.foxdesk.net/index.php?page=health`
-   - failed webhook alerting
-   - backup success/failure alerting
+1. Keep the technical-debt execution plan current in
+   `docs/TECHNICAL_DEBT_PLAN.md`. SaaS remains the primary product track;
+   self-hosted remains a compatibility, update, and migration-source channel.
+2. Run and archive production deployment evidence after every production deploy:
+
+```bash
+npm run prod:smoke
+npm run prod:deploy:evidence
+```
+
+3. Complete the manual paid-public-beta checks:
+   - human/legal approval for Privacy, Terms, DPA, Refunds, and Security
+   - live Stripe checkout/portal/VAT/cancellation/recovery test evidence
+   - real inbound Cloudflare reply test with attachment archive evidence
+   - external monitoring for health, cron, backups, webhook failures, R2, email,
+     disk, and SSL/DNS
+4. Keep restore evidence current after schema-sensitive releases. Production
+   deploys should not be marked complete with stale or missing restore evidence.
+5. Run the self-hosted to SaaS migration bridge against a real source instance
+   before cutting over any production customer. Verify users, clients, tickets,
+   comments, time entries, reports, email data, and attachment bytes.
+6. Continue reducing CSP inline-style debt and route monolith debt as tracked in
+   `docs/CSP_SAFE_UI_AUDIT.md` and `docs/MONOLITH_EXIT_INVENTORY.md`.
+7. Start native iOS/Android work against `docs/NATIVE_APP_API.md`; do not scrape
+   PHP pages from native clients.
 
 ## Definition of Ready for SaaS Beta
 
@@ -63,3 +65,8 @@
 - Public routes are rate-limited and bot-protected.
 - Error logging and uptime monitoring are active.
 - A fresh server can be provisioned from documentation/scripts without manual code edits.
+
+Private beta can run with paid-launch warnings when production smoke, R2,
+outbound email, public/legal pages, core app smoke, and deployment evidence pass.
+Paid public beta requires the manual acknowledgements listed in
+`docs/PUBLIC_BETA_GO_NO_GO.md`.

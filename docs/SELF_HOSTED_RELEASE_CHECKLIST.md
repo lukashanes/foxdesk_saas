@@ -74,8 +74,8 @@ Run in the public self-hosted repository before publishing:
 
 ```bash
 php -l $(find . -name '*.php' -not -path './vendor/*')
-php tests/cloud-migration-bridge-contract-test.php
-php tests/pseudo-cron-email-test.php
+php ./tests/cloud-migration-bridge-contract-test.php
+php ./tests/pseudo-cron-email-test.php
 ```
 
 ## Release Decision

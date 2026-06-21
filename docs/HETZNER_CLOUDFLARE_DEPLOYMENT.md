@@ -1,6 +1,8 @@
 # Hetzner + Cloudflare Deployment Notes
 
-This is the recommended first deployment path for FoxDesk SaaS work. It keeps the current PHP application intact and uses Cloudflare for edge, security, storage, and email services.
+This is the production deployment path for FoxDesk Cloud. It keeps the PHP/MariaDB
+application intact, runs it on Hetzner with Docker, and uses Cloudflare for edge
+security, TLS, R2 storage, and email.
 
 ## Target Hostnames
 
@@ -29,10 +31,10 @@ This is the recommended first deployment path for FoxDesk SaaS work. It keeps th
 - Turnstile for public forms and signup.
 - R2 for attachment and backup storage.
 - Email Routing for inbound email processing.
-- Cloudflare Email Service integration for outbound notifications.
+- Cloudflare Email Sending integration for outbound notifications.
 - Optional Workers for inbound email webhooks, lightweight API glue, and async helpers.
 
-## Deployment Sequence
+## Deployment Sequence For A Fresh Server
 
 1. Provision Hetzner VPS with Ubuntu.
 2. Point `app.foxdesk.net` and `platform.foxdesk.net` DNS A records to `46.224.66.79` in Cloudflare.
@@ -45,12 +47,56 @@ This is the recommended first deployment path for FoxDesk SaaS work. It keeps th
 9. Run `npm ci && npx playwright install --with-deps chromium`.
 10. Run `deploy/hetzner/preflight.sh`.
 11. Run `deploy/hetzner/deploy.sh`.
-12. Visit `https://app.foxdesk.net/install.php` for first install or run existing migration flow.
-13. Use `https://platform.foxdesk.net/index.php?page=platform` only for the operator console.
+12. For a brand-new empty install, run the installer once, then remove or lock
+    installer access according to the production config.
+13. Use `https://platform.foxdesk.net/index.php?page=platform` only for the
+    operator console.
 14. Enable Cloudflare WAF/rate limiting rules.
-15. Configure backups and restore test.
-16. Run `npm run prod:deploy:evidence` and store the archive outside the app server.
+15. Configure backups and run a restore test.
+16. Run `npm run prod:deploy:evidence` and store the archive/checksum outside
+    the app server.
 17. Add monitoring and uptime checks.
+
+## Normal Production Deploy
+
+Production deploys should not overwrite these server-local files or runtime
+directories:
+
+- `.env.production`
+- `.stripe.generated.env`
+- `config.php`
+- `storage/`
+- `uploads/`
+- `backups/`
+- `tmp/`
+- `node_modules/`
+- `test-results/`
+- `playwright-report/`
+
+Recommended sequence:
+
+```bash
+cd /opt/foxdesk_saas
+npm run test:visual-qa
+npm run test:app-frontend
+npm run test:app-shell-visual
+npm run lint:php
+deploy/hetzner/deploy.sh
+npm run prod:smoke
+```
+
+`deploy/hetzner/deploy.sh` runs:
+
+1. production preflight
+2. Docker image build
+3. container restart
+4. app health check
+5. restore evidence validation
+6. production smoke
+7. deployment evidence archive and SHA256 checksum
+
+A deploy is not complete until the script prints that deployment evidence
+passed.
 
 ## Production Files
 
@@ -104,6 +150,26 @@ npm run prod:deploy:evidence
 The deploy is not complete until `deployment-evidence.json`,
 `deployment-evidence.md`, `foxdesk-deploy-evidence-*.tar.gz`, and the matching
 `.sha256` file exist in `FOXDESK_DEPLOY_EVIDENCE_DIR`.
+
+## Current Production Gate
+
+The production stack is expected to pass:
+
+```bash
+npm run prod:smoke
+npm run prod:deploy:evidence
+```
+
+The deployment evidence command checks:
+
+- production app URL and public URL
+- database health
+- R2 configuration
+- Cloudflare mail provider configuration
+- Stripe live mode when billing is enabled
+- restore evidence freshness and contents
+- public/login/legal production smoke
+- deployment evidence archive/checksum creation
 
 Suggested root crontab:
 

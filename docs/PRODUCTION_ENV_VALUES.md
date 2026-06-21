@@ -138,11 +138,14 @@ Where:
 
 For EU VAT payers, enable Stripe Tax, set the product tax code to SaaS business use, and allow Tax ID updates in the Customer Portal. With exclusive tax behavior, VAT is added only when due; valid EU VAT IDs are handled as reverse charge/zero-rate where applicable.
 
-## Still Optional For First Private Beta
+## Optional Or Environment-Specific
 
 - IMAP inbound email values for self-hosted fallback.
 - Turnstile keys.
 - R2 backup credentials separate from attachment credentials.
+
+For paid public beta, Turnstile/rate limiting and separate backup credentials
+should be treated as launch-hardening items, not long-term optional work.
 
 ## Deployment And Recovery Evidence
 

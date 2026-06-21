@@ -8,6 +8,7 @@
 
 $page_title = 'FoxDesk Cloud';
 $cloud_launch_price = billing_currency() === 'CZK' ? '249 Kc' : 'EUR 9.90';
+$cloud_regular_price = billing_currency() === 'CZK' ? '499 Kc' : 'EUR 19.80';
 $cloud_launch_until = 'May 31, 2026';
 $included_storage = billing_included_storage_bytes() === 1073741824
     ? '1 GB'
@@ -50,10 +51,7 @@ if (!headers_sent()) {
     <header class="fd-header">
         <div class="fd-header-inner">
             <a href="<?php echo e(url('cloud')); ?>" class="fd-brand">
-                <picture>
-                    <source srcset="assets/public/logo.webp" type="image/webp">
-                    <img src="assets/public/logo.png" alt="FoxDesk" width="1024" height="1024" decoding="async">
-                </picture>
+                <img src="assets/public/logo.png" alt="" width="1024" height="1024" decoding="async">
                 <span>FoxDesk</span>
             </a>
             <nav class="fd-nav" aria-label="Public navigation">
@@ -173,21 +171,22 @@ if (!headers_sent()) {
 
         <section class="fd-section fd-band" id="pricing">
             <div class="fd-heading">
-                <h2>One plan for your support team.</h2>
-                <p>Start free for 14 days. No card required. Unlimited users, clients, tickets, and AI agents.</p>
+                <h2>One plan. No per-seat math.</h2>
+                <p>Start free for 14 days. Add the whole team, every client, and every AI agent without changing plans.</p>
             </div>
             <div class="fd-pricing fd-grid-12">
                 <div class="fd-price-card">
                     <div class="fd-price-top">
                         <div>
                             <h3 class="fd-plan-title">FoxDesk Cloud</h3>
-                            <p class="fd-offer-line">50% launch price until <?php echo e($cloud_launch_until); ?>. Regular EUR 19.80/month.</p>
+                            <p class="fd-offer-line">Launch price until <?php echo e($cloud_launch_until); ?>.</p>
                         </div>
                     </div>
                     <div class="fd-price">
                         <strong><?php echo e($cloud_launch_price); ?></strong>
                         <span>/ month</span>
                     </div>
+                    <p class="fd-price-note">Then <?php echo e($cloud_regular_price); ?>/month. One workspace, one invoice, unlimited seats.</p>
                     <p class="fd-tax-note">Excl. VAT where applicable. Valid EU VAT IDs are handled at checkout.</p>
                     <ul class="fd-list">
                         <li><span class="fd-check">✓</span><span>Unlimited users, agents, clients, organizations, and tickets</span></li>
@@ -199,16 +198,22 @@ if (!headers_sent()) {
             </div>
         </section>
 
-        <section class="fd-section fd-band fd-preview-section" id="preview">
+        <section class="fd-section fd-band fd-preview-section" id="preview" aria-labelledby="preview-title">
             <div class="fd-heading">
-                <h2>See FoxDesk in action.</h2>
-                <p>Preview the dashboard and ticket detail your team will use every day.</p>
+                <h2 id="preview-title">The daily workspace.</h2>
+                <p>Ticket work and time reporting stay close together, so support work turns into clean client records.</p>
             </div>
             <div class="fd-preview-stack fd-grid-12">
-                <img class="fd-light-img fd-span-6" src="assets/public/dashboard-light.webp" alt="FoxDesk dashboard" width="1200" height="675" loading="lazy" decoding="async">
-                <img class="fd-dark-img fd-span-6" src="assets/public/dashboard-dark.webp" alt="FoxDesk dashboard in dark mode" width="1200" height="675" loading="lazy" decoding="async">
-                <img class="fd-light-img fd-span-6" src="assets/public/ticket-detail-light.webp" alt="FoxDesk ticket detail" width="1200" height="675" loading="lazy" decoding="async">
-                <img class="fd-dark-img fd-span-6" src="assets/public/ticket-detail-dark.webp" alt="FoxDesk ticket detail in dark mode" width="1200" height="675" loading="lazy" decoding="async">
+                <figure class="fd-preview-card fd-span-6">
+                    <img class="fd-light-img" src="assets/public/dashboard-light.webp" alt="FoxDesk dashboard" width="1200" height="675" loading="lazy" decoding="async">
+                    <img class="fd-dark-img" src="assets/public/dashboard-dark.webp" alt="FoxDesk dashboard in dark mode" width="1200" height="675" loading="lazy" decoding="async">
+                    <figcaption>See what needs attention across tickets, clients, and work logs.</figcaption>
+                </figure>
+                <figure class="fd-preview-card fd-span-6">
+                    <img class="fd-light-img" src="assets/public/ticket-detail-light.webp" alt="FoxDesk ticket detail" width="1200" height="675" loading="lazy" decoding="async">
+                    <img class="fd-dark-img" src="assets/public/ticket-detail-dark.webp" alt="FoxDesk ticket detail in dark mode" width="1200" height="675" loading="lazy" decoding="async">
+                    <figcaption>Reply, assign, track time, and keep the client history together.</figcaption>
+                </figure>
             </div>
         </section>
 
@@ -217,7 +222,7 @@ if (!headers_sent()) {
     <footer class="fd-footer">
         <div class="fd-footer-inner">
             <div class="fd-footer-brand">
-                <img src="assets/public/logo.webp" alt="" width="28" height="28" loading="lazy" decoding="async">
+                <img src="assets/public/logo.png" alt="" width="28" height="28" loading="lazy" decoding="async">
                 <strong>FoxDesk</strong>
             </div>
             <div>Open-source FoxDesk remains available at <a href="https://foxdesk.org" class="fd-link-blue" target="_blank" rel="noopener">foxdesk.org</a>. FoxDesk Cloud runs at <strong>app.foxdesk.net</strong>.</div>

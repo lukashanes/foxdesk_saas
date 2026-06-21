@@ -98,7 +98,7 @@ $storage_percent = $usage['included_storage_bytes'] > 0
 require_once BASE_PATH . '/includes/header.php';
 ?>
 
-<div class="billing-page">
+<div class="workflow-surface workflow-surface--billing billing-page" data-core-workflow-surface="billing">
     <div class="card card-body billing-card">
         <h1 class="billing-title">Billing</h1>
         <p class="billing-muted billing-intro">Plan, payment, and usage for <?php echo e($tenant['name']); ?>.</p>

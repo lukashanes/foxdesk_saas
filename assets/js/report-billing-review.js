@@ -144,7 +144,7 @@
         if (profitEl) profitEl.textContent = formatMoney(totals.profit);
     }
 
-    document.querySelectorAll('.entry-billing-form select, .entry-billing-form input, #bulk-billing-form select, #bulk-billing-form input')
+    document.querySelectorAll('.entry-billing-form select, .entry-billing-form input, #bulk-billing-form select, #bulk-billing-form input, .bulk-entry-check, #bulk-select-all')
         .forEach(function (field) {
             field.addEventListener('input', updatePreview);
             field.addEventListener('change', updatePreview);

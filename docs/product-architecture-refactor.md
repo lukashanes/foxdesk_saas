@@ -1,6 +1,6 @@
 # FoxDesk Product Architecture Refactor
 
-This document defines the direction for the Work, Inbox, Tickets, Clients,
+This document defines the direction for the Work, internal intake queues, Tickets, Clients,
 Reports, notifications, and email refactor.
 
 ## Language
@@ -14,7 +14,7 @@ Reports, notifications, and email refactor.
 ## Core Product Concepts
 
 - Work: personal and team queues that answer what needs attention now.
-- Inbox: triage for new, unassigned, imported, or customer-replied tickets.
+- Intake queues: internal queues for new, unassigned, imported, or client-replied tickets. They feed Work and API clients, but they are not a separate workspace agenda.
 - Tickets: searchable registry of all ticket history.
 - Clients: customer context, contacts, work history, rates, and billing context.
 - Reports: time, billable work, adjustments, and invoice preparation.
@@ -66,9 +66,9 @@ The second behavior change adds shared Work queue filters for `mine`,
 `unassigned`, `overdue`, `waiting`, and `done_today`. UI pages should consume
 these queues instead of recreating queue logic inside page files.
 
-The third behavior change adds shared Inbox triage filters for `triage`,
-`customer_replies`, and `email_imports`. Inbox is the decision layer for new or
-customer-replied work, not a replacement for the full ticket registry.
+The third behavior change adds shared intake filters for `triage`,
+`customer_replies`, and `email_imports`. The web app presents those items inside
+Work instead of exposing a second Inbox agenda.
 
 The fourth behavior change adds shared Global Search sections for `open_tickets`,
 `done_tickets`, and `clients`. Search should behave like a Spotlight layer and
@@ -80,13 +80,13 @@ move to detailed billable items, adjustments, and client-facing report sharing.
 
 The sixth behavior change adds an authenticated `app-shell` API contract for the
 web app and future native iOS/Android clients. Native clients should consume
-stable concepts such as Work, Inbox, Tickets, Clients, Reports, queue counts,
+stable concepts such as Work, intake queues, Tickets, Clients, Reports, queue counts,
 capabilities, search sections, and reporting entrypoints instead of scraping or
 duplicating PHP page logic.
 
 The seventh behavior change adds an authenticated `app-home` API contract for
 the first native app screen. It combines the app shell with compact Work and
-Inbox queue items, active timers, and unread notification counts so mobile
+intake queue items, active timers, and unread notification counts so mobile
 clients can render a fast, native first screen from one stable endpoint.
 
 The eighth behavior change tightens email as a work channel. Incoming email body
@@ -109,12 +109,12 @@ small JavaScript client consumes the authenticated `app-*` API contracts. This
 creates a clean migration boundary for the SaaS web shell and native apps
 without duplicating business rules in the browser or parsing rendered HTML.
 
-The eleventh behavior change makes Work and Inbox contract-first surfaces. PHP
-still renders a complete fallback, but the shared workspace surface declares its
-active queue and collection, then the frontend bridge refreshes queue counts and
-ticket rows from the `app-home` contract. Work reads `home.work`; Inbox reads
-`home.inbox`. Browser rendering stays DOM-based and does not inject HTML
-strings.
+The eleventh behavior change makes Work the contract-first workspace surface.
+PHP still renders a complete fallback, but the shared workspace surface declares
+its active queue and collection, then the frontend bridge refreshes queue counts
+and ticket rows from the `app-home` contract. Work reads `home.work`; internal
+intake data remains available through `home.inbox` for API/native clients.
+Browser rendering stays DOM-based and does not inject HTML strings.
 
 The twelfth behavior change makes the Tickets registry consume the
 `app-ticket-list` contract without replacing the existing inline editing and bulk
@@ -148,3 +148,14 @@ customer workspace, and platform console links keep their own hosts, and Stripe
 Billing Portal return URLs send platform admins back to the platform host while
 workspace admins return to the workspace host. Billing state actions must follow
 the tenant lifecycle instead of showing generic activation buttons.
+
+The seventeenth behavior change adds an agent/API control layer. FoxDesk should
+be controllable from trusted assistants such as Codex, Claude, CLI tools, or a
+future MCP server by giving the assistant a scoped API key through an environment
+variable or a local secret. The key inherits the permissions, organization
+scope, tenant boundary, and role limits of the user who created it. Agents can
+read work state, search tickets, create tickets, add comments, add or stop time
+entries, attach files, and prepare reports only when that user could perform the
+same action in the UI. Every write must be audited as an API-token action and
+tokens must be revocable, expirable, rate-limited, and safe to migrate as
+inactive credentials.

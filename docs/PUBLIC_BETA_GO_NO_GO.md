@@ -45,7 +45,7 @@ Done means:
 Verification:
 
 ```bash
-php tests/platform-workspace-host-contract-test.php
+./bin/run-php.sh tests/platform-workspace-host-contract-test.php
 npm run prod:smoke
 ```
 
@@ -70,7 +70,7 @@ Rules:
 Verification:
 
 ```bash
-php tests/legal-copy-contract-test.php
+./bin/run-php.sh tests/legal-copy-contract-test.php
 npm run launch:go-no-go
 ```
 
@@ -144,7 +144,7 @@ Required before paid public beta:
 Verification:
 
 ```bash
-php tests/billing-lifecycle-contract-test.php
+./bin/run-php.sh tests/billing-lifecycle-contract-test.php
 npm run e2e -- tests/e2e/05-saas-control-plane.spec.js
 php bin/validate-stripe-usage.php
 ```
@@ -173,3 +173,22 @@ npm run cutover:postcheck
 Current code target: **Private Beta GO with paid-launch warnings**.
 
 Paid Public Beta remains **NO-GO** until legal approval, Stripe live lifecycle, inbound email, restore evidence, and monitoring are acknowledged in strict mode.
+
+## Current Private Beta Evidence
+
+Private beta deployment evidence should include:
+
+- `npm run lint:php`
+- `npm run test:csp-ui`
+- `npm run test:app-frontend`
+- `npm run test:app-shell-visual`
+- `npm run test:visual-qa`
+- `npm run visual:qa`
+- `npm run local:smoke`
+- `npm run prod:smoke`
+- `npm run prod:deploy:evidence`
+
+The production deployment script stores `deployment-evidence.json`,
+`deployment-evidence.md`, an archive, and a SHA256 checksum in
+`FOXDESK_DEPLOY_EVIDENCE_DIR`. Keep that archive outside the app server as part
+of launch evidence.

@@ -24,7 +24,7 @@ workflow fixes, security fixes, migration tooling, and compatibility updates.
 | Area | Owner | Required parity |
 | --- | --- | --- |
 | Work | shared | Same queue keys: `mine`, `unassigned`, `overdue`, `waiting`, `done_today`. Same purpose: what needs attention now. |
-| Inbox | shared | Same triage keys: `triage`, `customer_replies`, `email_imports`. Same rule: decision layer, not the full registry. |
+| Intake queues | shared internal | Same internal keys: `triage`, `customer_replies`, `email_imports`. They feed Work/API clients and must not appear as a separate customer-facing agenda. |
 | Tickets | shared | Same registry views: `open`, `waiting`, `done`, `all`, `archived`. Done/closed tickets must remain discoverable. |
 | Ticket detail | shared | Same action model: Reply, Start work, Assign, Complete/Edit when allowed. Complete must not map to cancelled. |
 | New ticket | shared | Same assignment rule: no random client fallback. Empty stays empty unless selected or deterministically inferred. |
@@ -33,6 +33,7 @@ workflow fixes, security fixes, migration tooling, and compatibility updates.
 | Search | shared | Same global sections: open tickets, done tickets, clients, and report/template history where available. |
 | Notifications | shared | Same policy: one user action creates at most one meaningful email. Activity log remains the audit trail. |
 | Email rendering | shared | Same readable formatting rules for paragraphs, lists, links, quoted history stripping, and next action. |
+| Agent/API control | shared | Scoped API keys let trusted assistants or CLI tools read and write helpdesk data only within the creator's permissions, tenant/org scope, rate limits, and audit trail. |
 | Team/users | shared | Same staff/client roles and permission concepts. SaaS may add platform-admin separately. |
 | Settings | shared + edition overlays | Shared workflow/security/profile settings. Hosted update controls are SaaS-only; ZIP updates are self-hosted-only. |
 | Storage | edition overlay | Shared attachment permissions. SaaS uses tenant-prefixed R2 keys; self-hosted keeps local disk compatibility. |
@@ -57,6 +58,7 @@ workflow fixes, security fixes, migration tooling, and compatibility updates.
 | `pages/client.php` and client admin surfaces | shared | Must use client overview/rate concepts consistently. |
 | `pages/admin/reports.php` | shared | Must keep item-level billing review parity. |
 | `pages/admin/settings.php` | shared + edition overlays | Must hide hosted update controls in SaaS and hide SaaS platform controls in self-hosted. |
+| API token management | shared + edition overlays | Users can create scoped assistant/API keys; SaaS keys are tenant-bound, self-hosted keys are single-instance scoped, and migrated keys import inactive. |
 | `pages/billing.php` | saas | Workspace billing only; no self-hosted equivalent. |
 | `pages/platform.php` | saas | Platform admin only; never part of public self-hosted updates. |
 | `pages/cloud.php` | saas | Public SaaS website only. |

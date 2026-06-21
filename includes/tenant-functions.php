@@ -22,6 +22,8 @@ function tenant_owned_tables(): array
         'ticket_access',
         'activity_log',
         'api_tokens',
+        'api_token_audit_logs',
+        'api_idempotency_keys',
         'mobile_auth_challenges',
         'mobile_sessions',
         'mobile_devices',
@@ -43,6 +45,10 @@ function tenant_owned_tables(): array
 function tenant_scoped_table_has_column(string $table): bool
 {
     static $cache = [];
+
+    if (!in_array($table, tenant_owned_tables(), true)) {
+        return false;
+    }
 
     if (!function_exists('table_exists') || !table_exists($table)) {
         return false;

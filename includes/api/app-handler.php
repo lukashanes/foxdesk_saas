@@ -28,7 +28,7 @@ function api_app_clamp_limit($value, int $default = 25, int $max = 100): int
 
 function api_app_require_write_auth(): void
 {
-    if (empty($GLOBALS['is_mobile_token_auth'])) {
+    if (empty($GLOBALS['is_mobile_token_auth']) && empty($GLOBALS['is_api_token_auth'])) {
         require_csrf_token(true);
     }
 }
@@ -344,6 +344,104 @@ function api_app_ticket_detail()
     api_app_contract_success($payload, ['resource' => 'ticket_detail'], $payload);
 }
 
+function api_app_create_ticket()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        api_error('Method not allowed', 405);
+    }
+
+    api_app_require_write_auth();
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+
+    $input = get_json_input();
+    $title = trim((string) ($input['title'] ?? ''));
+    if ($title === '') {
+        api_error('Ticket title is required.', 422);
+    }
+
+    $owner_id = isset($input['user_id']) ? (int) $input['user_id'] : (int) $user['id'];
+    $owner = get_user($owner_id);
+    if (!$owner || !can_user_create_ticket_for($owner, $user)) {
+        api_error('Forbidden', 403);
+    }
+
+    $data = [
+        'title' => $title,
+        'description' => (string) ($input['description'] ?? ''),
+        'user_id' => $owner_id,
+        'type' => (string) ($input['type'] ?? 'general'),
+    ];
+
+    if (!empty($input['status_id'])) {
+        if (!get_status((int) $input['status_id'])) {
+            api_error('Status not found.', 404);
+        }
+        $data['status_id'] = (int) $input['status_id'];
+    }
+
+    if (!empty($input['priority_id'])) {
+        if (!get_priority((int) $input['priority_id'])) {
+            api_error('Priority not found.', 404);
+        }
+        $data['priority_id'] = (int) $input['priority_id'];
+    }
+
+    if (array_key_exists('organization_id', $input)) {
+        $organization_id = $input['organization_id'] ? (int) $input['organization_id'] : null;
+        if ($organization_id !== null && !can_user_use_organization($organization_id, $user)) {
+            api_error('Forbidden', 403);
+        }
+        $data['organization_id'] = $organization_id;
+    }
+
+    if (!empty($input['assignee_id'])) {
+        $assignee = get_user((int) $input['assignee_id']);
+        if (!$assignee || !can_user_assign_to_staff($assignee, $user)) {
+            api_error('Forbidden', 403);
+        }
+        $data['assignee_id'] = (int) $input['assignee_id'];
+    }
+
+    if (!empty($input['due_date'])) {
+        $due_date = normalize_due_date_input($input['due_date']);
+        if ($due_date === false) {
+            api_error('Due date is invalid.', 422);
+        }
+        $data['due_date'] = $due_date;
+    }
+
+    if (!empty($input['tags'])) {
+        $data['tags'] = function_exists('normalize_ticket_tags')
+            ? normalize_ticket_tags((string) $input['tags'])
+            : (string) $input['tags'];
+    }
+
+    $ticket_id = create_ticket($data);
+    if (!$ticket_id) {
+        api_error('Failed to create ticket.', 500);
+    }
+
+    $ticket = get_ticket((int) $ticket_id);
+    if (function_exists('ticket_event_dispatch_in_app')) {
+        ticket_event_dispatch_in_app('ticket.created', (int) $ticket_id, (int) $user['id'], [
+            'comment_preview' => mb_substr(trim(strip_tags((string) ($input['description'] ?? ''))), 0, 80),
+        ]);
+    }
+
+    $response = [
+        'ticket_id' => (int) $ticket_id,
+        'ticket_hash' => $ticket['hash'] ?? null,
+        'ticket_code' => function_exists('get_ticket_code') ? get_ticket_code((int) $ticket_id) : ('TK-' . (int) $ticket_id),
+        'ticket' => $ticket ? app_contract_ticket_payload($ticket) : null,
+    ];
+
+    api_app_contract_success($response, ['resource' => 'create_ticket'], $response);
+}
+
 function api_app_add_comment()
 {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -399,6 +497,61 @@ function api_app_add_comment()
     }
 
     api_app_contract_success($response, ['resource' => 'ticket_comment'], $response);
+}
+
+function api_app_log_time()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        api_error('Method not allowed', 405);
+    }
+
+    api_app_require_write_auth();
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+    if (!is_agent() && !is_admin()) {
+        api_error('Forbidden', 403);
+    }
+
+    $input = get_json_input();
+    $duration = (int) ($input['duration_minutes'] ?? 0);
+    if ($duration < 1) {
+        api_error('Duration must be at least one minute.', 422);
+    }
+
+    $ticket = api_app_resolve_ticket($input, $user);
+    $ticket_id = (int) $ticket['id'];
+    if (!function_exists('add_manual_time_entry')) {
+        api_error('Time tracking is not available.', 400);
+    }
+
+    $started_at = !empty($input['started_at']) ? (string) $input['started_at'] : date('Y-m-d H:i:s');
+    $ended_at = !empty($input['ended_at'])
+        ? (string) $input['ended_at']
+        : date('Y-m-d H:i:s', strtotime($started_at) + ($duration * 60));
+
+    $entry_id = add_manual_time_entry($ticket_id, (int) $user['id'], [
+        'started_at' => $started_at,
+        'ended_at' => $ended_at,
+        'duration_minutes' => $duration,
+        'summary' => $input['summary'] ?? null,
+        'is_billable' => isset($input['is_billable']) ? (!empty($input['is_billable']) ? 1 : 0) : 1,
+        'source' => (function_exists('is_ai_user') && is_ai_user((int) $user['id'])) ? 'ai' : 'manual',
+    ]);
+
+    if (!$entry_id) {
+        api_error('Failed to log time.', 500);
+    }
+
+    $response = [
+        'ticket' => app_contract_ticket_payload($ticket),
+        'time_entry_id' => (int) $entry_id,
+        'duration_minutes' => $duration,
+    ];
+
+    api_app_contract_success($response, ['resource' => 'log_time'], $response);
 }
 
 function api_app_ticket_timer()

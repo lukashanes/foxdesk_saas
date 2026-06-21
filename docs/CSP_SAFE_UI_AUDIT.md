@@ -69,7 +69,7 @@ Completed in milestone 3a:
   `theme.css`.
 - `pages/inbox.php`: page-level `<style>` removed, queue layout moved to
   `theme.css`.
-- `tests/smoke/local-smoke.js`: now checks that Work and Inbox render as styled
+- `tests/smoke/local-smoke.js`: now checks that Work renders as styled
   queue surfaces after login.
 
 Completed in milestone 4a:

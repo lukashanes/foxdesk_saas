@@ -444,7 +444,8 @@ test('platform admin can grant free access and restore workspace access', async 
   await page.goto('/index.php?page=tickets');
   await expect(page).not.toHaveURL(/page=billing/);
   await page.goto('/index.php?page=billing');
-  await expect(page.locator('body')).toContainText('platform-approved access');
+  await expect(page.locator('body')).toContainText('Included access');
+  await expect(page.locator('body')).toContainText('Your workspace has active access');
   await expect(page.getByRole('button', { name: 'Start plan' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Restart plan' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Add billing' })).toHaveCount(0);

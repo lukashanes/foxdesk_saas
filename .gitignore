@@ -4,6 +4,7 @@ playwright-report/
 test-results/
 tests/e2e/.auth/
 tmp/
+examples/agent-api/.env
 .DS_Store
 config.php
 .env.production

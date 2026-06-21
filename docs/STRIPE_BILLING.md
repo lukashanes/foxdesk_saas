@@ -1,6 +1,8 @@
 # Stripe Billing Setup
 
-FoxDesk SaaS has a prepared billing layer for Stripe Checkout, Stripe Customer Portal, and signed Stripe webhooks.
+FoxDesk SaaS implements Stripe Checkout, Stripe Customer Portal, signed Stripe
+webhooks, Stripe Tax/VAT ID collection, trial access, billing lifecycle
+enforcement, and metered storage usage reporting.
 
 Use Stripe Billing with recurring Prices and Checkout Sessions. Do not build a custom renewal loop with one-off PaymentIntents.
 

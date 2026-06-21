@@ -14,8 +14,7 @@ function render_admin_workflow_card(array $card): void
     ?>
     <div class="workflow-card">
         <div class="workflow-card-header">
-            <span class="workflow-card-title <?php echo $modifier !== '' ? 'workflow-card-title--' . e($modifier) : ''; ?>"
-                  style="color: <?php echo e($color); ?>; font-weight: 600;">
+            <span class="workflow-card-title <?php echo $modifier !== '' ? 'workflow-card-title--' . e($modifier) : ''; ?>">
                 <?php echo get_icon($icon, 'w-4 h-4 inline mr-2'); ?>
                 <?php echo e(t($title)); ?>
             </span>
