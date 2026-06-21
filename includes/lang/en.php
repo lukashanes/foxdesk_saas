@@ -1369,6 +1369,10 @@ return [
     'Support required' => 'Support required',
     'Not billing yet' => 'Not billing yet',
     'Billing needs attention. Open Billing to continue.' => 'Billing needs attention. Open Billing to continue.',
+    'Workspace inbound address' => 'Workspace inbound address',
+    'Send new support emails for this workspace to this address. Replies to ticket emails keep using per-ticket reply addresses.' => 'Send new support emails for this workspace to this address. Replies to ticket emails keep using per-ticket reply addresses.',
+    'This address is unique to the current workspace. The base mailbox is not assigned to a workspace by itself.' => 'This address is unique to the current workspace. The base mailbox is not assigned to a workspace by itself.',
+    'Copied' => 'Copied',
 
     // Link preview cards
     'Google Drive file' => 'Google Drive file',

@@ -60,6 +60,9 @@ settings_handle_workflow_post($tab, $_POST);
 
 $incoming_mail_logs = [];
 $incoming_mail_log_error = '';
+$workspace_inbound_address = '';
+$workspace_inbound_domain = '';
+$workspace_inbound_enabled = false;
 
 $imap_enabled_default = (defined('IMAP_ENABLED') && IMAP_ENABLED)
     || (
@@ -86,7 +89,26 @@ $imap_view = [
 $imap_extension_loaded = extension_loaded('imap') && function_exists('imap_open');
 
 if ($tab === 'email') {
+    require_once BASE_PATH . '/includes/email-routing-functions.php';
     require_once BASE_PATH . '/includes/email-ingest-functions.php';
+    $workspace_inbound_enabled = function_exists('foxdesk_cloudflare_email_ingest_enabled')
+        && foxdesk_cloudflare_email_ingest_enabled();
+    if ($workspace_inbound_enabled && function_exists('foxdesk_workspace_inbound_address')) {
+        $workspace_tenant = ['id' => current_tenant_id()];
+        try {
+            if (function_exists('db_fetch_one') && (!function_exists('table_exists') || table_exists('tenants'))) {
+                $tenant_row = db_fetch_one("SELECT id, slug FROM tenants WHERE id = ? LIMIT 1", [current_tenant_id()]);
+                if (!empty($tenant_row)) {
+                    $workspace_tenant = $tenant_row;
+                }
+            }
+        } catch (Throwable $e) {
+            $workspace_tenant = ['id' => current_tenant_id()];
+        }
+        $workspace_inbound_address = foxdesk_workspace_inbound_address($workspace_tenant);
+        $workspace_inbound_domain = function_exists('foxdesk_ticket_email_domain') ? foxdesk_ticket_email_domain() : '';
+    }
+
     try {
         email_ingest_ensure_schema();
         $incoming_mail_logs = db_fetch_all("
@@ -435,6 +457,42 @@ include BASE_PATH . '/includes/components/page-header.php';
                             <strong class="block"><?php echo e(defined('CLOUDFLARE_EMAIL_REPLY_TO') ? CLOUDFLARE_EMAIL_REPLY_TO : ''); ?></strong>
                         </div>
                     </div>
+                </div>
+                <?php endif; ?>
+                <?php if ($workspace_inbound_enabled && $workspace_inbound_address !== ''): ?>
+                <div class="card card-body mb-2">
+                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+                        <div>
+                            <h3 class="font-semibold mb-1 text-theme-primary"><?php echo e(t('Workspace inbound address')); ?></h3>
+                            <p class="text-sm text-theme-muted">
+                                <?php echo e(t('Send new support emails for this workspace to this address. Replies to ticket emails keep using per-ticket reply addresses.')); ?>
+                            </p>
+                        </div>
+                        <?php if ($workspace_inbound_domain !== ''): ?>
+                            <span class="badge badge-neutral"><?php echo e($workspace_inbound_domain); ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="settings-copy-row mt-3">
+                        <input
+                            type="text"
+                            readonly
+                            class="form-input font-mono text-sm"
+                            id="workspace-inbound-address"
+                            value="<?php echo e($workspace_inbound_address); ?>"
+                            aria-label="<?php echo e(t('Workspace inbound address')); ?>"
+                        >
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-copy-target="workspace-inbound-address"
+                            onclick="copySettingsField('workspace-inbound-address', this)"
+                        >
+                            <?php echo get_icon('copy', 'mr-2'); ?><?php echo e(t('Copy')); ?>
+                        </button>
+                    </div>
+                    <p class="text-xs mt-2 text-theme-muted">
+                        <?php echo e(t('This address is unique to the current workspace. The base mailbox is not assigned to a workspace by itself.')); ?>
+                    </p>
                 </div>
                 <?php endif; ?>
                 <div class="card card-body mb-2">
@@ -1727,6 +1785,31 @@ include BASE_PATH . '/includes/components/page-header.php';
 
 <?php if ($tab === 'email'): ?>
     <script>
+        function copySettingsField(fieldId, button) {
+            const field = document.getElementById(fieldId);
+            if (!field) return;
+            const value = field.value || field.textContent || '';
+            const original = button ? button.textContent : '';
+            function markDone() {
+                if (!button) return;
+                button.textContent = <?php echo json_encode(t('Copied')); ?>;
+                setTimeout(function() {
+                    button.textContent = original || <?php echo json_encode(t('Copy')); ?>;
+                }, 1400);
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(value).then(markDone).catch(function() {
+                    field.select();
+                    document.execCommand('copy');
+                    markDone();
+                });
+                return;
+            }
+            field.select();
+            document.execCommand('copy');
+            markDone();
+        }
+
         function addAllowedSender() {
             const type = document.getElementById('as-type').value;
             const value = document.getElementById('as-value').value.trim();

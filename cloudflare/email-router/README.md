@@ -1,6 +1,6 @@
 # FoxDesk Email Router Worker
 
-Cloudflare Email Routing Worker for the `tickets@foxdesk.net` route.
+Cloudflare Email Routing Worker for signed FoxDesk ticket addresses.
 
 It receives inbound email, parses MIME with `postal-mime`, stores raw email and attachments in R2, signs a JSON payload, and posts it to:
 
@@ -25,18 +25,27 @@ npm run deploy
 
 1. Enable Email Routing for `foxdesk.net`.
 2. Enable subaddressing.
-3. Create a custom address route for `tickets@foxdesk.net`.
+3. Create a custom address route for the base mailbox `tickets@foxdesk.net`.
 4. Set the destination action to Worker.
 5. Select `foxdesk-email-router`.
 
-FoxDesk generates reply addresses such as:
+FoxDesk never assigns the base mailbox to a workspace by itself. Each workspace
+gets a signed inbound address such as:
+
+```text
+tickets+aenze-helpdesk-3-<token>@foxdesk.net
+```
+
+Ticket notifications use signed per-ticket reply addresses such as:
 
 ```text
 tickets+tk-123-<token>@foxdesk.net
 ```
 
-Cloudflare routes those plus-addressed messages through the `tickets@foxdesk.net`
-custom address rule.
+Cloudflare routes those plus-addressed messages through the base mailbox rule.
+The backend validates the token and then chooses the target workspace or ticket.
+Unsigned messages to `tickets@foxdesk.net` are not routed to a customer
+workspace.
 
 ## Recovery
 

@@ -37,7 +37,14 @@
         <?php endif; ?>
     </div>
 
-    <?php if (($GLOBALS['page'] ?? null) === 'admin' && function_exists('is_admin') && is_admin()): ?>
+    <?php
+    $admin_section = isset($_GET['section']) ? (string) $_GET['section'] : '';
+    $show_admin_page_nav = ($GLOBALS['page'] ?? null) === 'admin'
+        && $admin_section !== 'settings'
+        && function_exists('is_admin')
+        && is_admin();
+    ?>
+    <?php if ($show_admin_page_nav): ?>
         <?php include BASE_PATH . '/includes/components/admin-nav.php'; ?>
     <?php endif; ?>
 </div>

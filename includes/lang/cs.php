@@ -1369,6 +1369,10 @@ return [
     'Support required' => 'Je potřeba podpora',
     'Not billing yet' => 'Zatím bez fakturace',
     'Billing needs attention. Open Billing to continue.' => 'Fakturace vyžaduje pozornost. Pokračujte v Billing.',
+    'Workspace inbound address' => 'E-mailová adresa workspace',
+    'Send new support emails for this workspace to this address. Replies to ticket emails keep using per-ticket reply addresses.' => 'Nové e-mailové požadavky pro tento workspace posílejte na tuto adresu. Odpovědi na požadavky dál používají vlastní adresu konkrétního ticketu.',
+    'This address is unique to the current workspace. The base mailbox is not assigned to a workspace by itself.' => 'Tato adresa patří jen aktuálnímu workspace. Základní schránka sama o sobě není přiřazená žádnému workspace.',
+    'Copied' => 'Zkopírováno',
 
     // Link preview cards
     'Google Drive file' => 'Soubor Google Drive',

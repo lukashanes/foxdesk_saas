@@ -25,6 +25,7 @@ foreach ([
     'work',
     'inbox',
     'tickets',
+    'admin-settings',
     'billing',
     'reports',
     'platform',

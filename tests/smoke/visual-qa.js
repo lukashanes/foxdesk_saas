@@ -35,6 +35,7 @@ const appScreens = [
   { name: 'work', path: '/index.php?page=work', expect: 'Work' },
   { name: 'inbox', path: '/index.php?page=inbox', expect: 'Work' },
   { name: 'tickets', path: '/index.php?page=tickets', expect: 'Tickets' },
+  { name: 'admin-settings', path: '/index.php?page=admin&section=settings&tab=email', expect: 'Settings' },
   { name: 'billing', path: '/index.php?page=billing', expect: 'Billing' },
   { name: 'reports', path: '/index.php?page=admin&section=reports', expect: 'Reports' },
 ];
@@ -83,6 +84,20 @@ async function assertPageReady(page, label, expectedText = '') {
 
 async function capture(page, viewportName, name, expectedText = '') {
   await assertPageReady(page, `${viewportName}-${name}`, expectedText);
+  if (name === 'admin-settings') {
+    const navState = await page.evaluate(() => ({
+      adminPageNav: document.querySelectorAll('.admin-page-nav').length,
+      settingsTabs: document.querySelectorAll('.admin-tabs').length,
+      searchInput: Boolean(document.querySelector('#header-search')),
+      searchIcon: Boolean(document.querySelector('.header-search-icon')),
+    }));
+    if (navState.adminPageNav !== 0 || navState.settingsTabs !== 1) {
+      throw new Error(`${viewportName}-${name} has duplicate admin navigation: ${JSON.stringify(navState)}`);
+    }
+    if (!navState.searchInput || !navState.searchIcon) {
+      throw new Error(`${viewportName}-${name} missing stable header search controls: ${JSON.stringify(navState)}`);
+    }
+  }
   const file = path.join(outputDir, `${viewportName}-${name}.png`);
   await page.screenshot({ path: file, fullPage: false });
   return file;

@@ -22,6 +22,7 @@ $theme = read_admin_ui_file($root, 'theme.css');
 $tickets = read_admin_ui_file($root, 'pages/tickets.php');
 $page_header = read_admin_ui_file($root, 'includes/components/page-header.php');
 $admin_nav = read_admin_ui_file($root, 'includes/components/admin-nav.php');
+$admin_settings = read_admin_ui_file($root, 'pages/admin/settings.php');
 $admin_users = read_admin_ui_file($root, 'pages/admin/users.php');
 $admin_clients = read_admin_ui_file($root, 'pages/admin/clients.php');
 $ui_css = $theme . "\n" . $tickets;
@@ -96,6 +97,25 @@ foreach ([
     'admin-page-nav',
 ] as $needle) {
     assert_admin_ui(str_contains($page_header . "\n" . $admin_nav, $needle), 'Admin navigation contract missing: ' . $needle);
+}
+assert_admin_ui(str_contains($page_header, "\$admin_section !== 'settings'"), 'Settings page must not render a second admin-page-nav above settings tabs.');
+
+foreach ([
+    'Workspace inbound address',
+    'foxdesk_workspace_inbound_address',
+    'workspace-inbound-address',
+    'settings-copy-row',
+    'copySettingsField',
+    'The base mailbox is not assigned to a workspace by itself.',
+] as $needle) {
+    assert_admin_ui(str_contains($admin_settings, $needle), 'Settings email inbound contract missing: ' . $needle);
+}
+
+foreach ([
+    '.settings-copy-row',
+    'grid-template-columns: minmax(0, 1fr) auto',
+] as $needle) {
+    assert_admin_ui(str_contains($theme, $needle), 'Settings copy row CSS contract missing: ' . $needle);
 }
 
 foreach ([
