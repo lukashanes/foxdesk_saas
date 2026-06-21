@@ -168,10 +168,13 @@ require_once BASE_PATH . '/includes/header.php';
                         <form method="post" class="ticket-primary-action-form">
                             <?php echo csrf_field(); ?>
                             <input type="hidden" name="status_id" value="<?php echo (int) $action['status_id']; ?>">
+                            <?php if (($action['key'] ?? '') === 'complete'): ?>
+                                <input type="hidden" name="stop_timer_on_complete" value="<?php echo !empty($action['stops_timer']) ? '1' : '0'; ?>">
+                            <?php endif; ?>
                             <button type="submit" name="<?php echo e($action['name']); ?>" class="<?php echo e($action_class); ?>"
                                     title="<?php echo e($action_title); ?>" aria-label="<?php echo e($action_title); ?>">
                                 <?php echo get_icon($action['icon'], 'w-4 h-4'); ?>
-                                <span><?php echo e(t($action['label'])); ?></span>
+                                <span data-action-label="<?php echo e($action['key'] ?? ''); ?>"><?php echo e(t($action['label'])); ?></span>
                             </button>
                         </form>
                     <?php else: ?>
@@ -209,7 +212,7 @@ require_once BASE_PATH . '/includes/header.php';
                             </div>
                     <?php endif; ?>
 
-                    <div class="mt-3 pt-2.5 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs text-theme-muted">
+                    <div class="mt-3 pt-2.5 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs ticket-detail-muted">
                         <div class="flex items-center space-x-3">
                             <?php if (!empty($ticket['avatar'])): ?>
                                     <img src="<?php echo e(upload_url($ticket['avatar'])); ?>" alt="" class="w-6 h-6 rounded-full">
@@ -236,7 +239,7 @@ require_once BASE_PATH . '/includes/header.php';
                     if ($can_view_edit_history && !empty($ticket_history)):
                         ?>
                             <details class="mt-4 pt-4 border-t">
-                                <summary class="flex items-center gap-2 cursor-pointer text-sm text-theme-muted">
+                                <summary class="flex items-center gap-2 cursor-pointer text-sm ticket-detail-muted">
                                     <?php echo get_icon('history', 'w-4 h-4'); ?>
                                     <?php echo e(t('Edit history')); ?> (<?php echo count($ticket_history); ?>)
                                 </summary>
@@ -277,7 +280,7 @@ require_once BASE_PATH . '/includes/header.php';
                                                                 </div>
                                                             </div>
                                                     <?php elseif ($is_attachment_event): ?>
-                                                            <div class="mt-1 flex flex-wrap items-center gap-2 text-theme-muted">
+                                                            <div class="mt-1 flex flex-wrap items-center gap-2 ticket-detail-muted">
                                                                 <?php if ($history['field_name'] === 'attachment_added'): ?>
                                                                         <span
                                                                             class="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">+
@@ -289,14 +292,14 @@ require_once BASE_PATH . '/includes/header.php';
                                                                 <?php endif; ?>
                                                             </div>
                                                     <?php else: ?>
-                                                            <div class="mt-1 flex flex-wrap items-center gap-2 text-theme-muted">
+                                                            <div class="mt-1 flex flex-wrap items-center gap-2 ticket-detail-muted">
                                                                 <span
                                                                     class="line-through"><?php echo format_history_value($history['field_name'], $history['old_value']); ?></span>
                                                                 <span>→</span>
                                                                 <span class="font-medium text-theme-secondary"><?php echo format_history_value($history['field_name'], $history['new_value']); ?></span>
                                                             </div>
                                                     <?php endif; ?>
-                                                    <div class="mt-1 text-theme-muted">
+                                                    <div class="mt-1 ticket-detail-muted">
                                                         <?php echo format_date($history['created_at']); ?>
                                                     </div>
                                                 </div>
@@ -572,6 +575,8 @@ $ticket_detail_js_config = [
         'resumeTimerHelp' => t('Resume the paused timer.'),
         'completeHelp' => t('Mark this ticket as done.'),
         'completeTimerHelp' => t('Mark this ticket as done and stop the active timer.'),
+        'completeLabel' => t('Complete'),
+        'completeTimerLabel' => t('Complete & stop timer'),
         'confirmDiscardTimer' => t('Discard this timer? The tracked time will be lost.'),
         'paused' => t('Paused'),
         'timerStarted' => t('Timer started.'),
@@ -591,6 +596,9 @@ $ticket_detail_js_config = [
         'confirmDeleteComment' => t('Are you sure you want to delete this comment?'),
         'commentDeleted' => t('Comment deleted.'),
         'commentDeleteFailed' => t('Failed to delete comment.'),
+        'confirmDeleteAttachment' => t('Delete this attachment?'),
+        'attachmentDeleted' => t('Attachment deleted.'),
+        'attachmentDeleteFailed' => t('Failed to delete attachment.'),
         'invalidRange' => t('Invalid range'),
         'noMatches' => t('No matches'),
         'filterByTag' => t('Filter by this tag'),

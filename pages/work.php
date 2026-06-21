@@ -47,6 +47,58 @@ $work_tickets_url = static function (string $key) use ($user): string {
 require_once BASE_PATH . '/includes/header.php';
 ?>
 
+<?php if (is_admin() && ($_GET['signup'] ?? '') === 'trial'): ?>
+    <section class="db-onboarding db-onboarding--trial" data-signup-onboarding>
+        <div class="db-onboarding__head">
+            <div>
+                <div class="db-onboarding__eyebrow"><?php echo e(t('Trial started')); ?></div>
+                <h2 class="db-onboarding__title"><?php echo e(t('Your FoxDesk is ready')); ?></h2>
+                <p class="db-onboarding__subtitle">
+                    <?php echo e(t('Start with the essentials. You can change everything later.')); ?>
+                </p>
+            </div>
+        </div>
+        <div class="db-onboarding__steps">
+            <article class="db-onboarding__step" data-step="workspace">
+                <div class="db-onboarding__status" aria-hidden="true">
+                    <?php echo get_icon('cog', 'w-4 h-4'); ?>
+                </div>
+                <div>
+                    <h3 class="db-onboarding__step-title"><?php echo e(t('Workspace name')); ?></h3>
+                    <p class="db-onboarding__step-text"><?php echo e(t('Make FoxDesk match your company.')); ?></p>
+                </div>
+                <a class="db-onboarding__link" href="<?php echo e(url('admin', ['section' => 'settings'])); ?>">
+                    <?php echo e(t('Open settings')); ?>
+                </a>
+            </article>
+            <article class="db-onboarding__step" data-step="team">
+                <div class="db-onboarding__status" aria-hidden="true">
+                    <?php echo get_icon('users', 'w-4 h-4'); ?>
+                </div>
+                <div>
+                    <h3 class="db-onboarding__step-title"><?php echo e(t('Team')); ?></h3>
+                    <p class="db-onboarding__step-text"><?php echo e(t('Invite your first teammate.')); ?></p>
+                </div>
+                <a class="db-onboarding__link" href="<?php echo e(url('admin', ['section' => 'users'])); ?>">
+                    <?php echo e(t('Invite team')); ?>
+                </a>
+            </article>
+            <article class="db-onboarding__step" data-step="billing">
+                <div class="db-onboarding__status" aria-hidden="true">
+                    <?php echo get_icon('credit-card', 'w-4 h-4'); ?>
+                </div>
+                <div>
+                    <h3 class="db-onboarding__step-title"><?php echo e(t('Billing')); ?></h3>
+                    <p class="db-onboarding__step-text"><?php echo e(t('Add billing before the trial ends.')); ?></p>
+                </div>
+                <a class="db-onboarding__link" href="<?php echo e(url('billing')); ?>">
+                    <?php echo e(t('Add billing')); ?>
+                </a>
+            </article>
+        </div>
+    </section>
+<?php endif; ?>
+
 <?php
 workspace_render_queue_page([
     'title' => 'Work',
@@ -56,7 +108,8 @@ workspace_render_queue_page([
     'items' => $active_items,
     'queue_url' => $work_queue_url,
     'view_all_url' => $work_tickets_url($queue_key),
-    'primary_action' => workspace_surface_action(url('new-ticket'), 'New ticket'),
+    'primary_action' => workspace_surface_action(url('dashboard'), 'Analytics', 'chart-bar', 'btn btn-secondary btn-sm')
+        . workspace_surface_action(url('new-ticket'), 'New ticket'),
     'row_options' => ['show_assignee' => true],
 ]);
 ?>

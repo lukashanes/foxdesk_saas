@@ -605,11 +605,20 @@
         function updateCompleteActionTitle(state) {
             var completeButton = document.querySelector('button[name="change_status"]');
             if (!completeButton) return;
+            var hasActiveTimer = state === 'running' || state === 'paused';
             var title = state === 'running' || state === 'paused'
                 ? t('completeTimerHelp', 'Mark this ticket as done and stop the active timer.')
                 : t('completeHelp', 'Mark this ticket as done.');
+            var label = hasActiveTimer
+                ? t('completeTimerLabel', 'Complete & stop timer')
+                : t('completeLabel', 'Complete');
+            var labelNode = completeButton.querySelector('[data-action-label="complete"]') || completeButton.querySelector('span');
+            var stopIntent = completeButton.form ? completeButton.form.querySelector('input[name="stop_timer_on_complete"]') : null;
+
             completeButton.title = title;
             completeButton.setAttribute('aria-label', title);
+            if (labelNode) labelNode.textContent = label;
+            if (stopIntent) stopIntent.value = hasActiveTimer ? '1' : '0';
         }
 
         function tick() {
@@ -952,6 +961,31 @@
                     showToast(data.message || t('commentDeleted', 'Comment deleted.'), 'success');
                 } else {
                     window.alert(data.error || t('commentDeleteFailed', 'Failed to delete comment.'));
+                }
+            })
+            .catch(function () {
+                window.alert(t('genericError', 'An error occurred.'));
+            });
+    };
+
+    window.deleteAttachment = function (attachmentId) {
+        if (!window.confirm(t('confirmDeleteAttachment', 'Delete this attachment?'))) return;
+        var formData = new FormData();
+        formData.append('attachment_id', attachmentId);
+        formData.append('csrf_token', csrfToken);
+
+        fetch('index.php?page=api&action=delete-attachment', { method: 'POST', body: formData })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    document.querySelectorAll('[data-attachment-id="' + attachmentId + '"]').forEach(function (item) {
+                        item.style.opacity = '0';
+                        item.style.transition = 'opacity 0.2s';
+                        setTimeout(function () { item.remove(); }, 220);
+                    });
+                    showToast(data.message || t('attachmentDeleted', 'Attachment deleted.'), 'success');
+                } else {
+                    window.alert(data.error || t('attachmentDeleteFailed', 'Failed to delete attachment.'));
                 }
             })
             .catch(function () {

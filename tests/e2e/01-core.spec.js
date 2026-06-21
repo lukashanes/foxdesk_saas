@@ -2,8 +2,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { test, expect } = require('@playwright/test');
-const { dbQuery, php, login } = require('./helpers');
-const { baseURL } = require('./env');
+const { dbQuery, php, login, getCsrf, dockerExec } = require('./helpers');
+const { baseURL, webContainer } = require('./env');
 
 function sqlString(value) {
   return `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "''")}'`;
@@ -14,6 +14,59 @@ function rowObject(output) {
   const headers = lines[0].split('\t');
   const values = lines[1].split('\t');
   return Object.fromEntries(headers.map((header, index) => [header, values[index]]));
+}
+
+function seedDueRecurringTask(title, description = 'Created by recurring runtime E2E.') {
+  const adminRow = rowObject(dbQuery(`
+    SELECT id, tenant_id
+    FROM users
+    WHERE email = 'admin@example.test'
+    LIMIT 1;
+  `));
+  const statusRow = rowObject(dbQuery(`
+    SELECT id
+    FROM statuses
+    WHERE is_default = 1
+    ORDER BY sort_order ASC, id ASC
+    LIMIT 1;
+  `));
+
+  dbQuery(`
+    INSERT INTO recurring_tasks (
+      tenant_id,
+      title,
+      description,
+      status_id,
+      recurrence_type,
+      recurrence_interval,
+      start_date,
+      next_run_date,
+      is_active,
+      send_email_notification,
+      created_by_user_id,
+      created_at
+    ) VALUES (
+      ${Number(adminRow.tenant_id)},
+      ${sqlString(title)},
+      ${sqlString(description)},
+      ${Number(statusRow.id)},
+      'daily',
+      1,
+      DATE_SUB(CURDATE(), INTERVAL 2 DAY),
+      DATE_SUB(NOW(), INTERVAL 10 MINUTE),
+      1,
+      0,
+      ${Number(adminRow.id)},
+      NOW()
+    );
+  `);
+
+  return rowObject(dbQuery(`
+    SELECT id
+    FROM recurring_tasks
+    WHERE title = ${sqlString(title)}
+    LIMIT 1;
+  `));
 }
 
 test('admin can log in and see the work home', async ({ page }) => {
@@ -48,9 +101,14 @@ test('admin can collapse the sidebar and keep more workspace width', async ({ pa
   expect(isCompact).toBe(false);
 });
 
-test('admin can create a ticket, upload an attachment, and download it', async ({ page }) => {
+test('admin can create a ticket, upload, preview, download, and delete attachments', async ({ page }) => {
   const attachmentPath = path.join(os.tmpdir(), 'foxdesk-e2e-attachment.txt');
   fs.writeFileSync(attachmentPath, 'hello from foxdesk e2e\n');
+  const imagePath = path.join(os.tmpdir(), 'foxdesk-e2e-preview.png');
+  fs.writeFileSync(imagePath, Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+    'base64'
+  ));
 
   await login(page);
   await page.goto('/index.php?page=new-ticket');
@@ -60,19 +118,130 @@ test('admin can create a ticket, upload an attachment, and download it', async (
   await page.locator('#description-input').evaluate(input => {
     input.value = '<p>Created by Playwright E2E.</p>';
   });
-  await page.locator('#file-input').setInputFiles(attachmentPath);
+  await page.locator('#file-input').setInputFiles([attachmentPath, imagePath]);
   await page.locator('button[type="submit"]').click();
   await page.waitForURL(/page=ticket&id=\d+/);
+  const ticketId = Number(new URL(page.url()).searchParams.get('id'));
 
   await expect(page.locator('body')).toContainText('E2E ticket with attachment');
   await expect(page.locator('body')).toContainText('Attachments');
   await expect(page.locator('body')).toContainText('foxdesk-e2e-attachment.txt');
+  await expect(page.locator('body')).toContainText('foxdesk-e2e-preview.png');
 
   const attachmentHref = await page.locator('a[href*="attachment.php"]', { hasText: 'foxdesk-e2e-attachment.txt' }).first().getAttribute('href');
   expect(attachmentHref).toBeTruthy();
   const attachmentResponse = await page.request.get(attachmentHref);
   expect(attachmentResponse.ok()).toBeTruthy();
   expect(await attachmentResponse.text()).toContain('hello from foxdesk e2e');
+
+  await page.locator('a.ticket-attachment-link', { hasText: 'foxdesk-e2e-preview.png' }).first().click();
+  await expect(page.locator('#image-lightbox')).toBeVisible();
+  await expect(page.locator('#lightbox-name')).toContainText('foxdesk-e2e-preview.png');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#image-lightbox')).not.toBeVisible();
+
+  const deleteButton = page.locator('.ticket-attachment-item', { hasText: 'foxdesk-e2e-attachment.txt' }).getByRole('button', { name: 'Delete attachment' });
+  page.once('dialog', dialog => dialog.accept());
+  await deleteButton.click();
+  await expect(page.locator('body')).toContainText('Attachment deleted.');
+  await expect(page.locator('.ticket-attachment-item', { hasText: 'foxdesk-e2e-attachment.txt' })).toHaveCount(0);
+
+  const remaining = rowObject(dbQuery(`
+    SELECT COUNT(*) AS attachment_count
+    FROM attachments
+    WHERE ticket_id = ${ticketId} AND original_name = 'foxdesk-e2e-attachment.txt'
+  `));
+  expect(Number(remaining.attachment_count)).toBe(0);
+});
+
+test('complete action stops an active ticket timer', async ({ page }) => {
+  const stamp = Date.now();
+  const title = `E2E complete stops timer ${stamp}`;
+
+  await login(page);
+  await page.goto('/index.php?page=new-ticket');
+  await page.locator('input[name="title"]').fill(title);
+  await page.locator('#description-input').evaluate(input => {
+    input.value = '<p>Timer completion regression.</p>';
+  });
+  await page.locator('button[type="submit"]').click();
+  await page.waitForURL(/page=ticket&id=\d+/);
+
+  const ticketId = Number(new URL(page.url()).searchParams.get('id'));
+  expect(ticketId).toBeGreaterThan(0);
+
+  const startButton = page.locator('#toolbar-timer-btn');
+  await expect(startButton).toBeVisible();
+  await startButton.click();
+  await expect(startButton).toHaveClass(/td-tool-btn--active-timer/);
+  await expect(page.locator('form.ticket-primary-action-form button[name="change_status"]')).toContainText('Complete & stop timer');
+
+  await page.locator('form.ticket-primary-action-form button[name="change_status"]').click();
+  await page.waitForLoadState('domcontentloaded');
+  await expect(page.locator('body')).toContainText('Ticket completed and timer stopped.');
+
+  const timerState = rowObject(dbQuery(`
+    SELECT
+      SUM(CASE WHEN ended_at IS NULL THEN 1 ELSE 0 END) AS active_count,
+      SUM(CASE WHEN ended_at IS NOT NULL THEN 1 ELSE 0 END) AS stopped_count
+    FROM ticket_time_entries
+    WHERE ticket_id = ${ticketId}
+  `));
+  expect(Number(timerState.active_count || 0)).toBe(0);
+  expect(Number(timerState.stopped_count || 0)).toBeGreaterThan(0);
+});
+
+test('admin can add normalized tags and filter tickets by tag', async ({ page }) => {
+  const stamp = Date.now();
+  const title = `E2E tagged ticket ${stamp}`;
+
+  await login(page);
+  await page.goto('/index.php?page=new-ticket');
+  await page.locator('input[name="title"]').fill(title);
+  await page.locator('#description-input').evaluate(input => {
+    input.value = '<p>Tag workflow regression.</p>';
+  });
+  await page.locator('button[type="submit"]').click();
+  await page.waitForURL(/page=ticket&id=\d+/);
+
+  const ticketId = Number(new URL(page.url()).searchParams.get('id'));
+  expect(ticketId).toBeGreaterThan(0);
+
+  const csrf = await page.locator('meta[name="csrf-token"]').getAttribute('content');
+  expect(csrf).toBeTruthy();
+
+  const updateResponse = await page.request.post('/index.php?page=api&action=update-tags', {
+    headers: { 'X-CSRF-Token': csrf },
+    form: {
+      ticket_id: String(ticketId),
+      tags: '#Urgent, urgent; customer  success'
+    }
+  });
+  expect(updateResponse.ok()).toBeTruthy();
+  const updateJson = await updateResponse.json();
+  expect(updateJson.success).toBe(true);
+  expect(updateJson.tags).toEqual(['Urgent', 'customer success']);
+
+  const stored = rowObject(dbQuery(`
+    SELECT tags
+    FROM tickets
+    WHERE id = ${ticketId}
+    LIMIT 1
+  `));
+  expect(stored.tags).toBe('Urgent, customer success');
+
+  const suggestionsResponse = await page.request.get('/index.php?page=api&action=get-tags');
+  expect(suggestionsResponse.ok()).toBeTruthy();
+  const suggestionsJson = await suggestionsResponse.json();
+  expect(suggestionsJson.success).toBe(true);
+  expect(suggestionsJson.tags.map(tag => tag.name)).toEqual(expect.arrayContaining(['Urgent', 'customer success']));
+
+  await page.goto('/index.php?page=tickets&tags=Urgent');
+  await expect(page.locator('body')).toContainText(title);
+  await expect(page.locator('body')).toContainText('Urgent');
+
+  await page.goto('/index.php?page=tickets&tags=not-present');
+  await expect(page.locator('body')).not.toContainText(title);
 });
 
 test('logout and login flow works', async ({ browser }) => {
@@ -85,6 +254,151 @@ test('logout and login flow works', async ({ browser }) => {
   await page.goto('/index.php?page=dashboard');
   await expect(page.locator('body')).toContainText('Dashboard');
   await context.close();
+});
+
+test('admin can manage profile preferences, request password setup link, and start 2FA setup', async ({ page }) => {
+  const stamp = Date.now();
+  const firstName = `Profile${stamp}`;
+  const lastName = 'E2E';
+
+  await login(page);
+  await page.goto('/index.php?page=profile');
+  await expect(page.locator('body')).toContainText('My profile');
+  await expect(page.locator('body')).toContainText('Personal information');
+  await expect(page.locator('body')).toContainText('Change password');
+  await expect(page.locator('#two-factor-section')).toContainText('Two-factor authentication');
+
+  await page.locator('input[name="first_name"]').fill(firstName);
+  await page.locator('input[name="last_name"]').fill(lastName);
+  await page.locator('select[name="language"]').selectOption('en');
+  await page.locator('button[name="update_profile"]').click();
+  await expect(page.locator('body')).toContainText('Profile updated.');
+
+  let profileRow = rowObject(dbQuery(`
+    SELECT first_name, last_name, language
+    FROM users
+    WHERE email = 'admin@example.test'
+    LIMIT 1;
+  `));
+  expect(profileRow.first_name).toBe(firstName);
+  expect(profileRow.last_name).toBe(lastName);
+  expect(profileRow.language).toBe('en');
+
+  await page.locator('#profile_in_app_notifications_enabled').setChecked(true);
+  await page.locator('#profile_in_app_sound_enabled').setChecked(true);
+  await page.locator('button[name="update_notifications"]').click();
+  await expect(page.locator('body')).toContainText('Notification settings saved.');
+
+  profileRow = rowObject(dbQuery(`
+    SELECT in_app_notifications_enabled, in_app_sound_enabled
+    FROM users
+    WHERE email = 'admin@example.test'
+    LIMIT 1;
+  `));
+  expect(profileRow.in_app_notifications_enabled).toBe('1');
+  expect(profileRow.in_app_sound_enabled).toBe('1');
+
+  await page.locator('button[name="send_password_setup_link"]').click();
+  await expect(page.locator('body')).toContainText('Password setup link sent. Check your email.');
+
+  const resetRow = rowObject(dbQuery(`
+    SELECT reset_token REGEXP '^[a-f0-9]{64}$' AS has_hash,
+      reset_token_expires > NOW() AS future_expiry
+    FROM users
+    WHERE email = 'admin@example.test'
+    LIMIT 1;
+  `));
+  expect(resetRow.has_hash).toBe('1');
+  expect(resetRow.future_expiry).toBe('1');
+
+  await page.locator('button[name="start_2fa_setup"]').click();
+  await expect(page).toHaveURL(/setup2fa=1/);
+  await expect(page.locator('#two-factor-section')).toContainText('Verification code');
+  await expect(page.locator('#setup-code')).toBeVisible();
+  await expect(page.locator('#totp-qr-code')).toBeVisible();
+});
+
+test('admin can subscribe to tenant-scoped browser push notifications', async ({ page }) => {
+  const stamp = Date.now();
+  const endpoint = `https://push.example.test/subscription/${stamp}`;
+  const subject = `Push E2E notification ${stamp}`;
+
+  await login(page);
+  await page.goto('/index.php?page=dashboard');
+  const csrf = await getCsrf(page);
+  expect(csrf).toBeTruthy();
+
+  const vapidResponse = await page.request.get('/index.php?page=api&action=push-vapid-key');
+  expect(vapidResponse.ok()).toBeTruthy();
+  const vapidJson = await vapidResponse.json();
+  expect(vapidJson.publicKey).toEqual(expect.any(String));
+  expect(vapidJson.publicKey.length).toBeGreaterThan(20);
+
+  const subscribeResponse = await page.request.post('/index.php?page=api&action=push-subscribe', {
+    headers: { 'X-CSRF-Token': csrf },
+    data: {
+      endpoint,
+      p256dh: `p256dh-${stamp}`,
+      auth: `auth-${stamp}`
+    }
+  });
+  expect(subscribeResponse.ok()).toBeTruthy();
+  const subscribeJson = await subscribeResponse.json();
+  expect(subscribeJson.success).toBe(true);
+
+  const subscriptionRow = rowObject(dbQuery(`
+    SELECT ps.user_id, ps.tenant_id, ps.p256dh, ps.auth_key, u.tenant_id AS user_tenant_id
+    FROM push_subscriptions ps
+    JOIN users u ON u.id = ps.user_id
+    WHERE ps.endpoint = ${sqlString(endpoint)}
+    LIMIT 1;
+  `));
+  expect(Number(subscriptionRow.user_id)).toBeGreaterThan(0);
+  expect(subscriptionRow.tenant_id).toBe(subscriptionRow.user_tenant_id);
+  expect(subscriptionRow.p256dh).toBe(`p256dh-${stamp}`);
+  expect(subscriptionRow.auth_key).toBe(`auth-${stamp}`);
+
+  const adminRow = rowObject(dbQuery(`
+    SELECT id, tenant_id
+    FROM users
+    WHERE email = 'admin@example.test'
+    LIMIT 1;
+  `));
+  const notificationData = JSON.stringify({
+    ticket_subject: subject,
+    actor_name: 'FoxDesk E2E'
+  });
+  dbQuery(`
+    INSERT INTO notifications (tenant_id, user_id, ticket_id, type, actor_id, data, is_read, created_at)
+    VALUES (${Number(adminRow.tenant_id)}, ${Number(adminRow.id)}, NULL, 'assigned_to_you', NULL, ${sqlString(notificationData)}, 0, NOW());
+  `);
+
+  const notificationsResponse = await page.request.get('/index.php?page=api&action=push-notifications');
+  expect(notificationsResponse.ok()).toBeTruthy();
+  const notificationsJson = await notificationsResponse.json();
+  expect(notificationsJson.notifications.length).toBeGreaterThan(0);
+  const notification = notificationsJson.notifications[0];
+  expect(notification.title).toBe('Ticket Assigned');
+  expect(notification.body).toContain(subject);
+  expect(notification.url).toContain('/index.php?page=notifications');
+  expect(notification.tag).toMatch(/^foxdesk-\d+$/);
+
+  const unsubscribeResponse = await page.request.post('/index.php?page=api&action=push-unsubscribe', {
+    headers: { 'X-CSRF-Token': csrf },
+    data: { endpoint }
+  });
+  expect(unsubscribeResponse.ok()).toBeTruthy();
+  const unsubscribeText = await unsubscribeResponse.text();
+  expect(unsubscribeText).not.toContain('<br');
+  const unsubscribeJson = JSON.parse(unsubscribeText);
+  expect(unsubscribeJson.success).toBe(true);
+
+  const remainingRow = rowObject(dbQuery(`
+    SELECT COUNT(*) AS subscription_count
+    FROM push_subscriptions
+    WHERE endpoint = ${sqlString(endpoint)};
+  `));
+  expect(Number(remainingRow.subscription_count)).toBe(0);
 });
 
 test('page load triggers throttled pseudo-cron email fallback', async ({ page }) => {
@@ -103,6 +417,151 @@ test('page load triggers throttled pseudo-cron email fallback', async ({ page })
   const output = dbQuery("SELECT setting_value FROM settings WHERE setting_key = 'pseudo_cron_last_email' LIMIT 1;");
   const lastRun = Number(output.trim().split('\n').pop());
   expect(lastRun).toBeGreaterThan(0);
+});
+
+test('recurring task runner creates due tickets without duplicate runs', async () => {
+  const stamp = Date.now();
+  const title = `E2E recurring runtime ${stamp}`;
+  const taskRow = seedDueRecurringTask(title);
+
+  const runRecurring = () => JSON.parse(dockerExec(webContainer, ['php', 'bin/process-recurring-tasks.php', '--json']));
+
+  const firstRun = runRecurring();
+  expect(firstRun.ok).toBe(true);
+  expect(Number(firstRun.processed)).toBeGreaterThanOrEqual(1);
+
+  let state = rowObject(dbQuery(`
+    SELECT
+      (SELECT COUNT(*) FROM tickets WHERE title = ${sqlString(title)} AND source = 'recurring') AS ticket_count,
+      (SELECT COUNT(*) FROM recurring_task_runs WHERE recurring_task_id = ${Number(taskRow.id)} AND status = 'success') AS run_count,
+      (SELECT next_run_date > NOW() FROM recurring_tasks WHERE id = ${Number(taskRow.id)}) AS next_in_future,
+      (SELECT last_run_date IS NOT NULL FROM recurring_tasks WHERE id = ${Number(taskRow.id)}) AS has_last_run
+  `));
+  expect(Number(state.ticket_count)).toBe(1);
+  expect(Number(state.run_count)).toBe(1);
+  expect(state.next_in_future).toBe('1');
+  expect(state.has_last_run).toBe('1');
+
+  const secondRun = runRecurring();
+  expect(secondRun.ok).toBe(true);
+
+  state = rowObject(dbQuery(`
+    SELECT
+      (SELECT COUNT(*) FROM tickets WHERE title = ${sqlString(title)} AND source = 'recurring') AS ticket_count,
+      (SELECT COUNT(*) FROM recurring_task_runs WHERE recurring_task_id = ${Number(taskRow.id)} AND status = 'success') AS run_count
+  `));
+  expect(Number(state.ticket_count)).toBe(1);
+  expect(Number(state.run_count)).toBe(1);
+
+  dbQuery(`
+    UPDATE recurring_tasks
+    SET next_run_date = DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+    WHERE id = ${Number(taskRow.id)};
+  `);
+
+  const thirdRun = runRecurring();
+  expect(thirdRun.ok).toBe(true);
+
+  state = rowObject(dbQuery(`
+    SELECT
+      (SELECT COUNT(*) FROM tickets WHERE title = ${sqlString(title)} AND source = 'recurring') AS ticket_count,
+      (SELECT COUNT(*) FROM recurring_task_runs WHERE recurring_task_id = ${Number(taskRow.id)} AND status = 'success') AS run_count
+  `));
+  expect(Number(state.ticket_count)).toBe(2);
+  expect(Number(state.run_count)).toBe(2);
+});
+
+test('maintenance and pseudo-cron runners process due work once per interval', async ({ page }) => {
+  const stamp = Date.now();
+  const maintenanceTitle = `E2E maintenance recurring ${stamp}`;
+  const endpointTitle = `E2E cron endpoint recurring ${stamp}`;
+  const maintenanceTask = seedDueRecurringTask(maintenanceTitle, 'Created by maintenance E2E.');
+  const secret = `cron-secret-${stamp}`;
+  const now = Math.floor(Date.now() / 1000);
+
+  dbQuery(`
+    INSERT INTO settings (setting_key, setting_value) VALUES
+      ('update_check_enabled', '0'),
+      ('pseudo_cron_secret', ${sqlString(secret)}),
+      ('pseudo_cron_lock', '0'),
+      ('pseudo_cron_last_email', '0'),
+      ('pseudo_cron_last_email_attempt', '0'),
+      ('pseudo_cron_last_recurring', '0'),
+      ('pseudo_cron_last_due_check', ${sqlString(String(now))}),
+      ('pseudo_cron_last_reports', ${sqlString(String(now))}),
+      ('pseudo_cron_last_trial_expire', ${sqlString(String(now))}),
+      ('pseudo_cron_last_billing_usage', ${sqlString(String(now))}),
+      ('pseudo_cron_last_maintenance', ${sqlString(String(now))}),
+      ('imap_enabled', '0')
+    ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
+  `);
+
+  const maintenance = JSON.parse(dockerExec(webContainer, ['php', 'bin/run-maintenance.php', '--json']));
+  expect(maintenance.ok).toBe(true);
+  expect(Number(maintenance.recurring_processed)).toBeGreaterThanOrEqual(1);
+  expect(maintenance.email_ingest.status).toBe('disabled');
+  expect(maintenance.update_check.status).toBe('disabled');
+  expect(maintenance.billing_usage.status).toBe('disabled');
+
+  let state = rowObject(dbQuery(`
+    SELECT
+      (SELECT COUNT(*) FROM tickets WHERE title = ${sqlString(maintenanceTitle)} AND source = 'recurring') AS ticket_count,
+      (SELECT COUNT(*) FROM recurring_task_runs WHERE recurring_task_id = ${Number(maintenanceTask.id)} AND status = 'success') AS run_count,
+      (SELECT setting_value REGEXP '^[0-9]+$' FROM settings WHERE setting_key = 'pseudo_cron_last_email') AS email_marked
+  `));
+  expect(Number(state.ticket_count)).toBe(1);
+  expect(Number(state.run_count)).toBe(1);
+  expect(state.email_marked).toBe('1');
+
+  const secondMaintenance = JSON.parse(dockerExec(webContainer, ['php', 'bin/run-maintenance.php', '--json']));
+  expect(secondMaintenance.ok).toBe(true);
+  state = rowObject(dbQuery(`
+    SELECT
+      (SELECT COUNT(*) FROM tickets WHERE title = ${sqlString(maintenanceTitle)} AND source = 'recurring') AS ticket_count,
+      (SELECT COUNT(*) FROM recurring_task_runs WHERE recurring_task_id = ${Number(maintenanceTask.id)} AND status = 'success') AS run_count
+  `));
+  expect(Number(state.ticket_count)).toBe(1);
+  expect(Number(state.run_count)).toBe(1);
+
+  const endpointTask = seedDueRecurringTask(endpointTitle, 'Created by cron endpoint E2E.');
+
+  dbQuery(`
+    UPDATE recurring_tasks
+    SET next_run_date = DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+    WHERE id = ${Number(endpointTask.id)};
+    UPDATE settings SET setting_value = '0' WHERE setting_key IN ('pseudo_cron_last_recurring', 'pseudo_cron_last_email', 'pseudo_cron_lock');
+  `);
+
+  const forbidden = await page.request.get(`/index.php?page=cron&token=${encodeURIComponent('bad-' + secret)}`);
+  expect(forbidden.status()).toBe(403);
+  expect(await forbidden.text()).toContain('Forbidden');
+
+  const endpointRun = await page.request.get(`/index.php?page=cron&token=${encodeURIComponent(secret)}`);
+  expect(endpointRun.status()).toBe(200);
+  expect(await endpointRun.text()).toContain('OK');
+
+  state = rowObject(dbQuery(`
+    SELECT
+      (SELECT COUNT(*) FROM tickets WHERE title = ${sqlString(endpointTitle)} AND source = 'recurring') AS ticket_count,
+      (SELECT COUNT(*) FROM recurring_task_runs WHERE recurring_task_id = ${Number(endpointTask.id)} AND status = 'success') AS run_count,
+      (SELECT setting_value FROM settings WHERE setting_key = 'pseudo_cron_lock') AS lock_value,
+      (SELECT CAST(setting_value AS UNSIGNED) > 0 FROM settings WHERE setting_key = 'pseudo_cron_last_recurring') AS recurring_marked
+  `));
+  expect(Number(state.ticket_count)).toBe(1);
+  expect(Number(state.run_count)).toBe(1);
+  expect(state.lock_value).toBe('0');
+  expect(state.recurring_marked).toBe('1');
+
+  const endpointSecondRun = await page.request.get(`/index.php?page=cron&token=${encodeURIComponent(secret)}`);
+  expect(endpointSecondRun.status()).toBe(200);
+
+  state = rowObject(dbQuery(`
+    SELECT
+      (SELECT COUNT(*) FROM tickets WHERE title = ${sqlString(endpointTitle)} AND source = 'recurring') AS ticket_count,
+      (SELECT COUNT(*) FROM recurring_task_runs WHERE recurring_task_id = ${Number(endpointTask.id)} AND status = 'success') AS run_count
+  `));
+  expect(Number(state.ticket_count)).toBe(1);
+  expect(Number(state.run_count)).toBe(1);
 });
 
 test('new ticket does not carry over previous company or assignee selection', async ({ page }) => {

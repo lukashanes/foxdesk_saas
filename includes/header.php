@@ -275,25 +275,6 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                     <span><?php echo e(t('Work')); ?></span>
                 </a>
 
-                <?php $is_dashboard = ($page ?? '') === 'dashboard'; ?>
-                <a href="<?php echo url('dashboard'); ?>"
-                    class="nav-item <?php echo $is_dashboard ? 'active' : ''; ?>"
-                    title="<?php echo e(t('Dashboard')); ?>"
-                    <?php echo $is_dashboard ? 'aria-current="page"' : ''; ?>>
-                    <?php echo get_icon('chart-bar', 'nav-item__icon'); ?>
-                    <span><?php echo e(t('Dashboard')); ?></span>
-                </a>
-
-                <?php $is_notifications_page = ($page ?? '') === 'notifications'; ?>
-                <a href="<?php echo url('notifications'); ?>"
-                    class="nav-item <?php echo $is_notifications_page ? 'active' : ''; ?>"
-                    title="<?php echo e(t('Notifications')); ?>"
-                    <?php echo $is_notifications_page ? 'aria-current="page"' : ''; ?>>
-                    <?php echo get_icon('bell', 'nav-item__icon'); ?>
-                    <span><?php echo e(t('Notifications')); ?></span>
-                    <span id="sidebar-notif-badge" class="notif-sidebar-badge hidden">0</span>
-                </a>
-
                 <?php $is_tickets = ($page ?? '') === 'tickets' && ($_GET['archived'] ?? '') !== '1'; ?>
                 <a href="<?php echo url('tickets'); ?>"
                     class="nav-item <?php echo $is_tickets ? 'active' : ''; ?>"
@@ -302,6 +283,17 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                     <?php echo get_icon('ticket-alt', 'nav-item__icon'); ?>
                     <span><?php echo e(t('All tickets')); ?></span>
                 </a>
+
+                <?php if (is_admin() || is_agent()): ?>
+                    <?php $is_time_reports = ($page ?? '') === 'admin' && ($_GET['section'] ?? '') === 'reports'; ?>
+                    <a href="<?php echo url('admin', ['section' => 'reports']); ?>"
+                        class="nav-item <?php echo $is_time_reports ? 'active' : ''; ?>"
+                        title="<?php echo e(t('Time Reports')); ?>"
+                        <?php echo $is_time_reports ? 'aria-current="page"' : ''; ?>>
+                        <?php echo get_icon('chart-bar', 'nav-item__icon'); ?>
+                        <span><?php echo e(t('Time Reports')); ?></span>
+                    </a>
+                <?php endif; ?>
 
                 <?php $is_new_ticket = ($page ?? '') === 'new-ticket' && !isset($_GET['auto_timer']); ?>
                 <?php $has_quick_start = (is_admin() || is_agent()) && function_exists('ticket_time_table_exists') && ticket_time_table_exists(); ?>
@@ -441,12 +433,6 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
 
                 <?php if (is_admin() || is_agent()): ?>
                 <div class="border-t my-2 border-theme-light" role="separator"></div>
-
-                <a href="<?php echo url('admin', ['section' => 'reports']); ?>" role="menuitem"
-                    class="sidebar-user-menu__item flex items-center gap-3 px-4 py-2.5 text-sm transition-colors sidebar-hover">
-                    <?php echo get_icon('chart-bar', 'w-4 h-4'); ?>
-                    <span><?php echo e(t('Time Reports')); ?></span>
-                </a>
 
                 <?php if (is_admin()): ?>
                 <?php if (function_exists('is_platform_admin') && is_platform_admin()): ?>
@@ -628,6 +614,10 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                         class="notification-link-button text-xs font-medium hover:underline">
                         <?php echo e(t('Mark all as read')); ?>
                     </button>
+                    <a href="<?php echo url('notifications'); ?>"
+                        class="notification-link-button text-xs font-medium hover:underline">
+                        <?php echo e(t('View all')); ?>
+                    </a>
                 </div>
             </div>
             <!-- Content -->
@@ -956,16 +946,16 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
 
             function updateBadge(count) {
                 _lastCount = count;
-                ['notif-badge-mobile', 'notif-badge-desktop', 'sidebar-notif-badge'].forEach(function(id) {
+                ['notif-badge-mobile', 'notif-badge-desktop'].forEach(function(id) {
                     var el = document.getElementById(id);
                     if (!el) return;
                     if (count > 0) {
                         el.textContent = count > 99 ? '99+' : count;
                         el.classList.remove('hidden');
-                        if (id !== 'sidebar-notif-badge') el.classList.add('pulse');
+                        el.classList.add('pulse');
                     } else {
                         el.classList.add('hidden');
-                        if (id !== 'sidebar-notif-badge') el.classList.remove('pulse');
+                        el.classList.remove('pulse');
                     }
                 });
             }

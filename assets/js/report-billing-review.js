@@ -79,6 +79,9 @@
         var amount = originalAmount;
         var bulkPreview = bulkPreviewForRow(row, billableMinutes, originalRate);
         var form = row.querySelector('.entry-billing-form');
+        if (!form && row.dataset.entryId) {
+            form = document.querySelector('.entry-billing-form[data-entry-id="' + row.dataset.entryId + '"]');
+        }
 
         if (bulkPreview) {
             rate = bulkPreview.rate;

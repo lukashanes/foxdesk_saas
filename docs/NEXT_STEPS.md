@@ -8,7 +8,8 @@
   - platform console: `https://platform.foxdesk.net`
 - Local Docker deployment is available and smoke-tested.
 - Multi-tenant workspace baseline is active: tenants, hosted signup, tenant-aware
-  users/data, tenant isolation checks, and platform admin console.
+  users/data, tenant isolation checks, platform admin console, and operator tenant detail
+  for lifecycle, owner access, billing history, and usage review.
 - Stripe billing is implemented for the public SaaS model: 14-day trial without
   card, Checkout, Customer Portal, signed webhooks, VAT ID/tax support, billing
   lifecycle matrix, failed-payment grace, manual free override, and metered
@@ -62,7 +63,7 @@ npm run prod:deploy:evidence
 - Stripe subscription state is enforced in-app.
 - Storage overage is metered and reported to Stripe.
 - Admin can suspend/reactivate tenants.
-- Public routes are rate-limited and bot-protected.
+- Public routes are rate-limited and protected by Cloudflare Turnstile.
 - Error logging and uptime monitoring are active.
 - A fresh server can be provisioned from documentation/scripts without manual code edits.
 

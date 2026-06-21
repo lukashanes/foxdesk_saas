@@ -21,6 +21,12 @@ assert_work_page(strpos($work, 'work_queue_summary') !== false, 'work page shoul
 assert_work_page(strpos($work, 'workspace_render_queue_page') !== false, 'work page should use the shared workspace queue renderer.');
 assert_work_page(strpos($work, "'show_assignee' => true") !== false, 'work ticket rows should show assignee context.');
 assert_work_page(strpos($work, "url('tickets', ['work_view' => 'waiting']") !== false, 'work page should link waiting queue to the ticket list view.');
+assert_work_page(strpos($work, "workspace_surface_action(url('dashboard'), 'Analytics'") !== false, 'work page should expose Dashboard only as secondary Analytics action.');
+assert_work_page(strpos($work, '($_GET[\'signup\'] ?? \'\') === \'trial\'') !== false, 'work page should show first-run onboarding after verified signup.');
+assert_work_page(strpos($work, 'data-signup-onboarding') !== false, 'first-run onboarding must have a stable visual-smoke hook.');
+assert_work_page(strpos($work, "url('admin', ['section' => 'settings'])") !== false, 'first-run onboarding should link workspace settings.');
+assert_work_page(strpos($work, "url('admin', ['section' => 'users'])") !== false, 'first-run onboarding should link team setup.');
+assert_work_page(strpos($work, "url('billing')") !== false, 'first-run onboarding should link billing setup.');
 foreach ([
     'Work queues',
     'Start with the queue that needs attention now.',

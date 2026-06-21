@@ -409,8 +409,8 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                 </form>
 
                 <div class="login-form-copy text-center text-sm mt-5">
-                    Need a new FoxDesk?
-                    <a href="<?php echo url('cloud'); ?>#pricing" class="login-link font-medium">View Cloud plan</a>
+                    New to FoxDesk?
+                    <a href="<?php echo url('signup'); ?>" class="login-link font-medium">Create a new FoxDesk</a>
                 </div>
 
                 <form method="get" class="login-language-form flex flex-col items-center justify-center gap-2 mt-8">

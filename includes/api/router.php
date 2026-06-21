@@ -139,6 +139,7 @@ function route_api_request($action) {
         'quick-log-time' => 'api_quick_log_time',
         'edit-comment' => 'api_edit_comment',
         'delete-comment' => 'api_delete_comment',
+        'delete-attachment' => 'api_delete_attachment',
 
         // Quick-edit (AJAX, no page reload)
         'quick-assign' => 'api_quick_assign',

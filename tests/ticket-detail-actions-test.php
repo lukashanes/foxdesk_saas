@@ -37,8 +37,14 @@ $assert(str_contains($sidebar, 'id="ticket-side-panel"'), 'Assign action must ta
 $assert(str_contains($sidebar, "t('Ticket properties')"), 'Side panel must have a clear properties heading.');
 $assert(str_contains($page, 'title="<?php echo e($action_title); ?>"'), 'Primary actions must expose mouse-over help text.');
 $assert(str_contains($page, 'aria-label="<?php echo e($action_title); ?>"'), 'Primary actions must expose accessible labels.');
+$assert(str_contains($page, 'name="stop_timer_on_complete"'), 'Complete action must submit explicit stop_timer_on_complete intent.');
+$assert(str_contains($page, 'data-action-label="<?php echo e($action[\'key\'] ?? \'\'); ?>"'), 'Primary action labels must be targetable for live timer label updates.');
 $assert(str_contains($time_functions, 'function stop_active_ticket_timer'), 'Shared active timer stop helper is missing.');
 $assert(str_contains($handlers, 'stop_active_ticket_timer($ticket_id, $user[\'id\'])'), 'Standalone status changes must stop an active timer when completing work.');
+$assert(str_contains($handlers, '$should_stop_timer_on_complete'), 'Status change handler must make complete+timer stop intent explicit.');
+$assert(str_contains($handlers, '!empty($_POST[\'stop_timer_on_complete\'])'), 'Complete action must be able to stop a timer even when status inference is ambiguous.');
+$assert(str_contains($detail_js, 'completeTimerLabel'), 'Timer JS must update Complete label when a timer starts.');
+$assert(str_contains($detail_js, 'stop_timer_on_complete'), 'Timer JS must update complete stop intent when a timer starts or stops.');
 
 if (!function_exists('ticket_status_group_from_status')) {
     function ticket_status_group_from_status(array $status): string
@@ -93,6 +99,11 @@ $assert(
     ($running_complete_actions[0]['title'] ?? '') === 'Mark this ticket as done and stop the active timer.',
     'Complete action must explain that it stops the active timer.'
 );
+$assert(
+    ($running_complete_actions[0]['label'] ?? '') === 'Complete & stop timer',
+    'Complete action label must make active timer behavior obvious.'
+);
+$assert(!empty($running_complete_actions[0]['stops_timer']), 'Complete action must expose stops_timer state while a timer is active.');
 
 $done_actions = array_values(array_filter(
     ticket_detail_primary_actions(['status_id' => 5, 'is_closed' => 1], ['role' => 'admin'], $statuses_with_canceled_first),

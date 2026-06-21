@@ -560,11 +560,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $stopped_timer = null;
-        if (
-            function_exists('ticket_status_group_from_status')
-            && ticket_status_group_from_status($new_status) === 'done'
-            && ticket_time_table_exists()
-        ) {
+        $should_stop_timer_on_complete = !empty($_POST['stop_timer_on_complete'])
+            || (
+                function_exists('ticket_status_group_from_status')
+                && ticket_status_group_from_status($new_status) === 'done'
+            );
+        if ($should_stop_timer_on_complete && ticket_time_table_exists()) {
             $stopped_timer = stop_active_ticket_timer($ticket_id, $user['id']);
         }
 

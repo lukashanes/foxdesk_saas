@@ -1167,21 +1167,6 @@ include BASE_PATH . '/includes/components/page-header.php';
                                         <td class="px-3 py-1.5 text-xs report-amount-col" data-col="amount">
                                             <div data-entry-amount data-report-entry-field="amount"><?php echo e(format_money($entry['billable_amount'])); ?></div>
                                             <div class="text-[11px] text-theme-muted" data-entry-rate data-report-entry-field="rate"><?php echo e(format_money($entry['billable_rate'])); ?>/h</div>
-                                            <?php if (is_admin()): ?>
-                                            <form method="post" class="entry-billing-form mt-1 flex items-center gap-1" data-entry-id="<?php echo $entry['id']; ?>">
-                                                <?php echo csrf_field(); ?>
-                                                <input type="hidden" name="entry_id" value="<?php echo $entry['id']; ?>">
-                                                <select name="entry_adjust_action" class="form-select text-[11px] py-1 report-adjust-action">
-                                                    <?php foreach (billing_review_adjustment_actions() as $action_key => $action_label): ?>
-                                                        <option value="<?php echo e($action_key); ?>"><?php echo e($action_label); ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                                <input type="number" name="entry_adjust_value" step="0.01" min="0" class="form-input text-[11px] py-1 report-adjust-value" placeholder="<?php echo e(t('Value')); ?>">
-                                                <button type="submit" name="adjust_billable_entry" class="btn btn-ghost btn-sm py-1 px-2 shrink-0" title="<?php echo e(t('Save billing')); ?>">
-                                                    <?php echo get_icon('check', 'w-3 h-3'); ?>
-                                                </button>
-                                            </form>
-                                            <?php endif; ?>
                                         </td>
                                     <?php endif; ?>
                                     <?php if ($show_money && $has_cost_data): ?>
@@ -1220,6 +1205,32 @@ include BASE_PATH . '/includes/components/page-header.php';
                                     </td>
                                     <?php endif; ?>
                                 </tr>
+                                <?php if (is_admin() && $show_money && !empty($entry['is_billable'])): ?>
+                                <tr class="report-entry-adjustment-row">
+                                    <td colspan="14" class="px-3 py-2 bg-theme-secondary/40">
+                                        <form method="post" class="entry-billing-form flex flex-col sm:flex-row sm:items-end gap-2" data-entry-id="<?php echo $entry['id']; ?>">
+                                            <?php echo csrf_field(); ?>
+                                            <input type="hidden" name="entry_id" value="<?php echo $entry['id']; ?>">
+                                            <div class="min-w-0 sm:w-44">
+                                                <label class="block text-[11px] font-medium text-theme-muted mb-1"><?php echo e(t('Item adjustment')); ?></label>
+                                                <select name="entry_adjust_action" class="form-select text-xs py-1 report-adjust-action w-full">
+                                                    <?php foreach (billing_review_adjustment_actions() as $action_key => $action_label): ?>
+                                                        <option value="<?php echo e($action_key); ?>"><?php echo e($action_label); ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                            <div class="min-w-0 sm:w-32">
+                                                <label class="block text-[11px] font-medium text-theme-muted mb-1"><?php echo e(t('Value')); ?></label>
+                                                <input type="number" name="entry_adjust_value" step="0.01" min="0" class="form-input text-xs py-1 report-adjust-value w-full" placeholder="<?php echo e(t('Value')); ?>">
+                                            </div>
+                                            <button type="submit" name="adjust_billable_entry" class="btn btn-ghost btn-sm shrink-0 w-full sm:w-auto" title="<?php echo e(t('Save billing')); ?>">
+                                                <?php echo get_icon('check', 'w-3 h-3'); ?>
+                                                <span><?php echo e(t('Save billing')); ?></span>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <?php endif; ?>
                             <?php endforeach; ?>
                         </tbody>
                     </table>

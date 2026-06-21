@@ -44,6 +44,8 @@ foreach ([
     'window.openEditTimeEntry',
     'window.openEditTicketModal',
     'window.openTicketTimeline',
+    'window.deleteAttachment',
+    'index.php?page=api&action=delete-attachment',
     'initUploadPreview',
     'initQuillEditors',
     'initTags',

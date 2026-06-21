@@ -35,6 +35,13 @@ foreach ([
     assert_admin_ui(str_contains($header, $needle), 'Header search markup missing stable contract: ' . $needle);
 }
 
+assert_admin_ui(!str_contains($header, 'id="sidebar-notif-badge"'), 'Notifications must not be duplicated in the left sidebar.');
+assert_admin_ui(!preg_match('/<span>\s*<\?php echo e\(t\(\'Notifications\'\)\); \?>\s*<\/span>/', $header), 'Notifications should be reachable from the top bell, not as a primary left-nav item.');
+assert_admin_ui(str_contains($header, "url('admin', ['section' => 'reports'])"), 'Time reports must be a first-level sidebar destination for staff.');
+assert_admin_ui(!preg_match('/id="sidebar-user-menu".*?Time Reports/s', $header), 'Time reports must not stay hidden in the bottom user dropdown.');
+assert_admin_ui(str_contains($header, "url('notifications')"), 'Notification panel must link to the full notifications page.');
+assert_admin_ui(!str_contains($header, "'sidebar-notif-badge'"), 'Notification badge updates must not target a removed sidebar badge.');
+
 foreach ([
     '.header-search-form',
     'flex: 0 1 360px',

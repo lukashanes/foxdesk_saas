@@ -1252,7 +1252,7 @@ function billing_lifecycle_state_matrix(): array
             'checkout_label' => 'Start plan',
             'show_portal' => true,
             'portal_label' => 'Manage billing details',
-            'platform_buttons' => ['reactivate_tenant', 'block_tenant'],
+            'platform_buttons' => ['block_tenant'],
             'workspace_buttons' => ['portal'],
         ],
         'past_due_grace' => [

@@ -592,6 +592,31 @@ if (!$check) {
     }
 }
 
+// Create signup_magic_links table
+$check = db_fetch_one("SHOW TABLES LIKE 'signup_magic_links'");
+if (!$check) {
+    try {
+        db_query("
+            CREATE TABLE signup_magic_links (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                email VARCHAR(255) NOT NULL,
+                token_hash CHAR(64) NOT NULL UNIQUE,
+                expires_at DATETIME NOT NULL,
+                consumed_at DATETIME NULL,
+                ip VARCHAR(45) NULL,
+                user_agent VARCHAR(255) NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_email_created (email, created_at),
+                INDEX idx_expires_at (expires_at),
+                INDEX idx_consumed_at (consumed_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+        $messages[] = "OK: Created table `signup_magic_links`";
+    } catch (Exception $e) {
+        $messages[] = "ERROR: Failed to create table signup_magic_links: " . $e->getMessage();
+    }
+}
+
 // Create security_log table
 $check = db_fetch_one("SHOW TABLES LIKE 'security_log'");
 if (!$check) {

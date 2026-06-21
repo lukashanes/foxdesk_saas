@@ -33,7 +33,9 @@ foreach ([
     'ticket-side-edit-button',
     'ticket-date-value',
     'ticket-side-action-button',
+    'ticket-attachment-item',
     'ticket-attachment-link',
+    'deleteAttachment(',
     'ticket-share-input',
 ] as $needle) {
     $assert(str_contains($page, $needle), 'Ticket detail sidebar missing surface contract: ' . $needle);

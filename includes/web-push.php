@@ -23,16 +23,51 @@ function ensure_push_subscriptions_table(): void
         if (!$exists) {
             db_query("CREATE TABLE push_subscriptions (
                 id INT AUTO_INCREMENT PRIMARY KEY,
+                tenant_id INT NULL,
                 user_id INT NOT NULL,
                 endpoint TEXT NOT NULL,
                 p256dh VARCHAR(255) NOT NULL DEFAULT '',
                 auth_key VARCHAR(255) NOT NULL DEFAULT '',
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_tenant_id (tenant_id),
                 INDEX idx_push_user (user_id),
+                INDEX idx_push_tenant_user (tenant_id, user_id),
                 INDEX idx_push_endpoint (endpoint(255))
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        } elseif (function_exists('column_exists') && !column_exists('push_subscriptions', 'tenant_id')) {
+            db_query("ALTER TABLE push_subscriptions ADD COLUMN tenant_id INT NULL AFTER id");
+            db_query("ALTER TABLE push_subscriptions ADD INDEX idx_tenant_id (tenant_id)");
+            db_query("ALTER TABLE push_subscriptions ADD INDEX idx_push_tenant_user (tenant_id, user_id)");
+
+            if (function_exists('column_exists') && column_exists('users', 'tenant_id')) {
+                db_query("
+                    UPDATE push_subscriptions ps
+                    JOIN users u ON u.id = ps.user_id
+                    SET ps.tenant_id = u.tenant_id
+                    WHERE ps.tenant_id IS NULL
+                ");
+            }
         }
     } catch (Throwable $e) { /* ignore */ }
+}
+
+function push_subscriptions_has_tenant_scope(): bool
+{
+    return function_exists('column_exists')
+        && function_exists('current_tenant_id')
+        && column_exists('push_subscriptions', 'tenant_id');
+}
+
+function push_subscription_tenant_filter(array &$params, string $alias = ''): string
+{
+    if (!push_subscriptions_has_tenant_scope()) {
+        return '';
+    }
+
+    $prefix = $alias !== '' ? $alias . '.' : '';
+    $params[] = current_tenant_id();
+
+    return " AND {$prefix}tenant_id = ?";
 }
 
 // ── VAPID Key Management ────────────────────────────────────────────────────
@@ -98,15 +133,23 @@ function save_push_subscription(int $user_id, string $endpoint, string $p256dh =
     ensure_push_subscriptions_table();
 
     // Remove existing sub for same endpoint (re-subscribe)
-    db_query("DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?", [$user_id, $endpoint]);
+    $params = [$user_id, $endpoint];
+    $where = "user_id = ? AND endpoint = ?";
+    $where .= push_subscription_tenant_filter($params);
+    db_query("DELETE FROM push_subscriptions WHERE {$where}", $params);
 
-    return (bool) db_insert('push_subscriptions', [
+    $data = [
         'user_id'    => $user_id,
         'endpoint'   => $endpoint,
         'p256dh'     => $p256dh,
         'auth_key'   => $auth,
         'created_at' => date('Y-m-d H:i:s'),
-    ]);
+    ];
+    if (push_subscriptions_has_tenant_scope()) {
+        $data['tenant_id'] = current_tenant_id();
+    }
+
+    return (bool) db_insert('push_subscriptions', $data);
 }
 
 /**
@@ -115,7 +158,13 @@ function save_push_subscription(int $user_id, string $endpoint, string $p256dh =
 function remove_push_subscription(int $user_id, string $endpoint): bool
 {
     ensure_push_subscriptions_table();
-    return db_query("DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?", [$user_id, $endpoint]);
+    $params = [$user_id, $endpoint];
+    $where = "user_id = ? AND endpoint = ?";
+    $where .= push_subscription_tenant_filter($params);
+
+    db_query("DELETE FROM push_subscriptions WHERE {$where}", $params);
+
+    return true;
 }
 
 /**
@@ -124,7 +173,11 @@ function remove_push_subscription(int $user_id, string $endpoint): bool
 function get_push_subscriptions(int $user_id): array
 {
     ensure_push_subscriptions_table();
-    return db_fetch_all("SELECT * FROM push_subscriptions WHERE user_id = ?", [$user_id]);
+    $params = [$user_id];
+    $where = "user_id = ?";
+    $where .= push_subscription_tenant_filter($params);
+
+    return db_fetch_all("SELECT * FROM push_subscriptions WHERE {$where}", $params);
 }
 
 /**
@@ -133,7 +186,10 @@ function get_push_subscriptions(int $user_id): array
 function user_has_push_subscription(int $user_id): bool
 {
     ensure_push_subscriptions_table();
-    $row = db_fetch_one("SELECT COUNT(*) as cnt FROM push_subscriptions WHERE user_id = ?", [$user_id]);
+    $params = [$user_id];
+    $where = "user_id = ?";
+    $where .= push_subscription_tenant_filter($params);
+    $row = db_fetch_one("SELECT COUNT(*) as cnt FROM push_subscriptions WHERE {$where}", $params);
     return ($row['cnt'] ?? 0) > 0;
 }
 
@@ -147,7 +203,7 @@ function user_has_push_subscription(int $user_id): bool
  * @param int    $ttl       Time-to-live in seconds
  * @return bool True on success (HTTP 201), false on failure
  */
-function send_web_push(string $endpoint, int $ttl = 86400): bool
+function send_web_push(string $endpoint, int $ttl = 86400, ?int $tenant_id = null): bool
 {
     $vapid = get_vapid_keys();
 
@@ -181,7 +237,13 @@ function send_web_push(string $endpoint, int $ttl = 86400): bool
     // 201 = Created (success), 410 = Gone (subscription expired)
     if ($status === 410) {
         // Clean up expired subscription
-        db_query("DELETE FROM push_subscriptions WHERE endpoint = ?", [$endpoint]);
+        $params = [$endpoint];
+        $where = "endpoint = ?";
+        if ($tenant_id !== null && function_exists('column_exists') && column_exists('push_subscriptions', 'tenant_id')) {
+            $where .= " AND tenant_id = ?";
+            $params[] = $tenant_id;
+        }
+        db_query("DELETE FROM push_subscriptions WHERE {$where}", $params);
     }
 
     return $status >= 200 && $status < 300;
@@ -269,14 +331,14 @@ function dispatch_push_notifications(array $user_ids): void
     ensure_push_subscriptions_table();
 
     $placeholders = implode(',', array_fill(0, count($user_ids), '?'));
-    $subs = db_fetch_all(
-        "SELECT endpoint FROM push_subscriptions WHERE user_id IN ({$placeholders})",
-        array_values($user_ids)
-    );
+    $params = array_values($user_ids);
+    $where = "user_id IN ({$placeholders})";
+    $tenant_select = push_subscriptions_has_tenant_scope() ? ', tenant_id' : ', NULL AS tenant_id';
+    $subs = db_fetch_all("SELECT endpoint{$tenant_select} FROM push_subscriptions WHERE {$where}", $params);
 
     foreach ($subs as $sub) {
         try {
-            send_web_push($sub['endpoint']);
+            send_web_push($sub['endpoint'], 86400, isset($sub['tenant_id']) ? (int) $sub['tenant_id'] : null);
         } catch (Throwable $e) {
             error_log('[web-push] Send failed: ' . $e->getMessage());
         }

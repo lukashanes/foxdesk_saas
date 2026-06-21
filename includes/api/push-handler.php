@@ -99,14 +99,15 @@ function api_push_notifications(): void
     $notifications = [];
 
     try {
-        $rows = db_fetch_all(
-            "SELECT n.*, n.data as extra_data
+        $params = [(int) $user['id']];
+        $sql = "SELECT n.*, n.data as extra_data
              FROM notifications n
-             WHERE n.user_id = ? AND n.is_read = 0
-             ORDER BY n.created_at DESC
-             LIMIT 10",
-            [(int) $user['id']]
-        );
+             WHERE n.user_id = ? AND n.is_read = 0";
+        if (function_exists('tenant_sql_filter')) {
+            $sql .= tenant_sql_filter('notifications', 'n', $params);
+        }
+        $sql .= " ORDER BY n.created_at DESC LIMIT 10";
+        $rows = db_fetch_all($sql, $params);
 
         if (function_exists('filter_notifications_for_user')) {
             $rows = array_slice(filter_notifications_for_user($rows, (int) $user['id']), 0, 3);

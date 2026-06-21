@@ -25,8 +25,9 @@ test('admin system page renders the simplified layout', async ({ page }) => {
   await login(page);
   await page.goto('/index.php?page=admin&section=settings&tab=system');
   await expect(page.locator('.admin-system')).toBeVisible();
-  await expect(page.locator('.admin-page-nav')).toBeVisible();
-  await expect(page.locator('.admin-page-nav__item.is-active')).toContainText('Settings');
+  await expect(page.locator('.admin-page-nav')).toHaveCount(0);
+  await expect(page.locator('.admin-tabs')).toBeVisible();
+  await expect(page.locator('.admin-tab.is-active')).toContainText('System');
   await expect(page.locator('body')).toContainText('Operations overview');
   await expect(page.locator('body')).toContainText('Backups');
   await expect(page.locator('body')).not.toContainText('System information');
@@ -34,7 +35,7 @@ test('admin system page renders the simplified layout', async ({ page }) => {
 
 test('customer admin navigation stays compact and stable across sections', async ({ page }) => {
   await login(page);
-  await page.goto('/index.php?page=admin&section=settings&tab=system');
+  await page.goto('/index.php?page=admin&section=users');
 
   const nav = page.locator('.admin-page-nav');
   await expect(nav).toBeVisible();
@@ -51,7 +52,8 @@ test('customer admin navigation stays compact and stable across sections', async
 
   await page.locator('.admin-page-nav').getByRole('link', { name: /Settings/ }).click();
   await expect(page).toHaveURL(/section=settings/);
-  await expect(page.locator('.admin-page-nav__item.is-active')).toContainText('Settings');
+  await expect(page.locator('.admin-page-nav')).toHaveCount(0);
+  await expect(page.locator('.admin-tabs')).toBeVisible();
 });
 
 test('GET impersonation does not switch user, POST impersonation with CSRF does', async ({ page }) => {

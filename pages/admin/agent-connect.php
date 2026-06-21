@@ -29,6 +29,13 @@ if (!$agent) {
     exit;
 }
 
+$ai_agent_token_scope_groups = function_exists('team_ai_agent_token_scope_groups')
+    ? team_ai_agent_token_scope_groups()
+    : [];
+$ai_agent_token_default_scope_groups = function_exists('team_ai_agent_token_default_scope_groups')
+    ? team_ai_agent_token_default_scope_groups()
+    : [];
+
 // Handle token generation request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_connect_token'])) {
     require_csrf_token();
@@ -37,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_connect_toke
             team_ai_agent_revoke_active_tokens($agent_id);
         }
         $token_scopes = function_exists('team_ai_agent_token_scopes_from_input')
-            ? team_ai_agent_token_scopes_from_input([])
+            ? team_ai_agent_token_scopes_from_input($_POST)
             : null;
         $token_result = generate_api_token($agent_id, $agent['first_name'], null, $token_scopes);
         if ($token_result && !empty($token_result['token'])) {
@@ -65,12 +72,33 @@ if (!empty($_SESSION['new_ai_agent_token'])) {
 
 // Load token prefix from DB (only prefix is stored — full token is never stored)
 $db_token = db_fetch_one(
-    "SELECT token_prefix, created_at, last_used_at FROM api_tokens WHERE user_id = ? AND is_active = 1 ORDER BY created_at DESC LIMIT 1",
+    "SELECT id, token_prefix, scopes_json, is_active, created_at, last_used_at FROM api_tokens WHERE user_id = ? AND is_active = 1 ORDER BY created_at DESC LIMIT 1",
     [$agent_id]
 );
 $token_prefix_db = $db_token['token_prefix'] ?? null;
 $token_created_at = $db_token['created_at'] ?? null;
 $token_last_used  = $db_token['last_used_at'] ?? null;
+$active_token_scopes = ($db_token && function_exists('api_token_scopes_from_row'))
+    ? api_token_scopes_from_row($db_token)
+    : [];
+$active_token_uses_wildcard = in_array('*', $active_token_scopes, true);
+$token_scope_group_checked = static function (string $group_key) use (
+    $ai_agent_token_scope_groups,
+    $ai_agent_token_default_scope_groups,
+    $active_token_scopes,
+    $active_token_uses_wildcard
+): bool {
+    if ($active_token_uses_wildcard) {
+        return true;
+    }
+
+    if (empty($active_token_scopes)) {
+        return in_array($group_key, $ai_agent_token_default_scope_groups, true);
+    }
+
+    $group_scopes = $ai_agent_token_scope_groups[$group_key]['scopes'] ?? [];
+    return !empty(array_intersect($group_scopes, $active_token_scopes));
+};
 
 // Build context data
 $base_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
@@ -440,9 +468,36 @@ include BASE_PATH . '/includes/components/page-header.php';
                             <?php echo e(t('No API token found. Generate one to connect this agent.')); ?>
                         </p>
                     <?php endif; ?>
-                    <form method="post" class="inline">
+                    <form method="post" class="space-y-3">
                         <?php echo csrf_field(); ?>
                         <input type="hidden" name="generate_connect_token" value="1">
+                        <?php if (!empty($ai_agent_token_scope_groups)): ?>
+                            <div class="rounded-lg border border-theme-light p-3 bg-theme-secondary/40">
+                                <h4 class="text-sm font-semibold mb-1 text-theme-secondary">
+                                    <?php echo e(t('Token actions')); ?>
+                                </h4>
+                                <p class="text-xs mb-2 text-theme-muted">
+                                    <?php echo e(t('Choose what this token can do before generating it.')); ?>
+                                </p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <?php foreach ($ai_agent_token_scope_groups as $group_key => $group): ?>
+                                        <label class="flex items-start gap-2 text-sm rounded-lg border border-theme-light p-2 cursor-pointer bg-theme-primary">
+                                            <input type="checkbox" name="api_token_scope_groups[]"
+                                                value="<?php echo e($group_key); ?>" class="mt-0.5 rounded"
+                                                <?php echo $token_scope_group_checked((string) $group_key) ? 'checked' : ''; ?>>
+                                            <span>
+                                                <span class="font-medium text-theme-primary">
+                                                    <?php echo e(t($group['label'])); ?>
+                                                </span>
+                                                <span class="block text-xs text-theme-muted">
+                                                    <?php echo e(t($group['description'])); ?>
+                                                </span>
+                                            </span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                         <button type="submit"
                             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
                             style="background: var(--primary); color: #fff;">

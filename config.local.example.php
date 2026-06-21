@@ -38,7 +38,14 @@ define('BILLING_PAST_DUE_GRACE_DAYS', 7);
 define('STRIPE_SUCCESS_URL', APP_URL . '/index.php?page=billing&checkout=success');
 define('STRIPE_CANCEL_URL', APP_URL . '/index.php?page=billing&checkout=cancelled');
 
-define('MAIL_PROVIDER', 'php_mail');
+define('MAIL_PROVIDER', 'smtp');
+define('SMTP_HOST', 'mailpit');
+define('SMTP_PORT', 1025);
+define('SMTP_USER', '');
+define('SMTP_PASS', '');
+define('SMTP_ENCRYPTION', 'none');
+define('SMTP_FROM_EMAIL', 'notifications@foxdesk.local');
+define('SMTP_FROM_NAME', 'FoxDesk Local');
 define('CLOUDFLARE_ACCOUNT_ID', '');
 define('CLOUDFLARE_EMAIL_API_TOKEN', '');
 define('CLOUDFLARE_EMAIL_FROM', 'notifications@foxdesk.net');

@@ -320,6 +320,8 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                 $detail_storage_percent = min(100, (int) round(((int) $detail_usage['storage_bytes'] / $detail_included) * 100));
                 $detail_status_class = preg_replace('/[^a-z_]/', '', (string) ($detail_tenant['status'] ?? ''));
                 $detail_owner_name = $detail_owner ? trim((string) (($detail_owner['first_name'] ?? '') . ' ' . ($detail_owner['last_name'] ?? ''))) : '';
+                $detail_lifecycle_state = function_exists('billing_tenant_lifecycle_state') ? billing_tenant_lifecycle_state($detail_tenant) : ['platform_buttons' => []];
+                $detail_platform_buttons = array_fill_keys((array) ($detail_lifecycle_state['platform_buttons'] ?? []), true);
             ?>
             <section class="op-card op-detail" id="tenant-detail">
                 <div class="op-section-head">
@@ -403,11 +405,14 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                     </div>
                                     <button class="op-btn primary" type="submit">Save lifecycle</button>
                                 </form>
-                                <div class="op-field mt-3">
-                                    <label>Override reason</label>
-                                    <input class="op-input" form="tenant-free-access-form-<?php echo (int) $detail_tenant['id']; ?>" name="override_reason" value="<?php echo e($detail_tenant['billing_override_reason'] ?? 'Operator approved free access.'); ?>" maxlength="500" required>
-                                </div>
+                                <?php if (isset($detail_platform_buttons['grant_free_access'])): ?>
+                                    <div class="op-field mt-3">
+                                        <label>Override reason</label>
+                                        <input class="op-input" form="tenant-free-access-form-<?php echo (int) $detail_tenant['id']; ?>" name="override_reason" value="<?php echo e($detail_tenant['billing_override_reason'] ?? 'Operator approved free access.'); ?>" maxlength="500" required>
+                                    </div>
+                                <?php endif; ?>
                                 <div class="op-actions mt-2 justify-start">
+                                    <?php if (isset($detail_platform_buttons['extend_trial'])): ?>
                                     <form method="post">
                                         <?php echo csrf_field(); ?>
                                         <input type="hidden" name="platform_action" value="extend_trial">
@@ -416,6 +421,8 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                         <input class="op-input" style="width: 84px;" type="number" name="days" value="7" min="1" max="90" aria-label="Trial extension days">
                                         <button class="op-btn" type="submit">Extend trial</button>
                                     </form>
+                                    <?php endif; ?>
+                                    <?php if (isset($detail_platform_buttons['grant_free_access'])): ?>
                                     <form method="post" id="tenant-free-access-form-<?php echo (int) $detail_tenant['id']; ?>">
                                         <?php echo csrf_field(); ?>
                                         <input type="hidden" name="platform_action" value="grant_free_access">
@@ -423,7 +430,8 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                         <input type="hidden" name="return_tenant_id" value="<?php echo (int) $detail_tenant['id']; ?>">
                                         <button class="op-btn" type="submit">Free access</button>
                                     </form>
-                                    <?php if (($detail_tenant['status'] ?? '') === 'blocked'): ?>
+                                    <?php endif; ?>
+                                    <?php if (isset($detail_platform_buttons['reactivate_tenant'])): ?>
                                         <form method="post">
                                             <?php echo csrf_field(); ?>
                                             <input type="hidden" name="platform_action" value="reactivate_tenant">
@@ -432,7 +440,8 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                             <input type="hidden" name="override_reason" value="Manual reactivation approved by platform operator.">
                                             <button class="op-btn primary" type="submit">Reactivate</button>
                                         </form>
-                                    <?php else: ?>
+                                    <?php endif; ?>
+                                    <?php if (isset($detail_platform_buttons['block_tenant'])): ?>
                                         <form method="post">
                                             <?php echo csrf_field(); ?>
                                             <input type="hidden" name="platform_action" value="block_tenant">
@@ -662,6 +671,8 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                     $status_class = preg_replace('/[^a-z_]/', '', (string) ($tenant['status'] ?? ''));
                                     $owner_name = trim((string) (($tenant['owner_first_name'] ?? '') . ' ' . ($tenant['owner_last_name'] ?? '')));
                                     $search_text = strtolower((string) ($tenant['name'] . ' ' . $tenant['slug'] . ' ' . $owner_name . ' ' . ($tenant['owner_email'] ?? '')));
+                                    $tenant_lifecycle_state = function_exists('billing_tenant_lifecycle_state') ? billing_tenant_lifecycle_state($tenant) : ['platform_buttons' => []];
+                                    $tenant_platform_buttons = array_fill_keys((array) ($tenant_lifecycle_state['platform_buttons'] ?? []), true);
                                 ?>
                                 <tr data-workspace-row data-search="<?php echo e($search_text); ?>">
                                     <td data-label="Workspace">
@@ -719,21 +730,25 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                             <span class="op-pill <?php echo e($status_class); ?>"><?php echo e($tenant['status']); ?></span>
                                             <a class="op-pill" href="<?php echo e(url('platform', ['tenant_id' => $tenant_id])); ?>#tenant-detail">Detail</a>
                                             <a class="op-pill" href="<?php echo e(url('billing', ['tenant_id' => $tenant_id])); ?>">Billing detail</a>
-                                            <form method="post">
-                                                <?php echo csrf_field(); ?>
-                                                <input type="hidden" name="platform_action" value="extend_trial">
-                                                <input type="hidden" name="tenant_id" value="<?php echo $tenant_id; ?>">
-                                                <input type="hidden" name="days" value="7">
-                                                <button class="op-pill" type="submit">+7d trial</button>
-                                            </form>
-                                            <form method="post">
-                                                <?php echo csrf_field(); ?>
-                                                <input type="hidden" name="platform_action" value="grant_free_access">
-                                                <input type="hidden" name="tenant_id" value="<?php echo $tenant_id; ?>">
-                                                <input type="hidden" name="override_reason" value="Operator approved free access.">
-                                                <button class="op-pill good" type="submit">Free access</button>
-                                            </form>
-                                            <?php if (($tenant['status'] ?? '') === 'blocked'): ?>
+                                            <?php if (isset($tenant_platform_buttons['extend_trial'])): ?>
+                                                <form method="post">
+                                                    <?php echo csrf_field(); ?>
+                                                    <input type="hidden" name="platform_action" value="extend_trial">
+                                                    <input type="hidden" name="tenant_id" value="<?php echo $tenant_id; ?>">
+                                                    <input type="hidden" name="days" value="7">
+                                                    <button class="op-pill" type="submit">+7d trial</button>
+                                                </form>
+                                            <?php endif; ?>
+                                            <?php if (isset($tenant_platform_buttons['grant_free_access'])): ?>
+                                                <form method="post">
+                                                    <?php echo csrf_field(); ?>
+                                                    <input type="hidden" name="platform_action" value="grant_free_access">
+                                                    <input type="hidden" name="tenant_id" value="<?php echo $tenant_id; ?>">
+                                                    <input type="hidden" name="override_reason" value="Operator approved free access.">
+                                                    <button class="op-pill good" type="submit">Free access</button>
+                                                </form>
+                                            <?php endif; ?>
+                                            <?php if (isset($tenant_platform_buttons['reactivate_tenant'])): ?>
                                                 <form method="post">
                                                     <?php echo csrf_field(); ?>
                                                     <input type="hidden" name="platform_action" value="reactivate_tenant">
@@ -741,7 +756,8 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                                                     <input type="hidden" name="override_reason" value="Manual reactivation approved by platform operator.">
                                                     <button class="op-pill good" type="submit">Reactivate</button>
                                                 </form>
-                                            <?php else: ?>
+                                            <?php endif; ?>
+                                            <?php if (isset($tenant_platform_buttons['block_tenant'])): ?>
                                                 <form method="post">
                                                     <?php echo csrf_field(); ?>
                                                     <input type="hidden" name="platform_action" value="block_tenant">

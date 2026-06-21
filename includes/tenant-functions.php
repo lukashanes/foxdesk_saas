@@ -28,6 +28,7 @@ function tenant_owned_tables(): array
         'mobile_sessions',
         'mobile_devices',
         'notifications',
+        'push_subscriptions',
         'allowed_senders',
         'recurring_tasks',
         'report_templates',
@@ -298,6 +299,67 @@ function tenant_unique_slug(string $name): string
     return $slug;
 }
 
+function tenant_humanize_label(string $value): string
+{
+    $value = trim((string) preg_replace('/[^a-z0-9]+/i', ' ', $value));
+    if ($value === '') {
+        return 'FoxDesk';
+    }
+
+    $words = array_filter(explode(' ', strtolower($value)));
+    $words = array_map(static fn($word) => ucfirst($word), $words);
+
+    return implode(' ', $words);
+}
+
+function tenant_workspace_name_from_email(string $email): string
+{
+    $email = strtolower(trim($email));
+    $parts = explode('@', $email, 2);
+    $local = $parts[0] ?? 'workspace';
+    $domain = $parts[1] ?? '';
+    $free_mail_domains = [
+        'gmail.com',
+        'googlemail.com',
+        'seznam.cz',
+        'email.cz',
+        'post.cz',
+        'outlook.com',
+        'hotmail.com',
+        'live.com',
+        'icloud.com',
+        'me.com',
+        'yahoo.com',
+        'proton.me',
+        'protonmail.com',
+    ];
+
+    if ($domain !== '' && !in_array($domain, $free_mail_domains, true)) {
+        $domain_parts = array_values(array_filter(explode('.', $domain)));
+        $label = $domain_parts[0] ?? '';
+        if (in_array($label, ['app', 'helpdesk', 'mail', 'support', 'www'], true) && isset($domain_parts[1])) {
+            $label = $domain_parts[1];
+        }
+
+        $name = tenant_humanize_label($label);
+        return $name !== '' ? $name : 'FoxDesk workspace';
+    }
+
+    $name = tenant_humanize_label($local);
+    return trim($name . ' workspace');
+}
+
+function tenant_admin_first_name_from_email(string $email): string
+{
+    $local = explode('@', trim($email), 2)[0] ?? 'Admin';
+    $local = preg_replace('/[+].*$/', '', $local);
+    $parts = preg_split('/[._\-\s]+/', (string) $local);
+    $first = is_array($parts) ? ($parts[0] ?? '') : '';
+    $name = tenant_humanize_label($first);
+
+    return $name !== '' ? $name : 'Admin';
+}
+
 function is_platform_admin(?array $user = null): bool
 {
     if (!function_exists('current_user')) {
@@ -331,14 +393,23 @@ function create_tenant_workspace(array $data): array
 {
     ensure_tenant_baseline();
 
-    $workspace_name = trim((string) ($data['workspace_name'] ?? ''));
     $admin_email = strtolower(trim((string) ($data['admin_email'] ?? '')));
+    $workspace_name = trim((string) ($data['workspace_name'] ?? ''));
+    if ($workspace_name === '' && $admin_email !== '') {
+        $workspace_name = tenant_workspace_name_from_email($admin_email);
+    }
     $admin_first = trim((string) ($data['admin_first_name'] ?? ''));
+    if ($admin_first === '' && $admin_email !== '') {
+        $admin_first = tenant_admin_first_name_from_email($admin_email);
+    }
     $admin_last = trim((string) ($data['admin_last_name'] ?? ''));
     $password = (string) ($data['password'] ?? '');
+    if ($password === '') {
+        $password = bin2hex(random_bytes(24));
+    }
 
-    if ($workspace_name === '' || $admin_email === '' || $admin_first === '' || $password === '') {
-        throw new InvalidArgumentException('Workspace name, admin email, first name, and password are required.');
+    if ($workspace_name === '' || $admin_email === '' || $admin_first === '') {
+        throw new InvalidArgumentException('Workspace name, admin email, and first name are required.');
     }
     if (!filter_var($admin_email, FILTER_VALIDATE_EMAIL)) {
         throw new InvalidArgumentException('Enter a valid admin email.');

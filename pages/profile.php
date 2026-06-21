@@ -101,6 +101,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('profile');
     }
 
+    // Send a password setup/reset link to the signed-in user. This keeps
+    // magic-link signup users from being stuck with a hidden random password.
+    if (isset($_POST['send_password_setup_link'])) {
+        $token = generate_reset_token();
+        $token_hash = hash_reset_token($token);
+        $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
+
+        db_update('users', [
+            'reset_token' => $token_hash,
+            'reset_token_expires' => $expires
+        ], 'id = ?', [$user['id']]);
+
+        require_once BASE_PATH . '/includes/mailer.php';
+        $reset_link = rtrim(function_exists('get_app_url') ? get_app_url() : APP_URL, '/') . '/index.php?page=reset-password&token=' . urlencode($token);
+        $sent = send_password_reset_email($user['email'], trim((string) ($user['first_name'] ?? '')), $reset_link);
+
+        if ($sent) {
+            log_security_event('profile_password_setup_requested', $user['id'], 'email=' . $user['email']);
+            flash(t('Password setup link sent. Check your email.'), 'success');
+        } else {
+            log_security_event('profile_password_setup_failed', $user['id'], 'email=' . $user['email']);
+            flash(t('We could not send the password setup link. Try again later.'), 'error');
+        }
+        redirect('profile');
+    }
+
     // Notification preferences
     if (isset($_POST['update_notifications']) && $notification_preferences_available) {
         $updates = [
@@ -603,6 +629,23 @@ include BASE_PATH . '/includes/components/page-header.php';
                     <?php echo e(t('Change password')); ?>
                 </button>
             </form>
+
+            <div class="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p class="font-medium text-blue-900"><?php echo e(t('Do not know your current password?')); ?></p>
+                        <p class="mt-1 text-sm text-blue-800">
+                            <?php echo e(t('Send yourself a secure link to set a new password.')); ?>
+                        </p>
+                    </div>
+                    <form method="post" class="shrink-0">
+                        <?php echo csrf_field(); ?>
+                        <button type="submit" name="send_password_setup_link" class="btn btn-secondary btn-sm">
+                            <?php echo e(t('Send setup link')); ?>
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
 
         <!-- API Access -->

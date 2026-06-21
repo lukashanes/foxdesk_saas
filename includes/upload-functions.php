@@ -400,6 +400,30 @@ function attachment_user_can_access($attachment, $user = null)
 }
 
 /**
+ * Check whether the current logged-in user can delete an attachment.
+ */
+function attachment_user_can_delete($attachment, $user = null): bool
+{
+    if (!attachment_user_can_access($attachment, $user)) {
+        return false;
+    }
+
+    if ($user === null) {
+        $user = current_user();
+    }
+    if (!$user) {
+        return false;
+    }
+
+    $role = (string) ($user['role'] ?? '');
+    if (in_array($role, ['admin', 'agent'], true)) {
+        return true;
+    }
+
+    return !empty($attachment['uploaded_by']) && (int) $attachment['uploaded_by'] === (int) ($user['id'] ?? 0);
+}
+
+/**
  * Check whether a public share token can access an attachment.
  */
 function attachment_share_token_can_access($attachment, $share_token)
@@ -474,4 +498,19 @@ function attachment_download_url($attachment, $share_token = null) {
     }
 
     return $url;
+}
+
+function delete_attachment_storage(array $attachment): bool
+{
+    if (($attachment['storage_driver'] ?? '') === 'r2' && function_exists('storage_delete_object')) {
+        return storage_delete_object($attachment);
+    }
+
+    $deleted = false;
+    $filename = (string) ($attachment['filename'] ?? '');
+    if ($filename !== '') {
+        $deleted = delete_attachment_file($filename);
+    }
+
+    return $deleted;
 }

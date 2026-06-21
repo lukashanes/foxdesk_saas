@@ -35,18 +35,21 @@ foreach ([
 $header = read_core_ux_flow_file($root, 'includes/header.php');
 foreach ([
     "t('Work')",
-    "t('Dashboard')",
     "t('All tickets')",
     "t('New ticket')",
     "t('Time Reports')",
 ] as $needle) {
     assert_core_ux_flow(str_contains($header, $needle), 'Workspace navigation is missing ' . $needle);
 }
-assert_core_ux_flow(
-    strpos($header, "url('work')") < strpos($header, "url('dashboard')"),
-    'Work must stay ahead of Dashboard in the workspace navigation.'
-);
+assert_core_ux_flow(!str_contains($header, "url('dashboard')"), 'Dashboard must not be exposed as a primary workspace agenda.');
 assert_core_ux_flow(!str_contains($header, "url('inbox')"), 'Inbox must not be exposed as a separate workspace agenda.');
+
+$work_page = read_core_ux_flow_file($root, 'pages/work.php');
+assert_core_ux_flow(str_contains($work_page, "workspace_surface_action(url('dashboard'), 'Analytics'"), 'Dashboard analytics must be available as a secondary action from Work.');
+
+$shortcuts = read_core_ux_flow_file($root, 'assets/js/shortcuts.js');
+assert_core_ux_flow(str_contains($shortcuts, "label: 'Analytics'"), 'Command palette must label dashboard as Analytics.');
+assert_core_ux_flow(!str_contains($shortcuts, "label: 'Dashboard'"), 'Command palette must not expose Dashboard as a separate agenda label.');
 
 $work = read_core_ux_flow_file($root, 'includes/modules/work/work-queues.php');
 foreach (['mine', 'unassigned', 'overdue', 'waiting', 'done_today'] as $key) {

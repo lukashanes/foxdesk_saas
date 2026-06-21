@@ -126,6 +126,76 @@ function settings_email_template_catalog(): array
     ];
 }
 
+function settings_email_template_supported_languages(): array
+{
+    return ['en', 'cs', 'de', 'it', 'es'];
+}
+
+function settings_email_template_required_variables(): array
+{
+    return [
+        'status_change' => ['{ticket_id}', '{ticket_title}', '{old_status}', '{new_status}', '{ticket_url}'],
+        'new_comment' => ['{ticket_id}', '{ticket_title}', '{comment_text}', '{ticket_url}'],
+        'new_ticket' => ['{ticket_id}', '{ticket_title}', '{ticket_url}'],
+        'password_reset' => ['{reset_link}'],
+        'ticket_confirmation' => ['{ticket_id}', '{ticket_title}', '{ticket_url}'],
+        'ticket_assignment' => ['{ticket_id}', '{ticket_title}', '{agent_name}', '{ticket_url}'],
+        'recurring_task_assignment' => ['{ticket_id}', '{ticket_title}', '{ticket_url}', '{recipient_name}'],
+        'long_timer_alert' => ['{user_name}', '{ticket_id}', '{ticket_title}', '{elapsed_time}', '{ticket_url}'],
+        'welcome_email' => ['{name}', '{email}', '{password}', '{login_url}'],
+    ];
+}
+
+function settings_validate_email_template_input(string $key, string $subject, string $body, string $language): array
+{
+    $catalog = settings_email_template_catalog();
+    $supported_languages = settings_email_template_supported_languages();
+    $language = strtolower(trim($language));
+    $errors = [];
+
+    if (!isset($catalog[$key])) {
+        $errors[] = t('Unknown email template.');
+    }
+
+    if (!in_array($language, $supported_languages, true)) {
+        $errors[] = t('Unsupported template language.');
+        $language = 'en';
+    }
+
+    if (trim($subject) === '') {
+        $errors[] = t('Email subject is required.');
+    }
+    if (trim($body) === '') {
+        $errors[] = t('Email body is required.');
+    }
+
+    if (isset($catalog[$key])) {
+        $combined = $subject . "\n" . $body;
+        $available = array_keys((array) ($catalog[$key]['variables'] ?? []));
+        preg_match_all('/\{[a-z0-9_]+\}/i', $combined, $matches);
+        $used = array_values(array_unique($matches[0] ?? []));
+
+        foreach ($used as $variable) {
+            if (!in_array($variable, $available, true)) {
+                $errors[] = t('Unknown template variable: {variable}', ['variable' => $variable]);
+            }
+        }
+
+        $required = settings_email_template_required_variables()[$key] ?? [];
+        foreach ($required as $variable) {
+            if (!str_contains($combined, $variable)) {
+                $errors[] = t('Missing required template variable: {variable}', ['variable' => $variable]);
+            }
+        }
+    }
+
+    return [
+        'valid' => empty($errors),
+        'language' => $language,
+        'errors' => $errors,
+    ];
+}
+
 function settings_email_template_defaults(): array
 {
     if (function_exists('get_builtin_email_templates')) {

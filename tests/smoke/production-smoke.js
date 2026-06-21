@@ -68,7 +68,7 @@ async function assertLoginLayout() {
   assert(health.includes('"db":true'), 'Health endpoint did not confirm database connectivity');
 
   await assertLoginLayout();
-  await assertOk(`${baseUrl}/index.php?page=signup`, 'Create workspace');
+  await assertOk(`${baseUrl}/index.php?page=signup`, 'Start free trial');
   await assertOk(`${publicUrl}/index.php?page=cloud`, 'FoxDesk Cloud');
   await assertOk(`${publicUrl}/index.php?page=legal&type=privacy`, 'Privacy Policy');
   await assertOk(`${publicUrl}/index.php?page=legal&type=terms`, 'Terms of Service');

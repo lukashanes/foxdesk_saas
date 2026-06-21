@@ -989,12 +989,21 @@ function api_get_tags() {
     $all_tags = [];
     $seen = [];
     foreach ($rows as $row) {
-        $parts = explode(',', $row['tags']);
-        foreach ($parts as $part) {
-            $tag = trim($part);
-            if ($tag === '') continue;
-            $key = mb_strtolower($tag, 'UTF-8');
-            if (isset($seen[$key])) continue;
+        $parts = function_exists('normalize_ticket_tags')
+            ? normalize_ticket_tags($row['tags'], true)
+            : array_values(array_filter(array_map('trim', explode(',', (string) $row['tags']))));
+
+        foreach ($parts as $tag) {
+            $tag = trim((string) $tag);
+            if ($tag === '') {
+                continue;
+            }
+
+            $key = function_exists('mb_strtolower') ? mb_strtolower($tag, 'UTF-8') : strtolower($tag);
+            if (isset($seen[$key])) {
+                continue;
+            }
+
             $seen[$key] = true;
             $all_tags[] = ['id' => $tag, 'name' => $tag];
         }
@@ -1254,6 +1263,64 @@ function api_delete_comment() {
         ]);
     } catch (Exception $e) {
         api_error(t('Failed to delete comment.'), 500);
+    }
+}
+
+/**
+ * Delete an attachment (AJAX)
+ */
+function api_delete_attachment() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        api_error('Method not allowed', 405);
+    }
+
+    require_csrf_token(true);
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+
+    $attachment_id = (int)($_POST['attachment_id'] ?? 0);
+    if ($attachment_id <= 0) {
+        api_error(t('Attachment not found.'), 404);
+    }
+
+    $attachment = function_exists('get_attachment') ? get_attachment($attachment_id) : null;
+    if (!$attachment) {
+        api_error(t('Attachment not found.'), 404);
+    }
+
+    if (!function_exists('attachment_user_can_delete') || !attachment_user_can_delete($attachment, $user)) {
+        api_error('Forbidden', 403);
+    }
+
+    $ticket_id = (int) ($attachment['ticket_id'] ?? 0);
+    $attachment_name = trim((string) ($attachment['original_name'] ?? $attachment['filename'] ?? ''));
+
+    try {
+        if (function_exists('delete_attachment_storage')) {
+            delete_attachment_storage($attachment);
+        }
+
+        if (function_exists('table_exists') && table_exists('ticket_message_attachments')) {
+            db_delete('ticket_message_attachments', 'attachment_id = ?', [$attachment_id]);
+        }
+        db_delete('attachments', 'id = ?', [$attachment_id]);
+
+        if ($ticket_id > 0 && function_exists('log_ticket_history') && $attachment_name !== '') {
+            log_ticket_history($ticket_id, (int) ($user['id'] ?? 0), 'attachment_unlinked', $attachment_name, null);
+        }
+        if ($ticket_id > 0 && function_exists('log_activity')) {
+            log_activity($ticket_id, (int) ($user['id'] ?? 0), 'attachment_deleted', t('Attachment deleted') . ': "' . $attachment_name . '"');
+        }
+
+        api_success([
+            'message' => t('Attachment deleted.'),
+            'attachment_id' => $attachment_id,
+        ]);
+    } catch (Exception $e) {
+        api_error(t('Failed to delete attachment.'), 500);
     }
 }
 

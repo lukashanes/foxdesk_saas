@@ -181,12 +181,19 @@ function send_email($to, $subject, $body, $is_html = false, $force_delivery = fa
         }
     }
 
-    $from_email = $provider === 'cloudflare'
-        ? trim((string) mailer_env_or_constant('CLOUDFLARE_EMAIL_FROM', ''))
-        : ($settings['smtp_from_email'] ?? '');
-    $from_name = $provider === 'cloudflare'
-        ? trim((string) mailer_env_or_constant('CLOUDFLARE_EMAIL_FROM_NAME', defined('APP_NAME') ? APP_NAME : 'FoxDesk'))
-        : ($settings['smtp_from_name'] ?? (defined('APP_NAME') ? APP_NAME : 'FoxDesk'));
+    if ($provider === 'cloudflare') {
+        $from_email = trim((string) mailer_env_or_constant('CLOUDFLARE_EMAIL_FROM', ''));
+        $from_name = trim((string) mailer_env_or_constant('CLOUDFLARE_EMAIL_FROM_NAME', defined('APP_NAME') ? APP_NAME : 'FoxDesk'));
+    } else {
+        $from_email = trim((string) ($settings['smtp_from_email'] ?? ''));
+        if ($from_email === '') {
+            $from_email = trim((string) mailer_env_or_constant('SMTP_FROM_EMAIL', ''));
+        }
+        $from_name = trim((string) ($settings['smtp_from_name'] ?? ''));
+        if ($from_name === '') {
+            $from_name = trim((string) mailer_env_or_constant('SMTP_FROM_NAME', defined('APP_NAME') ? APP_NAME : 'FoxDesk'));
+        }
+    }
     if (!empty($options['from_name'])) {
         $from_name = trim((string) $options['from_name']);
     }
@@ -232,17 +239,30 @@ function send_email($to, $subject, $body, $is_html = false, $force_delivery = fa
         }
     }
 
-    $smtp_host = $settings['smtp_host'] ?? '';
-    $smtp_user = $settings['smtp_user'] ?? '';
+    $smtp_host_env = trim((string) mailer_env_or_constant('SMTP_HOST', ''));
+    $smtp_host = $smtp_host_env !== '' ? $smtp_host_env : trim((string) ($settings['smtp_host'] ?? ''));
+    $smtp_user = $smtp_host_env !== ''
+        ? trim((string) mailer_env_or_constant('SMTP_USER', ''))
+        : trim((string) ($settings['smtp_user'] ?? ''));
+    $smtp_pass = $smtp_host_env !== ''
+        ? (string) mailer_env_or_constant('SMTP_PASS', '')
+        : (string) ($settings['smtp_pass'] ?? '');
+    $smtp_port = $smtp_host_env !== ''
+        ? (int) mailer_env_or_constant('SMTP_PORT', 587)
+        : (int) ($settings['smtp_port'] ?? 587);
+    $smtp_encryption = $smtp_host_env !== ''
+        ? trim((string) mailer_env_or_constant('SMTP_ENCRYPTION', 'tls'))
+        : trim((string) ($settings['smtp_encryption'] ?? 'tls'));
 
-    // If SMTP is configured, use SMTP
-    if (!empty($smtp_host) && !empty($smtp_user)) {
+    // If SMTP is configured, use SMTP. Local capture servers such as Mailpit
+    // commonly do not require AUTH, so an empty user is valid.
+    if ($smtp_host !== '') {
         $result = send_smtp_email($to, $subject, $body, $is_html, [
             'host' => $smtp_host,
-            'port' => (int) ($settings['smtp_port'] ?? 587),
+            'port' => $smtp_port,
             'user' => $smtp_user,
-            'pass' => $settings['smtp_pass'] ?? '',
-            'encryption' => $settings['smtp_encryption'] ?? 'tls',
+            'pass' => $smtp_pass,
+            'encryption' => $smtp_encryption,
             'from_email' => $from_email,
             'from_name' => $from_name,
             'reply_to' => $reply_to,
@@ -472,26 +492,28 @@ function send_smtp_email($to, $subject, $body, $is_html, $config)
             }
         }
 
-        // AUTH LOGIN
-        fputs($socket, "AUTH LOGIN\r\n");
-        $response = fgets($socket, 515);
+        if ($user !== '') {
+            // AUTH LOGIN
+            fputs($socket, "AUTH LOGIN\r\n");
+            $response = fgets($socket, 515);
 
-        if (substr($response, 0, 3) !== '334') {
-            error_log("SMTP AUTH not supported: $response");
-            fclose($socket);
-            return false;
-        }
+            if (substr($response, 0, 3) !== '334') {
+                error_log("SMTP AUTH not supported: $response");
+                fclose($socket);
+                return false;
+            }
 
-        fputs($socket, base64_encode($user) . "\r\n");
-        $response = fgets($socket, 515);
+            fputs($socket, base64_encode($user) . "\r\n");
+            $response = fgets($socket, 515);
 
-        fputs($socket, base64_encode($pass) . "\r\n");
-        $response = fgets($socket, 515);
+            fputs($socket, base64_encode($pass) . "\r\n");
+            $response = fgets($socket, 515);
 
-        if (substr($response, 0, 3) !== '235') {
-            error_log("SMTP authentication failed: $response");
-            fclose($socket);
-            return false;
+            if (substr($response, 0, 3) !== '235') {
+                error_log("SMTP authentication failed: $response");
+                fclose($socket);
+                return false;
+            }
         }
 
         // MAIL FROM
@@ -590,6 +612,25 @@ function send_password_reset_email($to, $name, $reset_link)
     $result = send_email($to, $subject, $body, false, true);
 
     return $result;
+}
+
+/**
+ * Send the one-time SaaS signup link. This ignores notification preferences
+ * because no account exists yet.
+ */
+function send_signup_magic_link_email($to, $signup_link)
+{
+    $settings = get_settings();
+    $app_name = $settings['app_name'] ?? (defined('APP_NAME') ? APP_NAME : 'FoxDesk');
+    $subject = 'Start your FoxDesk trial';
+    $body = "Hello,\n\n"
+        . "Use this secure link to start your 14-day FoxDesk trial:\n"
+        . $signup_link . "\n\n"
+        . "The link is valid for 30 minutes and can be used only once.\n\n"
+        . "If you did not request this, you can ignore this email.\n\n"
+        . $app_name;
+
+    return send_email($to, $subject, $body, false, true);
 }
 
 /**

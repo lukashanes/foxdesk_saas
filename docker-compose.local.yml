@@ -18,6 +18,12 @@ services:
       - foxdesk_saas_backups:/var/www/html/backups
     environment:
       FOXDESK_SESSION_DIR: storage/sessions
+      MAIL_PROVIDER: smtp
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_ENCRYPTION: none
+      SMTP_FROM_EMAIL: notifications@foxdesk.local
+      SMTP_FROM_NAME: FoxDesk Local
     command: >
       sh -lc "mkdir -p /var/www/html/uploads /var/www/html/storage/sessions /var/www/html/backups
       && chown -R www-data:www-data /var/www/html/uploads /var/www/html/storage /var/www/html/backups

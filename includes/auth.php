@@ -164,32 +164,53 @@ function login($email, $password)
     $user = db_fetch_one($sql, $params);
 
     if ($user && password_verify($password, $user['password'])) {
-        // Clear any stale remember-me cookie from a previous user
-        if (!empty($_COOKIE[foxdesk_remember_cookie_name()])) {
-            clear_remember_cookie();
-        }
-        session_regenerate_id(true);
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['user_email'] = $user['email'];
-        $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
-        $_SESSION['user_role'] = $user['role'];
-        if (function_exists('set_current_tenant_from_user')) {
-            set_current_tenant_from_user($user);
-        }
-        $allowed_langs = ['en', 'cs', 'de', 'it', 'es'];
-        $lang = strtolower(trim((string) ($user['language'] ?? '')));
-        if (!in_array($lang, $allowed_langs, true)) {
-            $lang = strtolower(trim((string) get_setting('app_language', 'en')));
-            if (!in_array($lang, $allowed_langs, true)) {
-                $lang = 'en';
-            }
-        }
-        $_SESSION['lang'] = $lang;
-        unset($_SESSION['lang_override']);
-        return true;
+        return login_user_session($user);
     }
 
     return false;
+}
+
+/**
+ * Sign in a verified user object without requiring a password challenge.
+ *
+ * Used by flows that already performed a stronger one-time verification step,
+ * such as SaaS signup magic links.
+ */
+function login_user_session(array $user): bool
+{
+    if (empty($user['id']) || empty($user['email'])) {
+        return false;
+    }
+
+    if (!empty($_COOKIE[foxdesk_remember_cookie_name()])) {
+        clear_remember_cookie();
+    }
+
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_regenerate_id(true);
+    }
+
+    $_SESSION['user_id'] = (int) $user['id'];
+    $_SESSION['user_email'] = (string) $user['email'];
+    $_SESSION['user_name'] = trim((string) (($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')));
+    $_SESSION['user_role'] = (string) ($user['role'] ?? 'user');
+
+    if (function_exists('set_current_tenant_from_user')) {
+        set_current_tenant_from_user($user);
+    }
+
+    $allowed_langs = ['en', 'cs', 'de', 'it', 'es'];
+    $lang = strtolower(trim((string) ($user['language'] ?? '')));
+    if (!in_array($lang, $allowed_langs, true)) {
+        $lang = strtolower(trim((string) get_setting('app_language', 'en')));
+        if (!in_array($lang, $allowed_langs, true)) {
+            $lang = 'en';
+        }
+    }
+    $_SESSION['lang'] = $lang;
+    unset($_SESSION['lang_override']);
+
+    return true;
 }
 
 /**
@@ -682,6 +703,7 @@ function api_token_required_scope_for_action(string $action): ?string
 {
     $map = [
         'upload' => 'attachments:write',
+        'delete-attachment' => 'attachments:write',
         'agent-me' => 'work:read',
         'agent-list-statuses' => 'tickets:read',
         'agent-list-priorities' => 'tickets:read',

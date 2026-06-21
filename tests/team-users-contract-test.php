@@ -10,10 +10,11 @@ $assert = static function (bool $condition, string $message): void {
 };
 
 $page = file_get_contents($root . '/pages/admin/users.php');
+$agentConnectPage = file_get_contents($root . '/pages/admin/agent-connect.php');
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
 $module = file_get_contents($root . '/includes/modules/team/team-users.php');
 
-$assert($page !== false && $bootstrap !== false && $module !== false, 'Team users contract files must be readable.');
+$assert($page !== false && $agentConnectPage !== false && $bootstrap !== false && $module !== false, 'Team users contract files must be readable.');
 $assert(str_contains($bootstrap, '/team/team-users.php'), 'Module bootstrap must load team users helpers.');
 
 foreach ([
@@ -47,6 +48,21 @@ foreach ([
 ] as $needle) {
     $assert(str_contains($page, $needle), 'AI agent access management must stay in the AI agents UI: ' . $needle);
 }
+
+foreach ([
+    'team_ai_agent_token_scope_groups()',
+    'team_ai_agent_token_default_scope_groups()',
+    'team_ai_agent_token_scopes_from_input($_POST)',
+    'SELECT id, token_prefix, scopes_json, is_active, created_at, last_used_at FROM api_tokens',
+    'api_token_scopes_from_row($db_token)',
+    '$token_scope_group_checked',
+    'name="api_token_scope_groups[]"',
+    'Choose what this token can do before generating it.',
+] as $needle) {
+    $assert(str_contains($agentConnectPage, $needle), 'Agent Connect token generation must expose selected token scopes: ' . $needle);
+}
+
+$assert(!str_contains($agentConnectPage, 'team_ai_agent_token_scopes_from_input([])'), 'Agent Connect must not generate AI tokens with hardcoded default scopes.');
 
 foreach ([
     'SELECT u.*, o.name as organization_name',

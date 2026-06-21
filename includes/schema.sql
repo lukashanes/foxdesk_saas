@@ -131,6 +131,21 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_deleted_at (deleted_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Email-only SaaS signup magic links
+CREATE TABLE IF NOT EXISTS signup_magic_links (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    token_hash CHAR(64) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    consumed_at DATETIME NULL,
+    ip VARCHAR(45) NULL,
+    user_agent VARCHAR(255) NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_email_created (email, created_at),
+    INDEX idx_expires_at (expires_at),
+    INDEX idx_consumed_at (consumed_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Statuses table
 CREATE TABLE IF NOT EXISTS statuses (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -811,6 +826,22 @@ CREATE TABLE IF NOT EXISTS notifications (
     INDEX idx_user_read (user_id, is_read),
     INDEX idx_ticket (ticket_id),
     INDEX idx_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Browser push subscriptions
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
+    user_id INT NOT NULL,
+    endpoint TEXT NOT NULL,
+    p256dh VARCHAR(255) NOT NULL DEFAULT '',
+    auth_key VARCHAR(255) NOT NULL DEFAULT '',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_tenant_id (tenant_id),
+    INDEX idx_push_user (user_id),
+    INDEX idx_push_tenant_user (tenant_id, user_id),
+    INDEX idx_push_endpoint (endpoint(255)),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Persistent application sessions

@@ -168,13 +168,14 @@ function ticket_detail_primary_actions(array $ticket, array $user, array $status
             : 'Mark this ticket as done and stop the active timer.';
         $actions[] = [
             'key' => 'complete',
-            'label' => 'Complete',
+            'label' => $has_active_timer ? 'Complete & stop timer' : 'Complete',
             'icon' => 'check-circle',
             'style' => 'success',
             'type' => 'submit',
             'name' => 'change_status',
             'status_id' => $done_status_id,
             'title' => $complete_title,
+            'stops_timer' => $has_active_timer,
             'visible' => true,
         ];
     }

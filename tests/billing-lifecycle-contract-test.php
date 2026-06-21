@@ -68,6 +68,14 @@ $assert(billing_tenant_lifecycle_state([
     'status' => 'active',
     'subscription_status' => 'free',
 ])['code'] === 'manual_free', 'Free active tenant should map to manual_free.');
+$manual_free_buttons = billing_tenant_lifecycle_state([
+    'status' => 'active',
+    'subscription_status' => 'free',
+])['platform_buttons'] ?? [];
+$assert(in_array('block_tenant', $manual_free_buttons, true), 'Free active tenants should still be blockable by platform admins.');
+$assert(!in_array('grant_free_access', $manual_free_buttons, true), 'Free active tenants must not show duplicate Free access action.');
+$assert(!in_array('extend_trial', $manual_free_buttons, true), 'Free active tenants must not show trial extension actions.');
+$assert(!in_array('reactivate_tenant', $manual_free_buttons, true), 'Free active tenants must not show Reactivate while already active.');
 $assert(billing_tenant_lifecycle_state([
     'status' => 'canceled',
     'subscription_status' => 'canceled',

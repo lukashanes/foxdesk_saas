@@ -847,17 +847,17 @@ include BASE_PATH . '/includes/components/page-header.php';
                     </div>
                 </div>
 
-                <div class="flex items-center space-x-4">
-                    <button type="submit" name="save_email" class="btn btn-primary">
+                <div class="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3">
+                    <button type="submit" name="save_email" class="btn btn-primary w-full sm:w-auto">
                         <?php echo e(t('Save settings')); ?>
                     </button>
-                    <button type="submit" name="test_smtp" class="btn btn-secondary">
+                    <button type="submit" name="test_smtp" class="btn btn-secondary w-full sm:w-auto">
                         <?php echo get_icon('plug', 'mr-2'); ?>     <?php echo e(t('Save and test SMTP')); ?>
                     </button>
-                    <button type="submit" name="test_imap" class="btn btn-secondary">
+                    <button type="submit" name="test_imap" class="btn btn-secondary w-full sm:w-auto">
                         <?php echo get_icon('plug', 'mr-2'); ?>     <?php echo e(t('Save and test IMAP')); ?>
                     </button>
-                    <button type="submit" name="run_imap_now" class="btn btn-secondary">
+                    <button type="submit" name="run_imap_now" class="btn btn-secondary w-full sm:w-auto">
                         <?php echo get_icon('play', 'mr-2'); ?>     <?php echo e(t('Save and run IMAP now')); ?>
                     </button>
                 </div>
@@ -998,6 +998,9 @@ include BASE_PATH . '/includes/components/page-header.php';
         <div class="space-y-3">
             <?php foreach ($display_templates as $template):
                 $info = $template_info[$template['template_key']] ?? null;
+                $required_variables = function_exists('settings_email_template_required_variables')
+                    ? (settings_email_template_required_variables()[$template['template_key']] ?? [])
+                    : [];
                 ?>
                 <div class="admin-list-card">
                     <form method="post">
@@ -1027,6 +1030,11 @@ include BASE_PATH . '/includes/components/page-header.php';
                                                 title="<?php echo e($desc); ?>">
                                                 <code class="text-blue-600"><?php echo e($var); ?></code>
                                                 <span class="ml-1 text-theme-muted">- <?php echo e($desc); ?></span>
+                                                <?php if (in_array($var, $required_variables, true)): ?>
+                                                    <span class="ml-2 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-blue-700">
+                                                        <?php echo e(t('Required')); ?>
+                                                    </span>
+                                                <?php endif; ?>
                                             </span>
                                         <?php endforeach; ?>
                                     </div>

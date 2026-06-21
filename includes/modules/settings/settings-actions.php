@@ -649,11 +649,13 @@ function settings_handle_post_request(callable $settings_audit): void
         $subject = trim($_POST['template_subject'] ?? '');
         $body = trim($_POST['template_body'] ?? '');
         $lang = strtolower(trim((string) ($_POST['template_lang'] ?? 'en')));
-        if (!in_array($lang, ['en', 'cs', 'de', 'it', 'es'], true)) {
-            $lang = 'en';
-        }
 
-        if (!empty($key) && !empty($subject) && !empty($body)) {
+        $validation = function_exists('settings_validate_email_template_input')
+            ? settings_validate_email_template_input((string) $key, $subject, $body, $lang)
+            : ['valid' => true, 'language' => in_array($lang, ['en', 'cs', 'de', 'it', 'es'], true) ? $lang : 'en', 'errors' => []];
+        $lang = (string) ($validation['language'] ?? 'en');
+
+        if (!empty($validation['valid'])) {
             require_once BASE_PATH . '/includes/mailer.php';
             try {
                 save_email_template($key, $subject, $body, $lang);
@@ -661,6 +663,8 @@ function settings_handle_post_request(callable $settings_audit): void
             } catch (Throwable $e) {
                 flash(t('Failed to save template: {error}', ['error' => $e->getMessage()]), 'error');
             }
+        } else {
+            flash(implode(' ', (array) ($validation['errors'] ?? [t('Template could not be saved.')])), 'error');
         }
 
         redirect('admin', ['section' => 'settings', 'tab' => 'templates', 'lang' => $lang]);

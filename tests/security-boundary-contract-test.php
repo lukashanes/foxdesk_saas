@@ -27,6 +27,8 @@ $ticket_crud = $read('includes/ticket-crud-functions.php');
 $ticket_forms = $read('includes/components/ticket-form-handlers.php');
 $email_ingest = $read('includes/email-ingest-functions.php');
 $uploads = $read('includes/upload-functions.php');
+$api_router = $read('includes/api/router.php');
+$auth = $read('includes/auth.php');
 $billing_review = $read('includes/modules/reports/billing-review.php');
 $platform = $read('pages/platform.php');
 
@@ -73,6 +75,10 @@ $assert(substr_count($combined_ticket_writes, "db_update('tickets', ['updated_at
 
 $assert(str_contains($uploads, "tenant_sql_filter('attachments'"), 'Attachment lookups must be tenant filtered.');
 $assert(str_contains($uploads, 'attachment_user_can_access'), 'Attachment downloads must go through authorization checks.');
+$assert(str_contains($uploads, 'function attachment_user_can_delete'), 'Attachment deletion must have a dedicated permission helper.');
+$assert(str_contains($api_router, "'delete-attachment' => 'api_delete_attachment'"), 'Attachment delete API route is missing.');
+$assert(str_contains($auth, "'delete-attachment' => 'attachments:write'"), 'Attachment delete API token scope is missing.');
+$assert(str_contains($ticket_api, 'attachment_user_can_delete($attachment, $user)'), 'Attachment delete API must enforce attachment delete permission.');
 $assert(str_contains($billing_review, 'WHERE t.tenant_id = ?'), 'SaaS report billing review must be tenant isolated.');
 $assert(str_contains($tenant, 'function is_platform_admin'), 'Platform admin role helper is missing.');
 $assert(str_contains($tenant, 'function require_platform_admin'), 'Platform admin route guard is missing.');

@@ -226,8 +226,9 @@
                                 $uploader_name = trim(($attachment['first_name'] ?? '') . ' ' . ($attachment['last_name'] ?? ''));
                                 $_att_url = e(attachment_download_url($attachment));
                                 $_is_img = is_image_mime($attachment['mime_type'] ?? '');
+                                $_can_delete_attachment = function_exists('attachment_user_can_delete') && attachment_user_can_delete($attachment, $user ?? null);
                                 ?>
-                                <div class="flex items-start gap-2 p-1.5 rounded group tr-hover">
+                                <div class="ticket-attachment-item flex items-start gap-2 p-1.5 rounded group tr-hover" data-attachment-id="<?php echo (int) $attachment['id']; ?>">
                                     <?php if ($_is_img): ?>
                                         <a href="<?php echo $_att_url; ?>" target="_blank"
                                            class="ticket-attachment-thumb"
@@ -257,6 +258,15 @@
                                             <?php endif; ?>
                                         </div>
                                     </div>
+                                    <?php if ($_can_delete_attachment): ?>
+                                        <button type="button"
+                                            class="btn-icon btn-icon-danger shrink-0 opacity-70 hover:opacity-100"
+                                            title="<?php echo e(t('Delete attachment')); ?>"
+                                            aria-label="<?php echo e(t('Delete attachment')); ?>"
+                                            onclick="deleteAttachment(<?php echo (int) $attachment['id']; ?>)">
+                                            <?php echo get_icon('trash', 'w-3.5 h-3.5'); ?>
+                                        </button>
+                                    <?php endif; ?>
                                 </div>
                         <?php endforeach; ?>
                     </div>
