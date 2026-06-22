@@ -50,6 +50,12 @@ step, run:
 npm run stripe:hosted-checkout:prepare -- --run-smoke --mode test --out tmp/stripe-hosted-checkout-evidence.json
 ```
 
+Run this in the environment that has the intended Stripe configuration loaded
+(`BILLING_ENABLED`, `STRIPE_SECRET_KEY`, base price, storage price, tax and VAT
+settings). On a local machine without PHP or Stripe env, the helper uses
+`./bin/run-php.sh` but will stop with explicit missing-config errors instead of
+creating misleading evidence.
+
 Use `--mode live --approved-live` only for an intentional live validation by the
 operator. The prepare command does not complete Checkout and does not make the
 evidence pass. It only fills the safe API smoke fields and leaves hosted

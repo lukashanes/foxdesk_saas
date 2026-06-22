@@ -6,6 +6,11 @@ const { spawnSync } = require('child_process');
 
 const root = path.resolve(__dirname, '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'foxdesk-stripe-evidence-prepare-'));
+const prepareScript = fs.readFileSync(path.join(root, 'bin/prepare-stripe-hosted-checkout-evidence.js'), 'utf8');
+
+assert(prepareScript.includes("runJsonCommand('./bin/run-php.sh'"), 'Prepare helper must use the project PHP runner, not a system php binary.');
+assert(prepareScript.includes('result.error'), 'Prepare helper must surface spawn errors.');
+assert(prepareScript.includes('parsed.errors.join'), 'Prepare helper must surface smoke JSON errors.');
 
 const billingSmokePath = path.join(tmp, 'billing-smoke.json');
 const webhookSmokePath = path.join(tmp, 'webhook-smoke.json');

@@ -49,9 +49,28 @@ function runJsonCommand(command, commandArgs) {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   if (result.status !== 0) {
-    throw new Error(`${command} ${commandArgs.join(' ')} failed: ${result.stderr || result.stdout}`);
+    const details = [];
+    if (result.error) details.push(result.error.message);
+    if (result.stderr) details.push(result.stderr.trim());
+    if (result.stdout) {
+      try {
+        const parsed = JSON.parse(result.stdout);
+        if (Array.isArray(parsed.errors) && parsed.errors.length > 0) {
+          details.push(parsed.errors.join('; '));
+        } else {
+          details.push(result.stdout.trim());
+        }
+      } catch (_) {
+        details.push(result.stdout.trim());
+      }
+    }
+    throw new Error(`${command} ${commandArgs.join(' ')} failed: ${details.filter(Boolean).join(' ') || `exit ${result.status}`}`);
   }
   return JSON.parse(result.stdout);
+}
+
+function runPhpJson(script, scriptArgs = []) {
+  return runJsonCommand('./bin/run-php.sh', [script, ...scriptArgs]);
 }
 
 function redactStripeId(value, fallback) {
@@ -147,8 +166,8 @@ function main() {
   let billingSmoke = null;
   let webhookSmoke = null;
   if (args.includes('--run-smoke')) {
-    billingSmoke = runJsonCommand('php', ['bin/test-stripe-billing-flow.php', '--json']);
-    webhookSmoke = runJsonCommand('php', ['bin/test-stripe-webhook-lifecycle.php', '--json']);
+    billingSmoke = runPhpJson('bin/test-stripe-billing-flow.php', ['--json']);
+    webhookSmoke = runPhpJson('bin/test-stripe-webhook-lifecycle.php', ['--json']);
   }
   const billingSmokeFile = argValue('--billing-smoke-json');
   const webhookSmokeFile = argValue('--webhook-smoke-json');
