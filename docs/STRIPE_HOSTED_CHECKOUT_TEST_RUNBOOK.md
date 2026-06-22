@@ -117,6 +117,32 @@ To see the remaining manual evidence as a grouped checklist, run:
 npm run stripe:hosted-checkout:checklist -- tmp/stripe-hosted-checkout-evidence.json
 ```
 
+After completing the hosted Checkout and Portal steps, record only redacted
+observations with the recorder helper:
+
+```bash
+npm run stripe:hosted-checkout:record -- tmp/stripe-hosted-checkout-evidence.json \
+  --checkout-completed \
+  --redirected-back \
+  --billing-address \
+  --vat-id \
+  --reverse-charge \
+  --completed-at 2026-06-22T12:30:00Z \
+  --tax-result "EU B2B reverse charge observed in Stripe-hosted Checkout with redacted VAT ID." \
+  --portal-opened \
+  --portal-payment-method \
+  --portal-billing-address \
+  --portal-invoice-details \
+  --portal-vat-id \
+  --portal-cancellation \
+  --subscription-cleaned \
+  --notes "Operator observed Checkout and Portal controls; sensitive fields were redacted."
+```
+
+Do not paste full Checkout URLs, Portal URLs, email addresses, card numbers,
+VAT IDs, Stripe customer IDs, subscription IDs, or secret keys into the evidence.
+The recorder rejects common sensitive patterns before saving.
+
 ## Hosted Checkout Completion
 
 1. Create a temporary workspace through signup or platform admin.

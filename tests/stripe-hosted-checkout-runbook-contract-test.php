@@ -50,6 +50,8 @@ foreach ([
     'npm run stripe:hosted-checkout:preflight',
     'npm run stripe:hosted-checkout:prepare',
     '--smoke-runner compose-prod',
+    'npm run stripe:hosted-checkout:record',
+    'Do not paste full Checkout URLs',
     'npm run stripe:hosted-checkout:checklist',
     'npm run stripe:hosted-checkout:verify',
     'STRIPE_HOSTED_CHECKOUT_EVIDENCE_PATH',
@@ -90,11 +92,13 @@ $assert(str_contains($checklist, 'validateEvidence'), 'Checklist helper must wra
 $assert(str_contains($checklist, 'Hosted Checkout'), 'Checklist helper must group hosted Checkout missing items.');
 $assert(str_contains($package, '"stripe:hosted-checkout:prepare"'), 'package.json must expose the hosted Checkout evidence prepare helper.');
 $assert(str_contains($package, '"stripe:hosted-checkout:preflight"'), 'package.json must expose the hosted Checkout preflight helper.');
+$assert(str_contains($package, '"stripe:hosted-checkout:record"'), 'package.json must expose the hosted Checkout observation recorder helper.');
 $assert(str_contains($package, '"stripe:hosted-checkout:checklist"'), 'package.json must expose the hosted Checkout evidence checklist helper.');
 $assert(str_contains($package, '"test:stripe-hosted-checkout-runbook"'), 'package.json must expose the hosted Checkout runbook contract.');
 $assert(str_contains($package, '"stripe:hosted-checkout:verify"'), 'package.json must expose the hosted Checkout evidence verifier.');
 $assert(str_contains($package, '"test:stripe-hosted-checkout-prepare"'), 'package.json must expose the hosted Checkout prepare helper test.');
 $assert(str_contains($package, '"test:stripe-hosted-checkout-preflight"'), 'package.json must expose the hosted Checkout preflight helper test.');
+$assert(str_contains($package, '"test:stripe-hosted-checkout-record"'), 'package.json must expose the hosted Checkout observation recorder test.');
 $assert(str_contains($package, '"test:stripe-hosted-checkout-checklist"'), 'package.json must expose the hosted Checkout checklist helper test.');
 
 echo "Stripe hosted Checkout runbook contract OK\n";
