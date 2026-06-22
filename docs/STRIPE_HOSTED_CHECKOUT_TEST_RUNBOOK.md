@@ -29,6 +29,7 @@ the follow-up Portal lifecycle.
 Run the existing safe checks first:
 
 ```bash
+npm run stripe:hosted-checkout:preflight -- --run-safe-smoke
 php bin/test-stripe-billing-flow.php --json
 php bin/test-stripe-webhook-lifecycle.php --json
 ```
