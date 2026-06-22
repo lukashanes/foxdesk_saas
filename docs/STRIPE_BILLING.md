@@ -210,6 +210,11 @@ The E2E suite verifies:
 - dry-run metered usage reporting creates an idempotent local usage report
 - canceled tenant admins are redirected to the Billing page
 
+Runtime smoke helpers:
+
+- `php bin/test-stripe-billing-flow.php --json` creates a temporary tenant/customer, opens a Checkout Session, verifies automatic tax, VAT/tax ID collection, base/storage line items and Customer Portal host, then expires the Checkout Session and deletes the temporary customer/tenant.
+- `php bin/test-stripe-webhook-lifecycle.php --json` does not call Stripe. It sends synthetic events through the real webhook handler and verifies checkout completion, duplicate event idempotency, failed-payment grace, paid-invoice recovery and subscription cancellation state transitions against the database.
+
 Run locally:
 
 ```bash
