@@ -43,6 +43,18 @@ Required result:
 - webhook lifecycle covers checkout completion, failed payment, paid recovery,
   duplicate guard, and subscription deletion
 
+To prepare the redacted evidence file and merge those safe smoke results in one
+step, run:
+
+```bash
+npm run stripe:hosted-checkout:prepare -- --run-smoke --mode test --out tmp/stripe-hosted-checkout-evidence.json
+```
+
+Use `--mode live --approved-live` only for an intentional live validation by the
+operator. The prepare command does not complete Checkout and does not make the
+evidence pass. It only fills the safe API smoke fields and leaves hosted
+Checkout, VAT, Portal, and cleanup observations for the operator to complete.
+
 ## Hosted Checkout Completion
 
 1. Create a temporary workspace through signup or platform admin.

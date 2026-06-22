@@ -169,6 +169,8 @@ The production-safe smoke scripts are necessary, but they are not a substitute
 for completing hosted Checkout with card entry, VAT ID entry, tax treatment,
 return redirect, webhook receipt, and Customer Portal verification. Validate the
 completed evidence with `npm run stripe:hosted-checkout:verify -- path/to/evidence.json`.
+Start from a prepared redacted evidence file with
+`npm run stripe:hosted-checkout:prepare -- --run-smoke --mode test --out tmp/stripe-hosted-checkout-evidence.json`.
 
 ## API Fallback
 
