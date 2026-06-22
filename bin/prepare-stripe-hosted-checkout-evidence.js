@@ -23,6 +23,8 @@ Options:
   --approved-live              Mark live mode as intentionally approved.
   --operator <name>            Operator name. Default: Aenze s.r.o.
   --run-smoke                  Run safe Stripe smoke commands and merge results.
+  --smoke-runner <local|compose-prod>
+                               Where --run-smoke executes. Default: local.
   --billing-smoke-json <file>  Merge a saved bin/test-stripe-billing-flow.php --json output.
   --webhook-smoke-json <file>  Merge a saved bin/test-stripe-webhook-lifecycle.php --json output.
   --json                       Print a machine-readable summary.
@@ -71,6 +73,43 @@ function runJsonCommand(command, commandArgs) {
 
 function runPhpJson(script, scriptArgs = []) {
   return runJsonCommand('./bin/run-php.sh', [script, ...scriptArgs]);
+}
+
+const composeSmokeEnv = [
+  'BILLING_ENABLED',
+  'STRIPE_SECRET_KEY',
+  'STRIPE_PRICE_CLOUD_BASE',
+  'STRIPE_PRICE_STORAGE_OVERAGE',
+  'STRIPE_WEBHOOK_SECRET',
+  'APP_URL',
+  'STRIPE_TAX_ENABLED',
+  'STRIPE_TAX_ID_COLLECTION_ENABLED',
+  'STRIPE_TAX_ID_COLLECTION_REQUIRED',
+  'STRIPE_SUCCESS_URL',
+  'STRIPE_CANCEL_URL',
+];
+
+function runComposePhpJson(script, scriptArgs = []) {
+  const envArgs = composeSmokeEnv.flatMap((name) => ['-e', name]);
+  return runJsonCommand('docker', [
+    'compose',
+    '-f',
+    'docker-compose.prod.yml',
+    'exec',
+    '-T',
+    ...envArgs,
+    'app',
+    'php',
+    script,
+    ...scriptArgs,
+  ]);
+}
+
+function runSmokeJson(script, scriptArgs = []) {
+  const runner = argValue('--smoke-runner', 'local');
+  if (runner === 'local') return runPhpJson(script, scriptArgs);
+  if (runner === 'compose-prod') return runComposePhpJson(script, scriptArgs);
+  throw new Error('--smoke-runner must be local or compose-prod.');
 }
 
 function redactStripeId(value, fallback) {
@@ -166,8 +205,8 @@ function main() {
   let billingSmoke = null;
   let webhookSmoke = null;
   if (args.includes('--run-smoke')) {
-    billingSmoke = runPhpJson('bin/test-stripe-billing-flow.php', ['--json']);
-    webhookSmoke = runPhpJson('bin/test-stripe-webhook-lifecycle.php', ['--json']);
+    billingSmoke = runSmokeJson('bin/test-stripe-billing-flow.php', ['--json']);
+    webhookSmoke = runSmokeJson('bin/test-stripe-webhook-lifecycle.php', ['--json']);
   }
   const billingSmokeFile = argValue('--billing-smoke-json');
   const webhookSmokeFile = argValue('--webhook-smoke-json');

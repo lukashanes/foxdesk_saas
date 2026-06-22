@@ -49,6 +49,7 @@ foreach ([
     'docker compose -f docker-compose.prod.yml exec -T',
     'npm run stripe:hosted-checkout:preflight',
     'npm run stripe:hosted-checkout:prepare',
+    '--smoke-runner compose-prod',
     'npm run stripe:hosted-checkout:checklist',
     'npm run stripe:hosted-checkout:verify',
     'STRIPE_HOSTED_CHECKOUT_EVIDENCE_PATH',

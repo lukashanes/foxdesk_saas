@@ -87,6 +87,19 @@ step, run:
 npm run stripe:hosted-checkout:prepare -- --run-smoke --mode test --out tmp/stripe-hosted-checkout-evidence.json
 ```
 
+When the app container is already running and local PHP does not have
+`pdo_mysql`, prepare the evidence shell through the app container:
+
+```bash
+set -a; . ./.env.production; set +a
+npm run stripe:hosted-checkout:prepare -- \
+  --run-smoke \
+  --smoke-runner compose-prod \
+  --mode live \
+  --approved-live \
+  --out tmp/stripe-hosted-checkout-evidence.json
+```
+
 Run this in the environment that has the intended Stripe configuration loaded
 (`BILLING_ENABLED`, `STRIPE_SECRET_KEY`, base price, storage price, tax and VAT
 settings). On a local machine without PHP or Stripe env, the helper uses

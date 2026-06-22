@@ -9,6 +9,10 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'foxdesk-stripe-evidence-prepa
 const prepareScript = fs.readFileSync(path.join(root, 'bin/prepare-stripe-hosted-checkout-evidence.js'), 'utf8');
 
 assert(prepareScript.includes("runJsonCommand('./bin/run-php.sh'"), 'Prepare helper must use the project PHP runner, not a system php binary.');
+assert(prepareScript.includes('--smoke-runner <local|compose-prod>'), 'Prepare helper must document the app container smoke runner.');
+assert(prepareScript.includes('runComposePhpJson'), 'Prepare helper must support running safe smoke inside the app container.');
+assert(prepareScript.includes('docker-compose.prod.yml'), 'Prepare helper must target the production compose app container for compose smoke.');
+assert(prepareScript.includes('STRIPE_SECRET_KEY'), 'Prepare helper compose smoke must pass Stripe env names without printing values.');
 assert(prepareScript.includes('result.error'), 'Prepare helper must surface spawn errors.');
 assert(prepareScript.includes('parsed.errors.join'), 'Prepare helper must surface smoke JSON errors.');
 
