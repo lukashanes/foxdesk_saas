@@ -62,8 +62,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $success = true;
             }
-        } catch (Throwable $e) {
+        } catch (InvalidArgumentException $e) {
             $error = $e->getMessage();
+        } catch (Throwable $e) {
+            if (function_exists('log_security_event')) {
+                log_security_event('signup_magic_request_failed', null, 'error=' . $e->getMessage());
+            }
+            $error = 'We could not send the signup link. Please try again.';
         }
     }
 }

@@ -95,9 +95,12 @@ function signup_request_magic_link(string $email): array
         $sent = signup_send_existing_user_access_email($existing_user);
         if (function_exists('log_security_event')) {
             log_security_event('signup_existing_user_requested', (int) $existing_user['id'], 'email=' . $email);
+            if (!$sent) {
+                log_security_event('signup_existing_user_email_failed', (int) $existing_user['id'], 'email=' . $email);
+            }
         }
 
-        return ['status' => 'existing_user', 'sent' => $sent];
+        return ['status' => 'existing_user', 'sent' => true];
     }
 
     db_query(

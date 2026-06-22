@@ -48,6 +48,8 @@ $assert(str_contains($signup_functions, 'signup_magic_link_ttl_seconds'), 'Signu
 $assert(str_contains($signup_functions, '1800'), 'Signup links must expire after 30 minutes.');
 $assert(str_contains($signup_functions, 'consumed_at = NOW() WHERE email = ? AND consumed_at IS NULL'), 'New signup must invalidate old unused links for the same email.');
 $assert(str_contains($signup_functions, 'signup_send_existing_user_access_email'), 'Existing users must receive access/reset email instead of a duplicate workspace.');
+$assert(str_contains($signup_functions, 'signup_existing_user_email_failed'), 'Existing-user signup email failures must be logged.');
+$assert(str_contains($signup_functions, "return ['status' => 'existing_user', 'sent' => true]"), 'Existing-user signup requests must keep a neutral success response.');
 $assert(str_contains($signup_functions, 'create_tenant_workspace'), 'Magic-link completion must provision the workspace after verification.');
 $assert(str_contains($signup_functions, 'login_user_session'), 'Magic-link completion must sign in the verified user.');
 $assert(str_contains($signup_functions, "return ['status' => 'used']"), 'Used signup links must not be accepted twice.');
@@ -58,6 +60,9 @@ $assert(strpos($signup_functions, "'id = ? AND consumed_at IS NULL'") < strpos($
 
 $assert(str_contains($signup_page, "require_turnstile_for_public_form('signup')"), 'Signup POST must verify Turnstile.');
 $assert(str_contains($signup_page, "turnstile_widget('signup')"), 'Signup page must render Turnstile.');
+$assert(str_contains($signup_page, 'catch (InvalidArgumentException $e)'), 'Signup page may show validation errors for invalid email input.');
+$assert(str_contains($signup_page, 'signup_magic_request_failed'), 'Signup page must log unexpected magic-link request failures.');
+$assert(str_contains($signup_page, "We could not send the signup link. Please try again."), 'Signup page must use a safe generic send failure message.');
 $assert(str_contains($signup_page, "url('legal', ['type' => 'terms'])"), 'Signup must keep Terms link.');
 $assert(str_contains($signup_page, "url('legal', ['type' => 'privacy'])"), 'Signup must keep Privacy link.');
 $assert(str_contains($signup_page, 'name="email"'), 'Signup form must contain one email input.');
