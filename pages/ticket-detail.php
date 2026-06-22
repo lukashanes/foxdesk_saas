@@ -66,7 +66,10 @@ $ticket_creator_name = trim((string) (($ticket['first_name'] ?? '') . ' ' . ($ti
 if ($ticket_creator_name === '') {
     $ticket_creator_name = (string) ($ticket['email'] ?? t('User'));
 }
-$ticket_creator_avatar = function_exists('generate_avatar') ? generate_avatar($ticket_creator_name, 48) : '';
+$ticket_creator_initial = mb_strtoupper(mb_substr($ticket_creator_name, 0, 1));
+if ($ticket_creator_initial === '') {
+    $ticket_creator_initial = '?';
+}
 
 // Time tracking state
 $time_tracking_available = ticket_time_table_exists();
@@ -220,11 +223,7 @@ require_once BASE_PATH . '/includes/header.php';
                     <div class="mt-3 pt-2.5 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs ticket-detail-muted">
                         <div class="flex items-center space-x-3">
                             <span class="ticket-meta-avatar" aria-hidden="true">
-                                <?php if ($ticket_creator_avatar !== ''): ?>
-                                        <img src="<?php echo e($ticket_creator_avatar); ?>" alt="" class="ticket-meta-avatar__image">
-                                <?php else: ?>
-                                        <span class="ticket-meta-avatar__initial"><?php echo e(mb_strtoupper(mb_substr($ticket_creator_name, 0, 1))); ?></span>
-                                <?php endif; ?>
+                                <span class="ticket-meta-avatar__initial"><?php echo e($ticket_creator_initial); ?></span>
                             </span>
                             <span><?php echo e(t('Created by')); ?>:
                                 <?php if (is_agent()): ?>

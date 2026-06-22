@@ -1,4 +1,6 @@
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 const { spawnSync } = require('child_process');
 
 const minimalEnv = {
@@ -13,6 +15,13 @@ function run(args = [], env = minimalEnv) {
     env,
   });
 }
+
+const runner = fs.readFileSync(path.join(__dirname, '..', 'bin/run-php.sh'), 'utf8');
+const preflightSource = fs.readFileSync(path.join(__dirname, '..', 'bin/stripe-hosted-checkout-preflight.js'), 'utf8');
+assert(runner.includes('--env $ENV_NAME'), 'Docker PHP fallback must pass whitelisted env values into the container.');
+assert(runner.includes('BILLING_ENABLED'), 'Docker PHP fallback must pass billing env values for Stripe evidence smoke.');
+assert(runner.includes('STRIPE_SECRET_KEY'), 'Docker PHP fallback must pass Stripe env values for Stripe evidence smoke.');
+assert(preflightSource.includes('PHP CLI with pdo_mysql'), 'Preflight must explain the local Docker PHP missing driver failure.');
 
 const missing = run(['--json']);
 assert.strictEqual(missing.status, 1, 'Missing env must fail preflight.');

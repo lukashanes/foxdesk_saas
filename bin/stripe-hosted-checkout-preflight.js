@@ -102,7 +102,7 @@ function runJsonCommand(script) {
   if (!parsed && result.stdout && result.stdout.trim()) errors.push(result.stdout.trim());
 
   return {
-    ok: result.status === 0 && parsed && parsed.ok === true,
+    ok: Boolean(result.status === 0 && parsed && parsed.ok === true),
     exit_status: result.status,
     status: parsed && parsed.status ? parsed.status : path.basename(script),
     errors,
@@ -115,6 +115,11 @@ function runSafeSmoke() {
     billing_flow: runJsonCommand('bin/test-stripe-billing-flow.php'),
     webhook_lifecycle: runJsonCommand('bin/test-stripe-webhook-lifecycle.php'),
   };
+}
+
+function smokeErrors(smoke) {
+  if (!smoke) return [];
+  return Object.values(smoke).flatMap((entry) => Array.isArray(entry.errors) ? entry.errors : []);
 }
 
 function main() {
@@ -141,9 +146,15 @@ function main() {
     result.smoke = runSafeSmoke();
     const smoke_ok = result.smoke.billing_flow.ok && result.smoke.webhook_lifecycle.ok;
     result.ok = result.ok && smoke_ok;
-    result.next_step = smoke_ok
-      ? 'Complete hosted Checkout and Customer Portal observations, then verify the evidence JSON.'
-      : 'Fix the reported smoke configuration/runtime errors, then rerun this preflight.';
+    const errors = smokeErrors(result.smoke);
+    const missingDbDriver = errors.some((error) => /could not find driver|Database connection/i.test(error));
+    if (smoke_ok) {
+      result.next_step = 'Complete hosted Checkout and Customer Portal observations, then verify the evidence JSON.';
+    } else if (missingDbDriver) {
+      result.next_step = 'Run the safe smoke in the production app container or a PHP CLI with pdo_mysql, then merge the JSON outputs into the hosted Checkout evidence.';
+    } else {
+      result.next_step = 'Fix the reported smoke configuration/runtime errors, then rerun this preflight.';
+    }
   }
 
   if (json) {

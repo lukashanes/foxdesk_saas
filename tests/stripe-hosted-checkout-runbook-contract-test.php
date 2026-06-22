@@ -45,6 +45,8 @@ foreach ([
     'billing.stripe.com',
     'php bin/test-stripe-billing-flow.php --json',
     'php bin/test-stripe-webhook-lifecycle.php --json',
+    'pdo_mysql',
+    'docker compose -f docker-compose.prod.yml exec -T',
     'npm run stripe:hosted-checkout:preflight',
     'npm run stripe:hosted-checkout:prepare',
     'npm run stripe:hosted-checkout:checklist',

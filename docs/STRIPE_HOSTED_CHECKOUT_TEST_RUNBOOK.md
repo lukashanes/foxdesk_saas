@@ -34,6 +34,42 @@ php bin/test-stripe-billing-flow.php --json
 php bin/test-stripe-webhook-lifecycle.php --json
 ```
 
+If the local PHP runner reports `could not find driver`, the local CLI image is
+missing `pdo_mysql`. Run the safe smoke inside the app container or another PHP
+CLI that has `pdo_mysql` installed:
+
+```bash
+set -a; . ./.env.production; set +a
+docker compose -f docker-compose.prod.yml exec -T \
+  -e BILLING_ENABLED \
+  -e STRIPE_SECRET_KEY \
+  -e STRIPE_PRICE_CLOUD_BASE \
+  -e STRIPE_PRICE_STORAGE_OVERAGE \
+  -e STRIPE_WEBHOOK_SECRET \
+  -e APP_URL \
+  -e STRIPE_TAX_ENABLED \
+  -e STRIPE_TAX_ID_COLLECTION_ENABLED \
+  -e STRIPE_TAX_ID_COLLECTION_REQUIRED \
+  -e STRIPE_SUCCESS_URL \
+  -e STRIPE_CANCEL_URL \
+  app php bin/test-stripe-billing-flow.php --json
+
+docker compose -f docker-compose.prod.yml exec -T \
+  -e BILLING_ENABLED \
+  -e STRIPE_SECRET_KEY \
+  -e STRIPE_PRICE_CLOUD_BASE \
+  -e STRIPE_PRICE_STORAGE_OVERAGE \
+  -e STRIPE_WEBHOOK_SECRET \
+  -e APP_URL \
+  -e STRIPE_TAX_ENABLED \
+  -e STRIPE_TAX_ID_COLLECTION_ENABLED \
+  -e STRIPE_TAX_ID_COLLECTION_REQUIRED \
+  app php bin/test-stripe-webhook-lifecycle.php --json
+```
+
+Pass only the environment variable names with `-e`; do not print secret values
+or paste them into shared evidence.
+
 Required result:
 
 - `ok=true` for both commands

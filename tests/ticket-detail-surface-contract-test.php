@@ -34,7 +34,7 @@ foreach ([
     'ticket-primary-action-form',
     'ticket-primary-action__timer',
     'ticket-meta-avatar',
-    'ticket-meta-avatar__image',
+    'ticket-meta-avatar__initial',
 ] as $needle) {
     $assert(str_contains($page, $needle), 'Ticket detail page missing surface contract: ' . $needle);
 }
@@ -48,7 +48,7 @@ foreach ([
     '.ticket-primary-action-form',
     '.ticket-primary-action__timer',
     '.ticket-meta-avatar',
-    '.ticket-meta-avatar__image',
+    '.ticket-meta-avatar__initial',
 ] as $needle) {
     $assert(str_contains($theme, $needle), 'theme.css missing ticket detail selector: ' . $needle);
 }
@@ -61,6 +61,7 @@ $assert(!str_contains($page, 'style="color: var(--text-muted)"'), 'Ticket detail
 $assert(!str_contains($page, "toast.style.opacity = '0'"), 'Ticket detail toast hiding must use CSS classes, not inline opacity writes.');
 $assert(!str_contains($page, "commentEl.style.opacity = '0'"), 'Comment removal must use CSS classes, not inline opacity writes.');
 $assert(!str_contains($page, "upload_url(\$ticket['avatar'])"), 'Created-by avatar must not depend on a possibly missing uploaded image.');
+$assert(!str_contains($page, '<img src="<?php echo e($ticket_creator'), 'Created-by avatar must use a text fallback, not an image data URL.');
 $assert(str_contains($page, 'ticket-history-avatar'), 'Ticket detail must use ticket-history-avatar class.');
 $assert(str_contains($page, 'ticket-detail-muted'), 'Ticket detail generated muted text must use ticket-detail-muted class.');
 $assert(str_contains($theme, '.ticket-history-avatar'), 'theme.css must define ticket-history-avatar.');
