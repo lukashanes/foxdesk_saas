@@ -151,7 +151,7 @@ function buildChecks() {
     ack(
       'Stripe live billing flow acknowledged',
       'FOXDESK_ACK_STRIPE_LIVE_TESTED',
-      'Run live/test-mode checkout, VAT ID, portal, failed payment, cancellation, and webhook lifecycle.'
+      'Complete docs/STRIPE_HOSTED_CHECKOUT_TEST_RUNBOOK.md with live or approved test-mode checkout, VAT ID, portal, failed payment, cancellation, and webhook lifecycle evidence.'
     ),
     ack(
       'Cloudflare inbound email acknowledged',

@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php else: ?>
                     <div class="mb-7">
                         <h2 class="text-3xl font-bold mb-2">Create a new FoxDesk</h2>
-                        <p class="text-theme-muted">Enter your email. We will send a secure link to start your trial.</p>
+                        <p class="text-theme-muted">Start a 14-day trial. No card required.</p>
                     </div>
 
                     <?php if ($error): ?>

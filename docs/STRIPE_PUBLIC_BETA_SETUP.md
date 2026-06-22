@@ -163,6 +163,12 @@ Stripe beta setup is done when:
 - paid invoice restores active access
 - storage usage dry-run works before live metering is enabled
 
+Before marking `BILLING-002` as `retested_pass`, capture the hosted Checkout
+completion evidence from [Stripe Hosted Checkout Test Runbook](STRIPE_HOSTED_CHECKOUT_TEST_RUNBOOK.md).
+The production-safe smoke scripts are necessary, but they are not a substitute
+for completing hosted Checkout with card entry, VAT ID entry, tax treatment,
+return redirect, webhook receipt, and Customer Portal verification.
+
 ## API Fallback
 
 If Stripe Dashboard settings pages fail in an embedded browser, configure the production portal and webhook through the API:

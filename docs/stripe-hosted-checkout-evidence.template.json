@@ -1,0 +1,47 @@
+{
+  "stripe_mode": "test",
+  "operator": "Aenze s.r.o.",
+  "tested_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "workspace": {
+    "tenant_reference": "redacted",
+    "email_reference": "redacted",
+    "temporary_workspace": true
+  },
+  "checkout": {
+    "host": "checkout.stripe.com",
+    "session_id_redacted": "cs_...",
+    "completed": false,
+    "completed_at": null,
+    "redirected_back_to_foxdesk": false,
+    "billing_address_collected": false,
+    "vat_id_collected": false,
+    "tax_result_observed": "",
+    "reverse_charge_or_zero_rate_observed": false
+  },
+  "webhooks": {
+    "checkout_session_completed_observed": false,
+    "invoice_paid_or_subscription_active_observed": false,
+    "invoice_payment_failed_observed": false,
+    "subscription_deleted_or_cancelled_observed": false,
+    "event_ids_redacted": []
+  },
+  "customer_portal": {
+    "host": "billing.stripe.com",
+    "opened": false,
+    "payment_method_update_observed": false,
+    "billing_address_update_observed": false,
+    "invoice_details_observed": false,
+    "vat_id_update_observed": false,
+    "cancellation_observed": false
+  },
+  "cleanup": {
+    "subscription_cancelled": false,
+    "stripe_customer_deleted_or_marked_test": false,
+    "temporary_workspace_cleaned_or_disabled": false
+  },
+  "safe_smoke_commands": {
+    "stripe_billing_flow_ok": false,
+    "stripe_webhook_lifecycle_ok": false
+  },
+  "notes": ""
+}
