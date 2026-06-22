@@ -37,7 +37,7 @@ foreach ([
 }
 
 $activity_start = strpos($page, '<div class="card ticket-activity-card" data-ticket-activity-surface>');
-$composer_start = strpos($page, '<form method="post" enctype="multipart/form-data" class="ticket-composer"');
+$composer_start = strpos($page, "include BASE_PATH . '/includes/components/ticket-detail-composer.php'");
 $assert($activity_start !== false && $composer_start !== false && $composer_start > $activity_start, 'Unable to isolate ticket activity markup.');
 $activity_markup = substr($page, $activity_start, $composer_start - $activity_start);
 
