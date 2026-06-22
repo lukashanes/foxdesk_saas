@@ -42,6 +42,7 @@ foreach ([
     'php bin/test-stripe-billing-flow.php --json',
     'php bin/test-stripe-webhook-lifecycle.php --json',
     'npm run stripe:hosted-checkout:verify',
+    'STRIPE_HOSTED_CHECKOUT_EVIDENCE_PATH',
 ] as $required) {
     $assert(str_contains($runbook, $required), "Runbook must include {$required}.");
 }

@@ -128,6 +128,14 @@ npm run stripe:hosted-checkout:verify -- path/to/stripe-hosted-checkout-evidence
 
 The verifier must pass before `BILLING-002` is moved to `retested_pass`.
 
+For the paid public launch gate, set both values after verification:
+
+```bash
+FOXDESK_ACK_STRIPE_LIVE_TESTED=true
+STRIPE_HOSTED_CHECKOUT_EVIDENCE_PATH=path/to/stripe-hosted-checkout-evidence.json
+npm run launch:go-no-go -- --strict-paid
+```
+
 `BILLING-002` can move from `needs_external_smoke` to `retested_pass` only after
 this evidence exists and matches the current production or approved test-mode
 Stripe configuration.

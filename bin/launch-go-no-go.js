@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { validateEvidence } = require('./verify-stripe-hosted-checkout-evidence');
 
 const root = path.resolve(__dirname, '..');
 const strictPaid = process.argv.includes('--strict-paid');
@@ -33,6 +34,56 @@ function ack(name, envVar, detail) {
     status: ok ? 'pass' : (strictPaid ? 'blocked' : 'warn'),
     detail: ok ? `${envVar}=true` : `${detail} Set ${envVar}=true after this is verified.`,
   };
+}
+
+function stripeHostedCheckoutAcknowledgement() {
+  const envVar = 'FOXDESK_ACK_STRIPE_LIVE_TESTED';
+  const evidenceVar = 'STRIPE_HOSTED_CHECKOUT_EVIDENCE_PATH';
+  const acknowledged = ['1', 'true', 'yes', 'done'].includes(String(process.env[envVar] || '').toLowerCase());
+  const detail = 'Complete docs/STRIPE_HOSTED_CHECKOUT_TEST_RUNBOOK.md with live or approved test-mode checkout, VAT ID, portal, failed payment, cancellation, and webhook lifecycle evidence.';
+
+  if (!acknowledged) {
+    return {
+      name: 'Stripe live billing flow acknowledged',
+      status: strictPaid ? 'blocked' : 'warn',
+      detail: `${detail} Set ${envVar}=true and ${evidenceVar}=path/to/evidence.json after this is verified.`,
+    };
+  }
+
+  const evidencePath = String(process.env[evidenceVar] || '').trim();
+  if (evidencePath === '') {
+    return {
+      name: 'Stripe live billing flow acknowledged',
+      status: 'blocked',
+      detail: `${envVar}=true but ${evidenceVar} is missing. Run npm run stripe:hosted-checkout:verify -- path/to/evidence.json.`,
+    };
+  }
+
+  try {
+    const resolved = path.resolve(evidencePath);
+    const source = fs.readFileSync(resolved, 'utf8');
+    const data = JSON.parse(source);
+    const evidence = validateEvidence(source, data);
+    if (!evidence.ok) {
+      return {
+        name: 'Stripe live billing flow acknowledged',
+        status: 'blocked',
+        detail: `${envVar}=true but ${evidenceVar} failed verification: ${evidence.failures.join('; ')}`,
+      };
+    }
+
+    return {
+      name: 'Stripe live billing flow acknowledged',
+      status: 'pass',
+      detail: `${envVar}=true; verified evidence: ${resolved}`,
+    };
+  } catch (error) {
+    return {
+      name: 'Stripe live billing flow acknowledged',
+      status: 'blocked',
+      detail: `${envVar}=true but ${evidenceVar} could not be verified: ${error.message}`,
+    };
+  }
 }
 
 function buildChecks() {
@@ -148,11 +199,7 @@ function buildChecks() {
       'FOXDESK_ACK_LEGAL_APPROVED',
       'Have counsel/operator review Privacy, Terms, DPA, Refunds, and Security before paid public launch.'
     ),
-    ack(
-      'Stripe live billing flow acknowledged',
-      'FOXDESK_ACK_STRIPE_LIVE_TESTED',
-      'Complete docs/STRIPE_HOSTED_CHECKOUT_TEST_RUNBOOK.md with live or approved test-mode checkout, VAT ID, portal, failed payment, cancellation, and webhook lifecycle evidence.'
-    ),
+    stripeHostedCheckoutAcknowledgement(),
     ack(
       'Cloudflare inbound email acknowledged',
       'FOXDESK_ACK_INBOUND_EMAIL_TESTED',
