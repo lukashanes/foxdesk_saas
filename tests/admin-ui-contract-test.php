@@ -37,8 +37,9 @@ foreach ([
 
 assert_admin_ui(!str_contains($header, 'id="sidebar-notif-badge"'), 'Notifications must not be duplicated in the left sidebar.');
 assert_admin_ui(!preg_match('/<span>\s*<\?php echo e\(t\(\'Notifications\'\)\); \?>\s*<\/span>/', $header), 'Notifications should be reachable from the top bell, not as a primary left-nav item.');
-assert_admin_ui(str_contains($header, "url('admin', ['section' => 'reports'])"), 'Time reports must be a first-level sidebar destination for staff.');
-assert_admin_ui(!preg_match('/id="sidebar-user-menu".*?Time Reports/s', $header), 'Time reports must not stay hidden in the bottom user dropdown.');
+assert_admin_ui(str_contains($header, "url('admin', ['section' => 'reports', 'tab' => 'time'])"), 'Reports must be a first-level sidebar destination for staff.');
+assert_admin_ui(str_contains($header, "t('Reports')"), 'Sidebar reports destination must use the simplified Reports label.');
+assert_admin_ui(!preg_match('/id="sidebar-user-menu".*?Time Reports/s', $header), 'Reports must not stay hidden in the bottom user dropdown.');
 assert_admin_ui(str_contains($header, "url('notifications')"), 'Notification panel must link to the full notifications page.');
 assert_admin_ui(!str_contains($header, "'sidebar-notif-badge'"), 'Notification badge updates must not target a removed sidebar badge.');
 
@@ -105,7 +106,8 @@ foreach ([
 ] as $needle) {
     assert_admin_ui(str_contains($page_header . "\n" . $admin_nav, $needle), 'Admin navigation contract missing: ' . $needle);
 }
-assert_admin_ui(str_contains($page_header, "\$admin_section !== 'settings'"), 'Settings page must not render a second admin-page-nav above settings tabs.');
+assert_admin_ui(str_contains($page_header, "\$admin_sections_without_page_nav = ['settings', 'reports'];"), 'Settings and Reports must not render duplicate horizontal admin navigation.');
+assert_admin_ui(str_contains($page_header, '!in_array($admin_section, $admin_sections_without_page_nav, true)'), 'Admin page nav must use the no-horizontal-nav section contract.');
 
 foreach ([
     'Workspace inbound address',

@@ -39,8 +39,9 @@
 
     <?php
     $admin_section = isset($_GET['section']) ? (string) $_GET['section'] : '';
+    $admin_sections_without_page_nav = ['settings', 'reports'];
     $show_admin_page_nav = ($GLOBALS['page'] ?? null) === 'admin'
-        && $admin_section !== 'settings'
+        && !in_array($admin_section, $admin_sections_without_page_nav, true)
         && function_exists('is_admin')
         && is_admin();
     ?>

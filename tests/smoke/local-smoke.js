@@ -297,17 +297,21 @@ async function expectPlatformSurface(page) {
 }
 
 async function expectSettingsSurface(page) {
-  await page.goto('/index.php?page=admin&section=settings&tab=system');
+  await page.goto('/index.php?page=admin&section=settings');
   const layout = await page.evaluate(() => {
     const shell = document.querySelector('.admin-legacy-page, .admin-shell, .card');
-    const tabs = document.querySelector('.admin-tabs');
-    const activeTab = document.querySelector('.admin-tab.is-active');
+    const sectionNav = document.querySelector('.settings-section-nav');
+    const sectionCards = document.querySelectorAll('.settings-section-card');
+    const adminTabs = document.querySelector('.admin-tabs');
+    const adminPageNav = document.querySelector('.admin-page-nav');
     const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
     return {
       url: window.location.href,
       shellWidth: shell ? shell.getBoundingClientRect().width : 0,
-      tabsDisplay: tabs ? getComputedStyle(tabs).display : null,
-      activeTabText: activeTab ? activeTab.textContent.trim() : '',
+      sectionNavDisplay: sectionNav ? getComputedStyle(sectionNav).display : null,
+      sectionCardCount: sectionCards.length,
+      adminTabsCount: adminTabs ? 1 : 0,
+      adminPageNavCount: adminPageNav ? 1 : 0,
       themeLinks,
       inlineSettingsStyles: [...document.querySelectorAll('style')].some(style =>
         style.textContent.includes('Operations overview') ||
@@ -315,11 +319,11 @@ async function expectSettingsSurface(page) {
       )
     };
   });
-  if (layout.shellWidth < 320 || !['flex', 'inline-flex'].includes(layout.tabsDisplay)) {
+  if (layout.shellWidth < 320 || !['grid'].includes(layout.sectionNavDisplay) || layout.sectionCardCount < 5) {
     throw new Error(`Settings surface is missing or unstyled: ${JSON.stringify(layout)}`);
   }
-  if (!layout.activeTabText) {
-    throw new Error(`Settings active tab is missing: ${JSON.stringify(layout)}`);
+  if (layout.adminTabsCount || layout.adminPageNavCount) {
+    throw new Error(`Settings page must not render duplicate horizontal admin menus: ${JSON.stringify(layout)}`);
   }
   if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
     throw new Error(`Settings page does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
@@ -483,7 +487,10 @@ async function expectReportsSurface(page) {
   await page.goto('/index.php?page=admin&section=reports');
   const layout = await page.evaluate(() => {
     const shell = document.querySelector('.admin-legacy-page');
-    const tabs = document.querySelector('.admin-tabs');
+    const modeSwitch = document.querySelector('.report-mode-switch');
+    const modeLinks = [...document.querySelectorAll('.report-mode-link')].map(link => link.textContent.trim());
+    const adminTabs = document.querySelector('.admin-tabs');
+    const adminPageNav = document.querySelector('.admin-page-nav');
     const flowCard = document.querySelector('.reporting-flow-card');
     const filterCard = document.querySelector('#report-filters');
     const card = document.querySelector('.card');
@@ -497,8 +504,11 @@ async function expectReportsSurface(page) {
       url: window.location.href,
       heading: document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : '',
       shellRect: shell ? rect(shell) : null,
-      tabsRect: tabs ? rect(tabs) : null,
-      tabsDisplay: tabs ? getComputedStyle(tabs).display : null,
+      modeSwitchRect: modeSwitch ? rect(modeSwitch) : null,
+      modeSwitchDisplay: modeSwitch ? getComputedStyle(modeSwitch).display : null,
+      modeLinks,
+      adminTabsCount: adminTabs ? 1 : 0,
+      adminPageNavCount: adminPageNav ? 1 : 0,
       flowCardRect: flowCard ? rect(flowCard) : null,
       filterCardRect: filterCard ? rect(filterCard) : null,
       cardBorderStyle: card ? getComputedStyle(card).borderTopStyle : null,
@@ -516,11 +526,17 @@ async function expectReportsSurface(page) {
   if (!layout.shellRect || layout.shellRect.width < 320) {
     throw new Error(`Reports shell is missing or collapsed: ${JSON.stringify(layout)}`);
   }
-  if (!layout.tabsRect || !['flex', 'inline-flex'].includes(layout.tabsDisplay)) {
-    throw new Error(`Reports tabs are unstyled: ${JSON.stringify(layout)}`);
+  if (!layout.modeSwitchRect || !['flex', 'inline-flex'].includes(layout.modeSwitchDisplay)) {
+    throw new Error(`Reports mode switch is missing or unstyled: ${JSON.stringify(layout)}`);
   }
-  if (layout.flowCardRect && layout.flowCardRect.width < 320) {
-    throw new Error(`Reports billing review flow is collapsed: ${JSON.stringify(layout)}`);
+  if (!layout.modeLinks.includes('Time overview') || !layout.modeLinks.includes('Billing review') || !layout.modeLinks.includes('Published reports')) {
+    throw new Error(`Reports modes are incomplete: ${JSON.stringify(layout)}`);
+  }
+  if (layout.adminTabsCount || layout.adminPageNavCount) {
+    throw new Error(`Reports page must not render duplicate horizontal admin menus: ${JSON.stringify(layout)}`);
+  }
+  if (layout.flowCardRect) {
+    throw new Error(`Time overview must not show the billing review flow card: ${JSON.stringify(layout)}`);
   }
   if (!layout.filterCardRect && !layout.cardBorderStyle) {
     throw new Error(`Reports content cards are missing: ${JSON.stringify(layout)}`);

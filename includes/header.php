@@ -278,20 +278,42 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                 <?php $is_tickets = ($page ?? '') === 'tickets' && ($_GET['archived'] ?? '') !== '1'; ?>
                 <a href="<?php echo url('tickets'); ?>"
                     class="nav-item <?php echo $is_tickets ? 'active' : ''; ?>"
-                    title="<?php echo e(t('All tickets')); ?>"
+                    title="<?php echo e(t('Tickets')); ?>"
                     <?php echo $is_tickets ? 'aria-current="page"' : ''; ?>>
                     <?php echo get_icon('ticket-alt', 'nav-item__icon'); ?>
-                    <span><?php echo e(t('All tickets')); ?></span>
+                    <span><?php echo e(t('Tickets')); ?></span>
                 </a>
+
+                <?php if (is_admin()): ?>
+                    <?php $is_clients = ($page ?? '') === 'admin' && ($_GET['section'] ?? '') === 'clients'; ?>
+                    <a href="<?php echo url('admin', ['section' => 'clients']); ?>"
+                        class="nav-item <?php echo $is_clients ? 'active' : ''; ?>"
+                        title="<?php echo e(t('Clients')); ?>"
+                        <?php echo $is_clients ? 'aria-current="page"' : ''; ?>>
+                        <?php echo get_icon('user', 'nav-item__icon'); ?>
+                        <span><?php echo e(t('Clients')); ?></span>
+                    </a>
+                <?php endif; ?>
 
                 <?php if (is_admin() || is_agent()): ?>
                     <?php $is_time_reports = ($page ?? '') === 'admin' && ($_GET['section'] ?? '') === 'reports'; ?>
-                    <a href="<?php echo url('admin', ['section' => 'reports']); ?>"
+                    <a href="<?php echo url('admin', ['section' => 'reports', 'tab' => 'time']); ?>"
                         class="nav-item <?php echo $is_time_reports ? 'active' : ''; ?>"
-                        title="<?php echo e(t('Time Reports')); ?>"
+                        title="<?php echo e(t('Reports')); ?>"
                         <?php echo $is_time_reports ? 'aria-current="page"' : ''; ?>>
                         <?php echo get_icon('chart-bar', 'nav-item__icon'); ?>
-                        <span><?php echo e(t('Time Reports')); ?></span>
+                        <span><?php echo e(t('Reports')); ?></span>
+                    </a>
+                <?php endif; ?>
+
+                <?php if (is_admin()): ?>
+                    <?php $is_settings = ($page ?? '') === 'admin' && ($_GET['section'] ?? '') === 'settings'; ?>
+                    <a href="<?php echo url('admin', ['section' => 'settings']); ?>"
+                        class="nav-item <?php echo $is_settings ? 'active' : ''; ?>"
+                        title="<?php echo e(t('Settings')); ?>"
+                        <?php echo $is_settings ? 'aria-current="page"' : ''; ?>>
+                        <?php echo get_icon('cog', 'nav-item__icon'); ?>
+                        <span><?php echo e(t('Settings')); ?></span>
                     </a>
                 <?php endif; ?>
 
@@ -431,10 +453,9 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                     <span class="theme-text-dark hidden"><?php echo e(t('Light mode')); ?></span>
                 </button>
 
-                <?php if (is_admin() || is_agent()): ?>
+                <?php if (is_admin()): ?>
                 <div class="border-t my-2 border-theme-light" role="separator"></div>
 
-                <?php if (is_admin()): ?>
                 <?php if (function_exists('is_platform_admin') && is_platform_admin()): ?>
                 <a href="<?php echo url('platform'); ?>" role="menuitem"
                     class="sidebar-user-menu__item flex items-center gap-3 px-4 py-2.5 text-sm transition-colors sidebar-hover">
@@ -447,37 +468,6 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                     <?php echo get_icon('credit-card', 'w-4 h-4'); ?>
                     <span>Billing</span>
                 </a>
-                <a href="<?php echo url('admin', ['section' => 'users']); ?>" role="menuitem"
-                    class="sidebar-user-menu__item flex items-center gap-3 px-4 py-2.5 text-sm transition-colors sidebar-hover">
-                    <?php echo get_icon('users', 'w-4 h-4'); ?>
-                    <span><?php echo e(t('Users')); ?></span>
-                </a>
-                <a href="<?php echo url('admin', ['section' => 'organizations']); ?>" role="menuitem"
-                    class="sidebar-user-menu__item flex items-center gap-3 px-4 py-2.5 text-sm transition-colors sidebar-hover">
-                    <?php echo get_icon('building', 'w-4 h-4'); ?>
-                    <span><?php echo e(t('Organizations')); ?></span>
-                </a>
-                <a href="<?php echo url('admin', ['section' => 'settings']); ?>" role="menuitem"
-                    class="sidebar-user-menu__item flex items-center gap-3 px-4 py-2.5 text-sm transition-colors sidebar-hover">
-                    <?php echo get_icon('cog', 'w-4 h-4'); ?>
-                    <span><?php echo e(t('Settings')); ?></span>
-                </a>
-                <a href="<?php echo url('admin', ['section' => 'recurring-tasks']); ?>" role="menuitem"
-                    class="sidebar-user-menu__item flex items-center gap-3 px-4 py-2.5 text-sm transition-colors sidebar-hover">
-                    <?php echo get_icon('sync-alt', 'w-4 h-4'); ?>
-                    <span><?php echo e(t('Recurring tasks')); ?></span>
-                </a>
-                <a href="<?php echo url('admin', ['section' => 'activity']); ?>" role="menuitem"
-                    class="sidebar-user-menu__item flex items-center gap-3 px-4 py-2.5 text-sm transition-colors sidebar-hover">
-                    <?php echo get_icon('chart-line', 'w-4 h-4'); ?>
-                    <span><?php echo e(t('Activity')); ?></span>
-                </a>
-                <a href="<?php echo url('tickets', ['archived' => '1']); ?>" role="menuitem"
-                    class="sidebar-user-menu__item flex items-center gap-3 px-4 py-2.5 text-sm transition-colors sidebar-hover">
-                    <?php echo get_icon('archive', 'w-4 h-4'); ?>
-                    <span><?php echo e(t('Archive')); ?></span>
-                </a>
-                <?php endif; ?>
                 <?php endif; ?>
 
                 <div class="border-t my-2 border-theme-light" role="separator"></div>

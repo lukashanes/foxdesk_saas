@@ -88,14 +88,36 @@ async function capture(page, viewportName, name, expectedText = '') {
     const navState = await page.evaluate(() => ({
       adminPageNav: document.querySelectorAll('.admin-page-nav').length,
       settingsTabs: document.querySelectorAll('.admin-tabs').length,
+      settingsSectionNav: document.querySelectorAll('.settings-section-nav').length,
+      settingsSectionCards: document.querySelectorAll('.settings-section-card').length,
       searchInput: Boolean(document.querySelector('#header-search')),
       searchIcon: Boolean(document.querySelector('.header-search-icon')),
     }));
-    if (navState.adminPageNav !== 0 || navState.settingsTabs !== 1) {
+    if (navState.adminPageNav !== 0 || navState.settingsTabs !== 0 || navState.settingsSectionNav !== 1 || navState.settingsSectionCards < 5) {
       throw new Error(`${viewportName}-${name} has duplicate admin navigation: ${JSON.stringify(navState)}`);
     }
     if (!navState.searchInput || !navState.searchIcon) {
       throw new Error(`${viewportName}-${name} missing stable header search controls: ${JSON.stringify(navState)}`);
+    }
+  }
+  if (name === 'reports') {
+    const reportsNavState = await page.evaluate(() => ({
+      adminPageNav: document.querySelectorAll('.admin-page-nav').length,
+      adminTabs: document.querySelectorAll('.admin-tabs').length,
+      reportModeSwitch: document.querySelectorAll('.report-mode-switch').length,
+      reportModeLinks: [...document.querySelectorAll('.report-mode-link')].map(link => link.textContent.trim()),
+      reportingFlowCards: document.querySelectorAll('.reporting-flow-card').length,
+    }));
+    if (
+      reportsNavState.adminPageNav !== 0 ||
+      reportsNavState.adminTabs !== 0 ||
+      reportsNavState.reportModeSwitch !== 1 ||
+      reportsNavState.reportingFlowCards !== 0 ||
+      !reportsNavState.reportModeLinks.includes('Time overview') ||
+      !reportsNavState.reportModeLinks.includes('Billing review') ||
+      !reportsNavState.reportModeLinks.includes('Published reports')
+    ) {
+      throw new Error(`${viewportName}-${name} has incorrect report navigation: ${JSON.stringify(reportsNavState)}`);
     }
   }
   const file = path.join(outputDir, `${viewportName}-${name}.png`);

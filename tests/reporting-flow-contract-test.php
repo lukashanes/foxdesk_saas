@@ -34,7 +34,7 @@ $assert(str_contains($billing, "'total_labels' => billing_review_total_labels"),
 $assert(str_contains($billing, "'discount_amount'"), 'Billing review must support amount discounts.');
 $assert(str_contains($reports, 'class="reporting-flow-card"'), 'Reports page must render the compact billing review flow.');
 $assert(str_contains($reports, 'name="organizations[]"'), 'Billing review must submit the selected client as a report filter.');
-$assert(str_contains($reports, 'name="tab" value="detailed"'), 'Billing review must open the detailed report.');
+$assert(str_contains($reports, 'name="tab" value="billing"'), 'Billing review must open the billing review mode.');
 $assert(str_contains($reports, 'name="show_money" value="1"'), 'Billing review must show money columns.');
 $assert(str_contains($reports, 'reporting_flow_steps()'), 'Reports page must render workflow steps from the helper.');
 $assert(str_contains($reports, 'reporting_flow_builder_url('), 'Create report link must preserve selected client and period.');
@@ -48,7 +48,11 @@ $assert(str_contains($reports, 'data-report-total="billable_amount"'), 'Detailed
 $assert(str_contains($reports, 'data-report-entry-row'), 'Detailed report rows must expose contract row mounts.');
 $assert(str_contains($reports, 'data-report-entry-field="rate"'), 'Detailed report rows must expose contract rate mounts.');
 $assert($billing_js !== false && str_contains($billing_js, "selectedAction === 'discount_amount'"), 'Live totals must handle amount discounts.');
-$assert(str_contains($reports, 'class="report-page-toolbar"'), 'Reports page must use the shared report toolbar surface.');
+$assert(str_contains($reports, 'class="report-page-toolbar report-page-toolbar--modes"'), 'Reports page must use the simplified report toolbar surface.');
+$assert(str_contains($reports, 'class="report-mode-link'), 'Reports page must use the simplified report mode switch.');
+$assert(str_contains($reports, "'time' => t('Time overview')"), 'Reports page must expose Time overview as the first mode.');
+$assert(str_contains($reports, "\$tab_labels['billing'] = t('Billing review')"), 'Reports page must expose Billing review only for admins.');
+$assert(str_contains($reports, "\$tab_labels['published'] = t('Published reports')"), 'Reports page must expose Published reports only for admins.');
 $assert(str_contains($reports, 'class="report-filter-pills"'), 'Reports page must use shared filter pills.');
 $assert(str_contains($reports, 'class="card-header report-filter-summary"'), 'Reports page must use the shared filter summary surface.');
 $assert(str_contains($reports, 'class="report-summary-strip"'), 'Summary report totals must use the shared summary strip.');
@@ -56,8 +60,14 @@ $assert(str_contains($reports, 'class="report-detail-totals"'), 'Detailed report
 $assert(str_contains($reports, 'class="report-bulk-billing px-4 py-3 border-b"'), 'Bulk billing form must use the shared billing surface.');
 $assert(str_contains($reports, 'class="range-preset-btn <?php echo $time_range === $preset_val ? \'is-active\' : \'\'; ?>"'), 'Range presets must use an active class, not inline styles.');
 $assert(str_contains($bootstrap, '/reports/report-totals.php'), 'Module bootstrap must load report totals.');
-$assert(str_contains(file_get_contents($root . '/includes/modules/reports/report-totals.php'), 'function report_width_class'), 'Report totals module must normalize dynamic widths through CSS classes.');
-$assert(str_contains(file_get_contents($root . '/includes/modules/reports/report-totals.php'), 'function report_tone_class'), 'Report totals module must normalize chart colors through CSS classes.');
+$report_totals = file_get_contents($root . '/includes/modules/reports/report-totals.php');
+$assert(str_contains($report_totals, 'function report_width_class'), 'Report totals module must normalize dynamic widths through CSS classes.');
+$assert(str_contains($report_totals, 'function report_tone_class'), 'Report totals module must normalize chart colors through CSS classes.');
+$assert(str_contains($report_totals, 'function report_billable_time_notice'), 'Report totals module must explain rounded billable time.');
+$assert(str_contains($reports, "\$tab === 'billing' ? report_billable_time_notice"), 'Reports page must show billable time notice only in billing review.');
+$assert(str_contains($reports, 'class="report-billing-note report-billing-note--'), 'Reports page must render the billable time notice near totals.');
+$assert(str_contains($report_totals, "t('Why is billable time higher?')"), 'Billable time notice must explain higher billable time.');
+$assert(str_contains($theme, '.report-billing-note'), 'Billable time notice styling is missing.');
 $assert(str_contains($reports, 'report-mini-progress__bar--org <?php echo e(report_width_class($org_pct)); ?>'), 'Organization progress bars must use width classes.');
 $assert(str_contains($reports, 'report-week-segment <?php echo e(report_width_class($seg_pct)); ?>'), 'Weekly stacked bars must use width classes.');
 $assert(str_contains($reports, "cell.classList.toggle('is-hidden', !visible)"), 'Column picker must use CSS classes, not inline display writes.');
