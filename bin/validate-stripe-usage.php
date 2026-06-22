@@ -117,7 +117,10 @@ if ($result['ok'] || !$live) {
 
 if ($result['ok'] && $live) {
     $result['live_report'] = billing_report_storage_usage_for_tenant($tenant_id, $period_key, false);
-    if (($result['live_report']['status'] ?? '') !== 'reported') {
+    $live_report_status = (string) ($result['live_report']['status'] ?? '');
+    if (!in_array($live_report_status, ['reported', 'skipped'], true)
+        || (($result['live_report']['reason'] ?? '') !== 'already_reported' && $live_report_status === 'skipped')
+    ) {
         $fail('Live meter event was not reported. Status: ' . ($result['live_report']['status'] ?? 'unknown'));
     }
 

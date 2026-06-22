@@ -37,6 +37,8 @@ $assert(str_contains($validate, "'live'"), 'Validation command must support live
 $assert(str_contains($validate, "'allow-live-key'"), 'Validation command must guard live Stripe keys.');
 $assert(str_contains($validate, 'billing_find_meter_by_event_name'), 'Validation command must check the configured Stripe meter.');
 $assert(str_contains($validate, 'billing_report_storage_usage_for_tenant'), 'Validation command must run tenant-scoped reporting.');
+$assert(str_contains($validate, "\$live_report_status"), 'Validation command must inspect live report status explicitly.');
+$assert(str_contains($validate, "'already_reported'"), 'Validation command must accept idempotent already_reported live reports.');
 $assert(str_contains($validate, 'billing_meter_event_summaries'), 'Validation command must verify meter summaries when possible.');
 $assert(str_contains($validate, 'billing_invoice_preview_for_customer'), 'Validation command must verify invoice preview when possible.');
 $assert(str_contains($docs, 'validate-stripe-usage.php'), 'Stripe billing docs must document the validation command.');
