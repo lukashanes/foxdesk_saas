@@ -61,6 +61,12 @@ operator. The prepare command does not complete Checkout and does not make the
 evidence pass. It only fills the safe API smoke fields and leaves hosted
 Checkout, VAT, Portal, and cleanup observations for the operator to complete.
 
+To see the remaining manual evidence as a grouped checklist, run:
+
+```bash
+npm run stripe:hosted-checkout:checklist -- tmp/stripe-hosted-checkout-evidence.json
+```
+
 ## Hosted Checkout Completion
 
 1. Create a temporary workspace through signup or platform admin.
