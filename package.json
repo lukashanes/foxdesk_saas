@@ -41,6 +41,7 @@
     "test:tenant-boundary": "./bin/run-php.sh tests/tenant-mutation-boundary-contract-test.php",
     "test:security-boundary": "./bin/run-php.sh tests/security-boundary-contract-test.php",
     "test:signup-email-only": "./bin/run-php.sh tests/signup-email-only-contract-test.php",
+    "test:public-form-hardening": "./bin/run-php.sh tests/public-form-hardening-contract-test.php",
     "test:feature-stories": "./bin/run-php.sh tests/feature-user-stories-contract-test.php",
     "test:stripe-billing-flow": "./bin/run-php.sh tests/stripe-billing-flow-smoke-contract-test.php",
     "test:stripe-webhook-lifecycle": "./bin/run-php.sh tests/stripe-webhook-lifecycle-smoke-contract-test.php",
