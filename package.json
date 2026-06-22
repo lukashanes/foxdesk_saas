@@ -42,6 +42,7 @@
     "test:security-boundary": "./bin/run-php.sh tests/security-boundary-contract-test.php",
     "test:signup-email-only": "./bin/run-php.sh tests/signup-email-only-contract-test.php",
     "test:feature-stories": "./bin/run-php.sh tests/feature-user-stories-contract-test.php",
+    "test:stripe-billing-flow": "./bin/run-php.sh tests/stripe-billing-flow-smoke-contract-test.php",
     "test:profile-password-setup": "./bin/run-php.sh tests/profile-password-setup-contract-test.php",
     "test:web-push": "./bin/run-php.sh tests/web-push-contract-test.php",
     "test:agent-api-control": "sh -c './bin/run-php.sh tests/agent-api-control-contract-test.php && ./bin/run-php.sh tests/agent-api-quickstart-contract-test.php && ./bin/run-php.sh tests/agent-mcp-wrapper-contract-test.php && ./bin/run-php.sh tests/agent-prod-smoke-contract-test.php && node examples/agent-api/mcp-smoke.js'",
