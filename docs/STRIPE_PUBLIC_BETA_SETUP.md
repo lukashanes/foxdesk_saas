@@ -167,7 +167,8 @@ Before marking `BILLING-002` as `retested_pass`, capture the hosted Checkout
 completion evidence from [Stripe Hosted Checkout Test Runbook](STRIPE_HOSTED_CHECKOUT_TEST_RUNBOOK.md).
 The production-safe smoke scripts are necessary, but they are not a substitute
 for completing hosted Checkout with card entry, VAT ID entry, tax treatment,
-return redirect, webhook receipt, and Customer Portal verification.
+return redirect, webhook receipt, and Customer Portal verification. Validate the
+completed evidence with `npm run stripe:hosted-checkout:verify -- path/to/evidence.json`.
 
 ## API Fallback
 

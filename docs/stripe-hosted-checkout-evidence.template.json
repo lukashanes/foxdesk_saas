@@ -1,5 +1,6 @@
 {
   "stripe_mode": "test",
+  "approved_live_validation": false,
   "operator": "Aenze s.r.o.",
   "tested_at": "YYYY-MM-DDTHH:MM:SSZ",
   "workspace": {

@@ -41,6 +41,7 @@ foreach ([
     'billing.stripe.com',
     'php bin/test-stripe-billing-flow.php --json',
     'php bin/test-stripe-webhook-lifecycle.php --json',
+    'npm run stripe:hosted-checkout:verify',
 ] as $required) {
     $assert(str_contains($runbook, $required), "Runbook must include {$required}.");
 }
@@ -65,8 +66,10 @@ $assert(array_key_exists('reverse_charge_or_zero_rate_observed', $evidence['chec
 
 $assert(str_contains($setup, 'STRIPE_HOSTED_CHECKOUT_TEST_RUNBOOK.md'), 'Stripe setup guide must link the hosted Checkout runbook.');
 $assert(str_contains($tracker, 'STRIPE_HOSTED_CHECKOUT_TEST_RUNBOOK.md'), 'Feature tracker must reference the hosted Checkout runbook for BILLING-002.');
+$assert(str_contains($tracker, 'verify-stripe-hosted-checkout-evidence.js'), 'Feature tracker must reference the hosted Checkout evidence verifier for BILLING-002.');
 $assert(str_contains($tracker, 'needs_external_smoke'), 'BILLING-002 must remain marked external-smoke until hosted Checkout evidence exists.');
 $assert(str_contains($launch_gate, 'STRIPE_HOSTED_CHECKOUT_TEST_RUNBOOK.md'), 'Launch gate acknowledgement must point to the runbook.');
 $assert(str_contains($package, '"test:stripe-hosted-checkout-runbook"'), 'package.json must expose the hosted Checkout runbook contract.');
+$assert(str_contains($package, '"stripe:hosted-checkout:verify"'), 'package.json must expose the hosted Checkout evidence verifier.');
 
 echo "Stripe hosted Checkout runbook contract OK\n";

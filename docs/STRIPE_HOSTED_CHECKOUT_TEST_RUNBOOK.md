@@ -120,6 +120,20 @@ Minimum accepted evidence:
   - `php bin/test-stripe-billing-flow.php --json`
   - `php bin/test-stripe-webhook-lifecycle.php --json`
 
+After filling the JSON evidence, run:
+
+```bash
+npm run stripe:hosted-checkout:verify -- path/to/stripe-hosted-checkout-evidence.json
+```
+
+The verifier must pass before `BILLING-002` is moved to `retested_pass`.
+
 `BILLING-002` can move from `needs_external_smoke` to `retested_pass` only after
 this evidence exists and matches the current production or approved test-mode
 Stripe configuration.
+
+## References
+
+- Stripe test card values for test mode: https://docs.stripe.com/testing
+- Stripe Tax zero-tax and reverse-charge behavior: https://docs.stripe.com/tax/zero-tax
+- Stripe Tax EU reverse-charge behavior: https://docs.stripe.com/tax/supported-countries/european-union
