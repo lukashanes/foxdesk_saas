@@ -136,7 +136,7 @@
         })
         .then(function (data) {
             if (data.success && data.file) {
-                var imgUrl = 'image.php?f=' + encodeURIComponent(data.file.filename);
+                var imgUrl = data.file.url || ('image.php?f=' + encodeURIComponent(data.file.filename));
                 quill.focus();
                 // Re-check index — selection may have changed during async upload
                 var currentRange = quill.getSelection(true);

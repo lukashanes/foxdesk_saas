@@ -151,7 +151,7 @@ function safe_html_regex_fallback(string $html): string
         if (preg_match('/src\s*=\s*["\']([^"\']+)["\']/i', $attrs, $srcMatch)) {
             $src = $srcMatch[1];
             // Allow proxied local images and https URLs; block direct uploads/ paths and data URIs.
-            if (preg_match('/^(https:|image\.php|attachment\.php)/i', $src)) {
+            if (preg_match('/^(https:|\/?image\.php|\/?attachment\.php)/i', $src)) {
                 $alt = '';
                 if (preg_match('/alt\s*=\s*["\']([^"\']*)["\']/i', $attrs, $altMatch)) {
                     $alt = $altMatch[1];

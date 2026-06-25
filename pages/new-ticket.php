@@ -1004,6 +1004,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 <!-- Quill Editor -->
 <link href="assets/vendor/quill/2.0.2/quill.snow.css?v=<?php echo APP_VERSION; ?>" rel="stylesheet">
 <script src="assets/vendor/quill/2.0.2/quill.js?v=<?php echo APP_VERSION; ?>"></script>
+<script src="assets/js/rich-text-editor.js?v=<?php echo APP_VERSION; ?>"></script>
 <script src="assets/js/quill-image-upload.js?v=<?php echo APP_VERSION; ?>"></script>
 <script>
     // Initialize Quill Editor
@@ -1055,12 +1056,9 @@ include BASE_PATH . '/includes/components/page-header.php';
                 return;
             }
             const syncDescriptionInput = function() {
-                const html = window.descriptionEditor.root.innerHTML;
-                if (html === '<p><br></p>' || html === '<p></p>') {
-                    descriptionInput.value = '';
-                } else {
-                    descriptionInput.value = html;
-                }
+                descriptionInput.value = window.FoxDeskRichText
+                    ? window.FoxDeskRichText.fieldValue(window.descriptionEditor)
+                    : window.descriptionEditor.root.innerHTML;
             };
 
             // Keep hidden input in sync continuously and also right before submit.

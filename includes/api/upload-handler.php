@@ -60,6 +60,21 @@ function api_upload() {
     try {
         $visibility = $ticket_id > 0 ? 'private' : 'public';
         $result = upload_file($_FILES['file'], $allowed_types, null, $visibility);
+        $result['url'] = 'image.php?f=' . rawurlencode((string) $result['filename']);
+
+        if ($ticket_id > 0) {
+            $attachment_id = db_insert('attachments', array_merge([
+                'ticket_id' => $ticket_id,
+                'filename' => $result['filename'],
+                'original_name' => $result['original_name'],
+                'mime_type' => $result['mime_type'],
+                'file_size' => $result['file_size'],
+                'uploaded_by' => $user['id'],
+                'created_at' => date('Y-m-d H:i:s'),
+            ], attachment_storage_fields($result)));
+            $result['attachment_id'] = (int) $attachment_id;
+        }
+
         api_success(['file' => $result]);
     } catch (Exception $e) {
         api_error($e->getMessage());

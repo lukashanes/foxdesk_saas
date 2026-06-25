@@ -108,6 +108,27 @@
         return 'file';
     }
 
+    function quillFieldValue(editor) {
+        if (window.FoxDeskRichText && typeof window.FoxDeskRichText.fieldValue === 'function') {
+            return window.FoxDeskRichText.fieldValue(editor);
+        }
+        if (!editor || !editor.root) return '';
+        var html = String(editor.root.innerHTML || '').trim();
+        return (html === '<p><br></p>' || html === '<p></p>') ? '' : html;
+    }
+
+    function loadQuillContent(editor, content) {
+        if (window.FoxDeskRichText && typeof window.FoxDeskRichText.loadHtml === 'function') {
+            window.FoxDeskRichText.loadHtml(editor, content);
+            return;
+        }
+        if (String(content || '').indexOf('<') !== -1 && String(content || '').indexOf('>') !== -1) {
+            editor.clipboard.dangerouslyPasteHTML(content || '');
+        } else {
+            editor.setText(content || '');
+        }
+    }
+
     function fallbackUploadPreview(options) {
         var input = document.getElementById(options.inputId);
         var preview = document.getElementById(options.previewId);
@@ -887,14 +908,11 @@
             editCommentEditor = new window.Quill('#edit-comment-editor', {
                 theme: 'snow',
                 placeholder: t('editCommentPlaceholder', 'Edit your comment...'),
-                modules: { toolbar: [[{ header: [1, 2, 3, false] }], ['bold', 'italic', 'underline', 'strike'], [{ list: 'ordered' }, { list: 'bullet' }], ['link'], ['clean']] }
+                modules: { toolbar: quillToolbar() }
             });
+            if (window.initQuillImageUpload) window.initQuillImageUpload(editCommentEditor, config.quillUpload || {});
         }
-        if (String(content || '').indexOf('<') !== -1 && String(content || '').indexOf('>') !== -1) {
-            editCommentEditor.root.innerHTML = content;
-        } else {
-            editCommentEditor.setText(content || '');
-        }
+        loadQuillContent(editCommentEditor, content);
         setTimeout(function () { editCommentEditor.focus(); }, 100);
     };
 
@@ -910,8 +928,7 @@
         var commentId = form.querySelector('#edit-comment-id').value;
         var content = '';
         if (editCommentEditor) {
-            var html = editCommentEditor.root.innerHTML;
-            content = (html === '<p><br></p>' || html === '<p></p>') ? '' : html;
+            content = quillFieldValue(editCommentEditor);
         }
         if (!content) {
             window.alert(t('commentEmpty', 'Comment cannot be empty.'));
@@ -1236,12 +1253,10 @@
                 var commentText = document.getElementById('comment-text');
                 var internalText = document.getElementById('internal-text');
                 if (isInternal && window.internalEditor) {
-                    var internalHtml = window.internalEditor.root.innerHTML;
-                    if (internalText) internalText.value = (internalHtml === '<p><br></p>' || internalHtml === '<p></p>') ? '' : internalHtml;
+                    if (internalText) internalText.value = quillFieldValue(window.internalEditor);
                     if (commentText) commentText.value = '';
                 } else if (window.commentEditor) {
-                    var publicHtml = window.commentEditor.root.innerHTML;
-                    if (commentText) commentText.value = (publicHtml === '<p><br></p>' || publicHtml === '<p></p>') ? '' : publicHtml;
+                    if (commentText) commentText.value = quillFieldValue(window.commentEditor);
                     if (internalText) internalText.value = '';
                 }
                 var stop = document.getElementById('stop-timer-toggle');
@@ -1258,8 +1273,7 @@
         if (editForm) {
             editForm.addEventListener('submit', function () {
                 if (!editDescriptionEditor) return;
-                var html = editDescriptionEditor.root.innerHTML;
-                document.getElementById('edit-description-input').value = (html === '<p><br></p>' || html === '<p></p>') ? '' : html;
+                document.getElementById('edit-description-input').value = quillFieldValue(editDescriptionEditor);
             });
         }
     }
