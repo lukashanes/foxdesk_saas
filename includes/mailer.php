@@ -55,6 +55,15 @@ function mailer_workspace_notifications_enabled(array $settings): bool
         && $settings['email_notifications_enabled'] === '1';
 }
 
+function mailer_ticket_notification_setting_enabled(array $settings, string $key): bool
+{
+    if (mailer_managed_email_surface()) {
+        return (string) ($settings[$key] ?? '1') !== '0';
+    }
+
+    return !empty($settings[$key]) && $settings[$key] === '1';
+}
+
 /**
  * Get base URL for the application
  */
@@ -673,7 +682,7 @@ function send_status_change_notification($ticket, $old_status, $new_status, $com
 {
     $settings = get_settings();
 
-    if (empty($settings['notify_on_status_change']) || $settings['notify_on_status_change'] !== '1') {
+    if (!mailer_ticket_notification_setting_enabled((array) $settings, 'notify_on_status_change')) {
         return false;
     }
 
@@ -769,7 +778,7 @@ function send_new_comment_notification($ticket, $comment, $commenter, $comment_i
 {
     $settings = get_settings();
 
-    if (empty($settings['notify_on_new_comment']) || $settings['notify_on_new_comment'] !== '1') {
+    if (!mailer_ticket_notification_setting_enabled((array) $settings, 'notify_on_new_comment')) {
         return false;
     }
 
@@ -934,7 +943,7 @@ function send_new_ticket_notification($ticket)
 {
     $settings = get_settings();
 
-    if (empty($settings['notify_on_new_ticket']) || $settings['notify_on_new_ticket'] !== '1') {
+    if (!mailer_ticket_notification_setting_enabled((array) $settings, 'notify_on_new_ticket')) {
         return false;
     }
 

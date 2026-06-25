@@ -49,9 +49,31 @@ putenv('FOXDESK_EDITION=saas');
 require_once BASE_PATH . '/includes/mailer.php';
 
 assert_mailer_managed(
+    mailer_ticket_notification_setting_enabled($test_settings, 'notify_on_new_comment') === true,
+    'Managed SaaS must default missing ticket comment notification settings to enabled.'
+);
+
+assert_mailer_managed(
+    mailer_ticket_notification_setting_enabled($test_settings, 'notify_on_status_change') === true,
+    'Managed SaaS must default missing ticket status notification settings to enabled.'
+);
+
+assert_mailer_managed(
+    mailer_ticket_notification_setting_enabled($test_settings, 'notify_on_new_ticket') === true,
+    'Managed SaaS must default missing new-ticket notification settings to enabled.'
+);
+
+assert_mailer_managed(
     send_email('recipient@example.test', 'Managed SaaS ticket update', 'Body') === true,
     'Managed SaaS must not let legacy workspace master setting block ticket email delivery.'
 );
+
+$test_settings['notify_on_new_comment'] = '0';
+assert_mailer_managed(
+    mailer_ticket_notification_setting_enabled($test_settings, 'notify_on_new_comment') === false,
+    'Managed SaaS must still respect an explicit ticket comment email opt-out.'
+);
+unset($test_settings['notify_on_new_comment']);
 
 $test_recipient['email_notifications_enabled'] = 0;
 assert_mailer_managed(
@@ -61,6 +83,18 @@ assert_mailer_managed(
 
 $test_recipient['email_notifications_enabled'] = 1;
 putenv('FOXDESK_EDITION=self-hosted');
+assert_mailer_managed(
+    mailer_ticket_notification_setting_enabled($test_settings, 'notify_on_new_comment') === false,
+    'Self-hosted must keep treating a missing ticket notification setting as disabled.'
+);
+
+$test_settings['notify_on_new_comment'] = '1';
+assert_mailer_managed(
+    mailer_ticket_notification_setting_enabled($test_settings, 'notify_on_new_comment') === true,
+    'Self-hosted must send ticket comment emails when the setting is explicitly enabled.'
+);
+unset($test_settings['notify_on_new_comment']);
+
 assert_mailer_managed(
     send_email('recipient@example.test', 'Self-hosted disabled master', 'Body') === false,
     'Self-hosted must keep respecting the workspace email notification master switch.'
