@@ -32,8 +32,8 @@ const publicScreens = [
 ];
 
 const appScreens = [
-  { name: 'work', path: '/index.php?page=work', expect: 'Work' },
-  { name: 'inbox', path: '/index.php?page=inbox', expect: 'Work' },
+  { name: 'work', path: '/index.php?page=work', expect: 'Dashboard' },
+  { name: 'inbox', path: '/index.php?page=inbox', expect: 'Dashboard' },
   { name: 'tickets', path: '/index.php?page=tickets', expect: 'Tickets' },
   { name: 'admin-settings', path: '/index.php?page=admin&section=settings&tab=email', expect: 'Settings' },
   { name: 'billing', path: '/index.php?page=billing', expect: 'Billing' },

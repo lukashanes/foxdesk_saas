@@ -490,6 +490,10 @@ include BASE_PATH . '/includes/components/page-header.php';
         <?php endif; ?>
 
         <?php if ($tab === 'time'): ?>
+            <?php
+            $work_log_rows = report_time_overview_work_log_rows($entries, 120);
+            $work_log_total = count($entries);
+            ?>
             <div class="report-summary-strip">
                 <div class="report-metric">
                     <div class="report-metric__label"><?php echo e(is_admin() ? t('Total time') : t('My time')); ?></div>
@@ -510,6 +514,61 @@ include BASE_PATH . '/includes/components/page-header.php';
                 </div>
                 <?php endif; ?>
             </div>
+            <?php if (!empty($work_log_rows)): ?>
+            <section class="card report-worklog-card" data-report-time-overview-log>
+                <div class="card-header report-worklog-card__header">
+                    <div>
+                        <p class="admin-eyebrow"><?php echo e(t('Work log')); ?></p>
+                        <h3 class="report-section-title"><?php echo e(t('What was done')); ?></h3>
+                    </div>
+                    <?php if ($work_log_total > count($work_log_rows)): ?>
+                    <span class="report-worklog-card__count">
+                        <?php echo e(t('Showing latest {shown} of {total} entries.', ['shown' => count($work_log_rows), 'total' => $work_log_total])); ?>
+                    </span>
+                    <?php endif; ?>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="data-table report-worklog-table">
+                        <thead>
+                            <tr>
+                                <th><?php echo e(t('Started')); ?></th>
+                                <th><?php echo e(t('Agent')); ?></th>
+                                <th><?php echo e(t('Ticket')); ?></th>
+                                <th><?php echo e(t('Client')); ?></th>
+                                <th><?php echo e(t('Time')); ?></th>
+                                <th><?php echo e(t('Note')); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($work_log_rows as $row): ?>
+                            <tr>
+                                <td>
+                                    <span class="report-worklog-table__date"><?php echo e($row['started_label']); ?></span>
+                                    <?php if ($row['ended_label'] !== ''): ?>
+                                    <span class="report-worklog-table__muted">– <?php echo e($row['ended_label']); ?></span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?php echo e($row['agent']); ?></td>
+                                <td>
+                                    <a href="<?php echo url('ticket', ['id' => $row['ticket_id']]); ?>" class="report-worklog-table__ticket">
+                                        <?php if ($row['ticket_code'] !== ''): ?>
+                                            <span><?php echo e($row['ticket_code']); ?></span>
+                                        <?php endif; ?>
+                                        <?php echo e($row['ticket_title']); ?>
+                                    </a>
+                                </td>
+                                <td><?php echo e($row['client']); ?></td>
+                                <td>
+                                    <span class="report-worklog-table__duration"><?php echo e(format_duration_minutes($row['minutes'])); ?></span>
+                                </td>
+                                <td class="report-worklog-table__note"><?php echo e($row['summary']); ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            <?php endif; ?>
             <?php if ($billable_time_notice): ?>
             <div class="report-billing-note report-billing-note--<?php echo e($billable_time_notice['tone']); ?>">
                 <div class="report-billing-note__head">

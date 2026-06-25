@@ -273,20 +273,13 @@ require_once BASE_PATH . '/includes/header.php';
                         <tbody>
                             <?php foreach ($user_activity as $ua):
                                 $ua_name = trim(($ua['first_name'] ?? '') . ' ' . ($ua['last_name'] ?? ''));
-                                $ua_initials = mb_strtoupper(mb_substr($ua['first_name'] ?? '?', 0, 1));
                                 $role_class = pv_role_class($ua['role'] ?? 'user');
                             ?>
                                 <tr>
                                     <td>
                                         <a href="<?php echo url('admin', ['section' => 'activity', 'tab' => 'user', 'uid' => $ua['user_id'], 'range' => $range]); ?>"
                                            class="act-person-link flex items-center gap-2">
-                                            <div class="act-avatar <?php echo e(pv_avatar_class($ua_name)); ?>">
-                                                <?php if (!empty($ua['avatar']) && !str_starts_with($ua['avatar'], 'data:')): ?>
-                                                    <img src="<?php echo e(upload_url($ua['avatar'])); ?>" alt="">
-                                                <?php else: ?>
-                                                    <?php echo e($ua_initials); ?>
-                                                <?php endif; ?>
-                                            </div>
+                                            <?php echo render_user_avatar($ua, 'xs', 'act-avatar ' . pv_avatar_class($ua_name)); ?>
                                             <div>
                                                 <div class="font-medium text-sm"><?php echo e($ua_name); ?></div>
                                                 <div class="text-xs text-theme-muted"><?php echo e($ua['email']); ?></div>
@@ -318,8 +311,6 @@ require_once BASE_PATH . '/includes/header.php';
         echo '<div class="act-card text-center py-8 text-theme-muted">' . e(t('User not found.')) . '</div>';
     else:
         $du_name = trim(($detail_user['first_name'] ?? '') . ' ' . ($detail_user['last_name'] ?? ''));
-        $du_initials = mb_strtoupper(mb_substr($detail_user['first_name'] ?? '?', 0, 1));
-
         $du_pages = db_fetch_all("
             SELECT page, section, COUNT(*) as views
             FROM page_views WHERE user_id = ? AND created_at >= ? AND tenant_id = ?
@@ -341,13 +332,7 @@ require_once BASE_PATH . '/includes/header.php';
 
     <div class="act-card mb-4">
         <div class="flex items-center gap-3">
-            <div class="act-avatar act-avatar--lg <?php echo e(pv_avatar_class($du_name)); ?>">
-                <?php if (!empty($detail_user['avatar']) && !str_starts_with($detail_user['avatar'], 'data:')): ?>
-                    <img src="<?php echo e(upload_url($detail_user['avatar'])); ?>" alt="">
-                <?php else: ?>
-                    <?php echo e($du_initials); ?>
-                <?php endif; ?>
-            </div>
+            <?php echo render_user_avatar($detail_user, 'lg', 'act-avatar act-avatar--lg ' . pv_avatar_class($du_name)); ?>
             <div>
                 <div class="font-bold text-base text-theme-primary"><?php echo e($du_name); ?></div>
                 <div class="text-xs text-theme-muted">

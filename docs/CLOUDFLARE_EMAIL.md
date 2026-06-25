@@ -9,7 +9,8 @@ FoxDesk Cloud uses Cloudflare for both transactional sending and mailbox-less in
 - Billing mailbox/alias: `billing@foxdesk.net`
 - Security mailbox/alias: `security@foxdesk.net`
 - Ticket reply address: `tickets+...@foxdesk.net`
-- Workspace inbound address: `tickets+<workspace>-<tenant-id>-<token>@foxdesk.net`
+- Workspace support address shown in the app: `<workspace-slug>@foxdesk.net`
+- Internal signed workspace route: `tickets+<workspace>-<tenant-id>-<token>@foxdesk.net`
 
 Ticket notifications are sent from `notifications@foxdesk.net`, but their `Reply-To` is a signed per-ticket plus address such as:
 
@@ -19,10 +20,10 @@ tickets+tk-123-<token>@foxdesk.net
 
 That keeps customer replies attached to the right ticket without creating SMTP/IMAP mailboxes.
 
-New tickets for a hosted workspace use a signed workspace address shown in that
-workspace under **Settings → Emails**. The base mailbox `tickets@foxdesk.net`
-is only a Cloudflare routing entry; FoxDesk does not assign it to a workspace
-without a signed plus-address token.
+New tickets for a hosted workspace use a friendly workspace alias shown in that
+workspace under **Settings -> Email**, for example `aenze-helpdesk@foxdesk.net`.
+FoxDesk still keeps a signed internal workspace route for diagnostics and keeps
+per-ticket reply addresses signed.
 
 ## Outbound Email Sending
 
@@ -49,10 +50,13 @@ CLOUDFLARE_EMAIL_REPLY_TO=support@foxdesk.net
 
 ## Inbound Ticket Replies
 
-Enable Cloudflare Email Routing subaddressing, then add a custom address route:
+Enable Cloudflare Email Routing subaddressing, then route inbound support mail
+to the Worker. Production should use a catch-all route, or create a route for
+each visible workspace alias. Keep the base ticket route for signed replies:
 
 ```text
 tickets@foxdesk.net -> Worker foxdesk-email-router
+*@foxdesk.net -> Worker foxdesk-email-router
 ```
 
 Backend values:
@@ -68,15 +72,21 @@ Use the same `FOXDESK_EMAIL_ROUTE_SECRET` value as the Worker secret `FOXDESK_EM
 
 Set `FOXDESK_EMAIL_ALLOW_UNKNOWN_SENDERS=true` only if workspace inbound addresses should allow public ticket creation from unknown senders. Keeping it `false` means inbound email must match `allowed_senders`.
 
-Every workspace gets a deterministic inbound address:
+Every workspace gets a deterministic support address:
+
+```text
+aenze-helpdesk@foxdesk.net
+```
+
+FoxDesk also keeps an internal signed workspace route:
 
 ```text
 tickets+aenze-helpdesk-3-<token>@foxdesk.net
 ```
 
-Use that address for public support intake for the given workspace. If a new
-customer creates a new FoxDesk workspace, they get their own signed address and
-mail sent there stays in that workspace.
+Show the friendly address to customers and workspace admins. Keep the signed
+route out of normal workspace UI; it is only for routing diagnostics and
+regression testing.
 
 ## Worker Deploy
 

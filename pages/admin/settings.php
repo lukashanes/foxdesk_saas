@@ -61,8 +61,10 @@ settings_handle_workflow_post($tab, $_POST);
 $incoming_mail_logs = [];
 $incoming_mail_log_error = '';
 $workspace_inbound_address = '';
+$workspace_public_inbound_address = '';
 $workspace_inbound_domain = '';
 $workspace_inbound_enabled = false;
+$email_surface = settings_email_support_surface($settings);
 
 $imap_enabled_default = (defined('IMAP_ENABLED') && IMAP_ENABLED)
     || (
@@ -106,10 +108,15 @@ if ($tab === 'email') {
             $workspace_tenant = ['id' => current_tenant_id()];
         }
         $workspace_inbound_address = foxdesk_workspace_inbound_address($workspace_tenant);
+        if (function_exists('foxdesk_workspace_public_inbound_address')) {
+            $workspace_public_inbound_address = foxdesk_workspace_public_inbound_address($workspace_tenant);
+        }
         $workspace_inbound_domain = function_exists('foxdesk_ticket_email_domain') ? foxdesk_ticket_email_domain() : '';
     }
+    $email_surface = settings_email_support_surface($settings, $workspace_public_inbound_address);
 
-    try {
+    if (($email_surface['type'] ?? '') !== 'managed') {
+        try {
         email_ingest_ensure_schema();
         $incoming_mail_logs = db_fetch_all("
             SELECT
@@ -138,8 +145,9 @@ if ($tab === 'email') {
             ORDER BY l.created_at DESC
             LIMIT 100
         ");
-    } catch (Throwable $e) {
-        $incoming_mail_log_error = $e->getMessage();
+        } catch (Throwable $e) {
+            $incoming_mail_log_error = $e->getMessage();
+        }
     }
 
     // Load allowed senders for the allowlist UI
@@ -189,6 +197,8 @@ include BASE_PATH . '/includes/components/page-header.php';
 ?>
 
 <div class="admin-shell">
+    <?php render_admin_settings_management_links(); ?>
+
     <!-- Tabs -->
     <?php render_admin_settings_tabs($tab); ?>
 
@@ -443,61 +453,63 @@ include BASE_PATH . '/includes/components/page-header.php';
         <div class="space-y-3">
             <form method="post">
                 <?php echo csrf_field(); ?>
-                <?php if (defined('MAIL_PROVIDER') && MAIL_PROVIDER === 'cloudflare'): ?>
-                <div class="card card-body mb-2">
-                    <h3 class="font-semibold mb-2 text-theme-primary">Cloudflare Email Service</h3>
-                    <p class="text-sm mb-3 text-theme-muted">Outbound email is configured from server config and uses Cloudflare Email Service.</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                        <div>
-                            <span class="text-theme-muted">From</span>
-                            <strong class="block"><?php echo e(defined('CLOUDFLARE_EMAIL_FROM') ? CLOUDFLARE_EMAIL_FROM : ''); ?></strong>
+                <?php if (($email_surface['type'] ?? '') === 'managed'): ?>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-2">
+                    <div class="card card-body">
+                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                            <div>
+                                <h3 class="font-semibold mb-1 text-theme-primary"><?php echo e(t('Support email')); ?></h3>
+                                <p class="text-sm text-theme-muted">
+                                    <?php echo e(t('Customers can send new requests here. Replies stay connected to tickets automatically.')); ?>
+                                </p>
+                            </div>
+                            <?php if ($workspace_inbound_domain !== ''): ?>
+                                <span class="badge badge-neutral"><?php echo e($workspace_inbound_domain); ?></span>
+                            <?php endif; ?>
                         </div>
-                        <div>
-                            <span class="text-theme-muted">Reply-To</span>
-                            <strong class="block"><?php echo e(defined('CLOUDFLARE_EMAIL_REPLY_TO') ? CLOUDFLARE_EMAIL_REPLY_TO : ''); ?></strong>
-                        </div>
-                    </div>
-                </div>
-                <?php endif; ?>
-                <?php if ($workspace_inbound_enabled && $workspace_inbound_address !== ''): ?>
-                <div class="card card-body mb-2">
-                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
-                        <div>
-                            <h3 class="font-semibold mb-1 text-theme-primary"><?php echo e(t('Workspace inbound address')); ?></h3>
-                            <p class="text-sm text-theme-muted">
-                                <?php echo e(t('Send new support emails for this workspace to this address. Replies to ticket emails keep using per-ticket reply addresses.')); ?>
-                            </p>
-                        </div>
-                        <?php if ($workspace_inbound_domain !== ''): ?>
-                            <span class="badge badge-neutral"><?php echo e($workspace_inbound_domain); ?></span>
+                        <?php if (!empty($email_surface['support_address'])): ?>
+                            <div class="settings-copy-row mt-3">
+                                <input
+                                    type="text"
+                                    readonly
+                                    class="form-input font-mono text-sm"
+                                    id="workspace-support-email"
+                                    value="<?php echo e($email_surface['support_address']); ?>"
+                                    aria-label="<?php echo e(t('Support email')); ?>"
+                                >
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary"
+                                    data-copy-target="workspace-support-email"
+                                    onclick="copySettingsField('workspace-support-email', this)"
+                                >
+                                    <?php echo get_icon('copy', 'mr-2'); ?><?php echo e(t('Copy')); ?>
+                                </button>
+                            </div>
+                        <?php else: ?>
+                            <p class="text-sm mt-3 text-theme-muted"><?php echo e(t('Support email is being prepared.')); ?></p>
                         <?php endif; ?>
                     </div>
-                    <div class="settings-copy-row mt-3">
-                        <input
-                            type="text"
-                            readonly
-                            class="form-input font-mono text-sm"
-                            id="workspace-inbound-address"
-                            value="<?php echo e($workspace_inbound_address); ?>"
-                            aria-label="<?php echo e(t('Workspace inbound address')); ?>"
-                        >
-                        <button
-                            type="button"
-                            class="btn btn-secondary"
-                            data-copy-target="workspace-inbound-address"
-                            onclick="copySettingsField('workspace-inbound-address', this)"
-                        >
-                            <?php echo get_icon('copy', 'mr-2'); ?><?php echo e(t('Copy')); ?>
-                        </button>
+
+                    <div class="card card-body">
+                        <h3 class="font-semibold mb-1 text-theme-primary"><?php echo e(t('Email delivery')); ?></h3>
+                        <p class="text-sm text-theme-muted">
+                            <?php echo e(t('FoxDesk sends ticket and account emails for this workspace.')); ?>
+                        </p>
+                        <div class="mt-3">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold <?php echo !empty($email_surface['delivery_enabled']) ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'; ?>">
+                                <?php echo e(t((string) ($email_surface['delivery_label'] ?? 'Off'))); ?>
+                            </span>
+                        </div>
                     </div>
-                    <p class="text-xs mt-2 text-theme-muted">
-                        <?php echo e(t('This address is unique to the current workspace. The base mailbox is not assigned to a workspace by itself.')); ?>
-                    </p>
                 </div>
-                <?php endif; ?>
+                <?php else: ?>
                 <div class="card card-body mb-2">
-                    <h3 class="font-semibold mb-4 text-theme-primary"><?php echo e(t('SMTP settings')); ?>
+                    <h3 class="font-semibold mb-1 text-theme-primary"><?php echo e(t('Outgoing email')); ?>
                     </h3>
+                    <p class="text-sm mb-4 text-theme-muted">
+                        <?php echo e(t('Use your mail server to send ticket and account emails.')); ?>
+                    </p>
 
                     <div class="space-y-4">
                         <div class="grid grid-cols-2 gap-4">
@@ -559,7 +571,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                 <div class="card card-body mb-2">
                     <div class="mb-4">
                         <h3 class="font-semibold text-theme-primary">
-                            <?php echo e(t('Incoming email (IMAP)')); ?>
+                            <?php echo e(t('Incoming email')); ?>
                         </h3>
                         <p class="text-sm mt-1 text-theme-muted">
                             <?php echo e(t('Use this mailbox to create or update tickets from incoming emails.')); ?>
@@ -703,6 +715,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                         </p>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Allowed Senders -->
                 <div class="card card-body mb-2">
@@ -800,6 +813,12 @@ include BASE_PATH . '/includes/components/page-header.php';
                     </h3>
 
                     <div class="space-y-4">
+                        <?php if (($email_surface['type'] ?? '') === 'managed'): ?>
+                        <div class="rounded-lg border border-green-200 bg-green-50 px-3 py-2">
+                            <p class="text-sm font-medium text-green-900"><?php echo e(t('Ticket email notifications are on.')); ?></p>
+                            <p class="text-xs mt-1 text-green-800"><?php echo e(t('Use the options below to choose which ticket events send email.')); ?></p>
+                        </div>
+                        <?php else: ?>
                         <div>
                             <label class="flex items-center space-x-3">
                                 <input type="checkbox" name="email_notifications_enabled" <?php echo ($settings['email_notifications_enabled'] ?? '0') === '1' ? 'checked' : ''; ?>
@@ -819,6 +838,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                 </p>
                             <?php endif; ?>
                         </div>
+                        <?php endif; ?>
 
                         <hr class="my-4">
 
@@ -851,6 +871,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                     <button type="submit" name="save_email" class="btn btn-primary w-full sm:w-auto">
                         <?php echo e(t('Save settings')); ?>
                     </button>
+                    <?php if (($email_surface['type'] ?? '') !== 'managed'): ?>
                     <button type="submit" name="test_smtp" class="btn btn-secondary w-full sm:w-auto">
                         <?php echo get_icon('plug', 'mr-2'); ?>     <?php echo e(t('Save and test SMTP')); ?>
                     </button>
@@ -860,9 +881,11 @@ include BASE_PATH . '/includes/components/page-header.php';
                     <button type="submit" name="run_imap_now" class="btn btn-secondary w-full sm:w-auto">
                         <?php echo get_icon('play', 'mr-2'); ?>     <?php echo e(t('Save and run IMAP now')); ?>
                     </button>
+                    <?php endif; ?>
                 </div>
             </form>
 
+            <?php if (($email_surface['type'] ?? '') !== 'managed'): ?>
             <div class="card card-body">
                 <div class="flex items-center justify-between mb-4 gap-4">
                     <div>
@@ -962,6 +985,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                     </div>
                 <?php endif; ?>
             </div>
+            <?php endif; ?>
         </div>
 
     <?php elseif ($tab === 'templates'): ?>

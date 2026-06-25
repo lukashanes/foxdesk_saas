@@ -41,6 +41,7 @@
     "audit:csp-ui": "node bin/audit-csp-ui.js",
     "test:csp-ui": "node tests/csp-ui-baseline.test.js",
     "test:app-frontend": "node tests/app-frontend-contract.test.js",
+    "test:ui-system": "node tests/ui-system-contract.test.js",
     "test:launch-go-no-go": "node tests/launch-go-no-go.test.js",
     "test:feature-story-status": "node tests/feature-story-status.test.js",
     "test:monolith-inventory": "./bin/run-php.sh tests/monolith-exit-inventory-contract-test.php",
@@ -73,7 +74,7 @@
     "test:workflow-contract": "./bin/run-php.sh tests/shared-workflow-contract-test.php",
     "test:core-ux-flow": "./bin/run-php.sh tests/core-ux-flow-parity-contract-test.php",
     "test:report-rates": "./bin/run-php.sh tests/report-rate-parity-contract-test.php",
-    "test:report-modules": "sh -c './bin/run-php.sh tests/report-filter-contract-test.php && ./bin/run-php.sh tests/report-adjustment-contract-test.php && ./bin/run-php.sh tests/report-export-contract-test.php && ./bin/run-php.sh tests/reporting-flow-contract-test.php && ./bin/run-php.sh tests/report-rate-parity-contract-test.php && ./bin/run-php.sh tests/report-billing-review-js-contract-test.php'",
+    "test:report-modules": "sh -c './bin/run-php.sh tests/report-filter-contract-test.php && ./bin/run-php.sh tests/report-adjustment-contract-test.php && ./bin/run-php.sh tests/report-export-contract-test.php && ./bin/run-php.sh tests/reporting-flow-contract-test.php && ./bin/run-php.sh tests/report-time-overview-contract-test.php && ./bin/run-php.sh tests/report-rate-parity-contract-test.php && ./bin/run-php.sh tests/report-billing-review-js-contract-test.php'",
     "test:settings-modules": "sh -c './bin/run-php.sh tests/settings-action-contract-test.php && ./bin/run-php.sh tests/settings-email-contract-test.php && ./bin/run-php.sh tests/settings-update-contract-test.php && ./bin/run-php.sh tests/settings-render-contract-test.php'",
     "test:settings-email-template": "./bin/run-php.sh tests/settings-email-template-contract-test.php",
     "test:team-modules": "./bin/run-php.sh tests/team-users-contract-test.php",
@@ -88,7 +89,7 @@
     "test:ticket-share-state": "./bin/run-php.sh tests/ticket-share-state-contract-test.php",
     "test:ticket-detail-context": "./bin/run-php.sh tests/ticket-detail-context-contract-test.php",
     "test:module-extraction": "./bin/run-php.sh tests/module-extraction-contract-test.php",
-    "test:email-policy": "sh -c './bin/run-php.sh tests/notification-policy-test.php && ./bin/run-php.sh tests/email-notification-contract-test.php && ./bin/run-php.sh tests/email-format-test.php && ./bin/run-php.sh tests/pseudo-cron-email-test.php'"
+    "test:email-policy": "sh -c './bin/run-php.sh tests/notification-policy-test.php && ./bin/run-php.sh tests/email-notification-contract-test.php && ./bin/run-php.sh tests/email-format-test.php && ./bin/run-php.sh tests/pseudo-cron-email-test.php && ./bin/run-php.sh tests/mailer-managed-notifications-test.php'"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0"

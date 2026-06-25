@@ -22,6 +22,39 @@ function mailer_provider(): string
     return strtolower(trim((string) mailer_env_or_constant('MAIL_PROVIDER', 'smtp')));
 }
 
+function mailer_app_edition(): string
+{
+    $edition = (string) mailer_env_or_constant('FOXDESK_EDITION', '');
+    if ($edition === '') {
+        $edition = (string) mailer_env_or_constant('FOXDESK_APP_EDITION', '');
+    }
+
+    return strtolower(trim($edition));
+}
+
+function mailer_managed_email_surface(): bool
+{
+    $edition = mailer_app_edition();
+    if ($edition !== '') {
+        return in_array($edition, ['saas', 'cloud', 'managed'], true);
+    }
+
+    return mailer_env_or_constant('APP_MARKETING_HOST', '') !== ''
+        || mailer_env_or_constant('PLATFORM_HOST', '') !== ''
+        || defined('APP_MARKETING_HOST')
+        || defined('PLATFORM_HOST');
+}
+
+function mailer_workspace_notifications_enabled(array $settings): bool
+{
+    if (mailer_managed_email_surface()) {
+        return true;
+    }
+
+    return !empty($settings['email_notifications_enabled'])
+        && $settings['email_notifications_enabled'] === '1';
+}
+
 /**
  * Get base URL for the application
  */
@@ -160,7 +193,7 @@ function send_email($to, $subject, $body, $is_html = false, $force_delivery = fa
     $recipient_user = null;
 
     // Check if email notifications are enabled
-    if (!$force_delivery && (empty($settings['email_notifications_enabled']) || $settings['email_notifications_enabled'] !== '1')) {
+    if (!$force_delivery && !mailer_workspace_notifications_enabled((array) $settings)) {
         error_log("Email notifications disabled, skipping: $to - $subject");
         mailer_record_usage_event('email.skipped', (string) $to, (string) $subject, $provider, $recipient_user);
         return false;
@@ -1469,7 +1502,7 @@ function send_ticket_assignment_notification($ticket, $assigned_agent, $assigner
 {
     $settings = get_settings();
 
-    if (empty($settings['email_notifications_enabled']) || $settings['email_notifications_enabled'] != '1') {
+    if (!mailer_workspace_notifications_enabled((array) $settings)) {
         return false; // Notifications disabled
     }
 
@@ -1519,7 +1552,7 @@ function send_due_date_reminder($ticket, $is_overdue = false)
 {
     $settings = get_settings();
 
-    if (empty($settings['email_notifications_enabled']) || $settings['email_notifications_enabled'] != '1') {
+    if (!mailer_workspace_notifications_enabled((array) $settings)) {
         return; // Notifications disabled
     }
 
@@ -1629,7 +1662,7 @@ function send_long_timer_alert($user, $time_entry, $ticket)
 {
     $settings = get_settings();
 
-    if (empty($settings['email_notifications_enabled']) || $settings['email_notifications_enabled'] !== '1') {
+    if (!mailer_workspace_notifications_enabled((array) $settings)) {
         return false;
     }
 

@@ -185,7 +185,7 @@ test('email-only signup posts a magic link and creates workspace only after veri
 
   await page.goto(`/index.php?page=signup&token=${token}`);
   await page.waitForURL(/page=work/);
-  await expect(page.locator('body')).toContainText('Work');
+  await expect(page.locator('body')).toContainText('Dashboard');
   await expect(page.locator('[data-signup-onboarding]')).toContainText('Trial started');
   await expect(page.locator('[data-signup-onboarding]')).toContainText('Your FoxDesk is ready');
 
@@ -212,7 +212,7 @@ test('public signup creates an isolated FoxDesk workspace and platform admin can
     workspaceName,
     ownerEmail
   });
-  await expect(signupPage.locator('body')).toContainText('Work');
+  await expect(signupPage.locator('body')).toContainText('Dashboard');
   await signupPage.goto('/index.php?page=dashboard');
   await expect(signupPage.locator('body')).toContainText('Dashboard');
   await expect(signupPage.locator('#get-started')).toContainText('Create your first ticket');

@@ -197,8 +197,7 @@ $priority_icons = [
                                 <label class="block text-xs mb-1 text-theme-secondary">
                                     <?php echo e(t('Name')); ?> *
                                 </label>
-                                <input type="text" name="name" value="<?php echo e($priority['name']); ?>" required class="form-input w-full text-xs"
-                                    style="background: var(--surface-secondary);">
+                                <input type="text" name="name" value="<?php echo e($priority['name']); ?>" required class="form-input w-full text-xs bg-theme-secondary">
                             </div>
 
                             <div>

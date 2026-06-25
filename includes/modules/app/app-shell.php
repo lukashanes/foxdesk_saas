@@ -26,13 +26,12 @@ function app_shell_user(array $user): array
 
 function app_shell_navigation(array $user): array
 {
-    $is_client_user = ($user['role'] ?? '') === 'user';
     $items = [
         [
             'key' => 'work',
-            'label' => 'Work',
+            'label' => 'Dashboard',
             'url' => url('work'),
-            'icon' => 'tasks',
+            'icon' => 'home',
             'primary' => true,
         ],
     ];
@@ -44,16 +43,6 @@ function app_shell_navigation(array $user): array
         'icon' => 'file-alt',
         'primary' => true,
     ];
-
-    if (!$is_client_user) {
-        $items[] = [
-            'key' => 'clients',
-            'label' => 'Clients',
-            'url' => url('admin', ['section' => 'organizations']),
-            'icon' => 'building',
-            'primary' => true,
-        ];
-    }
 
     if (app_shell_can_view_reports($user)) {
         $items[] = [

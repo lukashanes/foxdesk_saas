@@ -175,15 +175,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                 <tr class="tr-hover">
                                     <td class="px-6 py-4 admin-responsive-primary" data-label="<?php echo e(t('Name')); ?>">
                                         <div class="flex items-center space-x-3">
-                                            <?php if (!empty($client['avatar'])): ?>
-                                                <img src="<?php echo e(upload_url($client['avatar'])); ?>" alt=""
-                                                    class="w-8 h-8 rounded-full object-cover">
-                                            <?php else: ?>
-                                                <div class="w-8 h-8 rounded-full flex items-center justify-center bg-theme-tertiary text-theme-secondary">
-                                                    <span
-                                                        class="text-sm font-medium"><?php echo strtoupper(substr($client['first_name'], 0, 1)); ?></span>
-                                                </div>
-                                            <?php endif; ?>
+                                            <?php echo render_user_avatar($client, 'sm'); ?>
                                             <span class="admin-cell-title"><?php echo e($client['first_name'] . ' ' . $client['last_name']); ?></span>
                                         </div>
                                     </td>

@@ -73,7 +73,7 @@ test('admin can log in and see the work home', async ({ page }) => {
   await login(page);
   await expect(page).toHaveURL(/page=work|page=dashboard|dashboard|page=platform/);
   await page.goto('/index.php?page=work');
-  await expect(page.locator('body')).toContainText('Work');
+  await expect(page.locator('body')).toContainText('Dashboard');
   await page.goto('/index.php?page=dashboard');
   await expect(page.locator('body')).toContainText('Dashboard');
 });

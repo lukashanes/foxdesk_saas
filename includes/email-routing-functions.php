@@ -216,6 +216,75 @@ function foxdesk_workspace_inbound_address($tenant = null): string
     return foxdesk_ticket_route_address($slug . '-' . $tenant_id . '-' . $token);
 }
 
+function foxdesk_workspace_public_slug($tenant = null): string
+{
+    $tenant_id = 0;
+    $slug = 'workspace';
+
+    if (is_array($tenant)) {
+        $tenant_id = (int) ($tenant['id'] ?? 0);
+        $slug = (string) ($tenant['slug'] ?? $slug);
+    } elseif (is_numeric($tenant)) {
+        $tenant_id = (int) $tenant;
+    }
+
+    if ($tenant_id <= 0 && function_exists('current_tenant_id')) {
+        $tenant_id = current_tenant_id();
+    }
+
+    if ($slug === 'workspace' && $tenant_id > 0 && function_exists('db_fetch_one')) {
+        try {
+            $row = db_fetch_one("SELECT slug FROM tenants WHERE id = ? LIMIT 1", [$tenant_id]);
+            if (!empty($row['slug'])) {
+                $slug = (string) $row['slug'];
+            }
+        } catch (Throwable $e) {
+            $slug = 'workspace';
+        }
+    }
+
+    $slug = strtolower(trim($slug));
+    $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+    $slug = trim((string) $slug, '-');
+    return $slug !== '' ? substr($slug, 0, 48) : 'workspace';
+}
+
+function foxdesk_workspace_public_inbound_address($tenant = null): string
+{
+    $slug = foxdesk_workspace_public_slug($tenant);
+    if ($slug === '' || $slug === 'workspace') {
+        return '';
+    }
+
+    return $slug . '@' . foxdesk_ticket_email_domain();
+}
+
+function foxdesk_workspace_public_alias_tenant_id(string $slug): int
+{
+    $slug = strtolower(trim($slug));
+    $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+    $slug = trim((string) $slug, '-');
+
+    if ($slug === '' || $slug === 'workspace' || $slug === foxdesk_ticket_email_local_part()) {
+        return 0;
+    }
+
+    if (!function_exists('db_fetch_one')) {
+        return 0;
+    }
+
+    try {
+        if (function_exists('table_exists') && !table_exists('tenants')) {
+            return 0;
+        }
+
+        $row = db_fetch_one("SELECT id FROM tenants WHERE slug = ? LIMIT 1", [$slug]);
+        return (int) ($row['id'] ?? 0);
+    } catch (Throwable $e) {
+        return 0;
+    }
+}
+
 function foxdesk_parse_ticket_email_address(string $address): ?array
 {
     $address = strtolower(trim($address));
@@ -256,6 +325,17 @@ function foxdesk_parse_ticket_email_address(string $address): ?array
             return [
                 'kind' => 'workspace',
                 'tenant_id' => $tenant_id,
+            ];
+        }
+    }
+
+    if (preg_match('/^[a-z0-9][a-z0-9._-]{0,63}$/', $local)) {
+        $tenant_id = foxdesk_workspace_public_alias_tenant_id($local);
+        if ($tenant_id > 0) {
+            return [
+                'kind' => 'workspace',
+                'tenant_id' => $tenant_id,
+                'public_alias' => true,
             ];
         }
     }

@@ -26,11 +26,18 @@ npm run deploy
 1. Enable Email Routing for `foxdesk.net`.
 2. Enable subaddressing.
 3. Create a custom address route for the base mailbox `tickets@foxdesk.net`.
-4. Set the destination action to Worker.
-5. Select `foxdesk-email-router`.
+4. Route either the catch-all address or each visible workspace alias to the same Worker.
+5. Set the destination action to Worker.
+6. Select `foxdesk-email-router`.
 
 FoxDesk never assigns the base mailbox to a workspace by itself. Each workspace
-gets a signed inbound address such as:
+gets a friendly public support address such as:
+
+```text
+aenze-helpdesk@foxdesk.net
+```
+
+FoxDesk also keeps an internal signed workspace route such as:
 
 ```text
 tickets+aenze-helpdesk-3-<token>@foxdesk.net

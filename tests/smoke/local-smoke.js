@@ -835,7 +835,7 @@ async function expectTicketDetailSurface(page) {
   if (signedInUrl.includes('page=platform')) {
     await expectText(page, 'Workspace catalog');
   } else if (signedInUrl.includes('page=work')) {
-    await expectText(page, 'Work');
+    await expectText(page, 'Dashboard');
   } else {
     await expectText(page, 'Dashboard');
   }

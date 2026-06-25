@@ -338,7 +338,7 @@ include BASE_PATH . '/includes/header.php';
 
                                     <!-- Preview -->
                                     <button onclick='openPreviewModal(<?php echo json_encode($task, JSON_HEX_APOS | JSON_HEX_QUOT); ?>)'
-                                        class="hover:text-blue-800 text-sm font-medium px-1" style="color: var(--text-muted);" title="<?php echo e(t('Preview Ticket')); ?>">
+                                        class="hover:text-blue-800 text-sm font-medium px-1 text-theme-muted" title="<?php echo e(t('Preview Ticket')); ?>">
                                         <?php echo get_icon('eye', 'inline-block'); ?>
                                     </button>
 

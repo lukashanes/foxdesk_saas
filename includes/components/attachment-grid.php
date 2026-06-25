@@ -34,8 +34,7 @@ foreach ($component_attachments as $_att) {
     <?php foreach ($_images as $_img): ?>
         <?php $_src = attachment_download_url($_img); ?>
         <a href="<?php echo e($_src); ?>" target="_blank"
-           class="attachment-thumb group relative block rounded-lg overflow-hidden border hover:shadow-md transition"
-           style="border-color: var(--border-light);"
+           class="attachment-thumb group relative block rounded-lg overflow-hidden border hover:shadow-md transition border-theme-light"
            onclick="event.preventDefault(); openImagePreview('<?php echo e($_src); ?>', '<?php echo e($_img['original_name']); ?>');">
             <img src="<?php echo e($_src); ?>" alt="<?php echo e($_img['original_name']); ?>"
                  class="object-cover"

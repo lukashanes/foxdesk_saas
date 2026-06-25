@@ -243,6 +243,13 @@
             appendText(side, valueName(ticket.assignee), null);
         }
         appendText(side, formatDateLabel(ticket.updated_at || ticket.created_at), null);
+        var workedMinutes = Number(ticket.worked_minutes || ticket.workedMinutes || 0);
+        if (workedMinutes > 0) {
+            var worked = document.createElement('span');
+            worked.className = 'workspace-ticket-row__time';
+            worked.textContent = formatDurationLabel(workedMinutes);
+            side.appendChild(worked);
+        }
 
         row.appendChild(main);
         row.appendChild(side);

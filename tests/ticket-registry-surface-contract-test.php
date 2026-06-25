@@ -19,11 +19,14 @@ $assert(str_contains($functions, '/includes/components/ticket-registry-surface.p
 foreach ([
     'function ticket_registry_render_view_tabs',
     'function ticket_registry_render_filter_summary',
+    'if (empty($filter_notes) && !$has_filters)',
     'ticket-view-tabs',
     'ticket-filter-summary',
 ] as $needle) {
     $assert(str_contains($component, $needle), 'Ticket registry component missing: ' . $needle);
 }
+
+$assert(!str_contains($component, 'ticket-filter-summary__count'), 'Ticket registry summary must not repeat the selected view count below the view tabs.');
 
 foreach ([
     'data-ticket-registry-surface',

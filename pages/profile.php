@@ -391,14 +391,7 @@ include BASE_PATH . '/includes/components/page-header.php';
             <h3 class="text-sm font-semibold uppercase tracking-wider mb-4 text-theme-muted"><?php echo e(t('Profile picture')); ?></h3>
 
             <div class="flex flex-col items-center text-center">
-                <?php if (!empty($user['avatar'])): ?>
-                    <img src="<?php echo e(upload_url($user['avatar'])); ?>" alt="Avatar"
-                        class="w-20 h-20 rounded-full object-cover border-2 mb-3" style="border-color: var(--border-light);">
-                <?php else: ?>
-                    <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center border-2 mb-3 border-theme-light">
-                        <span class="text-blue-600 text-2xl font-bold"><?php echo strtoupper(substr($user['first_name'], 0, 1)); ?></span>
-                    </div>
-                <?php endif; ?>
+                <?php echo render_user_avatar($user, 'xl', 'mb-3 border-2 border-theme-light', ['aria_hidden' => false]); ?>
 
                 <!-- Upload -->
                 <form method="post" enctype="multipart/form-data" class="w-full space-y-2" id="avatar-upload-form">

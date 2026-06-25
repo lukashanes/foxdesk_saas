@@ -42,6 +42,7 @@ assert_product_copy(!str_contains($cloud, 'Simple price'), 'Public SaaS front mu
 $billing = read_product_file($root, 'pages/billing.php');
 $billing_functions = read_product_file($root, 'includes/billing-functions.php');
 $index = read_product_file($root, 'index.php');
+$settings = read_product_file($root, 'pages/admin/settings.php');
 
 assert_product_copy(str_contains($billing_functions, 'function billing_lifecycle_display_label'), 'Billing display labels helper is missing.');
 assert_product_copy(str_contains($billing_functions, 'function billing_payment_display_label'), 'Billing payment display helper is missing.');
@@ -55,6 +56,9 @@ assert_product_copy(!str_contains($billing, "echo e(\$tenant['subscription_statu
 assert_product_copy(!str_contains($billing_functions, 'platform-approved'), 'Workspace billing copy must not expose platform internals.');
 assert_product_copy(!str_contains($billing_functions, 'Billing is off'), 'Workspace billing copy must not expose internal setup state.');
 assert_product_copy(!str_contains($index, 'Workspace access is restricted'), 'Workspace access guard must use actionable customer copy.');
+assert_product_copy(!str_contains($settings, 'Cloudflare Email Service'), 'SaaS workspace settings must not expose the email provider.');
+assert_product_copy(!str_contains($settings, 'Outbound email is configured from server config'), 'SaaS workspace settings must not expose server config copy.');
+assert_product_copy(str_contains($settings, 'Support email'), 'SaaS email settings must lead with support email copy.');
 
 $reporting = read_product_file($root, 'includes/modules/reports/reporting-flow.php');
 foreach ([

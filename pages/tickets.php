@@ -118,6 +118,12 @@ if ($staff_scope) {
 
 $ticket_list_include_archive = is_admin();
 $ticket_list_view = ticket_list_view_from_request($_GET, $is_archive, $ticket_list_include_archive);
+$sort = ticket_list_view_effective_sort($ticket_list_view, $sort, (bool) ($ticket_filter_state['sort_is_explicit'] ?? false));
+if ($sort !== 'newest') {
+    $filters['sort'] = $sort;
+} elseif (($filters['sort'] ?? '') === 'newest') {
+    unset($filters['sort']);
+}
 $ticket_list_view_definitions = ticket_list_view_definitions($ticket_list_include_archive);
 $ticket_show_all_url = $is_archive
     ? url('tickets', ['archived' => '1'])
@@ -314,6 +320,7 @@ if (!$is_archive) {
 $sort_options = [
     'newest'           => t('Newest'),
     'oldest'           => t('Oldest'),
+    'completed'        => t('Completed'),
     'last_updated'     => t('Last updated'),
     'ticket_number'    => t('Ticket # (newest)'),
     'ticket_number_asc'=> t('Ticket # (oldest)'),
@@ -390,6 +397,23 @@ $build_remove_tag_filter_url = function ($tag_value) use ($is_archive, $tag_filt
 
     return url('tickets', $params);
 };
+
+$date_sort_next = $sort === 'oldest' ? 'newest' : 'oldest';
+if (!in_array($sort, ['newest', 'oldest'], true)) {
+    $date_sort_next = 'newest';
+}
+$date_sort_params = $_GET;
+unset($date_sort_params['page'], $date_sort_params['p']);
+$date_sort_params['sort'] = $date_sort_next;
+if ($is_archive) {
+    $date_sort_params['archived'] = '1';
+} else {
+    unset($date_sort_params['archived']);
+}
+$date_sort_url = url('tickets', $date_sort_params);
+$date_sort_icon = $sort === 'oldest' ? 'arrow-up' : ($sort === 'newest' ? 'arrow-down' : 'arrow-up-down');
+$date_sort_is_active = in_array($sort, ['newest', 'oldest'], true);
+$date_sort_title = t('Date') . ': ' . t($date_sort_next === 'oldest' ? 'Oldest' : 'Newest');
 
 include BASE_PATH . '/includes/components/page-header.php';
 ?>
@@ -673,6 +697,7 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                 <select name="sort" class="form-select form-select-sm text-xs" onchange="this.form.submit()">
                     <option value="newest" <?php echo $sort === 'newest' ? 'selected' : ''; ?>><?php echo e(t('Newest')); ?></option>
                     <option value="oldest" <?php echo $sort === 'oldest' ? 'selected' : ''; ?>><?php echo e(t('Oldest')); ?></option>
+                    <option value="completed" <?php echo $sort === 'completed' ? 'selected' : ''; ?>><?php echo e(t('Completed')); ?></option>
                     <option value="last_updated" <?php echo $sort === 'last_updated' ? 'selected' : ''; ?>><?php echo e(t('Last updated')); ?></option>
                     <option value="ticket_number" <?php echo $sort === 'ticket_number' ? 'selected' : ''; ?>><?php echo e(t('Ticket # (newest)')); ?></option>
                     <option value="ticket_number_asc" <?php echo $sort === 'ticket_number_asc' ? 'selected' : ''; ?>><?php echo e(t('Ticket # (oldest)')); ?></option>
@@ -833,7 +858,13 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                                 <?php if ($bulk_actions_enabled): ?>
                                     <input type="checkbox" id="select-all" class="rounded hidden" onchange="toggleAll(this)">
                                 <?php endif; ?>
-                                <span class="text-[10px] font-medium uppercase tracking-wider text-theme-muted"><?php echo e(t('Date')); ?></span>
+                                <a href="<?php echo e($date_sort_url); ?>"
+                                   class="ticket-date-sort <?php echo $date_sort_is_active ? 'is-active' : ''; ?>"
+                                   title="<?php echo e($date_sort_title); ?>"
+                                   aria-label="<?php echo e($date_sort_title); ?>">
+                                    <span><?php echo e(t('Date')); ?></span>
+                                    <?php echo get_icon($date_sort_icon, 'w-3 h-3'); ?>
+                                </a>
                             </div>
                         </th>
                         <th class="px-3 py-2.5 text-left tickets-col-subject">

@@ -414,16 +414,7 @@ require_once BASE_PATH . '/includes/header.php';
                                             class="comment-item ticket-comment <?php echo $comment['is_internal'] ? 'comment-internal ticket-comment--internal' : ''; ?>">
                                             <div class="ticket-comment__inner">
                                                 <!-- Avatar -->
-                                                <?php if (!empty($comment['avatar'])): ?>
-                                                        <img src="<?php echo e(upload_url($comment['avatar'])); ?>" alt=""
-                                                            class="ticket-comment__avatar">
-                                                <?php else: ?>
-                                                        <div class="ticket-comment__avatar ticket-comment__avatar--initial <?php echo $is_own_comment ? 'ticket-comment__avatar--own' : ''; ?>">
-                                                            <span class="ticket-comment__initial">
-                                                                <?php echo strtoupper(substr($comment['first_name'], 0, 1)); ?>
-                                                            </span>
-                                                        </div>
-                                                <?php endif; ?>
+                                                <?php echo render_user_avatar($comment, 'md', 'ticket-comment__avatar ' . ($is_own_comment ? 'ticket-comment__avatar--own' : '')); ?>
 
                                                 <!-- Content -->
                                                 <div class="ticket-comment__content">
@@ -655,6 +646,7 @@ window.FoxDeskTicketDetailConfig = <?php echo json_encode($ticket_detail_js_conf
 <!-- Quill Editor JS -->
 <script src="assets/vendor/quill/2.0.2/quill.js?v=<?php echo APP_VERSION; ?>"></script>
 <script src="assets/js/quill-image-upload.js?v=<?php echo APP_VERSION; ?>"></script>
+<script src="assets/js/attachment-paste-drop.js?v=<?php echo APP_VERSION; ?>"></script>
 
 <!-- Autosave for comment editor -->
 <script src="assets/js/autosave.js?v=<?php echo APP_VERSION; ?>"></script>

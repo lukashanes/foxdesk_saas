@@ -560,7 +560,7 @@ include BASE_PATH . '/includes/header.php';
                     <label class="block text-sm font-medium mb-2 text-theme-secondary"><?php echo e(t('Report Theme Color')); ?></label>
                     <div class="flex items-center space-x-4">
                         <input type="color" name="theme_color" value="<?php echo e($form_values['theme_color']); ?>" id="theme_color"
-                               class="w-32 h-16 border-2 rounded-lg cursor-pointer shadow-sm" style="border-color: var(--border-light);">
+                               class="w-32 h-16 border-2 rounded-lg cursor-pointer shadow-sm border-theme-light">
                         <div>
                             <p class="text-sm font-medium text-theme-primary" id="color_display"><?php echo e(strtoupper($form_values['theme_color'])); ?></p>
                             <p class="text-xs text-theme-muted"><?php echo e(t('Click to choose a color')); ?></p>

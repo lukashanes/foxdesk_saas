@@ -159,16 +159,10 @@ require_once BASE_PATH . '/includes/header.php';
             <?php
             $agent_name = trim((string) (($selected_agent['first_name'] ?? '') . ' ' . ($selected_agent['last_name'] ?? '')));
             $agent_name = $agent_name !== '' ? $agent_name : (string) ($selected_agent['email'] ?? t('Agent'));
-            $agent_initials = mb_substr((string) ($selected_agent['first_name'] ?? $agent_name), 0, 1) . mb_substr((string) ($selected_agent['last_name'] ?? ''), 0, 1);
-            $agent_initials = trim($agent_initials) !== '' ? $agent_initials : mb_substr($agent_name, 0, 1);
             ?>
             <div class="db-agent-activity__head">
                 <div class="db-agent-activity__person">
-                    <?php if (!empty($selected_agent['avatar'])): ?>
-                        <img src="<?php echo e(upload_url($selected_agent['avatar'])); ?>" alt="" class="db-avatar object-cover">
-                    <?php else: ?>
-                        <div class="db-avatar"><?php echo e($agent_initials); ?></div>
-                    <?php endif; ?>
+                    <?php echo render_user_avatar($selected_agent, 'sm', 'db-avatar'); ?>
                     <div class="min-w-0">
                         <h2 class="db-agent-activity__title"><?php echo e($agent_name); ?></h2>
                         <div class="db-agent-activity__meta">
@@ -649,7 +643,6 @@ require_once BASE_PATH . '/includes/header.php';
                                 </thead>
                                 <tbody>
                                     <?php foreach (array_slice(array_values($active_team), 0, $db_list_limit) as $member):
-                                        $initials = mb_substr($member['first_name'], 0, 1) . mb_substr($member['last_name'] ?? '', 0, 1);
                                         $m_today = (int) ($member['today_mins'] ?? 0);
                                         $m_week = (int) ($member['week_mins'] ?? 0);
                                         $m_month = (int) ($member['month_mins'] ?? 0);
@@ -658,11 +651,7 @@ require_once BASE_PATH . '/includes/header.php';
                                         ?>
                                         <tr>
                                             <td class="db-avatar-cell">
-                                                <?php if (!empty($member['avatar'])): ?>
-                                                    <img src="<?php echo e(upload_url($member['avatar'])); ?>" alt="" class="db-avatar object-cover">
-                                                <?php else: ?>
-                                                    <div class="db-avatar"><?php echo e($initials); ?></div>
-                                                <?php endif; ?>
+                                                <?php echo render_user_avatar($member, 'sm', 'db-avatar'); ?>
                                             </td>
                                             <td>
                                                 <a href="<?php echo $member_link; ?>"

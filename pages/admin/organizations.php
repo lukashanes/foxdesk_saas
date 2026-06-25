@@ -398,8 +398,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center gap-3">
                                         <a href="<?php echo url('client', ['id' => (int) $org['id']]); ?>"
-                                           class="font-medium hover:underline"
-                                           style="color: var(--text-primary);"
+                                           class="font-medium hover:underline text-theme-primary"
                                            onclick="event.stopPropagation();">
                                             <?php echo e($org['name']); ?>
                                         </a>
@@ -478,13 +477,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                         <?php foreach ($members as $u): ?>
                                             <div class="member-row flex items-center justify-between rounded-lg px-4 py-2 shadow-sm" data-user-id="<?php echo $u['id']; ?>" style="background: var(--surface-primary);">
                                                 <div class="flex items-center gap-3">
-                                                    <?php if (!empty($u['avatar'])): ?>
-                                                        <img src="<?php echo e(upload_url($u['avatar'])); ?>" alt="" class="w-8 h-8 rounded-full object-cover flex-shrink-0">
-                                                    <?php else: ?>
-                                                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-theme-tertiary text-theme-secondary">
-                                                            <?php echo strtoupper(substr($u['first_name'], 0, 1)); ?>
-                                                        </div>
-                                                    <?php endif; ?>
+                                                    <?php echo render_user_avatar($u, 'sm'); ?>
                                                     <div>
                                                         <div class="font-medium text-sm text-theme-primary"><?php echo e($u['first_name'] . ' ' . $u['last_name']); ?></div>
                                                         <div class="text-xs text-theme-muted"><?php echo e($u['email']); ?></div>

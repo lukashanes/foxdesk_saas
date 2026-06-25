@@ -518,6 +518,24 @@ function settings_handle_post_request(callable $settings_audit): void
 
     // Update email settings OR test/run SMTP/IMAP (all save first)
     if (isset($_POST['save_email']) || isset($_POST['test_smtp']) || isset($_POST['test_imap']) || isset($_POST['run_imap_now'])) {
+        $managed_email_surface = function_exists('settings_email_is_managed_surface')
+            && settings_email_is_managed_surface();
+
+        if ($managed_email_surface) {
+            save_setting('email_notifications_enabled', '1');
+            save_setting('notify_on_status_change', isset($_POST['notify_on_status_change']) ? '1' : '0');
+            save_setting('notify_on_new_comment', isset($_POST['notify_on_new_comment']) ? '1' : '0');
+            save_setting('notify_on_new_ticket', isset($_POST['notify_on_new_ticket']) ? '1' : '0');
+
+            if (function_exists('settings_email_has_transport_action') && settings_email_has_transport_action($_POST)) {
+                flash(t('Email delivery is managed for this workspace. No mail server setup is needed here.'), 'info');
+            } else {
+                flash(t('Email settings saved.'), 'success');
+            }
+
+            redirect('admin', ['section' => 'settings', 'tab' => 'email']);
+        }
+
         // Always save settings first
         save_setting('smtp_host', trim($_POST['smtp_host'] ?? ''));
         save_setting('smtp_port', trim($_POST['smtp_port'] ?? '587'));

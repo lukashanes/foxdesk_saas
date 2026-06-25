@@ -621,6 +621,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 </div>
 
 
+<script src="assets/js/attachment-paste-drop.js?v=<?php echo APP_VERSION; ?>"></script>
 <script src="assets/js/upload-preview.js?v=<?php echo APP_VERSION; ?>"></script>
 <script>
     const ICONS = {
@@ -668,6 +669,18 @@ include BASE_PATH . '/includes/components/page-header.php';
                 totalTemplate: <?php echo json_encode(t('Selected attachments exceed the server request limit of {size}.')); ?>
             }
         });
+        if (window.FoxDeskAttachmentPasteDrop) {
+            window.FoxDeskAttachmentPasteDrop.bind({
+                inputId: 'file-input',
+                targetSelectors: ['#new-ticket-form', '#upload-zone'],
+                namePrefix: 'ticket-attachment',
+                onFilesChanged: function () {
+                    if (ticketUploadPreview && ticketUploadPreview.updatePreview) {
+                        ticketUploadPreview.updatePreview();
+                    }
+                }
+            });
+        }
     };
 
     if (document.readyState === 'loading') {

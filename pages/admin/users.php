@@ -1519,16 +1519,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                         <tr class="tr-hover">
                                             <td class="px-4 py-2.5 admin-responsive-primary" data-label="<?php echo e(t('Name')); ?>">
                                                 <div class="flex items-center space-x-2">
-                                                    <?php if (!empty($u['avatar'])): ?>
-                                                            <img src="<?php echo e(upload_url($u['avatar'])); ?>" alt=""
-                                                                class="w-7 h-7 rounded-full object-cover flex-shrink-0">
-                                                    <?php else: ?>
-                                                            <div
-                                                                class="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                                                <span
-                                                                    class="text-blue-600 text-xs font-medium"><?php echo strtoupper(substr($u['first_name'], 0, 1)); ?></span>
-                                                            </div>
-                                                    <?php endif; ?>
+                                                    <?php echo render_user_avatar($u, 'sm'); ?>
                                                     <div class="admin-cell-main">
                                                         <span class="admin-cell-title text-sm"><?php echo e($u['first_name'] . ' ' . $u['last_name']); ?></span>
                                                         <div class="admin-cell-subtitle text-xs">
@@ -1935,13 +1926,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                         <tr class="tr-hover <?php echo $u['is_active'] ? '' : 'opacity-50'; ?>">
                                             <td class="px-4 py-3">
                                                 <div class="flex items-center gap-2">
-                                                    <?php if (!empty($u['avatar'])): ?>
-                                                            <img src="<?php echo e(upload_url($u['avatar'])); ?>" alt="" class="w-6 h-6 rounded-full">
-                                                    <?php else: ?>
-                                                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium bg-theme-tertiary text-theme-secondary">
-                                                                <?php echo strtoupper(substr($u['first_name'], 0, 1)); ?>
-                                                            </div>
-                                                    <?php endif; ?>
+                                                    <?php echo render_user_avatar($u, 'xs'); ?>
                                                     <div>
                                                         <div class="font-medium text-theme-primary">
                                                             <?php echo e($u['first_name'] . ' ' . $u['last_name']); ?>
@@ -2512,21 +2497,27 @@ include BASE_PATH . '/includes/components/page-header.php';
                 const avatarPreview = document.getElementById('edit_avatar_preview');
                 const removeAvatarForm = document.getElementById('remove_avatar_form');
                 while (avatarPreview.firstChild) avatarPreview.removeChild(avatarPreview.firstChild);
+                const avatarInitials = ((user.first_name || user.email || '?').charAt(0)).toUpperCase();
+                const avatarWrapper = document.createElement('span');
+                avatarWrapper.className = 'user-avatar user-avatar--edit';
+                const avatarFallback = document.createElement('span');
+                avatarFallback.className = 'user-avatar__initials';
+                avatarFallback.textContent = avatarInitials;
+                avatarWrapper.appendChild(avatarFallback);
                 if (user.avatar) {
                     const img = document.createElement('img');
                     img.src = user.avatar;
                     img.alt = '';
-                    img.className = 'w-14 h-14 rounded-full object-cover';
-                    avatarPreview.appendChild(img);
+                    img.className = 'user-avatar__image';
+                    img.onerror = function () {
+                        this.classList.add('is-hidden');
+                        this.removeAttribute('src');
+                    };
+                    avatarWrapper.appendChild(img);
+                    avatarPreview.appendChild(avatarWrapper);
                     removeAvatarForm.classList.remove('hidden');
                 } else {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'w-14 h-14 rounded-full flex items-center justify-center bg-theme-tertiary text-theme-secondary';
-                    const span = document.createElement('span');
-                    span.className = 'text-lg font-bold';
-                    span.textContent = ((user.first_name || '?').charAt(0)).toUpperCase();
-                    wrapper.appendChild(span);
-                    avatarPreview.appendChild(wrapper);
+                    avatarPreview.appendChild(avatarWrapper);
                     removeAvatarForm.classList.add('hidden');
                 }
 

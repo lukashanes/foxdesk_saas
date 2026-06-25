@@ -35,6 +35,17 @@ assert_ticket_list_view(empty($open['status_group']), 'Open view should remove s
 $waiting = ticket_list_view_apply_filters($base, 'waiting');
 assert_ticket_list_view(($waiting['status_group'] ?? '') === 'waiting', 'Waiting view should filter waiting tickets.');
 
+$done = ticket_list_view_apply_filters(['is_archived' => 0], 'done');
+assert_ticket_list_view(($done['status_group'] ?? '') === 'done', 'Done view should filter done tickets.');
+assert_ticket_list_view(($done['sort'] ?? '') === 'completed', 'Done view should default to completed sort.');
+
+$done_explicit_sort = ticket_list_view_apply_filters(['is_archived' => 0, 'sort' => 'newest'], 'done');
+assert_ticket_list_view(($done_explicit_sort['sort'] ?? '') === 'newest', 'Explicit Done sort must be preserved.');
+
+assert_ticket_list_view(ticket_list_view_default_sort('done') === 'completed', 'Done view default sort should be completed.');
+assert_ticket_list_view(ticket_list_view_effective_sort('done', 'newest', false) === 'completed', 'Implicit Done sort should become completed.');
+assert_ticket_list_view(ticket_list_view_effective_sort('done', 'newest', true) === 'newest', 'Explicit Done newest sort should stay newest.');
+
 $explicit_status = ['is_archived' => 0, 'status_id' => 5];
 $open_with_status = ticket_list_view_apply_filters($explicit_status, 'open');
 assert_ticket_list_view(($open_with_status['status_id'] ?? null) === 5, 'Explicit status filter should be preserved.');
