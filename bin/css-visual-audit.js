@@ -16,7 +16,7 @@ function uniqueDeclarationValues(css, property) {
   let match;
   while ((match = pattern.exec(css)) !== null) {
     const value = String(match[1] || '').trim().replace(/\s+/g, ' ');
-    if (value === '' || value.startsWith('var(--')) {
+    if (value === '' || value.includes('var(--') || value === 'none' || value === 'none !important') {
       continue;
     }
     values.add(value);

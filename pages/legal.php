@@ -129,6 +129,7 @@ $nav = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo e($doc['title']); ?> - FoxDesk Cloud</title>
     <link href="theme.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
+    <link href="assets/css/legal.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
 </head>
 <body class="legal-page">
     <main class="legal-shell">

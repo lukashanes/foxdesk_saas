@@ -88,10 +88,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
 
 <body class="min-h-screen flex items-center justify-center p-4">
     <div class="login-bg"></div>
-    <div class="login-card rounded-3xl w-full max-w-md p-8 relative z-10">
+    <div class="login-card fd-rounded-card w-full max-w-md p-8 relative z-10">
         <!-- Logo -->
         <div class="text-center mb-8">
-            <div class="auth-logo-mark w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 transition-transform hover:scale-105">
+            <div class="auth-logo-mark w-16 h-16 fd-rounded-pill flex items-center justify-center mx-auto mb-4 transition-transform hover:scale-105">
                 <span class="text-white text-2xl font-bold"><?php echo strtoupper(substr($app_name, 0, 1)); ?></span>
             </div>
             <h1 class="text-2xl font-bold text-gradient"><?php echo e(t('New password')); ?></h1>

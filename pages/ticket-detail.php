@@ -2,16 +2,13 @@
 /**
  * Ticket Detail Page
  */
-
 // Support both hash-based URLs (t=hash) and legacy ID-based URLs (id=123)
 $ticket_hash = isset($_GET['t']) ? trim($_GET['t']) : null;
 $ticket_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
-
 // Migrate ticket hashes on first access (one-time operation)
 if (function_exists('migrate_ticket_hashes')) {
     migrate_ticket_hashes();
 }
-
 // Get ticket by hash or ID
 if (!empty($ticket_hash)) {
     $ticket = get_ticket_by_hash($ticket_hash);
@@ -21,27 +18,22 @@ if (!empty($ticket_hash)) {
 } else {
     $ticket = get_ticket($ticket_id);
 }
-
 $user = current_user();
 $can_view_edit_history = can_view_edit_history($user);
-
 // Check if ticket exists
 if (!$ticket) {
     flash(t('Ticket not found.'), 'error');
     redirect('tickets');
 }
-
 // Check permissions
 if (!can_see_ticket($ticket, $user)) {
     flash(t('You do not have permission to view this ticket.'), 'error');
     redirect('tickets');
 }
-
 // Auto mark ALL notifications for this ticket as read when viewing it
 if (function_exists('mark_ticket_notifications_read')) {
     mark_ticket_notifications_read($ticket_id, (int) $user['id']);
 }
-
 $page_title = $ticket['title'];
 $page = 'ticket';
 $ticket_detail_context = ticket_detail_context($ticket_id, $ticket, $user, $_SESSION);
@@ -70,7 +62,6 @@ $ticket_creator_initial = mb_strtoupper(mb_substr($ticket_creator_name, 0, 1));
 if ($ticket_creator_initial === '') {
     $ticket_creator_initial = '?';
 }
-
 // Time tracking state
 $time_tracking_available = ticket_time_table_exists();
 $active_timer = null;
@@ -108,25 +99,18 @@ $ticket_primary_actions = ticket_detail_primary_actions($ticket, $user, $statuse
     'time_tracking_available' => $time_tracking_available,
     'timer_state' => $timer_state,
 ]);
-
 $comments = ticket_detail_visible_comments($all_comments, is_agent());
 $visible_comment_ids = ticket_detail_visible_comment_ids($comments);
 $attachment_list = ticket_detail_visible_attachments($attachments, $visible_comment_ids, is_agent());
-
 // Handle form submissions (extracted to includes/components/ticket-form-handlers.php)
 require_once BASE_PATH . '/includes/components/ticket-form-handlers.php';
-
-
 // Get priority info
 $priority_name = $ticket['priority_name'] ?? get_priority_label($ticket['priority_id'] ?? 'medium');
 $priority_color = $ticket['priority_color'] ?? get_priority_color($ticket['priority_id'] ?? 'medium');
-
 require_once BASE_PATH . '/includes/header.php';
 ?>
-
 <!-- Quill Editor CSS -->
 <link href="assets/vendor/quill/2.0.2/quill.snow.css?v=<?php echo APP_VERSION; ?>" rel="stylesheet">
-
 <div class="workflow-surface workflow-surface--ticket-detail ticket-detail-page"
     data-core-workflow-surface="ticket-detail"
     data-ticket-detail-surface
@@ -201,7 +185,6 @@ require_once BASE_PATH . '/includes/header.php';
                 <?php endforeach; ?>
             </div>
         </div>
-
         <!-- Description Card -->
         <?php $initial_attachments = ticket_detail_initial_attachments($attachments); ?>
         <?php if (!empty($ticket['description']) || !empty($initial_attachments)): ?>
@@ -211,7 +194,6 @@ require_once BASE_PATH . '/includes/header.php';
                                 <?php echo render_content($ticket['description']); ?>
                             </div>
                     <?php endif; ?>
-
                     <?php if (!empty($initial_attachments)): ?>
                             <div class="<?php echo !empty($ticket['description']) ? 'mt-4 pt-4 border-t' : ''; ?>">
                                 <h4 class="text-sm font-medium mb-1 text-theme-secondary">
@@ -219,7 +201,6 @@ require_once BASE_PATH . '/includes/header.php';
                                 <?php $component_attachments = $initial_attachments; $component_layout = 'grid'; include BASE_PATH . '/includes/components/attachment-grid.php'; ?>
                             </div>
                     <?php endif; ?>
-
                     <div class="mt-3 pt-2.5 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs ticket-detail-muted">
                         <div class="flex items-center space-x-3">
                             <span class="ticket-meta-avatar" aria-hidden="true">
@@ -240,7 +221,6 @@ require_once BASE_PATH . '/includes/header.php';
                             <?php echo format_date($ticket['created_at']); ?>
                         </div>
                     </div>
-
                     <?php
                     // Show edit history only to users explicitly allowed (admins always allowed)
                     $ticket_history = $can_view_edit_history ? get_ticket_history($ticket_id) : [];
@@ -257,8 +237,8 @@ require_once BASE_PATH . '/includes/header.php';
                                             $is_long_text_change = in_array($history['field_name'], ['description', 'comment_content', 'comment_deleted'], true);
                                             $is_attachment_event = in_array($history['field_name'], ['attachment_added', 'attachment_unlinked'], true);
                                             ?>
-                                            <div class="flex items-start gap-3 text-xs p-2 rounded-lg bg-theme-secondary">
-                                                <div class="ticket-history-avatar flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center">
+                                            <div class="flex items-start gap-3 text-xs p-2 fd-rounded-card bg-theme-secondary">
+                                                <div class="ticket-history-avatar flex-shrink-0 w-6 h-6 fd-rounded-pill flex items-center justify-center">
                                                     <span class="font-medium text-xs text-theme-secondary">
                                                         <?php echo strtoupper(substr($history['first_name'] ?? 'U', 0, 1)); ?>
                                                     </span>
@@ -272,14 +252,14 @@ require_once BASE_PATH . '/includes/header.php';
                                                     </div>
                                                     <?php if ($is_long_text_change): ?>
                                                             <div class="mt-2 space-y-2">
-                                                                <div class="rounded border border-red-200 bg-red-50 px-2 py-1.5">
+                                                                <div class="fd-rounded-control border border-red-200 bg-red-50 px-2 py-1.5">
                                                                     <div class="text-xs uppercase tracking-wide text-red-700 mb-1">
                                                                         <?php echo e(t('Previous')); ?></div>
                                                                     <div class="text-xs text-red-800 whitespace-pre-wrap break-words">
                                                                         <?php echo format_history_value($history['field_name'], $history['old_value']); ?>
                                                                     </div>
                                                                 </div>
-                                                                <div class="rounded border border-green-200 bg-green-50 px-2 py-1.5">
+                                                                <div class="fd-rounded-control border border-green-200 bg-green-50 px-2 py-1.5">
                                                                     <div class="text-xs uppercase tracking-wide text-green-700 mb-1">
                                                                         <?php echo e(t('New')); ?></div>
                                                                     <div class="text-xs text-green-800 whitespace-pre-wrap break-words">
@@ -291,11 +271,11 @@ require_once BASE_PATH . '/includes/header.php';
                                                             <div class="mt-1 flex flex-wrap items-center gap-2 ticket-detail-muted">
                                                                 <?php if ($history['field_name'] === 'attachment_added'): ?>
                                                                         <span
-                                                                            class="inline-flex items-center px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">+
+                                                                            class="inline-flex items-center px-1.5 py-0.5 fd-rounded-control bg-green-100 text-green-700 font-medium">+
                                                                             <?php echo format_history_value($history['field_name'], $history['new_value']); ?></span>
                                                                 <?php else: ?>
                                                                         <span
-                                                                            class="inline-flex items-center px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">-
+                                                                            class="inline-flex items-center px-1.5 py-0.5 fd-rounded-control bg-red-100 text-red-700 font-medium">-
                                                                             <?php echo format_history_value($history['field_name'], $history['old_value']); ?></span>
                                                                 <?php endif; ?>
                                                             </div>
@@ -318,14 +298,12 @@ require_once BASE_PATH . '/includes/header.php';
                     <?php endif; ?>
                 </div>
         <?php endif; ?>
-
         <?php
         $time_entries = ($time_tracking_available && can_view_time($user)) ? get_ticket_time_entries($ticket_id) : [];
         $ticket_timeline = ticket_detail_build_timeline($comments, $time_entries);
         $time_entries_by_comment = $ticket_timeline['time_entries_by_comment'];
         $timeline_items = $ticket_timeline['timeline_items'];
         ?>
-
         <!-- Comments & Time Log Combined -->
         <div class="card ticket-activity-card" data-ticket-activity-surface>
             <div class="card-header ticket-activity-header">
@@ -338,7 +316,6 @@ require_once BASE_PATH . '/includes/header.php';
                         </span>
                 <?php endif; ?>
             </div>
-
             <?php if (empty($timeline_items)): ?>
                     <div class="ticket-activity-empty">
                         <?php echo e(t('No comments yet.')); ?>
@@ -415,7 +392,6 @@ require_once BASE_PATH . '/includes/header.php';
                                             <div class="ticket-comment__inner">
                                                 <!-- Avatar -->
                                                 <?php echo render_user_avatar($comment, 'md', 'ticket-comment__avatar ' . ($is_own_comment ? 'ticket-comment__avatar--own' : '')); ?>
-
                                                 <!-- Content -->
                                                 <div class="ticket-comment__content">
                                                     <!-- Header: name + badges + timestamp + actions -->
@@ -433,7 +409,6 @@ require_once BASE_PATH . '/includes/header.php';
                                                         <?php if ($can_view_edit_history && !empty($comment['updated_at']) && $comment['updated_at'] !== $comment['created_at']): ?>
                                                                 <span class="ticket-comment__edited">(<?php echo e(t('edited')); ?>)</span>
                                                         <?php endif; ?>
-
                                                         <!-- Edit/Delete actions (visible on hover) -->
                                                         <?php if (is_admin() || (is_agent() && (int) $comment['user_id'] === (int) $user['id'])): ?>
                                                                 <div class="comment-actions">
@@ -449,18 +424,15 @@ require_once BASE_PATH . '/includes/header.php';
                                                                 </div>
                                                         <?php endif; ?>
                                                     </div>
-
                                                     <!-- Comment body -->
                                                     <div class="ticket-comment__body rich-content"
                                                         id="comment-content-<?php echo $comment['id']; ?>">
                                                         <?php echo render_content($comment['content']); ?>
                                                     </div>
-
                                                     <!-- Attachments -->
                                                     <?php if (!empty($comment_attachments)): ?>
                                                         <?php $component_attachments = $comment_attachments; $component_layout = 'inline'; include BASE_PATH . '/includes/components/attachment-grid.php'; ?>
                                                     <?php endif; ?>
-
                                                     <?php
                                                     // Linked time entries (detail rows)
                                                     $comment_time_entries = $time_entries_by_comment[$comment['id']] ?? [];
@@ -476,7 +448,6 @@ require_once BASE_PATH . '/includes/header.php';
                                                                 <span><?php echo e(format_duration_minutes($display_time)); ?></span>
                                                             </div>
                                                     <?php endif; ?>
-
                                                     <?php if (!empty($comment_time_entries) && can_view_time($user)): ?>
                                                             <div class="ticket-time-entry-list">
                                                                 <?php foreach ($comment_time_entries as $entry): ?>
@@ -536,17 +507,12 @@ require_once BASE_PATH . '/includes/header.php';
                         <?php endforeach; ?>
                     </div>
             <?php endif; ?>
-
             <?php include BASE_PATH . '/includes/components/ticket-detail-composer.php'; ?>
-
         </div>
     </div>
-
     <?php include BASE_PATH . '/includes/components/ticket-detail-sidebar.php'; ?>
 </div>
-
 <?php include BASE_PATH . '/includes/components/ticket-detail-modals.php'; ?>
-
 <?php
 $ticket_detail_js_config = [
     'ticketId' => (int) $ticket_id,
@@ -637,21 +603,17 @@ $ticket_detail_js_config = [
 <script>
 window.FoxDeskTicketDetailConfig = <?php echo json_encode($ticket_detail_js_config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 </script>
-
 <!-- Tag inline editing -->
 <?php if ($tags_supported && can_edit_ticket($ticket, $user)): ?>
 <script src="assets/js/chip-select.js?v=<?php echo APP_VERSION; ?>"></script>
 <?php endif; ?>
-
 <!-- Quill Editor JS -->
 <script src="assets/vendor/quill/2.0.2/quill.js?v=<?php echo APP_VERSION; ?>"></script>
 <script src="assets/js/rich-text-editor.js?v=<?php echo APP_VERSION; ?>"></script>
 <script src="assets/js/quill-image-upload.js?v=<?php echo APP_VERSION; ?>"></script>
 <script src="assets/js/attachment-paste-drop.js?v=<?php echo APP_VERSION; ?>"></script>
-
 <!-- Autosave for comment editor -->
 <script src="assets/js/autosave.js?v=<?php echo APP_VERSION; ?>"></script>
-
 <?php if (function_exists('can_view_timeline') && can_view_timeline($user)): ?>
 <!-- Timeline Modal -->
 <div id="timeline-overlay" class="ticket-timeline-overlay" onclick="closeTimeline()" aria-hidden="true">
@@ -670,10 +632,6 @@ window.FoxDeskTicketDetailConfig = <?php echo json_encode($ticket_detail_js_conf
         </div>
     </div>
 </div>
-
-
 <?php endif; ?>
-
 <script src="assets/js/ticket-detail.js?v=<?php echo APP_VERSION; ?>"></script>
-
 <?php require_once BASE_PATH . '/includes/footer.php';

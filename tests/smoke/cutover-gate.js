@@ -432,6 +432,13 @@ async function expectTicketDetail(page, viewportName) {
 
   const timelineButton = page.locator('button[onclick^="openTicketTimeline"]');
   if (await timelineButton.count()) {
+    const timelineSection = page.locator('details:has(button[onclick^="openTicketTimeline"])').first();
+    if (await timelineSection.count()) {
+      const isOpen = await timelineSection.evaluate((section) => section.open);
+      if (!isOpen) {
+        await timelineSection.locator('summary').click();
+      }
+    }
     await timelineButton.first().click();
     await page.waitForFunction(() => {
       const overlay = document.querySelector('#timeline-overlay');

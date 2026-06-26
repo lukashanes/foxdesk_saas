@@ -156,7 +156,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                 <?php foreach ($ticket_stats as $stat): ?>
                     <div class="flex items-center justify-between text-xs">
                         <span class="flex items-center">
-                            <span class="w-2 h-2 rounded-full mr-1"
+                            <span class="w-2 h-2 fd-rounded-pill mr-1"
                                 style="background-color: <?php echo e($stat['color']); ?>"></span>
                             <?php echo e($stat['name']); ?>
                         </span>

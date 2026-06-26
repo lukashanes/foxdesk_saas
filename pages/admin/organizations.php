@@ -387,9 +387,9 @@ include BASE_PATH . '/includes/components/page-header.php';
 
                                 <!-- Logo -->
                                 <?php if (!empty($org['logo'])): ?>
-                                    <img src="<?php echo e(upload_url($org['logo'])); ?>" alt="" class="w-8 h-8 rounded-lg object-cover flex-shrink-0">
+                                    <img src="<?php echo e(upload_url($org['logo'])); ?>" alt="" class="w-8 h-8 fd-rounded-card object-cover flex-shrink-0">
                                 <?php else: ?>
-                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-theme-tertiary text-theme-secondary">
+                                    <div class="w-8 h-8 fd-rounded-card flex items-center justify-center flex-shrink-0 bg-theme-tertiary text-theme-secondary">
                                         <span class="text-xs font-bold"><?php echo strtoupper(substr($org['name'], 0, 1)); ?></span>
                                     </div>
                                 <?php endif; ?>
@@ -475,7 +475,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                         <div class="text-sm py-2 empty-message text-theme-muted"><?php echo e(t('No users in this organization.')); ?></div>
                                     <?php else: ?>
                                         <?php foreach ($members as $u): ?>
-                                            <div class="member-row flex items-center justify-between rounded-lg px-4 py-2 shadow-sm" data-user-id="<?php echo $u['id']; ?>" style="background: var(--surface-primary);">
+                                            <div class="member-row flex items-center justify-between fd-rounded-card px-4 py-2 shadow-sm" data-user-id="<?php echo $u['id']; ?>" style="background: var(--surface-primary);">
                                                 <div class="flex items-center gap-3">
                                                     <?php echo render_user_avatar($u, 'sm'); ?>
                                                     <div>
@@ -540,7 +540,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 
             <div>
                 <label class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Logo')); ?></label>
-                <div id="org-logo-create-zone" class="rounded-lg p-2.5 cursor-pointer border-2 border-dashed hover:border-blue-300 transition-colors border-theme-light">
+                <div id="org-logo-create-zone" class="fd-rounded-card p-2.5 cursor-pointer border-2 border-dashed hover:border-blue-300 transition-colors border-theme-light">
                     <input type="file" name="org_logo_create" id="org-logo-create-input" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden">
                     <div class="flex items-center gap-2 text-xs">
                         <span class="text-theme-muted"><?php echo get_icon('cloud-upload-alt', 'text-base flex-shrink-0'); ?></span>
@@ -591,13 +591,13 @@ include BASE_PATH . '/includes/components/page-header.php';
 
 <!-- Edit Organization Modal -->
 <div id="editOrgModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="edit-org-title">
-    <div class="rounded-xl shadow-xl max-w-lg w-full mx-4 p-4 max-h-[90vh] overflow-y-auto bg-theme-primary">
+    <div class="fd-rounded-card shadow-xl max-w-lg w-full mx-4 p-4 max-h-[90vh] overflow-y-auto bg-theme-primary">
         <h3 id="edit-org-title" class="font-semibold mb-4 text-theme-primary"><?php echo e(t('Edit organization')); ?></h3>
 
         <!-- Logo upload (separate form) -->
         <div class="flex items-center gap-4 pb-4 mb-4 border-b border-theme-light">
             <div id="edit_org_logo_preview">
-                <div class="w-14 h-14 rounded-xl flex items-center justify-center bg-theme-tertiary text-theme-secondary">
+                <div class="w-14 h-14 fd-rounded-card flex items-center justify-center bg-theme-tertiary text-theme-secondary">
                     <span class="text-lg font-bold" id="edit_org_logo_initial"></span>
                 </div>
             </div>
@@ -607,7 +607,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                     <?php echo csrf_field(); ?>
                     <input type="hidden" name="org_id" id="edit_org_logo_org_id">
                     <input type="hidden" name="upload_org_logo" value="1">
-                    <div id="org-logo-edit-zone" class="rounded-lg p-2 cursor-pointer border-2 border-dashed hover:border-blue-300 transition-colors border-theme-light">
+                    <div id="org-logo-edit-zone" class="fd-rounded-card p-2 cursor-pointer border-2 border-dashed hover:border-blue-300 transition-colors border-theme-light">
                         <input type="file" name="org_logo" id="org-logo-edit-input" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden"
                                onchange="this.form.submit()">
                         <div class="flex items-center gap-2 text-xs">
@@ -719,12 +719,12 @@ include BASE_PATH . '/includes/components/page-header.php';
             const img = document.createElement('img');
             img.src = org.logo;
             img.alt = '';
-            img.className = 'w-14 h-14 rounded-xl object-cover';
+            img.className = 'w-14 h-14 fd-rounded-card object-cover';
             logoPreview.appendChild(img);
             removeLogoForm.style.display = 'inline';
         } else {
             const wrapper = document.createElement('div');
-            wrapper.className = 'w-14 h-14 rounded-xl flex items-center justify-center';
+            wrapper.className = 'w-14 h-14 fd-rounded-card flex items-center justify-center';
             wrapper.style.cssText = 'background: var(--surface-tertiary); color: var(--text-secondary);';
             const span = document.createElement('span');
             span.className = 'text-lg font-bold';
@@ -818,9 +818,9 @@ include BASE_PATH . '/includes/components/page-header.php';
                 const safeOrgId = parseInt(orgId, 10);
 
                 const memberHtml = `
-                    <div class="member-row flex items-center justify-between rounded-lg px-4 py-2 shadow-sm bg-theme-primary" data-user-id="${safeId}">
+                    <div class="member-row flex items-center justify-between fd-rounded-card px-4 py-2 shadow-sm bg-theme-primary" data-user-id="${safeId}">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-theme-tertiary text-theme-secondary">${escHtml(initial)}</div>
+                            <div class="w-8 h-8 fd-rounded-pill flex items-center justify-center text-xs font-bold bg-theme-tertiary text-theme-secondary">${escHtml(initial)}</div>
                             <div>
                                 <div class="font-medium text-sm text-theme-primary">${safeFirstName} ${safeLastName}</div>
                                 <div class="text-xs text-theme-muted">${safeEmail}</div>

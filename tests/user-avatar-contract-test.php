@@ -14,6 +14,7 @@ $theme = file_get_contents($root . '/theme.css');
 $header = file_get_contents($root . '/includes/header.php');
 $ticket_detail = file_get_contents($root . '/pages/ticket-detail.php');
 $admin_users = file_get_contents($root . '/pages/admin/users.php');
+$team_users_component = file_get_contents($root . '/includes/components/team-users-tab.php');
 $dashboard = file_get_contents($root . '/pages/dashboard.php');
 
 $assert($user_functions !== false, 'User functions must be readable.');
@@ -29,11 +30,12 @@ $assert(str_contains($header, 'if (src)'), 'Notification avatars must not render
 
 $assert(str_contains($header, "render_user_avatar(\$user"), 'App shell must use shared avatar rendering.');
 $assert(str_contains($ticket_detail, "render_user_avatar(\$comment"), 'Ticket comments must use shared avatar rendering.');
-$assert(str_contains($admin_users, "render_user_avatar(\$u"), 'Admin user rows must use shared avatar rendering.');
+$admin_user_surface = ($admin_users ?: '') . "\n" . ($team_users_component ?: '');
+$assert(str_contains($admin_user_surface, "render_user_avatar(\$u"), 'Admin user rows must use shared avatar rendering.');
 $assert(str_contains($dashboard, "render_user_avatar(\$member"), 'Dashboard team rows must use shared avatar rendering.');
 
 $assert(!str_contains($ticket_detail, "upload_url(\$comment['avatar'])"), 'Ticket comments must not render bare uploaded avatar images.');
-$assert(!str_contains($admin_users, "upload_url(\$u['avatar'])"), 'Admin user rows must not render bare uploaded avatar images.');
+$assert(!str_contains($admin_user_surface, "upload_url(\$u['avatar'])"), 'Admin user rows must not render bare uploaded avatar images.');
 $assert(!str_contains($dashboard, "upload_url(\$member['avatar'])"), 'Dashboard team rows must not render bare uploaded avatar images.');
 
 echo "User avatar contract OK\n";

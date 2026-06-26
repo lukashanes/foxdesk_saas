@@ -419,7 +419,7 @@
                         if (toneClass) {
                             replaceModifierClass(trigger, field === 'status' ? 'ticket-status-inline' : 'ticket-priority-inline', toneClass);
                         } else {
-                            var color = button.querySelector('.rounded-full') ? button.querySelector('.rounded-full').style.background : '';
+                            var color = button.querySelector('.fd-rounded-pill') ? button.querySelector('.fd-rounded-pill').style.background : '';
                             if (color) {
                                 trigger.style.backgroundColor = color + '20';
                                 trigger.style.color = color;
@@ -432,7 +432,7 @@
                         if (accentClass) {
                             replaceModifierClass(row, 'ticket-status-accent', accentClass);
                         } else {
-                            var statusColor = button.querySelector('.rounded-full') ? button.querySelector('.rounded-full').style.background : '';
+                            var statusColor = button.querySelector('.fd-rounded-pill') ? button.querySelector('.fd-rounded-pill').style.background : '';
                             if (statusColor) row.style.borderLeftColor = statusColor;
                         }
                     }

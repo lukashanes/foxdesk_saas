@@ -77,7 +77,7 @@ function normalizeFlashType(type) {
 
 function showAppToastFallback(message, type) {
     var toast = document.createElement('div');
-    toast.className = 'fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-sm font-medium z-50 transition-opacity duration-300 '
+    toast.className = 'fixed bottom-4 right-4 px-4 py-2 fd-rounded-card shadow-lg text-sm font-medium z-50 transition-opacity duration-300 '
         + (type === 'success' ? 'bg-green-600 text-white' : (type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'));
     toast.textContent = message;
     document.body.appendChild(toast);
@@ -453,11 +453,11 @@ document.addEventListener('click', function(event) {
 
         var a = document.createElement('a');
         a.href = buildTimerUrl(t);
-        a.className = 'sidebar-timer-item flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all sidebar-hover min-w-0';
+        a.className = 'sidebar-timer-item flex-1 flex items-center gap-2 px-3 py-1.5 fd-rounded-card transition-all sidebar-hover min-w-0';
         a.title = t.ticket_title || '';
 
         var dot = document.createElement('span');
-        dot.className = 'flex-shrink-0 w-1.5 h-1.5 rounded-full ' + (isPaused ? 'bg-yellow-400' : 'sidebar-timer-pulse');
+        dot.className = 'flex-shrink-0 w-1.5 h-1.5 fd-rounded-pill ' + (isPaused ? 'bg-yellow-400' : 'sidebar-timer-pulse');
         a.appendChild(dot);
 
         var title = document.createElement('span');
@@ -478,7 +478,7 @@ document.addEventListener('click', function(event) {
 
         // Pause/Resume toggle button
         var toggleBtn = document.createElement('button');
-        toggleBtn.className = 'sidebar-icon-action ' + (isPaused ? 'sidebar-icon-action--success' : 'sidebar-icon-action--warning') + ' flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity';
+        toggleBtn.className = 'sidebar-icon-action ' + (isPaused ? 'sidebar-icon-action--success' : 'sidebar-icon-action--warning') + ' flex-shrink-0 w-5 h-5 flex items-center justify-center fd-rounded-control text-[10px] opacity-0 group-hover:opacity-100 transition-opacity';
         toggleBtn.title = isPaused ? (cfg.resumeLabel || 'Resume') : (cfg.pauseLabel || 'Pause');
         var toggleSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         toggleSvg.setAttribute('class', 'w-3 h-3');
@@ -514,7 +514,7 @@ document.addEventListener('click', function(event) {
 
         // Stop button (■) - saves the timer
         var stopBtn = document.createElement('button');
-        stopBtn.className = 'sidebar-icon-action sidebar-icon-action--danger flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity';
+        stopBtn.className = 'sidebar-icon-action sidebar-icon-action--danger flex-shrink-0 w-5 h-5 flex items-center justify-center fd-rounded-control text-[10px] opacity-0 group-hover:opacity-100 transition-opacity';
         stopBtn.title = cfg.stopTimerLabel || 'Stop timer';
         var stopSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         stopSvg.setAttribute('class', 'w-3 h-3');
@@ -538,7 +538,7 @@ document.addEventListener('click', function(event) {
 
         // Cancel button (✕)
         var btn = document.createElement('button');
-        btn.className = 'sidebar-icon-action sidebar-icon-action--danger flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-[10px] opacity-0 group-hover:opacity-100 transition-opacity';
+        btn.className = 'sidebar-icon-action sidebar-icon-action--danger flex-shrink-0 w-5 h-5 flex items-center justify-center fd-rounded-control text-[10px] opacity-0 group-hover:opacity-100 transition-opacity';
         btn.title = cfg.cancelTicketTooltip || 'Cancel ticket';
         btn.textContent = '\u00D7';
         btn.addEventListener('click', function(e) {

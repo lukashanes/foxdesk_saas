@@ -834,12 +834,12 @@ function get_time_entry_source($entry) {
 function render_source_badge($source) {
     switch ($source) {
         case 'ai':
-            return '<span class="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded uppercase whitespace-nowrap flex-shrink-0">' . e(t('AI')) . '</span>';
+            return '<span class="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 fd-rounded-control uppercase whitespace-nowrap flex-shrink-0">' . e(t('AI')) . '</span>';
         case 'manual':
-            return '<span class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase whitespace-nowrap flex-shrink-0">' . e(t('Manual')) . '</span>';
+            return '<span class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 fd-rounded-control uppercase whitespace-nowrap flex-shrink-0">' . e(t('Manual')) . '</span>';
         case 'timer':
         default:
-            return '<span class="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded uppercase whitespace-nowrap flex-shrink-0">' . e(t('Timer')) . '</span>';
+            return '<span class="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 fd-rounded-control uppercase whitespace-nowrap flex-shrink-0">' . e(t('Timer')) . '</span>';
     }
 }
 

@@ -105,14 +105,14 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
 
 <div class="flex flex-col h-full">
     <!-- Add New Status Button -->
-    <button type="button" class="mb-3 w-full px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-colors bg-theme-secondary text-theme-primary"
+    <button type="button" class="mb-3 w-full px-3 py-2 fd-rounded-card text-xs font-medium flex items-center justify-center gap-2 transition-colors bg-theme-secondary text-theme-primary"
         onclick="document.getElementById('add-status-form').classList.toggle('hidden')">
         <?php echo get_icon('plus', 'w-3.5 h-3.5'); ?>
         <?php echo e(t('Add Status')); ?>
     </button>
 
     <!-- Add Form (Glassmorphic) -->
-    <form method="post" id="add-status-form" class="hidden mb-3 p-3 rounded-lg glass-form" style="background: rgba(255, 255, 255, 0.7);">
+    <form method="post" id="add-status-form" class="hidden mb-3 p-3 fd-rounded-card glass-form">
         <?php echo csrf_field(); ?>
         <h4 class="text-xs font-semibold mb-2 text-theme-primary">
             <?php echo e(t('Add New Status')); ?>
@@ -128,7 +128,7 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
                 <label class="block text-xs mb-1 text-theme-secondary">
                     <?php echo e(t('Color')); ?>
                 </label>
-                <input type="color" name="color" value="#3b82f6" class="w-full h-8 rounded cursor-pointer" style="border: 1px solid var(--border-light);">
+                <input type="color" name="color" value="#3b82f6" class="w-full h-8 fd-rounded-control fd-color-input cursor-pointer">
             </div>
             <div>
                 <label class="block text-xs mb-1 text-theme-secondary">
@@ -145,14 +145,14 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
                 </select>
             </div>
             <label class="flex items-center gap-2 text-xs cursor-pointer text-theme-secondary">
-                <input type="checkbox" name="is_closed" class="rounded w-3.5 h-3.5">
+                <input type="checkbox" name="is_closed" class="fd-rounded-control w-3.5 h-3.5">
                 <?php echo e(t('Mark as closed')); ?>
             </label>
             <div class="flex gap-2 pt-1">
                 <button type="submit" name="add_status" class="flex-1 btn btn-primary btn-sm text-xs">
                     <?php echo e(t('Create')); ?>
                 </button>
-                <button type="button" class="flex-1 px-2 py-1 rounded text-xs transition-colors bg-theme-border-light text-theme-secondary"
+                <button type="button" class="flex-1 px-2 py-1 fd-rounded-control text-xs transition-colors bg-theme-border-light text-theme-secondary"
                     onclick="document.getElementById('add-status-form').classList.add('hidden')">
                     <?php echo e(t('Cancel')); ?>
                 </button>
@@ -182,7 +182,7 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
                     </span>
 
                     <!-- Color Swatch -->
-                    <div class="color-swatch" style="background-color: <?php echo e($status['color']); ?>"></div>
+                    <div class="color-swatch" style="--swatch-color: <?php echo e($status['color']); ?>"></div>
 
                     <!-- Name and Status -->
                     <div class="flex-1 min-w-0">
@@ -190,7 +190,7 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
                             <?php echo e($status['name']); ?>
                         </div>
                         <?php if ($status['is_closed']): ?>
-                            <span class="text-xs px-1.5 py-0.5 rounded mt-0.5 inline-block" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                            <span class="text-xs px-1.5 py-0.5 fd-rounded-control mt-0.5 inline-block fd-soft-badge fd-soft-badge--danger">
                                 <?php echo e(t('Closed')); ?>
                             </span>
                         <?php endif; ?>
@@ -198,14 +198,13 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
 
                     <!-- Default Badge -->
                     <?php if ($status['is_default']): ?>
-                        <span class="text-xs px-1.5 py-0.5 rounded flex-shrink-0" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;">
+                        <span class="text-xs px-1.5 py-0.5 fd-rounded-control flex-shrink-0 fd-soft-badge fd-soft-badge--primary">
                             <?php echo e(t('Default')); ?>
                         </span>
                     <?php endif; ?>
 
                     <!-- Edit Button -->
-                    <button type="button" class="px-1.5 py-0.5 rounded transition-colors flex-shrink-0 accordion-toggle"
-                        style="color: #3b82f6; background: transparent;"
+                    <button type="button" class="px-1.5 py-0.5 fd-rounded-control transition-colors flex-shrink-0 accordion-toggle fd-action-icon"
                         onclick="toggleAccordion(this)"
                         title="<?php echo e(t('Edit')); ?>">
                         <?php echo get_icon('edit-2', 'w-3.5 h-3.5'); ?>
@@ -230,12 +229,11 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
                                 <label class="block text-xs mb-1 text-theme-secondary">
                                     <?php echo e(t('Color')); ?>
                                 </label>
-                                <input type="color" name="color" value="<?php echo e($status['color']); ?>" class="w-full h-8 rounded cursor-pointer"
-                                    style="border: 1px solid var(--border-light);">
+                                <input type="color" name="color" value="<?php echo e($status['color']); ?>" class="w-full h-8 fd-rounded-control fd-color-input cursor-pointer">
                             </div>
 
                             <label class="flex items-center gap-2 text-xs cursor-pointer text-theme-secondary">
-                                <input type="checkbox" name="is_closed" class="rounded w-3.5 h-3.5" <?php echo $status['is_closed'] ? 'checked' : ''; ?>>
+                                <input type="checkbox" name="is_closed" class="fd-rounded-control w-3.5 h-3.5" <?php echo $status['is_closed'] ? 'checked' : ''; ?>>
                                 <?php echo e(t('Mark as closed')); ?>
                             </label>
 
@@ -248,7 +246,7 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
                                         <?php echo e(t('Set Default')); ?>
                                     </button>
                                 </div>
-                                <button type="submit" name="delete_status" class="w-full btn btn-sm text-xs" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;"
+                                <button type="submit" name="delete_status" class="w-full btn btn-sm text-xs fd-danger-action"
                                     onclick="return confirm('<?php echo e(t('Are you sure you want to delete this status?')); ?>')">
                                     <?php echo e(t('Delete')); ?>
                                 </button>

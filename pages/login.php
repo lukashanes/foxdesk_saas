@@ -307,7 +307,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                 </div>
 
                 <?php if ($error): ?>
-                    <div class="alert alert-error mb-6 animate-fade-in text-sm rounded-lg p-3 bg-red-50 text-red-600 border border-red-200 dark:bg-red-900/30 dark:border-red-800/50 dark:text-red-400">
+                    <div class="alert alert-error mb-6 animate-fade-in text-sm fd-rounded-card p-3 bg-red-50 text-red-600 border border-red-200 dark:bg-red-900/30 dark:border-red-800/50 dark:text-red-400">
                         <?php echo e($error); ?>
                     </div>
                 <?php endif; ?>
@@ -321,7 +321,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                             </label>
                             <input type="text" name="code" maxlength="9" pattern="[a-zA-Z0-9\-]{6,9}"
                                 inputmode="numeric" autocomplete="one-time-code"
-                                class="form-input login-field w-full rounded-lg border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 text-center text-2xl tracking-[0.3em] font-mono focus:border-[#3c50e0] focus:ring-1 focus:ring-[#3c50e0]"
+                                class="form-input login-field w-full fd-rounded-card border-slate-300 dark:border-slate-700 bg-transparent px-4 py-3 text-center text-2xl tracking-[0.3em] font-mono focus:border-[#3c50e0] focus:ring-1 focus:ring-[#3c50e0]"
                                 placeholder="000000" required autofocus>
                             <p class="login-form-copy text-xs mt-1.5">
                                 <?php echo e(t('Or enter a backup code (e.g. xxxx-xxxx)')); ?>
@@ -330,7 +330,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                     </div>
 
                     <button type="submit" name="verify_2fa" value="1"
-                        class="btn btn-primary login-submit w-full mt-6 py-2.5 text-base rounded-lg transition-transform active:scale-[0.98]">
+                        class="btn btn-primary login-submit w-full mt-6 py-2.5 text-base fd-rounded-card transition-transform active:scale-[0.98]">
                         <?php echo e(t('Verify')); ?>
                     </button>
                 </form>
@@ -352,21 +352,21 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
 
                 <?php if ($error): ?>
                     <div
-                        class="alert alert-error mb-6 animate-fade-in text-sm rounded-lg p-3 bg-red-50 text-red-600 border border-red-200 dark:bg-red-900/30 dark:border-red-800/50 dark:text-red-400">
+                        class="alert alert-error mb-6 animate-fade-in text-sm fd-rounded-card p-3 bg-red-50 text-red-600 border border-red-200 dark:bg-red-900/30 dark:border-red-800/50 dark:text-red-400">
                         <?php echo e($error); ?>
                     </div>
                 <?php endif; ?>
 
                 <?php if (isset($_GET['reset']) && $_GET['reset'] === 'success'): ?>
                     <div
-                        class="alert alert-success mb-6 animate-fade-in text-sm rounded-lg p-3 bg-green-50 text-green-600 border border-green-200 dark:bg-green-900/30 dark:border-green-800/50 dark:text-green-400">
+                        class="alert alert-success mb-6 animate-fade-in text-sm fd-rounded-card p-3 bg-green-50 text-green-600 border border-green-200 dark:bg-green-900/30 dark:border-green-800/50 dark:text-green-400">
                         <?php echo e(t('Password updated successfully. You can sign in now.')); ?>
                     </div>
                 <?php endif; ?>
 
                 <?php if (isset($_GET['sent']) && $_GET['sent'] === '1'): ?>
                     <div
-                        class="alert alert-info mb-6 animate-fade-in text-sm rounded-lg p-3 bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400">
+                        class="alert alert-info mb-6 animate-fade-in text-sm fd-rounded-card p-3 bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400">
                         <?php echo e(t('If an account exists for this email, a reset link has been sent.')); ?>
                     </div>
                 <?php endif; ?>
@@ -377,13 +377,13 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                         <div>
                             <label class="login-label block text-sm font-medium mb-1.5"><?php echo e(t('Email')); ?></label>
                             <input type="email" name="email" value="<?php echo e($_POST['email'] ?? ''); ?>"
-                                class="form-input login-field w-full rounded-lg border-slate-300 dark:border-slate-700 bg-transparent px-4 py-2.5 focus:border-[#3c50e0] focus:ring-1 focus:ring-[#3c50e0]"
+                                class="form-input login-field w-full fd-rounded-card border-slate-300 dark:border-slate-700 bg-transparent px-4 py-2.5 focus:border-[#3c50e0] focus:ring-1 focus:ring-[#3c50e0]"
                                 autocomplete="username" inputmode="email" autocapitalize="none" required autofocus>
                         </div>
                         <div>
                             <label class="login-label block text-sm font-medium mb-1.5"><?php echo e(t('Password')); ?></label>
                             <input type="password" name="password"
-                                class="form-input login-field w-full rounded-lg border-slate-300 dark:border-slate-700 bg-transparent px-4 py-2.5 focus:border-[#3c50e0] focus:ring-1 focus:ring-[#3c50e0]"
+                                class="form-input login-field w-full fd-rounded-card border-slate-300 dark:border-slate-700 bg-transparent px-4 py-2.5 focus:border-[#3c50e0] focus:ring-1 focus:ring-[#3c50e0]"
                                 autocomplete="current-password" required>
                         </div>
                     </div>
@@ -391,7 +391,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                     <div class="flex items-center justify-between mt-4">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" name="remember_me" value="1" checked
-                                class="form-checkbox login-checkbox rounded">
+                                class="form-checkbox login-checkbox fd-rounded-control">
                             <span class="login-form-secondary text-sm"><?php echo e(t('Remember me')); ?></span>
                         </label>
                         <a href="<?php echo url('forgot-password', ['lang' => $current_lang]); ?>"
@@ -403,7 +403,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
                     <?php echo turnstile_widget('login'); ?>
 
                     <button type="submit"
-                        class="btn btn-primary login-submit w-full mt-6 py-2.5 text-base rounded-lg transition-transform active:scale-[0.98]">
+                        class="btn btn-primary login-submit w-full mt-6 py-2.5 text-base fd-rounded-card transition-transform active:scale-[0.98]">
                         <?php echo e(t('Sign in')); ?>
                     </button>
                 </form>

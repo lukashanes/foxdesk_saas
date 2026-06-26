@@ -176,7 +176,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                     title="<?php echo e(t('Columns')); ?>">
                     <?php echo get_icon('columns', 'w-3 h-3 inline-block'); ?><?php echo e(t('Columns')); ?>
                 </button>
-                <div id="col-picker-dropdown" class="report-col-picker-dropdown hidden absolute right-0 mt-1 w-44 rounded-lg shadow-lg border z-50 p-1.5">
+                <div id="col-picker-dropdown" class="report-col-picker-dropdown hidden absolute right-0 mt-1 w-44 fd-rounded-card shadow-lg border z-50 p-1.5">
                     <?php
                     $col_defs = [
                         'ticket' => t('Ticket'),
@@ -197,8 +197,8 @@ include BASE_PATH . '/includes/components/page-header.php';
                         $col_defs['profit'] = t('Profit');
                     }
                     foreach ($col_defs as $col_key => $col_label): ?>
-                    <label class="flex items-center gap-2 px-2 py-1 text-xs rounded cursor-pointer text-theme-primary">
-                        <input type="checkbox" class="rounded col-toggle" data-col="<?php echo e($col_key); ?>" checked>
+                    <label class="flex items-center gap-2 px-2 py-1 text-xs fd-rounded-control cursor-pointer text-theme-primary">
+                        <input type="checkbox" class="fd-rounded-control col-toggle" data-col="<?php echo e($col_key); ?>" checked>
                         <?php echo e($col_label); ?>
                     </label>
                     <?php endforeach; ?>
@@ -435,7 +435,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 
                         <?php if (is_admin()): ?>
                         <label class="report-toggle-label">
-                            <input type="checkbox" name="show_money" value="1" class="rounded" <?php echo $show_money ? 'checked' : ''; ?>>
+                            <input type="checkbox" name="show_money" value="1" class="fd-rounded-control" <?php echo $show_money ? 'checked' : ''; ?>>
                             <?php echo e(t('Show amounts')); ?>
                         </label>
                         <?php endif; ?>
@@ -841,7 +841,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                             <?php if (!empty($row_tags)): ?>
                                                 <div class="flex flex-wrap gap-1">
                                                     <?php foreach (array_slice($row_tags, 0, 4) as $tag): ?>
-                                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded tag-badge text-xs">#<?php echo e($tag); ?></span>
+                                                        <span class="inline-flex items-center px-1.5 py-0.5 fd-rounded-control tag-badge text-xs">#<?php echo e($tag); ?></span>
                                                     <?php endforeach; ?>
                                                 </div>
                                             <?php else: ?>
@@ -883,7 +883,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                             <?php if (!empty($row_tags)): ?>
                                                 <div class="flex flex-wrap gap-1">
                                                     <?php foreach (array_slice($row_tags, 0, 4) as $tag): ?>
-                                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded tag-badge text-xs">#<?php echo e($tag); ?></span>
+                                                        <span class="inline-flex items-center px-1.5 py-0.5 fd-rounded-control tag-badge text-xs">#<?php echo e($tag); ?></span>
                                                     <?php endforeach; ?>
                                                 </div>
                                             <?php else: ?>
@@ -1021,7 +1021,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                                 foreach ($wa_sorted2 as $aid => $ag):
                                                     $ag_pct = $week['minutes'] > 0 ? round(($ag['minutes'] / $week['minutes']) * 100) : 0;
                                                 ?>
-                                                <div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-theme-primary">
+                                                <div class="flex items-center gap-2 px-3 py-2 fd-rounded-card bg-theme-primary">
                                                     <span class="report-agent-dot report-agent-dot--small <?php echo e(report_tone_class($weekly_agent_tone_map[$aid] ?? 0)); ?>"></span>
                                                     <div class="min-w-0 flex-1">
                                                         <div class="text-xs font-medium truncate text-theme-primary"><?php echo e($ag['name']); ?></div>
@@ -1143,7 +1143,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                             <tr>
                                 <?php if (is_admin()): ?>
                                 <th class="px-3 py-2 text-left th-label">
-                                    <input type="checkbox" id="bulk-select-all" class="rounded" title="<?php echo e(t('Select all')); ?>">
+                                    <input type="checkbox" id="bulk-select-all" class="fd-rounded-control" title="<?php echo e(t('Select all')); ?>">
                                 </th>
                                 <?php endif; ?>
                                 <th class="px-3 py-2 text-left th-label" data-col="ticket">
@@ -1195,7 +1195,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                     data-cost-amount="<?php echo e(number_format((float) $entry['cost_amount'], 2, '.', '')); ?>">
                                     <?php if (is_admin()): ?>
                                     <td class="px-3 py-1.5 text-xs">
-                                        <input type="checkbox" class="bulk-entry-check rounded" name="entry_ids[]" value="<?php echo $entry['id']; ?>" form="bulk-billing-form" <?php echo !empty($entry['is_billable']) ? '' : 'disabled'; ?>>
+                                        <input type="checkbox" class="bulk-entry-check fd-rounded-control" name="entry_ids[]" value="<?php echo $entry['id']; ?>" form="bulk-billing-form" <?php echo !empty($entry['is_billable']) ? '' : 'disabled'; ?>>
                                     </td>
                                     <?php endif; ?>
                                     <td class="px-3 py-1.5 text-xs" data-col="ticket"><a href="<?php echo url('ticket', ['id' => $entry['ticket_id']]); ?>" class="text-blue-600 hover:text-blue-800 hover:underline" data-report-entry-field="ticket"><?php echo e($entry['ticket_title']); ?></a></td>
@@ -1207,7 +1207,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                             <?php if (!empty($entry_tags)): ?>
                                                 <div class="flex flex-wrap gap-1">
                                                     <?php foreach (array_slice($entry_tags, 0, 4) as $tag): ?>
-                                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded tag-badge text-xs">#<?php echo e($tag); ?></span>
+                                                        <span class="inline-flex items-center px-1.5 py-0.5 fd-rounded-control tag-badge text-xs">#<?php echo e($tag); ?></span>
                                                     <?php endforeach; ?>
                                                 </div>
                                             <?php else: ?>
@@ -1400,7 +1400,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                                                 <?php if (!empty($entry_tags)): ?>
                                                     <div class="mt-1 flex flex-wrap gap-1">
                                                         <?php foreach (array_slice($entry_tags, 0, 4) as $tag): ?>
-                                                            <span class="inline-flex items-center px-1 py-0.5 rounded tag-badge text-xs">#<?php echo e($tag); ?></span>
+                                                            <span class="inline-flex items-center px-1 py-0.5 fd-rounded-control tag-badge text-xs">#<?php echo e($tag); ?></span>
                                                         <?php endforeach; ?>
                                                     </div>
                                                 <?php endif; ?>
@@ -1676,12 +1676,12 @@ include BASE_PATH . '/includes/components/page-header.php';
                 ?>
 
                 <?php if ($share_url): ?>
-                    <div class="border border-green-200 rounded-lg p-4 bg-theme-secondary">
+                    <div class="border border-green-200 fd-rounded-card p-4 bg-theme-secondary">
                         <div class="text-sm text-green-600 mb-2"><?php echo e(t('Share link created.')); ?></div>
                         <input type="text" readonly class="form-input" value="<?php echo e($share_url); ?>" onclick="this.select()">
                     </div>
                 <?php elseif ($active_share): ?>
-                    <div class="border border-yellow-200 rounded-lg p-4 text-sm text-yellow-600 bg-theme-secondary">
+                    <div class="border border-yellow-200 fd-rounded-card p-4 text-sm text-yellow-600 bg-theme-secondary">
                         <?php echo e(t('An active link exists but is hidden for security. Generate a new link to get a new URL.')); ?>
                     </div>
                     <form method="post">
@@ -1701,7 +1701,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 
 <?php if ($tab === 'billing' || $tab === 'worklog'): ?>
     <div id="entryModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="rounded-xl shadow-xl max-w-lg w-full mx-4 p-4 bg-theme-app">
+        <div class="fd-rounded-card shadow-xl max-w-lg w-full mx-4 p-4 bg-theme-app">
             <h3 class="font-semibold mb-4 text-theme-primary"><?php echo e(t('Edit time entry')); ?></h3>
             <form method="post" class="space-y-4">
                 <?php echo csrf_field(); ?>

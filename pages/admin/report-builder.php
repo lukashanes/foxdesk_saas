@@ -343,7 +343,7 @@ include BASE_PATH . '/includes/header.php';
         <!-- Step 1: Basic Information -->
         <div class="card card-body">
             <h2 class="text-xl font-semibold mb-4 flex items-center text-theme-primary">
-                <span class="bg-blue-50 dark:bg-blue-900/200 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">1</span>
+                <span class="bg-blue-50 dark:bg-blue-900/200 text-white fd-rounded-pill w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">1</span>
                 <?php echo e(t('Basic Information')); ?>
             </h2>
 
@@ -377,7 +377,7 @@ include BASE_PATH . '/includes/header.php';
                         <button type="button" id="org-clear-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-sm hidden text-theme-muted"
                             onclick="clearOrgSelection()">&times;</button>
                         <?php endif; ?>
-                        <div id="org-dropdown" class="absolute z-30 left-0 right-0 mt-1 rounded-lg shadow-lg border overflow-y-auto hidden"
+                        <div id="org-dropdown" class="absolute z-30 left-0 right-0 mt-1 fd-rounded-card shadow-lg border overflow-y-auto hidden"
                             style="max-height: 240px; background: var(--bg-primary); border-color: var(--border-light);">
                             <?php foreach ($organizations as $org): ?>
                                 <div class="org-option px-4 py-2 text-sm cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -425,7 +425,7 @@ include BASE_PATH . '/includes/header.php';
         <!-- Step 2: Timeframe -->
         <div class="card card-body">
             <h2 class="text-xl font-semibold mb-4 flex items-center text-theme-primary">
-                <span class="bg-blue-50 dark:bg-blue-900/200 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">2</span>
+                <span class="bg-blue-50 dark:bg-blue-900/200 text-white fd-rounded-pill w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">2</span>
                 <?php echo e(t('Timeframe')); ?>
             </h2>
 
@@ -472,7 +472,7 @@ include BASE_PATH . '/includes/header.php';
         <!-- Step 3: Configuration -->
         <div class="card card-body">
             <h2 class="text-xl font-semibold mb-4 flex items-center text-theme-primary">
-                <span class="bg-blue-50 dark:bg-blue-900/200 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">3</span>
+                <span class="bg-blue-50 dark:bg-blue-900/200 text-white fd-rounded-pill w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">3</span>
                 <?php echo e(t('Display Options')); ?>
             </h2>
 
@@ -482,7 +482,7 @@ include BASE_PATH . '/includes/header.php';
                     <!-- Show Financials -->
                     <label class="flex items-center">
                         <input type="checkbox" name="show_financials" <?php echo $form_values['show_financials'] ? 'checked' : ''; ?>
-                               class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                               class="w-4 h-4 text-blue-600 fd-rounded-control focus:ring-blue-500">
                         <span class="ml-3">
                             <span class="text-sm font-medium text-theme-primary"><?php echo e(t('Show Financial Data')); ?></span>
                             <span class="block text-xs text-theme-muted"><?php echo e(t('Display hourly rates and total costs')); ?></span>
@@ -504,7 +504,7 @@ include BASE_PATH . '/includes/header.php';
                     <!-- Show Team Attribution -->
                     <label class="flex items-center">
                         <input type="checkbox" name="show_team_attribution" <?php echo $form_values['show_team_attribution'] ? 'checked' : ''; ?>
-                               class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                               class="w-4 h-4 text-blue-600 fd-rounded-control focus:ring-blue-500">
                         <span class="ml-3">
                             <span class="text-sm font-medium text-theme-primary"><?php echo e(t('Show Team Member Names')); ?></span>
                             <span class="block text-xs text-theme-muted"><?php echo e(t('Attribute work to specific team members')); ?></span>
@@ -514,7 +514,7 @@ include BASE_PATH . '/includes/header.php';
                     <!-- Show Cost Breakdown -->
                     <label class="flex items-center">
                         <input type="checkbox" name="show_cost_breakdown" <?php echo $form_values['show_cost_breakdown'] ? 'checked' : ''; ?>
-                               class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                               class="w-4 h-4 text-blue-600 fd-rounded-control focus:ring-blue-500">
                         <span class="ml-3">
                             <span class="text-sm font-medium text-theme-primary"><?php echo e(t('Show Detailed Cost Breakdown')); ?></span>
                             <span class="block text-xs text-theme-muted"><?php echo e(t('Show cost per task in the data table')); ?></span>
@@ -524,7 +524,7 @@ include BASE_PATH . '/includes/header.php';
                     <!-- Hide Branding -->
                     <label class="flex items-center">
                         <input type="checkbox" name="hide_branding" <?php echo $form_values['hide_branding'] ? 'checked' : ''; ?>
-                               class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                               class="w-4 h-4 text-blue-600 fd-rounded-control focus:ring-blue-500">
                         <span class="ml-3">
                             <span class="text-sm font-medium text-theme-primary"><?php echo e(t('White-Label Mode')); ?></span>
                             <span class="block text-xs text-theme-muted"><?php echo e(t('Hide "Powered by" footer branding')); ?></span>
@@ -560,7 +560,7 @@ include BASE_PATH . '/includes/header.php';
                     <label class="block text-sm font-medium mb-2 text-theme-secondary"><?php echo e(t('Report Theme Color')); ?></label>
                     <div class="flex items-center space-x-4">
                         <input type="color" name="theme_color" value="<?php echo e($form_values['theme_color']); ?>" id="theme_color"
-                               class="w-32 h-16 border-2 rounded-lg cursor-pointer shadow-sm border-theme-light">
+                               class="w-32 h-16 border-2 fd-rounded-card cursor-pointer shadow-sm border-theme-light">
                         <div>
                             <p class="text-sm font-medium text-theme-primary" id="color_display"><?php echo e(strtoupper($form_values['theme_color'])); ?></p>
                             <p class="text-xs text-theme-muted"><?php echo e(t('Click to choose a color')); ?></p>
@@ -574,7 +574,7 @@ include BASE_PATH . '/includes/header.php';
         <!-- Step 4: Executive Summary -->
         <div class="card card-body">
             <h2 class="text-xl font-semibold mb-4 flex items-center text-theme-primary">
-                <span class="bg-blue-50 dark:bg-blue-900/200 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">4</span>
+                <span class="bg-blue-50 dark:bg-blue-900/200 text-white fd-rounded-pill w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">4</span>
                 <?php echo e(t('Executive Summary')); ?>
             </h2>
 
@@ -593,9 +593,9 @@ include BASE_PATH . '/includes/header.php';
         <?php ensure_report_schedule_columns(); ?>
         <div class="card card-body">
             <h2 class="text-xl font-semibold mb-4 flex items-center text-theme-primary">
-                <span class="bg-blue-50 dark:bg-blue-900/200 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">5</span>
+                <span class="bg-blue-50 dark:bg-blue-900/200 text-white fd-rounded-pill w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">5</span>
                 <?php echo e(t('Schedule & Email Delivery')); ?>
-                <span class="ml-2 text-xs font-normal px-2 py-0.5 rounded-full bg-blue-100 text-blue-700"><?php echo e(t('Optional')); ?></span>
+                <span class="ml-2 text-xs font-normal px-2 py-0.5 fd-rounded-pill bg-blue-100 text-blue-700"><?php echo e(t('Optional')); ?></span>
             </h2>
 
             <div class="space-y-4">
@@ -603,7 +603,7 @@ include BASE_PATH . '/includes/header.php';
                 <label class="flex items-center cursor-pointer">
                     <input type="checkbox" name="schedule_enabled" id="schedule_enabled"
                            <?php echo $form_values['schedule_enabled'] ? 'checked' : ''; ?>
-                           class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                           class="w-4 h-4 text-blue-600 fd-rounded-control focus:ring-blue-500"
                            onchange="toggleScheduleFields()">
                     <span class="ml-3">
                         <span class="text-sm font-medium text-theme-primary"><?php echo e(t('Enable automatic schedule')); ?></span>

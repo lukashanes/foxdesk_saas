@@ -10,12 +10,15 @@ $assert = static function (bool $condition, string $message): void {
 };
 
 $page = file_get_contents($root . '/pages/admin/users.php');
+$aiAgentsComponent = file_get_contents($root . '/includes/components/team-ai-agents-tab.php');
+$usersComponent = file_get_contents($root . '/includes/components/team-users-tab.php');
 $agentConnectPage = file_get_contents($root . '/pages/admin/agent-connect.php');
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
 $module = file_get_contents($root . '/includes/modules/team/team-users.php');
 
-$assert($page !== false && $agentConnectPage !== false && $bootstrap !== false && $module !== false, 'Team users contract files must be readable.');
+$assert($page !== false && $aiAgentsComponent !== false && $usersComponent !== false && $agentConnectPage !== false && $bootstrap !== false && $module !== false, 'Team users contract files must be readable.');
 $assert(str_contains($bootstrap, '/team/team-users.php'), 'Module bootstrap must load team users helpers.');
+$teamUiSurface = $page . "\n" . $aiAgentsComponent . "\n" . $usersComponent;
 
 foreach ([
     'team_users_table_capabilities()',
@@ -46,7 +49,7 @@ foreach ([
     'setAiAgentTokenScopeGroups(token)',
     'bindAiAgentScope(',
 ] as $needle) {
-    $assert(str_contains($page, $needle), 'AI agent access management must stay in the AI agents UI: ' . $needle);
+    $assert(str_contains($teamUiSurface, $needle), 'AI agent access management must stay in the AI agents UI: ' . $needle);
 }
 
 foreach ([

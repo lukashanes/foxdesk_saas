@@ -776,6 +776,13 @@ async function expectTicketDetailSurface(page) {
     if (timelineButtonCount !== 1) {
       throw new Error(`Expected one timeline button, found ${timelineButtonCount}`);
     }
+    const timelineSection = page.locator('details:has(button[onclick^="openTicketTimeline"])').first();
+    if (await timelineSection.count()) {
+      const isOpen = await timelineSection.evaluate((section) => section.open);
+      if (!isOpen) {
+        await timelineSection.locator('summary').click();
+      }
+    }
     await timelineButton.click();
     await page.waitForFunction(() => {
       const overlay = document.querySelector('#timeline-overlay');

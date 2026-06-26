@@ -231,6 +231,7 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
     <title><?php echo e($page_title); ?></title>
     <link href="tailwind.min.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
     <link href="theme.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
+    <link href="assets/css/platform.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
 </head>
 <body class="op-page">
 <div class="op-shell">

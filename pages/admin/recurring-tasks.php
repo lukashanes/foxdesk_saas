@@ -173,22 +173,22 @@ include BASE_PATH . '/includes/header.php';
             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted"><?php echo get_icon('search', 'w-4 h-4'); ?></span>
         </div>
         <div class="flex items-center gap-1 text-sm">
-            <button type="button" class="px-3 py-1.5 rounded-md text-xs font-medium task-filter-btn active"
+            <button type="button" class="px-3 py-1.5 fd-rounded-control text-xs font-medium task-filter-btn active"
                 data-filter="all" onclick="setTaskFilter('all')"
                 style="background: var(--accent-primary); color: #fff;">
                 <?php echo e(t('All')); ?> <span class="ml-1 opacity-75"><?php echo count($tasks); ?></span>
             </button>
-            <button type="button" class="px-3 py-1.5 rounded-md text-xs font-medium task-filter-btn text-theme-secondary"
+            <button type="button" class="px-3 py-1.5 fd-rounded-control text-xs font-medium task-filter-btn text-theme-secondary"
                 data-filter="active" onclick="setTaskFilter('active')"
                >
                 <?php echo e(t('Active')); ?> <span class="ml-1 opacity-75"><?php echo count(array_filter($tasks, fn($t) => $t['is_active'] && !($t['is_paused'] ?? false))); ?></span>
             </button>
-            <button type="button" class="px-3 py-1.5 rounded-md text-xs font-medium task-filter-btn text-theme-secondary"
+            <button type="button" class="px-3 py-1.5 fd-rounded-control text-xs font-medium task-filter-btn text-theme-secondary"
                 data-filter="paused" onclick="setTaskFilter('paused')"
                >
                 <?php echo e(t('Paused')); ?> <span class="ml-1 opacity-75"><?php echo count(array_filter($tasks, fn($t) => $t['is_paused'] ?? false)); ?></span>
             </button>
-            <button type="button" class="px-3 py-1.5 rounded-md text-xs font-medium task-filter-btn text-theme-secondary"
+            <button type="button" class="px-3 py-1.5 fd-rounded-control text-xs font-medium task-filter-btn text-theme-secondary"
                 data-filter="inactive" onclick="setTaskFilter('inactive')"
                >
                 <?php echo e(t('Inactive')); ?> <span class="ml-1 opacity-75"><?php echo count(array_filter($tasks, fn($t) => !$t['is_active'])); ?></span>
@@ -305,15 +305,15 @@ include BASE_PATH . '/includes/header.php';
                             </td>
                             <td class="px-6 py-4">
                                 <?php if ($task['is_active']): ?>
-                                    <span class="badge-inline rounded-full bg-green-100 text-green-800">
+                                    <span class="badge-inline fd-rounded-pill bg-green-100 text-green-800">
                                         <?php echo get_icon('check-circle', 'mr-1 inline-block w-3 h-3'); ?> <?php echo e(t('Active')); ?>
                                     </span>
                                 <?php elseif (!empty($task['paused_at'])): ?>
-                                    <span class="badge-inline rounded-full bg-orange-100 text-orange-800">
+                                    <span class="badge-inline fd-rounded-pill bg-orange-100 text-orange-800">
                                         <?php echo get_icon('pause-circle', 'mr-1 inline-block w-3 h-3'); ?> <?php echo e(t('Paused')); ?>
                                     </span>
                                 <?php else: ?>
-                                    <span class="badge-inline rounded-full bg-theme-secondary text-theme-primary">
+                                    <span class="badge-inline fd-rounded-pill bg-theme-secondary text-theme-primary">
                                         <?php echo get_icon('pause-circle', 'mr-1 inline-block w-3 h-3'); ?> <?php echo e(t('Inactive')); ?>
                                     </span>
                                 <?php endif; ?>
@@ -397,7 +397,7 @@ include BASE_PATH . '/includes/header.php';
 <!-- Task Modal -->
 <div id="taskModal"
     class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 overflow-y-auto">
-    <div class="rounded-xl shadow-xl max-w-3xl w-full mx-4 my-8 p-4 bg-theme-app">
+    <div class="fd-rounded-card shadow-xl max-w-3xl w-full mx-4 my-8 p-4 bg-theme-app">
         <h3 class="text-lg font-semibold mb-4 text-theme-primary" id="modalTitle">
             <?php echo get_icon('redo', 'mr-2 inline-block'); ?><?php echo e(t('Create Recurring Task')); ?>
         </h3>
@@ -559,7 +559,7 @@ include BASE_PATH . '/includes/header.php';
 
 <!-- Run History Modal -->
 <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 overflow-y-auto">
-    <div class="rounded-xl shadow-xl max-w-2xl w-full mx-4 my-8 p-4 bg-theme-app">
+    <div class="fd-rounded-card shadow-xl max-w-2xl w-full mx-4 my-8 p-4 bg-theme-app">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-theme-primary" id="historyTitle">
                 <?php echo get_icon('clock', 'mr-2 inline-block'); ?><?php echo e(t('Run History')); ?>
@@ -574,7 +574,7 @@ include BASE_PATH . '/includes/header.php';
 
 <!-- Pause Modal -->
 <div id="pauseModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="rounded-xl shadow-xl max-w-md w-full mx-4 p-4 bg-theme-app">
+    <div class="fd-rounded-card shadow-xl max-w-md w-full mx-4 p-4 bg-theme-app">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-theme-primary">
                 <?php echo get_icon('pause-circle', 'mr-2 inline-block'); ?><?php echo e(t('Pause Task')); ?>
@@ -614,7 +614,7 @@ include BASE_PATH . '/includes/header.php';
 
 <!-- Preview Modal -->
 <div id="previewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 overflow-y-auto">
-    <div class="rounded-xl shadow-xl max-w-2xl w-full mx-4 my-8 p-4 bg-theme-app">
+    <div class="fd-rounded-card shadow-xl max-w-2xl w-full mx-4 my-8 p-4 bg-theme-app">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-theme-primary" id="previewTitle">
                 <?php echo get_icon('eye', 'mr-2 inline-block'); ?><?php echo e(t('Ticket Preview')); ?>
@@ -757,7 +757,7 @@ include BASE_PATH . '/includes/header.php';
                     left.className = 'flex items-center gap-3';
 
                     var badge = document.createElement('span');
-                    badge.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
+                    badge.className = 'inline-flex items-center px-2 py-0.5 fd-rounded-pill text-xs font-medium ' +
                         (run.status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800');
                     badge.textContent = run.status === 'success' ? '✓ ' + <?php echo json_encode(t('Success')); ?> : '✗ ' + <?php echo json_encode(t('Failed')); ?>;
 
@@ -874,7 +874,7 @@ include BASE_PATH . '/includes/header.php';
                         tag = tag.trim();
                         if (!tag) return;
                         var badge = document.createElement('span');
-                        badge.className = 'inline-block px-2 py-0.5 rounded-full text-xs font-medium mr-1 mb-1';
+                        badge.className = 'inline-block px-2 py-0.5 fd-rounded-pill text-xs font-medium mr-1 mb-1';
                         badge.style.background = 'var(--surface-secondary)';
                         badge.style.color = 'var(--text-secondary)';
                         badge.textContent = '#' + tag;

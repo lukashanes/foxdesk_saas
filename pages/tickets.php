@@ -2,23 +2,18 @@
 /**
  * Tickets List Page
  */
-
 $user = current_user();
 $is_archive = (isset($_GET['archived']) && $_GET['archived'] === '1') || (($_GET['work_view'] ?? '') === 'archived');
-
 // Strict Access Control: Only admins can view Archive
 if ($is_archive && !is_admin()) {
     flash(t('Access denied.'), 'error');
     redirect('tickets');
 }
-
 $page_title = $is_archive ? t('Archive') : t('Tickets');
 $page = 'tickets';
-
 // Preserve current filter params for redirects after bulk actions
 $_redirect_params = ticket_bulk_action_redirect_params($_GET);
 ticket_handle_bulk_actions($_SERVER['REQUEST_METHOD'] ?? 'GET', $_POST, $user, $is_archive, $_redirect_params);
-
 // Get filters
 $ticket_filter_state = ticket_list_filter_state_from_request($_GET, $_COOKIE, $is_archive);
 $filters = $ticket_filter_state['filters'];
@@ -39,12 +34,10 @@ $ticket_view = $ticket_filter_state['ticket_view'];
 if ($ticket_filter_state['ticket_view_should_persist']) {
     setcookie('foxdesk_ticket_view', $ticket_view, ['expires' => time() + 365 * 86400, 'path' => '/', 'samesite' => 'Lax']);
 }
-
 // VISIBILITY CONTROL
 if (!is_admin()) {
     $permissions = get_user_permissions($user['id']) ?? [];
     $scope = $permissions['ticket_scope'] ?? 'own'; // Default fallback
-
     // 1. AGENTS
     if (is_agent()) {
         switch ($scope) {
@@ -78,7 +71,6 @@ if (!is_admin()) {
                 // User sees tickets from their organizations
                 // Allow toggling between "My Tickets" and "Company Tickets"
                 $view_mode = $_GET['view_mode'] ?? 'company';
-
                 if ($view_mode === 'company') {
                     // Check if user has multiple organizations in permissions
                     $org_ids = $permissions['organization_ids'] ?? [];
@@ -109,13 +101,11 @@ if (!is_admin()) {
         }
     }
 }
-
 // Admin staff scope filter (from dashboard links)
 $staff_scope = is_admin() && (($_GET['scope'] ?? '') === 'staff');
 if ($staff_scope) {
     $filters['assigned_to_staff'] = true;
 }
-
 $ticket_list_include_archive = is_admin();
 $ticket_list_view = ticket_list_view_from_request($_GET, $is_archive, $ticket_list_include_archive);
 $sort = ticket_list_view_effective_sort($ticket_list_view, $sort, (bool) ($ticket_filter_state['sort_is_explicit'] ?? false));
@@ -134,11 +124,8 @@ $ticket_clear_url = $is_archive
 $ticket_list_count_filters = $filters;
 $ticket_list_view_counts = ticket_list_view_counts($ticket_list_count_filters, $ticket_list_include_archive);
 $filters = ticket_list_view_apply_filters($filters, $ticket_list_view);
-
 $total_tickets = get_tickets_count($filters);
-
 $tickets = get_tickets($filters);
-
 // Time tracking totals (admins only)
 $show_time = is_admin() && ticket_time_table_exists();
 $ticket_time_totals = [];
@@ -148,7 +135,6 @@ if ($show_time && !empty($tickets)) {
         return (int) $t['id'];
     }, $tickets);
     $placeholders = implode(',', array_fill(0, count($ticket_ids), '?'));
-
     $dur = sql_timer_duration_minutes();
     $rows = db_fetch_all(
         "SELECT ticket_id, SUM({$dur}) as total_minutes
@@ -160,7 +146,6 @@ if ($show_time && !empty($tickets)) {
     foreach ($rows as $row) {
         $ticket_time_totals[(int) $row['ticket_id']] = (int) $row['total_minutes'];
     }
-
     $running_rows = db_fetch_all(
         "SELECT tte.ticket_id, tte.user_id, u.first_name, u.last_name, tte.started_at,
                 " . sql_timer_duration_minutes('tte.') . " as elapsed_minutes
@@ -178,10 +163,8 @@ if ($show_time && !empty($tickets)) {
         $ticket_running_entries[$ticket_id][] = $row;
     }
 }
-
 require_once BASE_PATH . '/includes/header.php';
 ?>
-
 <?php
 $statuses = get_statuses();
 $priorities = get_priorities();
@@ -219,7 +202,6 @@ if (is_agent()) {
         $organizations = [];
     }
 }
-
 $page_header_title = $is_archive ? t('Archive') : t('Tickets');
 $filter_notes = [];
 if (!empty($status_id)) {
@@ -260,7 +242,6 @@ $has_filters = !empty($search_query) || !empty($status_id) || !empty($priority_i
                !empty($organization_id) || !empty($due_date_filter) || !empty($created_date_value) ||
                !empty($user_search) || !empty($assigned_to) || $staff_scope || ($tags_supported && !empty($tag_filters)) || $sort !== 'newest';
 $page_header_subtitle = '';
-
 $page_header_breadcrumbs = [
     ['label' => t('All tickets'), 'url' => url('tickets', $is_archive ? ['archived' => '1'] : [])]
 ];
@@ -273,11 +254,9 @@ if (!empty($status_id) && !empty($status['name'])) {
 if (!empty($organization_id) && !empty($org['name'])) {
     $page_header_breadcrumbs[] = ['label' => $org['name']];
 }
-
 $bulk_actions_enabled = is_agent() && !empty($tickets);
 $bulk_archive_mode = $bulk_actions_enabled && !$is_archive;
 $bulk_delete_mode = $bulk_actions_enabled && $is_archive;
-
 $page_header_actions = '';
 // User View Mode Toggle
 if (!is_admin() && !is_agent() && isset($scope) && $scope === 'organization' && !empty($user['organization_id'])) {
@@ -285,10 +264,8 @@ if (!is_admin() && !is_agent() && isset($scope) && $scope === 'organization' && 
     // Remove p=page to reset pagination when switching
     $params_mine = $_GET; unset($params_mine['p']); $params_mine['view_mode'] = 'mine';
     $params_comp = $_GET; unset($params_comp['p']); $params_comp['view_mode'] = 'company';
-
     $mine_url = url('tickets', $params_mine);
     $company_url = url('tickets', $params_comp);
-
     $page_header_actions .= '<div class="ticket-segmented-control" role="group" aria-label="' . e(t('Ticket scope')) . '">
         <a href="'.$mine_url.'" class="ticket-segmented-item '.($current_view === 'mine' ? 'is-active' : '').'">
             '.t('My Tickets').'
@@ -298,14 +275,12 @@ if (!is_admin() && !is_agent() && isset($scope) && $scope === 'organization' && 
         </a>
     </div>';
 }
-
 // Board/List view toggle
 if (!$is_archive) {
     $view_params_list = $_GET; unset($view_params_list['p'], $view_params_list['page']); $view_params_list['view'] = 'list';
     $view_params_board = $_GET; unset($view_params_board['p'], $view_params_board['page']); $view_params_board['view'] = 'board';
     $list_url = url('tickets', $view_params_list);
     $board_url = url('tickets', $view_params_board);
-
     $page_header_actions .= '<div class="ticket-segmented-control ticket-segmented-control--icon" role="group" aria-label="' . e(t('View')) . '">'
         . '<a href="' . $list_url . '" class="ticket-segmented-item ' . ($ticket_view === 'list' ? 'is-active' : '') . '" title="' . e(t('List')) . '">'
         . get_icon('list', 'w-4 h-4')
@@ -315,7 +290,6 @@ if (!$is_archive) {
         . '</a>'
         . '</div>';
 }
-
 // Sort dropdown in page header (syncs with hidden input in filter form via JS)
 $sort_options = [
     'newest'           => t('Newest'),
@@ -340,7 +314,6 @@ foreach ($sort_options as $val => $label) {
 }
 $sort_select .= '</select></div>';
 $page_header_actions .= $sort_select;
-
 if ($bulk_actions_enabled && $ticket_view !== 'board') {
     $page_header_actions .= '<button type="button" onclick="toggleBulkMode()" class="hdr-icon-btn" id="bulk-toggle" aria-pressed="false" title="' . e(t('Bulk select')) . '" aria-label="' . e(t('Bulk select')) . '">' . get_icon('check-square', 'w-4 h-4') . '</button>';
 }
@@ -350,7 +323,6 @@ if (!$is_archive) {
     }
     $page_header_actions .= '<a href="' . url('new-ticket') . '" class="btn btn-primary btn-sm" title="' . e(t('New ticket')) . '">' . get_icon('plus', 'mr-1 w-4 h-4') . e(t('New ticket')) . '</a>';
 }
-
 $build_tag_filter_url = function ($tag_value) use ($is_archive, $tag_filters) {
     $params = $_GET;
     unset($params['page'], $params['p']);
@@ -368,7 +340,6 @@ $build_tag_filter_url = function ($tag_value) use ($is_archive, $tag_filters) {
     unset($params['tag']);
     return url('tickets', $params);
 };
-
 $build_remove_tag_filter_url = function ($tag_value) use ($is_archive, $tag_filters) {
     $params = $_GET;
     unset($params['page'], $params['p']);
@@ -377,7 +348,6 @@ $build_remove_tag_filter_url = function ($tag_value) use ($is_archive, $tag_filt
     } else {
         unset($params['archived']);
     }
-
     $remaining = [];
     $remove_key = function_exists('mb_strtolower') ? mb_strtolower($tag_value, 'UTF-8') : strtolower($tag_value);
     foreach ($tag_filters as $tag) {
@@ -394,10 +364,8 @@ $build_remove_tag_filter_url = function ($tag_value) use ($is_archive, $tag_filt
         unset($params['tags']);
     }
     unset($params['tag']);
-
     return url('tickets', $params);
 };
-
 $date_sort_next = $sort === 'oldest' ? 'newest' : 'oldest';
 if (!in_array($sort, ['newest', 'oldest'], true)) {
     $date_sort_next = 'newest';
@@ -414,11 +382,8 @@ $date_sort_url = url('tickets', $date_sort_params);
 $date_sort_icon = $sort === 'oldest' ? 'arrow-up' : ($sort === 'newest' ? 'arrow-down' : 'arrow-up-down');
 $date_sort_is_active = in_array($sort, ['newest', 'oldest'], true);
 $date_sort_title = t('Date') . ': ' . t($date_sort_next === 'oldest' ? 'Oldest' : 'Newest');
-
 include BASE_PATH . '/includes/components/page-header.php';
 ?>
-
-
 <?php
 $is_closed_filter_active = ticket_registry_closed_filter_active($statuses, $status_id);
 $show_closed_tickets_inline = ticket_list_view_shows_closed_inline($ticket_list_view, $is_closed_filter_active);
@@ -426,7 +391,7 @@ $ticket_registry_closed_mode_class = 'ticket-registry-page--closed-inline';
 if (!$show_closed_tickets_inline) {
     $ticket_registry_closed_mode_class = 'ticket-registry-page--closed-collapsible';
 }
-$ticket_registry_model = ticket_registry_split_model($statuses, $tickets, $status_id, $ticket_list_view, $show_closed_tickets_inline);
+$ticket_registry_model = ticket_registry_split_model($statuses, $tickets, $status_id, $ticket_list_view);
 extract($ticket_registry_model, EXTR_SKIP);
 $ticket_kanban_model = ticket_registry_kanban_model($statuses, $tickets, $statuses_by_id, $board_active_statuses, $board_closed_statuses, $show_closed_tickets_inline);
 $kanban_hide_closed_after_days = $ticket_kanban_model['hide_closed_after_days'];
@@ -436,7 +401,6 @@ $kanban_archived_closed_count = $ticket_kanban_model['archived_closed_count'];
 $kanban_main_statuses = $ticket_kanban_model['main_statuses'];
 $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuses'];
 ?>
-
 <div class="workflow-surface workflow-surface--registry ticket-registry-page <?php echo e($ticket_registry_closed_mode_class); ?>"
      data-core-workflow-surface="tickets"
      data-ticket-registry-surface
@@ -456,7 +420,6 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
         ticket_registry_render_filter_summary($total_tickets, $filter_notes, $ticket_clear_url, $has_filters);
         ?>
     </div>
-
 <div class="card ticket-registry-card overflow-hidden <?php echo $ticket_view === 'board' ? 'kanban-board-wrapper' : ''; ?>">
     <?php if (empty($tickets)): ?>
         <?php
@@ -572,7 +535,6 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                     </div>
                 <?php endforeach; ?>
             </div>
-
             <?php if ($kanban_archived_closed_count > 0): ?>
                 <button type="button"
                         class="kanban-closed-toggle"
@@ -716,7 +678,6 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                 <?php endif; ?>
             </form>
         </div>
-
         <?php if ($tags_supported && !empty($tag_filters)): ?>
             <?php
             $clear_tags_params = $_GET;
@@ -743,7 +704,6 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                 </a>
             </div>
         <?php endif; ?>
-
         <!-- Mobile List View -->
         <div class="block lg:hidden">
             <?php foreach ($ticket_groups as $group): ?>
@@ -766,7 +726,7 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                     <div class="flex items-start gap-3">
                         <?php if ($bulk_actions_enabled): ?>
                             <input type="checkbox" name="ticket_ids[]" value="<?php echo (int) $ticket['id']; ?>"
-                                class="bulk-checkbox hidden mt-1 rounded" form="bulk-actions-form" onclick="event.stopPropagation()">
+                                class="bulk-checkbox hidden mt-1 fd-rounded-control" form="bulk-actions-form" onclick="event.stopPropagation()">
                         <?php endif; ?>
                             <a href="<?php echo ticket_url($ticket); ?>" class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2 text-xs mb-1 text-theme-muted">
@@ -839,7 +799,6 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
             </div>
             <?php endforeach; ?>
         </div>
-
         <!-- Desktop Table View with Inline Filters -->
         <form method="get" action="index.php" id="filter-form">
                 <input type="hidden" name="page" value="tickets">
@@ -856,7 +815,7 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                         <th class="px-3 py-2.5 text-left tickets-col-date">
                             <div class="flex items-center gap-1">
                                 <?php if ($bulk_actions_enabled): ?>
-                                    <input type="checkbox" id="select-all" class="rounded hidden" onchange="toggleAll(this)">
+                                    <input type="checkbox" id="select-all" class="fd-rounded-control hidden" onchange="toggleAll(this)">
                                 <?php endif; ?>
                                 <a href="<?php echo e($date_sort_url); ?>"
                                    class="ticket-date-sort <?php echo $date_sort_is_active ? 'is-active' : ''; ?>"
@@ -1067,7 +1026,7 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                                 <div class="flex items-center gap-1.5">
                                     <?php if ($bulk_actions_enabled): ?>
                                         <input type="checkbox" name="ticket_ids[]" value="<?php echo (int) $ticket['id']; ?>"
-                                            class="bulk-checkbox hidden rounded flex-shrink-0" form="bulk-actions-form">
+                                            class="bulk-checkbox hidden fd-rounded-control flex-shrink-0" form="bulk-actions-form">
                                     <?php endif; ?>
                                     <div>
                                         <a href="<?php echo ticket_url($ticket); ?>" class="ticket-row-date-link" title="<?php echo e(get_ticket_code($ticket['id'])); ?>">
@@ -1171,7 +1130,7 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                                         <button type="button" class="tl-dropdown-item ticket-priority-option ticket-priority-option--<?php echo e($priority_option_key); ?>"
                                             data-tone-class="ticket-priority-inline--<?php echo e($priority_option_key); ?>"
                                             onclick="inlineUpdate(<?php echo (int)$ticket['id']; ?>, 'priority', <?php echo (int)$pr['id']; ?>, this)">
-                                            <span class="ticket-priority-dot ticket-priority-dot--<?php echo e($priority_option_key); ?> w-2 h-2 rounded-full inline-block mr-1.5"></span>
+                                            <span class="ticket-priority-dot ticket-priority-dot--<?php echo e($priority_option_key); ?> w-2 h-2 fd-rounded-pill inline-block mr-1.5"></span>
                                             <?php echo e($pr['name']); ?>
                                         </button>
                                         <?php endforeach; ?>
@@ -1359,7 +1318,6 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                 <?php endforeach; ?>
             </table>
         </form>
-
         <!-- Bulk Actions Bar -->
         <?php if ($bulk_actions_enabled): ?>
             <form method="post" id="bulk-actions-form">
@@ -1368,13 +1326,12 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                     class="ticket-bulk-actions hidden <?php echo $bulk_delete_mode ? 'ticket-bulk-actions--danger' : ''; ?>">
                     <div class="flex items-center justify-between">
                         <div class="inline-flex items-center gap-2 text-sm">
-                            <span class="inline-flex items-center justify-center min-w-[1.75rem] h-7 px-2 rounded-full font-semibold bg-theme-tertiary text-theme-secondary">
+                            <span class="inline-flex items-center justify-center min-w-[1.75rem] h-7 px-2 fd-rounded-pill font-semibold bg-theme-tertiary text-theme-secondary">
                                 <span id="selected-count">0</span>
                             </span>
                             <span class="text-theme-secondary"><?php echo e(t('selected')); ?></span>
                         </div>
                     </div>
-
                     <?php if ($bulk_archive_mode): ?>
                         <div class="grid grid-cols-1 <?php echo $tags_supported ? 'lg:grid-cols-5' : 'lg:grid-cols-3'; ?> gap-2 lg:gap-3">
                             <select name="bulk_organization_id" class="form-select form-select-sm">
@@ -1429,14 +1386,11 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
         <?php endif; ?>
         <?php endif; /* board/list toggle */ ?>
     <?php endif; ?>
-
 </div>
 </div>
-
 <?php if ($ticket_view === 'board'): ?>
 <script src="assets/js/kanban.js" defer></script>
 <?php endif; ?>
-
 <script>
 window.FoxDeskTicketListConfig = {
     currentView: <?php echo json_encode($ticket_view); ?>,
@@ -1457,10 +1411,6 @@ window.FoxDeskTicketListConfig = {
 };
 </script>
 <script src="assets/js/ticket-list.js?v=<?php echo defined('APP_VERSION') ? APP_VERSION : '1'; ?>" defer></script>
-
-
-
-
 <template id="tl-due-popover-tpl">
     <div class="tl-due-popover" role="dialog" aria-label="<?php echo e(t('Due date')); ?>">
         <input type="date" class="tl-due-popover__input">
@@ -1470,7 +1420,6 @@ window.FoxDeskTicketListConfig = {
         </div>
     </div>
 </template>
-
 <!-- Inline log-time: preset chips slide out next to the clock on click. One click = save. -->
 <template id="inline-log-time-chips-tpl">
     <span class="ilt-chips" role="group" aria-label="<?php echo e(t('Log time')); ?>">
@@ -1493,7 +1442,4 @@ window.FoxDeskTicketListConfig = {
         </div>
     </div>
 </template>
-
-
-
 <?php require_once BASE_PATH . '/includes/footer.php';

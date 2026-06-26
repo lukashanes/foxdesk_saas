@@ -8,6 +8,7 @@
 
 $page_title = t('Activity');
 $page = 'admin';
+$page_extra_css = ['assets/css/admin-activity.css'];
 
 if (!ensure_page_views_table()) {
     require_once BASE_PATH . '/includes/header.php';
@@ -462,7 +463,7 @@ require_once BASE_PATH . '/includes/header.php';
             <input type="hidden" name="tab" value="log">
             <input type="hidden" name="range" value="<?php echo $range_days; ?>">
 
-            <select name="uid" class="text-sm rounded-lg border px-3 py-1.5 bg-theme-primary border-theme-light text-theme-primary">
+            <select name="uid" class="text-sm fd-rounded-card border px-3 py-1.5 bg-theme-primary border-theme-light text-theme-primary">
                 <option value=""><?php echo e(t('All users')); ?></option>
                 <?php foreach ($filter_users as $fu): ?>
                     <option value="<?php echo $fu['user_id']; ?>" <?php echo $log_user == $fu['user_id'] ? 'selected' : ''; ?>>
@@ -471,7 +472,7 @@ require_once BASE_PATH . '/includes/header.php';
                 <?php endforeach; ?>
             </select>
 
-            <select name="fp" class="text-sm rounded-lg border px-3 py-1.5 bg-theme-primary border-theme-light text-theme-primary">
+            <select name="fp" class="text-sm fd-rounded-card border px-3 py-1.5 bg-theme-primary border-theme-light text-theme-primary">
                 <option value=""><?php echo e(t('All pages')); ?></option>
                 <?php foreach ($filter_pages_list as $fp): ?>
                     <option value="<?php echo e($fp['page']); ?>" <?php echo $log_page_filter === $fp['page'] ? 'selected' : ''; ?>>
@@ -480,7 +481,7 @@ require_once BASE_PATH . '/includes/header.php';
                 <?php endforeach; ?>
             </select>
 
-            <button type="submit" class="act-filter-submit text-sm font-medium px-3 py-1.5 rounded-lg"><?php echo e(t('Filter')); ?></button>
+            <button type="submit" class="act-filter-submit text-sm font-medium px-3 py-1.5 fd-rounded-card"><?php echo e(t('Filter')); ?></button>
             <?php if ($log_user || $log_page_filter !== ''): ?>
                 <a href="<?php echo url('admin', ['section' => 'activity', 'tab' => 'log', 'range' => $range]); ?>"
                    class="act-clear-link text-sm"><?php echo e(t('Clear')); ?></a>
@@ -542,14 +543,14 @@ require_once BASE_PATH . '/includes/header.php';
                     <?php if ($page_num > 1): ?>
                         <a href="<?php echo url('admin', array_merge(['section' => 'activity', 'tab' => 'log', 'range' => $range, 'p' => $page_num - 1],
                             $log_user ? ['uid' => $log_user] : [], $log_page_filter !== '' ? ['fp' => $log_page_filter] : [])); ?>"
-                           class="act-page-link px-3 py-1 text-xs rounded border">
+                           class="act-page-link px-3 py-1 text-xs fd-rounded-control border">
                             ← <?php echo e(t('Previous')); ?>
                         </a>
                     <?php endif; ?>
                     <?php if ($page_num < $log_pages): ?>
                         <a href="<?php echo url('admin', array_merge(['section' => 'activity', 'tab' => 'log', 'range' => $range, 'p' => $page_num + 1],
                             $log_user ? ['uid' => $log_user] : [], $log_page_filter !== '' ? ['fp' => $log_page_filter] : [])); ?>"
-                           class="act-page-link px-3 py-1 text-xs rounded border">
+                           class="act-page-link px-3 py-1 text-xs fd-rounded-control border">
                             <?php echo e(t('Next')); ?> →
                         </a>
                     <?php endif; ?>
@@ -579,10 +580,10 @@ require_once BASE_PATH . '/includes/header.php';
         <form method="post" class="space-y-3" onsubmit="return confirm('<?php echo e(t('Are you sure?')); ?>');">
             <?php echo csrf_field(); ?>
             <div class="flex items-center gap-2">
-                <button type="submit" name="clear_old" class="text-sm font-medium px-3 py-1.5 rounded-lg border border-theme-light text-theme-secondary">
+                <button type="submit" name="clear_old" class="text-sm font-medium px-3 py-1.5 fd-rounded-card border border-theme-light text-theme-secondary">
                     <?php echo e(t('Delete older than')); ?>
                 </button>
-                <select name="days" class="text-sm rounded-lg border px-2 py-1.5 bg-theme-primary border-theme-light text-theme-primary">
+                <select name="days" class="text-sm fd-rounded-card border px-2 py-1.5 bg-theme-primary border-theme-light text-theme-primary">
                     <option value="7">7 <?php echo e(t('days')); ?></option>
                     <option value="30">30 <?php echo e(t('days')); ?></option>
                     <option value="90" selected>90 <?php echo e(t('days')); ?></option>

@@ -82,7 +82,7 @@ function render_admin_settings_management_links(): void
             <p class="settings-management-panel__kicker"><?php echo e(t('Workspace management')); ?></p>
             <h2><?php echo e(t('Admin areas')); ?></h2>
         </div>
-        <div class="settings-section-nav settings-section-nav--management">
+        <div class="settings-management-grid">
             <?php foreach (admin_settings_management_links() as $item): ?>
                 <a href="<?php echo e($item['url']); ?>" class="settings-section-card" data-settings-management-link>
                     <span class="settings-section-card__icon"><?php echo get_icon($item['icon'], 'w-4 h-4'); ?></span>

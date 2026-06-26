@@ -367,7 +367,7 @@ include BASE_PATH . '/includes/components/page-header.php';
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                     <label class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Attachments')); ?></label>
-                    <div id="upload-zone" class="rounded-lg p-2 flex items-center gap-2 cursor-pointer border-2 border-dashed hover:border-blue-300 transition-colors border-theme-light">
+                    <div id="upload-zone" class="fd-rounded-card p-2 flex items-center gap-2 cursor-pointer border-2 border-dashed hover:border-blue-300 transition-colors border-theme-light">
                         <input type="file" name="attachments[]" id="file-input" multiple class="hidden"
                             accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar">
                         <?php echo get_icon('cloud-upload-alt', 'text-lg flex-shrink-0'); ?>
@@ -386,7 +386,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                         <?php echo e(t('Total upload per request is limited to {size}.', ['size' => format_file_size(get_request_upload_limit())])); ?>
                     </p>
                     <?php endif; ?>
-                    <div id="file-upload-errors" class="mt-2 hidden rounded-lg border px-3 py-2 text-xs"
+                    <div id="file-upload-errors" class="mt-2 hidden fd-rounded-card border px-3 py-2 text-xs"
                         style="border-color: color-mix(in srgb, #ef4444 28%, var(--border-light)); background: color-mix(in srgb, #ef4444 10%, var(--surface-primary)); color: #b91c1c;"
                         aria-live="polite"></div>
                     <!-- File preview -->

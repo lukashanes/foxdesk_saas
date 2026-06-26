@@ -15,6 +15,7 @@ if (!is_admin()) {
 }
 
 $page_title = t('Agent Connect');
+$page_extra_css = ['assets/css/agent-connect.css'];
 $agent_id = (int) ($_GET['id'] ?? 0);
 
 // Load agent
@@ -346,7 +347,7 @@ require_once BASE_PATH . '/includes/header.php';
 
 // Helper: render code block with toolbar (buttons above, never overlapping text)
 function ac_code($id, $content, $label = '', $buttons = ['copy']) {
-    $h = '<div class="ac-cb rounded-lg overflow-hidden" style="border:1px solid rgba(255,255,255,0.08);">';
+    $h = '<div class="ac-cb fd-rounded-card overflow-hidden" style="border:1px solid rgba(255,255,255,0.08);">';
     $h .= '<div class="flex items-center justify-between px-3 py-1" style="background:#1e293b;">';
     $h .= '<span class="text-[11px] font-mono" style="color:#94a3b8;">' . e($label) . '</span>';
     $h .= '<div class="flex gap-1">';
@@ -383,43 +384,43 @@ include BASE_PATH . '/includes/components/page-header.php';
 
 <!-- Tool selector -->
 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-    <button onclick="showTool('bot')" id="tool_btn_bot" class="tool-btn tool-btn-active group p-3 rounded-xl border-2 text-center transition-all cursor-pointer">
-        <div class="w-10 h-10 mx-auto mb-1.5 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+    <button onclick="showTool('bot')" id="tool_btn_bot" class="tool-btn tool-btn-active group p-3 fd-rounded-card border-2 text-center transition-all cursor-pointer">
+        <div class="w-10 h-10 mx-auto mb-1.5 fd-rounded-card bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
             <?php echo get_icon('cpu', 'w-5 h-5 text-red-600'); ?>
         </div>
         <span class="text-sm font-medium block text-theme-primary"><?php echo e(t('Custom bot')); ?></span>
         <span class="text-[10px] block mt-0.5 text-theme-muted">Python · JS · cURL</span>
     </button>
-    <button onclick="showTool('claude_ai')" id="tool_btn_claude_ai" class="tool-btn tool-btn-inactive group p-3 rounded-xl border-2 text-center transition-all cursor-pointer">
-        <div class="w-10 h-10 mx-auto mb-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+    <button onclick="showTool('claude_ai')" id="tool_btn_claude_ai" class="tool-btn tool-btn-inactive group p-3 fd-rounded-card border-2 text-center transition-all cursor-pointer">
+        <div class="w-10 h-10 mx-auto mb-1.5 fd-rounded-card bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
             <?php echo get_icon('message-square', 'w-5 h-5 text-purple-600'); ?>
         </div>
         <span class="text-sm font-medium block text-theme-primary">Claude.ai</span>
         <span class="text-[10px] block mt-0.5 text-theme-muted"><?php echo e(t('Web chat')); ?></span>
     </button>
-    <button onclick="showTool('claude_code')" id="tool_btn_claude_code" class="tool-btn tool-btn-inactive group p-3 rounded-xl border-2 text-center transition-all cursor-pointer">
-        <div class="w-10 h-10 mx-auto mb-1.5 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+    <button onclick="showTool('claude_code')" id="tool_btn_claude_code" class="tool-btn tool-btn-inactive group p-3 fd-rounded-card border-2 text-center transition-all cursor-pointer">
+        <div class="w-10 h-10 mx-auto mb-1.5 fd-rounded-card bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
             <?php echo get_icon('terminal', 'w-5 h-5 text-orange-600'); ?>
         </div>
         <span class="text-sm font-medium block text-theme-primary">Claude Code</span>
         <span class="text-[10px] block mt-0.5 text-theme-muted"><?php echo e(t('CLI tool')); ?></span>
     </button>
-    <button onclick="showTool('chatgpt')" id="tool_btn_chatgpt" class="tool-btn tool-btn-inactive group p-3 rounded-xl border-2 text-center transition-all cursor-pointer">
-        <div class="w-10 h-10 mx-auto mb-1.5 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+    <button onclick="showTool('chatgpt')" id="tool_btn_chatgpt" class="tool-btn tool-btn-inactive group p-3 fd-rounded-card border-2 text-center transition-all cursor-pointer">
+        <div class="w-10 h-10 mx-auto mb-1.5 fd-rounded-card bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
             <?php echo get_icon('message-circle', 'w-5 h-5 text-green-600'); ?>
         </div>
         <span class="text-sm font-medium block text-theme-primary">ChatGPT</span>
         <span class="text-[10px] block mt-0.5 text-theme-muted"><?php echo e(t('Web chat')); ?></span>
     </button>
-    <button onclick="showTool('cursor')" id="tool_btn_cursor" class="tool-btn tool-btn-inactive group p-3 rounded-xl border-2 text-center transition-all cursor-pointer">
-        <div class="w-10 h-10 mx-auto mb-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+    <button onclick="showTool('cursor')" id="tool_btn_cursor" class="tool-btn tool-btn-inactive group p-3 fd-rounded-card border-2 text-center transition-all cursor-pointer">
+        <div class="w-10 h-10 mx-auto mb-1.5 fd-rounded-card bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
             <?php echo get_icon('edit-3', 'w-5 h-5 text-blue-600'); ?>
         </div>
         <span class="text-sm font-medium block text-theme-primary">Cursor</span>
         <span class="text-[10px] block mt-0.5 text-theme-muted"><?php echo e(t('AI editor')); ?></span>
     </button>
-    <button onclick="showTool('api')" id="tool_btn_api" class="tool-btn tool-btn-inactive group p-3 rounded-xl border-2 text-center transition-all cursor-pointer">
-        <div class="w-10 h-10 mx-auto mb-1.5 rounded-lg bg-gray-100 dark:bg-gray-700/30 flex items-center justify-center">
+    <button onclick="showTool('api')" id="tool_btn_api" class="tool-btn tool-btn-inactive group p-3 fd-rounded-card border-2 text-center transition-all cursor-pointer">
+        <div class="w-10 h-10 mx-auto mb-1.5 fd-rounded-card bg-gray-100 dark:bg-gray-700/30 flex items-center justify-center">
             <?php echo get_icon('book-open', 'w-5 h-5 text-gray-600'); ?>
         </div>
         <span class="text-sm font-medium block text-theme-primary"><?php echo e(t('API Reference')); ?></span>
@@ -433,7 +434,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 <div id="panel_bot" class="tool-panel">
 <div class="card card-body">
     <div class="flex items-center gap-2 mb-5">
-        <div class="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+        <div class="w-8 h-8 fd-rounded-card bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
             <?php echo get_icon('cpu', 'w-4 h-4 text-red-600'); ?>
         </div>
         <h3 class="font-semibold text-theme-primary"><?php echo t('Connect {name} to your helpdesk', ['name' => $agent_name_safe]); ?></h3>
@@ -449,7 +450,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                         <?php echo e(t('Create a .env file in your project directory with these credentials:')); ?>
                     </p>
                     <?php echo ac_code('bot_env', $env_file, '.env', [['fn'=>'.env','mime'=>'text/plain'], 'copy']); ?>
-                    <div class="mt-2 flex items-start gap-1.5 p-2 rounded-md bg-amber-50 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-700">
+                    <div class="mt-2 flex items-start gap-1.5 p-2 fd-rounded-control bg-amber-50 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-700">
                         <?php echo get_icon('alert-triangle', 'w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0'); ?>
                         <p class="text-xs text-amber-700 dark:text-amber-300">
                             <?php echo e(t('Save this now — the full token is only shown once. After you leave this page, only the token prefix will be visible.')); ?>
@@ -458,7 +459,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                 <?php else: ?>
                     <?php if ($token_prefix_db): ?>
                         <p class="text-xs mt-0.5 mb-3 text-theme-muted">
-                            <?php echo e(t('An active token exists for this agent (prefix: ')); ?><code class="font-mono text-xs px-1 py-0.5 rounded" style="background:var(--surface-secondary);color:var(--text-primary);"><?php echo e($token_prefix_db); ?>...</code><?php echo e(t('). The full token is no longer visible — it was only shown when it was first generated.')); ?>
+                            <?php echo e(t('An active token exists for this agent (prefix: ')); ?><code class="font-mono text-xs px-1 py-0.5 fd-rounded-control" style="background:var(--surface-secondary);color:var(--text-primary);"><?php echo e($token_prefix_db); ?>...</code><?php echo e(t('). The full token is no longer visible — it was only shown when it was first generated.')); ?>
                         </p>
                         <p class="text-xs mb-3 text-theme-muted">
                             <?php echo e(t('If you have the .env file saved, continue below. If you lost the token, generate a new one.')); ?>
@@ -472,7 +473,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                         <?php echo csrf_field(); ?>
                         <input type="hidden" name="generate_connect_token" value="1">
                         <?php if (!empty($ai_agent_token_scope_groups)): ?>
-                            <div class="rounded-lg border border-theme-light p-3 bg-theme-secondary/40">
+                            <div class="fd-rounded-card border border-theme-light p-3 bg-theme-secondary/40">
                                 <h4 class="text-sm font-semibold mb-1 text-theme-secondary">
                                     <?php echo e(t('Token actions')); ?>
                                 </h4>
@@ -481,9 +482,9 @@ include BASE_PATH . '/includes/components/page-header.php';
                                 </p>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <?php foreach ($ai_agent_token_scope_groups as $group_key => $group): ?>
-                                        <label class="flex items-start gap-2 text-sm rounded-lg border border-theme-light p-2 cursor-pointer bg-theme-primary">
+                                        <label class="flex items-start gap-2 text-sm fd-rounded-card border border-theme-light p-2 cursor-pointer bg-theme-primary">
                                             <input type="checkbox" name="api_token_scope_groups[]"
-                                                value="<?php echo e($group_key); ?>" class="mt-0.5 rounded"
+                                                value="<?php echo e($group_key); ?>" class="mt-0.5 fd-rounded-control"
                                                 <?php echo $token_scope_group_checked((string) $group_key) ? 'checked' : ''; ?>>
                                             <span>
                                                 <span class="font-medium text-theme-primary">
@@ -499,7 +500,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                             </div>
                         <?php endif; ?>
                         <button type="submit"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 fd-rounded-card text-xs font-medium"
                             style="background: var(--primary); color: #fff;">
                             <?php echo get_icon('refresh-cw', 'w-3.5 h-3.5'); ?>
                             <?php echo e($token_prefix_db ? t('Generate new token') : t('Generate token')); ?>
@@ -540,10 +541,10 @@ include BASE_PATH . '/includes/components/page-header.php';
                 </p>
 
                 <!-- Language sub-tabs -->
-                <div class="flex gap-1 mb-3 p-0.5 rounded-lg w-fit bg-theme-secondary">
-                    <button onclick="switchLang('python')" id="lang_btn_python" class="lang-btn lang-active px-3 py-1 rounded-md text-xs font-medium">Python</button>
-                    <button onclick="switchLang('js')" id="lang_btn_js" class="lang-btn lang-inactive px-3 py-1 rounded-md text-xs font-medium">JavaScript</button>
-                    <button onclick="switchLang('curl')" id="lang_btn_curl" class="lang-btn lang-inactive px-3 py-1 rounded-md text-xs font-medium">cURL</button>
+                <div class="flex gap-1 mb-3 p-0.5 fd-rounded-card w-fit bg-theme-secondary">
+                    <button onclick="switchLang('python')" id="lang_btn_python" class="lang-btn lang-active px-3 py-1 fd-rounded-control text-xs font-medium">Python</button>
+                    <button onclick="switchLang('js')" id="lang_btn_js" class="lang-btn lang-inactive px-3 py-1 fd-rounded-control text-xs font-medium">JavaScript</button>
+                    <button onclick="switchLang('curl')" id="lang_btn_curl" class="lang-btn lang-inactive px-3 py-1 fd-rounded-control text-xs font-medium">cURL</button>
                 </div>
 
                 <div id="lang_python"><?php echo ac_code('bot_python', $python_example, 'bot.py', [['fn'=>'bot.py','mime'=>'text/x-python'], 'copy']); ?></div>
@@ -567,7 +568,7 @@ include BASE_PATH . '/includes/components/page-header.php';
         </div>
     </div>
 </div>
-<div class="mt-3 p-3 bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800 rounded-lg">
+<div class="mt-3 p-3 bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800 fd-rounded-card">
     <p class="text-xs text-orange-700 dark:text-orange-300">
         <?php echo get_icon('alert-triangle', 'w-3.5 h-3.5 inline mr-1'); ?>
         <strong><?php echo e(t('Security:')); ?></strong>
@@ -582,7 +583,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 <div id="panel_claude_ai" class="tool-panel" style="display:none">
 <div class="card card-body">
     <div class="flex items-center gap-2 mb-5">
-        <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+        <div class="w-8 h-8 fd-rounded-card bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
             <?php echo get_icon('message-square', 'w-4 h-4 text-purple-600'); ?>
         </div>
         <h3 class="font-semibold text-theme-primary"><?php echo e(t('Connect to Claude.ai')); ?></h3>
@@ -627,7 +628,7 @@ include BASE_PATH . '/includes/components/page-header.php';
         </div>
     </div>
 </div>
-<div class="mt-3 p-3 bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800 rounded-lg">
+<div class="mt-3 p-3 bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800 fd-rounded-card">
     <p class="text-xs text-purple-700 dark:text-purple-300">
         <?php echo get_icon('info', 'w-3.5 h-3.5 inline mr-1'); ?>
         <strong><?php echo e(t('Tip:')); ?></strong>
@@ -642,7 +643,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 <div id="panel_claude_code" class="tool-panel" style="display:none">
 <div class="card card-body">
     <div class="flex items-center gap-2 mb-5">
-        <div class="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+        <div class="w-8 h-8 fd-rounded-card bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
             <?php echo get_icon('terminal', 'w-4 h-4 text-orange-600'); ?>
         </div>
         <h3 class="font-semibold text-theme-primary"><?php echo e(t('Connect to Claude Code')); ?></h3>
@@ -668,7 +669,7 @@ include BASE_PATH . '/includes/components/page-header.php';
             <div class="ac-step bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300">3</div>
             <div class="pt-0.5">
                 <p class="font-medium text-sm text-theme-primary"><?php echo e(t('Add .env to .gitignore')); ?></p>
-                <code class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded mt-1 inline-block font-mono text-theme-secondary">echo ".env" >> .gitignore</code>
+                <code class="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 fd-rounded-control mt-1 inline-block font-mono text-theme-secondary">echo ".env" >> .gitignore</code>
             </div>
         </div>
         <div class="flex gap-4 items-start">
@@ -676,7 +677,7 @@ include BASE_PATH . '/includes/components/page-header.php';
             <div class="pt-0.5">
                 <p class="font-medium text-sm text-theme-primary"><?php echo e(t('Run Claude Code')); ?></p>
                 <p class="text-xs mt-0.5 text-theme-muted">
-                    <?php echo e(t('Open terminal in your project and run:')); ?> <code class="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded font-mono text-theme-secondary">claude</code>
+                    <?php echo e(t('Open terminal in your project and run:')); ?> <code class="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 fd-rounded-control font-mono text-theme-secondary">claude</code>
                 </p>
             </div>
         </div>
@@ -690,7 +691,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 <div id="panel_chatgpt" class="tool-panel" style="display:none">
 <div class="card card-body">
     <div class="flex items-center gap-2 mb-5">
-        <div class="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+        <div class="w-8 h-8 fd-rounded-card bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
             <?php echo get_icon('message-circle', 'w-4 h-4 text-green-600'); ?>
         </div>
         <h3 class="font-semibold text-theme-primary"><?php echo e(t('Connect to ChatGPT')); ?></h3>
@@ -741,7 +742,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 <div id="panel_cursor" class="tool-panel" style="display:none">
 <div class="card card-body">
     <div class="flex items-center gap-2 mb-5">
-        <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+        <div class="w-8 h-8 fd-rounded-card bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
             <?php echo get_icon('edit-3', 'w-4 h-4 text-blue-600'); ?>
         </div>
         <h3 class="font-semibold text-theme-primary"><?php echo e(t('Connect to Cursor')); ?></h3>
@@ -788,7 +789,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 <div id="panel_api" class="tool-panel" style="display:none">
 <div class="card card-body">
     <div class="flex items-center gap-2 mb-5">
-        <div class="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700/30 flex items-center justify-center">
+        <div class="w-8 h-8 fd-rounded-card bg-gray-100 dark:bg-gray-700/30 flex items-center justify-center">
             <?php echo get_icon('book-open', 'w-4 h-4 text-gray-600'); ?>
         </div>
         <h3 class="font-semibold text-theme-primary"><?php echo e(t('API Reference')); ?></h3>
@@ -821,7 +822,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                     $color = $ep[0] === 'GET' ? 'blue' : 'green';
                 ?>
                 <tr style="border-bottom: 1px solid var(--border-color);">
-                    <td class="py-1.5 pr-3"><span class="bg-<?php echo $color; ?>-100 text-<?php echo $color; ?>-700 dark:bg-<?php echo $color; ?>-900/30 dark:text-<?php echo $color; ?>-300 px-1.5 py-0.5 rounded text-[10px] font-bold"><?php echo $ep[0]; ?></span></td>
+                    <td class="py-1.5 pr-3"><span class="bg-<?php echo $color; ?>-100 text-<?php echo $color; ?>-700 dark:bg-<?php echo $color; ?>-900/30 dark:text-<?php echo $color; ?>-300 px-1.5 py-0.5 fd-rounded-control text-[10px] font-bold"><?php echo $ep[0]; ?></span></td>
                     <td class="py-1.5 pr-3"><?php echo e($ep[1]); ?></td>
                     <td class="py-1.5 font-sans"><?php echo e($ep[2]); ?></td>
                 </tr>
@@ -833,15 +834,15 @@ include BASE_PATH . '/includes/components/page-header.php';
     <div class="mt-5">
         <h4 class="text-xs font-semibold uppercase tracking-wide mb-3 text-theme-muted"><?php echo e(t('System Configuration')); ?></h4>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-            <div class="p-2 rounded-lg bg-theme-secondary">
+            <div class="p-2 fd-rounded-card bg-theme-secondary">
                 <strong class="text-theme-secondary"><?php echo e(t('Statuses')); ?></strong>
                 <p class="mt-0.5 text-theme-muted"><?php echo e($status_list); ?></p>
             </div>
-            <div class="p-2 rounded-lg bg-theme-secondary">
+            <div class="p-2 fd-rounded-card bg-theme-secondary">
                 <strong class="text-theme-secondary"><?php echo e(t('Priorities')); ?></strong>
                 <p class="mt-0.5 text-theme-muted"><?php echo e($priority_list); ?></p>
             </div>
-            <div class="p-2 rounded-lg bg-theme-secondary">
+            <div class="p-2 fd-rounded-card bg-theme-secondary">
                 <strong class="text-theme-secondary"><?php echo e(t('Ticket Types')); ?></strong>
                 <p class="mt-0.5 text-theme-muted"><?php echo e($type_list); ?></p>
             </div>

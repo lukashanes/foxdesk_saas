@@ -444,7 +444,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 
                 <?php if (in_array($user['role'], ['user', 'agent'], true)): ?>
                 <label class="flex items-center gap-2 text-sm cursor-pointer text-theme-secondary">
-                    <input type="checkbox" name="email_notifications_enabled" class="rounded"
+                    <input type="checkbox" name="email_notifications_enabled" class="fd-rounded-control"
                         <?php echo (int) ($user['email_notifications_enabled'] ?? 1) === 1 ? 'checked' : ''; ?>>
                     <?php echo e(t('Email notifications')); ?>
                 </label>
@@ -452,13 +452,13 @@ include BASE_PATH . '/includes/components/page-header.php';
 
                 <label class="flex items-center gap-2 text-sm cursor-pointer text-theme-secondary">
                     <input type="checkbox" name="in_app_notifications_enabled" id="profile_in_app_notifications_enabled"
-                        class="rounded" <?php echo (int) ($user['in_app_notifications_enabled'] ?? 1) === 1 ? 'checked' : ''; ?>>
+                        class="fd-rounded-control" <?php echo (int) ($user['in_app_notifications_enabled'] ?? 1) === 1 ? 'checked' : ''; ?>>
                     <?php echo e(t('In-app notifications')); ?>
                 </label>
 
                 <label class="flex items-center gap-2 text-sm cursor-pointer ml-5 text-theme-secondary">
                     <input type="checkbox" name="in_app_sound_enabled" id="profile_in_app_sound_enabled"
-                        class="rounded" <?php echo (int) ($user['in_app_sound_enabled'] ?? 0) === 1 ? 'checked' : ''; ?>>
+                        class="fd-rounded-control" <?php echo (int) ($user['in_app_sound_enabled'] ?? 0) === 1 ? 'checked' : ''; ?>>
                     <?php echo e(t('Play sound')); ?>
                 </label>
 
@@ -487,7 +487,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                 <?php echo csrf_field(); ?>
                 <?php foreach ($notif_type_labels as $type_key => $type_label): ?>
                 <label class="flex items-center gap-2 text-sm cursor-pointer text-theme-secondary">
-                    <input type="checkbox" name="notif_type_<?php echo e($type_key); ?>" class="rounded"
+                    <input type="checkbox" name="notif_type_<?php echo e($type_key); ?>" class="fd-rounded-control"
                         <?php echo !empty($notif_prefs[$type_key]) ? 'checked' : ''; ?>>
                     <?php echo e($type_label); ?>
                 </label>
@@ -568,7 +568,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                     <div>
                         <label class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Current email')); ?></label>
                         <input type="email" value="<?php echo e($user['email']); ?>" disabled autocomplete="email"
-                            inputmode="email" autocapitalize="none" class="form-input" style="background: var(--surface-secondary); color: var(--text-muted);">
+                            inputmode="email" autocapitalize="none" class="form-input fd-readonly-field">
                     </div>
                     <div>
                         <label for="profile-new-email" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('New email')); ?></label>
@@ -623,7 +623,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                 </button>
             </form>
 
-            <div class="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <div class="mt-5 fd-rounded-card border border-blue-200 bg-blue-50 p-4">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p class="font-medium text-blue-900"><?php echo e(t('Do not know your current password?')); ?></p>
@@ -651,9 +651,9 @@ include BASE_PATH . '/includes/components/page-header.php';
             </div>
 
             <?php if ($new_profile_api_token): ?>
-                <div class="mb-4 p-3 rounded-lg border border-green-200 bg-green-50 text-green-900">
+                <div class="mb-4 p-3 fd-rounded-card border border-green-200 bg-green-50 text-green-900">
                     <p class="text-sm font-medium mb-2"><?php echo e(t('Copy this API key now. It will not be shown again.')); ?></p>
-                    <code class="block p-2 rounded bg-white border text-xs font-mono break-all select-all"><?php echo e($new_profile_api_token); ?></code>
+                    <code class="block p-2 fd-rounded-control bg-white border text-xs font-mono break-all select-all"><?php echo e($new_profile_api_token); ?></code>
                     <?php if (!empty($new_profile_api_token_scopes)): ?>
                         <p class="text-xs mt-2"><?php echo e(t('Scopes')); ?>: <?php echo e(implode(', ', $new_profile_api_token_scopes)); ?></p>
                     <?php endif; ?>
@@ -684,8 +684,8 @@ include BASE_PATH . '/includes/components/page-header.php';
                         <div class="text-sm font-medium mb-2 text-theme-secondary"><?php echo e(t('Allowed actions')); ?></div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <?php foreach ($api_scope_catalog as $scope => $label): ?>
-                                <label class="flex items-start gap-2 text-sm cursor-pointer rounded-lg border border-theme-light p-2">
-                                    <input type="checkbox" name="api_token_scopes[]" value="<?php echo e($scope); ?>" class="mt-0.5 rounded"
+                                <label class="flex items-start gap-2 text-sm cursor-pointer fd-rounded-card border border-theme-light p-2">
+                                    <input type="checkbox" name="api_token_scopes[]" value="<?php echo e($scope); ?>" class="mt-0.5 fd-rounded-control"
                                         <?php echo in_array($scope, ['work:read', 'tickets:read', 'tickets:write', 'comments:write'], true) ? 'checked' : ''; ?>>
                                     <span>
                                         <span class="font-medium text-theme-primary"><?php echo e($scope); ?></span>
@@ -765,8 +765,8 @@ include BASE_PATH . '/includes/components/page-header.php';
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-sm font-semibold uppercase tracking-wider text-theme-muted"><?php echo e(t('Two-factor authentication')); ?></h3>
                 <?php if ($totp_enabled): ?>
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                        <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 fd-rounded-pill text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                        <span class="w-1.5 h-1.5 fd-rounded-pill bg-green-500"></span>
                         <?php echo e(t('Enabled')); ?>
                     </span>
                 <?php endif; ?>
@@ -774,7 +774,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 
             <?php if ($forced_setup && !$totp_enabled): ?>
                 <!-- Forced setup banner -->
-                <div class="rounded-lg p-3 mb-4 text-sm" style="background: var(--warning-bg, #fef3c7); color: var(--warning-text, #92400e); border: 1px solid var(--warning-border, #fde68a);">
+                <div class="fd-rounded-card p-3 mb-4 text-sm fd-warning-panel">
                     <?php echo get_icon('exclamation-triangle', 'w-4 h-4 inline mr-1'); ?>
                     <?php echo e(t('Your administrator requires two-factor authentication. Please set it up to continue.')); ?>
                 </div>
@@ -784,12 +784,12 @@ include BASE_PATH . '/includes/components/page-header.php';
                 <!-- ═══ Backup codes display (shown once after enabling) ═══ -->
                 <?php $backup_codes = $_SESSION['2fa_backup_codes_show']; unset($_SESSION['2fa_backup_codes_show']); ?>
                 <div class="space-y-4">
-                    <div class="rounded-lg p-3 text-sm" style="background: var(--warning-bg, #fef3c7); color: var(--warning-text, #92400e); border: 1px solid var(--warning-border, #fde68a);">
+                    <div class="fd-rounded-card p-3 text-sm fd-warning-panel">
                         <?php echo get_icon('exclamation-triangle', 'w-4 h-4 inline mr-1'); ?>
                         <?php echo e(t('Save these backup codes in a safe place. Each code can only be used once. This is the only time they will be shown.')); ?>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2 p-4 rounded-lg font-mono text-sm bg-theme-secondary" id="backup-codes-list">
+                    <div class="grid grid-cols-2 gap-2 p-4 fd-rounded-card font-mono text-sm bg-theme-secondary" id="backup-codes-list">
                         <?php foreach ($backup_codes as $code): ?>
                             <div class="py-1 px-2 text-center text-theme-primary"><?php echo e($code); ?></div>
                         <?php endforeach; ?>
@@ -846,12 +846,12 @@ include BASE_PATH . '/includes/components/page-header.php';
 
                     <!-- QR Code -->
                     <div class="flex flex-col items-center gap-3">
-                        <div class="p-3 rounded-lg bg-white">
+                        <div class="p-3 fd-rounded-card bg-white">
                             <canvas id="totp-qr-code"></canvas>
                         </div>
                         <details class="w-full">
                             <summary class="text-xs cursor-pointer text-theme-muted"><?php echo e(t("Can't scan? Enter code manually")); ?></summary>
-                            <div class="mt-2 p-3 rounded-lg font-mono text-sm text-center tracking-wider break-all bg-theme-secondary text-theme-primary">
+                            <div class="mt-2 p-3 fd-rounded-card font-mono text-sm text-center tracking-wider break-all bg-theme-secondary text-theme-primary">
                                 <?php echo e(format_totp_secret($setup_secret)); ?>
                             </div>
                         </details>
@@ -928,8 +928,8 @@ include BASE_PATH . '/includes/components/page-header.php';
                 </div>
 
                 <!-- Disable 2FA modal -->
-                <div id="disable-2fa-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.5);">
-                    <div class="rounded-xl shadow-xl w-full max-w-sm p-6 bg-theme-primary">
+                <div id="disable-2fa-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 fd-modal-backdrop">
+                    <div class="fd-rounded-card shadow-xl w-full max-w-sm p-6 bg-theme-primary">
                         <h4 class="text-base font-semibold mb-2 text-theme-primary"><?php echo e(t('Disable two-factor authentication')); ?></h4>
                         <p class="text-sm mb-4 text-theme-secondary"><?php echo e(t('Enter your password to confirm.')); ?></p>
                         <form method="post" class="space-y-3">
@@ -945,8 +945,8 @@ include BASE_PATH . '/includes/components/page-header.php';
                 </div>
 
                 <!-- Regenerate backup codes modal -->
-                <div id="regen-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.5);">
-                    <div class="rounded-xl shadow-xl w-full max-w-sm p-6 bg-theme-primary">
+                <div id="regen-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 fd-modal-backdrop">
+                    <div class="fd-rounded-card shadow-xl w-full max-w-sm p-6 bg-theme-primary">
                         <h4 class="text-base font-semibold mb-2 text-theme-primary"><?php echo e(t('Regenerate backup codes')); ?></h4>
                         <p class="text-sm mb-4 text-theme-secondary"><?php echo e(t('This will invalidate all existing backup codes. Enter your password to confirm.')); ?></p>
                         <form method="post" class="space-y-3">

@@ -343,7 +343,7 @@ include BASE_PATH . '/includes/header.php';
 
 <!-- Expiration Modal -->
 <div id="expirationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="rounded-xl shadow-xl max-w-md w-full mx-4 p-4 bg-theme-primary">
+    <div class="fd-rounded-card shadow-xl max-w-md w-full mx-4 p-4 bg-theme-primary">
         <h3 class="text-lg font-semibold mb-4 text-theme-primary">
             <span
                 class="text-orange-600 inline-block mr-2"><?php echo get_icon('clock', 'w-5 h-5'); ?></span><?php echo e(t('Set Report Expiration')); ?>

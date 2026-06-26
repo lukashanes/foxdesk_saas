@@ -41,7 +41,7 @@
         if (window.appNotificationPrefs && window.appNotificationPrefs.inAppEnabled === false) return;
 
         var toast = document.createElement('div');
-        toast.className = 'fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-sm font-medium z-50 transition-opacity duration-300 ' + (type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white');
+        toast.className = 'fixed bottom-4 right-4 px-4 py-2 fd-rounded-card shadow-lg text-sm font-medium z-50 transition-opacity duration-300 ' + (type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white');
         toast.textContent = message;
         document.body.appendChild(toast);
         setTimeout(function () {
@@ -199,12 +199,11 @@
             for (var i = 0; i < input.files.length; i++) {
                 var file = input.files[i];
                 var row = document.createElement('div');
-                row.className = 'flex items-center justify-between rounded-lg px-4 py-2';
-                row.style.background = 'var(--surface-secondary)';
+                row.className = 'flex items-center justify-between fd-rounded-card px-4 py-2 theme-surface';
                 row.innerHTML = '<div class="flex items-center space-x-3 min-w-0">' +
                     getIcon(fileIconName(file.type), 'td-text-muted flex-shrink-0 w-4 h-4') +
-                    '<span class="text-sm truncate" style="color: var(--text-secondary)"></span>' +
-                    '<span class="text-xs flex-shrink-0" style="color: var(--text-muted)">' + escapeHtml(formatFileSize(file.size)) + '</span>' +
+                    '<span class="text-sm truncate theme-text-secondary"></span>' +
+                    '<span class="text-xs flex-shrink-0 theme-text-muted">' + escapeHtml(formatFileSize(file.size)) + '</span>' +
                     '</div>';
                 row.querySelector('.truncate').textContent = file.name;
 
@@ -242,7 +241,7 @@
                 singleTemplate: uploadConfig.singleTemplate || '',
                 totalTemplate: uploadConfig.totalTemplate || ''
             },
-            rowClass: uploadConfig.rowClass || 'flex items-center justify-between rounded-lg px-4 py-2',
+            rowClass: uploadConfig.rowClass || 'flex items-center justify-between fd-rounded-card px-4 py-2',
             iconClass: uploadConfig.iconClass || 'td-text-muted flex-shrink-0 w-4 h-4',
             metaClass: uploadConfig.metaClass || 'flex items-center gap-3 min-w-0',
             nameClass: uploadConfig.nameClass || 'text-sm truncate',
@@ -424,7 +423,7 @@
         function addUser(user) {
             selectedUsers.push(user);
             var chip = document.createElement('span');
-            chip.className = 'inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm';
+            chip.className = 'inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 fd-rounded-pill text-sm';
 
             var name = document.createElement('span');
             name.textContent = user.name + ' ';
@@ -456,7 +455,7 @@
                 .then(function (users) {
                     dropdown.innerHTML = '';
                     if (!users.length) {
-                        dropdown.innerHTML = '<div class="px-3 py-2 text-sm" style="color: var(--text-muted)">' + escapeHtml(t('noUsersFound', 'No users found.')) + '</div>';
+                        dropdown.innerHTML = '<div class="px-3 py-2 text-sm theme-text-muted">' + escapeHtml(t('noUsersFound', 'No users found.')) + '</div>';
                         dropdown.classList.remove('hidden');
                         return;
                     }
@@ -464,7 +463,7 @@
                         if (selectedUsers.find(function (selectedUser) { return selectedUser.id === user.id; })) return;
                         var item = document.createElement('div');
                         item.className = 'px-3 py-2 cursor-pointer text-sm tr-hover';
-                        item.innerHTML = '<strong>' + escapeHtml(user.name) + '</strong><br><span class="text-xs" style="color: var(--text-muted)">' + escapeHtml(user.email) + '</span>';
+                        item.innerHTML = '<strong>' + escapeHtml(user.name) + '</strong><br><span class="text-xs theme-text-muted">' + escapeHtml(user.email) + '</span>';
                         item.addEventListener('click', addUser.bind(null, user));
                         dropdown.appendChild(item);
                     });
@@ -1170,7 +1169,7 @@
                     currentTags.forEach(function (tag) {
                         html += '<a href="' + filterUrlBase + '&tags=' + encodeURIComponent(tag) + '" class="ticket-tag-pill" title="' + escapeHtml(t('filterByTag', 'Filter by this tag')) + '">#' + escapeHtml(tag) + '</a>';
                     });
-                    display.innerHTML = html || '<span class="text-xs" style="color: var(--text-muted);">-</span>';
+                    display.innerHTML = html || '<span class="text-xs theme-text-muted">-</span>';
                     hideEditor();
                 })
                 .catch(function () { saveButton.disabled = false; });
@@ -1343,8 +1342,8 @@
                 var html = '';
                 data.events.forEach(function (event) {
                     html += '<div class="tl-event">';
-                    html += '<div class="tl-dot" style="border-color:' + escapeHtml(event.color) + ';"></div>';
-                    html += '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">';
+                    html += '<div class="tl-dot" style="--tl-color:' + escapeHtml(event.color) + ';"></div>';
+                    html += '<div class="tl-event-row">';
                     html += '<div><span class="tl-user">' + escapeHtml(event.user_name) + '</span> <span class="tl-label">' + escapeHtml(event.label) + '</span></div>';
                     html += '<span class="tl-time">' + formatTimelineDate(event.timestamp) + '</span></div>';
                     if (event.type === 'change' && (event.old_value || event.new_value)) {

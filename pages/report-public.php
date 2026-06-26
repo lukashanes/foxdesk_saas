@@ -141,7 +141,7 @@ $extract_report_tags = static function ($value) {
                 <!-- Center: Report Title -->
                 <div class="flex-1 text-center px-4">
                     <h1 class="text-3xl lg:text-4xl font-bold text-gray-900"><?php echo e($template['title']); ?></h1>
-                    <div class="mt-2 inline-flex items-center px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-full">
+                    <div class="mt-2 inline-flex items-center px-4 py-2 bg-blue-50 dark:bg-blue-900/20 fd-rounded-pill">
                         <?php echo get_icon('calendar-alt', 'text-blue-600 mr-2 inline-block'); ?>
                         <span class="text-sm font-medium text-blue-900">
                             <?php echo e($date_from_formatted); ?> - <?php echo e($date_to_formatted); ?>
@@ -179,7 +179,7 @@ $extract_report_tags = static function ($value) {
         <!-- KPI Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
             <!-- Total Time -->
-            <div class="kpi-card text-white rounded-lg p-6 shadow-lg">
+            <div class="kpi-card text-white fd-rounded-card p-6 shadow-lg">
                 <div class="flex items-center justify-between mb-2">
                     <?php echo get_icon('clock', 'text-3xl opacity-80 inline-block'); ?>
                     <span class="text-xs font-semibold uppercase tracking-wide"><?php echo e(t('Total Time')); ?></span>
@@ -188,7 +188,7 @@ $extract_report_tags = static function ($value) {
             </div>
 
             <!-- Total Tasks -->
-            <div class="kpi-card-alt-1 text-white rounded-lg p-6 shadow-lg">
+            <div class="kpi-card-alt-1 text-white fd-rounded-card p-6 shadow-lg">
                 <div class="flex items-center justify-between mb-2">
                     <?php echo get_icon('tasks', 'text-3xl opacity-80 inline-block'); ?>
                     <span class="text-xs font-semibold uppercase tracking-wide"><?php echo e(t('Tasks')); ?></span>
@@ -198,7 +198,7 @@ $extract_report_tags = static function ($value) {
 
             <!-- Total Amount (if enabled) -->
             <?php if ($template['show_financials']): ?>
-                <div class="kpi-card-alt-2 text-white rounded-lg p-6 shadow-lg">
+                <div class="kpi-card-alt-2 text-white fd-rounded-card p-6 shadow-lg">
                     <div class="flex items-center justify-between mb-2">
                         <?php echo get_icon('coins', 'text-3xl opacity-80 inline-block'); ?>
                         <span
@@ -210,7 +210,7 @@ $extract_report_tags = static function ($value) {
 
             <!-- Team Members (if enabled) -->
             <?php if ($template['show_team_attribution']): ?>
-                <div class="kpi-card-alt-3 text-white rounded-lg p-6 shadow-lg">
+                <div class="kpi-card-alt-3 text-white fd-rounded-card p-6 shadow-lg">
                     <div class="flex items-center justify-between mb-2">
                         <?php echo get_icon('users', 'text-3xl opacity-80 inline-block'); ?>
                         <span
@@ -243,7 +243,7 @@ $extract_report_tags = static function ($value) {
                 <!-- Grouped View -->
                 <div class="space-y-4">
                     <?php foreach ($display_entries as $group): ?>
-                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                        <div class="border border-gray-200 fd-rounded-card overflow-hidden">
                             <!-- Group Header (Collapsible) -->
                             <div class="bg-gray-50 px-4 py-3 cursor-pointer hover:bg-gray-100 transition"
                                 onclick="toggleGroup('group-<?php echo e($group['group_key']); ?>')">
@@ -421,7 +421,7 @@ $extract_report_tags = static function ($value) {
         <!-- Action Buttons -->
         <div class="flex justify-center space-x-4 mb-5 no-print">
             <button onclick="window.print()"
-                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition shadow-lg">
+                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white fd-rounded-card font-medium transition shadow-lg">
                 <?php echo get_icon('print', 'mr-2 inline-block'); ?><?php echo e(t('Print / Save as PDF')); ?>
             </button>
         </div>

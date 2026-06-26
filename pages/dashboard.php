@@ -42,7 +42,7 @@ require_once BASE_PATH . '/includes/header.php';
             <span class="hidden sm:inline"><?php echo e(t('Customize')); ?></span>
         </button>
         <div id="dashboard-config-panel"
-            class="hidden absolute right-0 top-full mt-2 w-72 py-3 rounded-xl shadow-lg z-40 theme-panel">
+            class="hidden absolute right-0 top-full mt-2 w-72 py-3 fd-rounded-card shadow-lg z-40 theme-panel">
             <div class="px-4 pb-2 mb-2 border-b theme-border">
                 <h4 class="text-sm font-semibold theme-text">
                     <?php echo e(t('Dashboard widgets')); ?></h4>
@@ -58,9 +58,9 @@ require_once BASE_PATH . '/includes/header.php';
                     $cur_size = $widget_sizes[$sec_id] ?? 'full';
                     $can_resize = !in_array($sec_id, ['overview', 'recent']); // these stay full
                     ?>
-                    <label class="flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition theme-text-secondary"
+                    <label class="flex items-center gap-3 px-2 py-2 fd-rounded-card cursor-pointer transition theme-text-secondary"
                         data-config-section="<?php echo e($sec_id); ?>">
-                        <input type="checkbox" class="db-config-toggle rounded" data-section="<?php echo e($sec_id); ?>"
+                        <input type="checkbox" class="db-config-toggle fd-rounded-control" data-section="<?php echo e($sec_id); ?>"
                             <?php echo $is_hidden ? '' : 'checked'; ?> onchange="toggleDashboardWidget(this)">
                         <span class="text-sm flex-1"><?php echo e($label); ?></span>
                         <?php if ($can_resize): ?>
@@ -311,7 +311,7 @@ require_once BASE_PATH . '/includes/header.php';
                         <?php echo get_icon('bell', 'w-4 h-4'); ?>
                         <?php echo e(t('Notifications')); ?>
                         <?php if ($dashboard_unread_count > 0): ?>
-                            <span id="dbnotif-badge" class="inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full"><?php echo $dashboard_unread_count; ?></span>
+                            <span id="dbnotif-badge" class="inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold text-white bg-red-500 fd-rounded-pill"><?php echo $dashboard_unread_count; ?></span>
                         <?php endif; ?>
                     </h3>
                     <div class="flex items-center gap-2">
@@ -824,7 +824,7 @@ require_once BASE_PATH . '/includes/header.php';
                                     <?php echo e(t('Active Timers')); ?>
                                 </h3>
                                 <span
-                                    class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700"><?php echo count($active_timers); ?></span>
+                                    class="text-xs font-semibold px-2 py-0.5 fd-rounded-pill bg-green-100 text-green-700"><?php echo count($active_timers); ?></span>
                             </div>
                             <div class="divide-y theme-border">
                                 <?php foreach ($active_timers as $timer):

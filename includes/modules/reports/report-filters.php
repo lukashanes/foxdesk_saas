@@ -16,7 +16,6 @@ function report_filter_normalize_tab(string $tab): string
         'weekly' => 'time',
         'worklog' => 'time',
         'detailed' => 'billing',
-        'rates' => 'billing',
         'shared' => 'published',
     ];
 

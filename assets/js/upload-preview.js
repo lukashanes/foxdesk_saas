@@ -72,7 +72,7 @@
         var limit = options.limit || {};
         var removeLabel = options.removeLabel || 'Remove';
         var sizeDecimals = typeof options.sizeDecimals === 'number' ? options.sizeDecimals : 1;
-        var rowClass = options.rowClass || 'flex items-center justify-between rounded px-2 py-1.5 text-xs';
+        var rowClass = options.rowClass || 'flex items-center justify-between fd-rounded-control px-2 py-1.5 text-xs';
         var iconClass = options.iconClass || 'flex-shrink-0 w-3.5 h-3.5';
         var nameClass = options.nameClass || 'truncate';
         var sizeClass = options.sizeClass || 'flex-shrink-0';

@@ -1,0 +1,28 @@
+/* Legal document styles moved from pages/legal.php. */
+body.legal-page { color-scheme: light; --ink:#111827; --muted:#667085; --line:#e5e7eb; --bg:#f7f8fb; --panel:#fff; --blue:#2557d6; }
+.legal-page * { box-sizing: border-box; }
+body.legal-page { margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
+.legal-page a { color:inherit; }
+.legal-shell { max-width:1040px; margin:0 auto; padding:28px 18px 56px; }
+.legal-top { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:22px; }
+.legal-brand { font-weight:820; font-size:var(--type-lg); text-decoration:none; }
+.legal-nav { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.legal-page .legal-nav a { border:1px solid var(--line); border-radius: var(--fd-radius-pill); padding:7px 11px; color:var(--muted); text-decoration:none; font-size:var(--type-13); font-weight:700; background:var(--panel); }
+.legal-nav a.active { color:var(--ink); border-color:#111827; }
+.legal-card { background:var(--panel); border:1px solid var(--line); border-radius:var(--fd-radius-card); padding:30px; box-shadow: var(--shadow-lg); }
+.legal-page h1 { margin:0; font-size:var(--type-4xl); line-height:1.05; letter-spacing:0; }
+.intro { color:var(--muted); margin:12px 0 0; max-width:760px; line-height:1.65; }
+.updated { margin-top:12px; color:var(--muted); font-size:var(--type-13); }
+.section { border-top:1px solid var(--line); padding-top:18px; margin-top:18px; }
+.legal-page h2 { margin:0 0 7px; font-size:var(--type-lg); }
+.legal-page p { margin:0; color:var(--muted); line-height:1.68; }
+.notice { margin-top:22px; font-size:var(--type-13); color:var(--muted); }
+.contact { margin-top:22px; padding:14px 16px; border:1px solid #dbe4ff; border-radius: var(--fd-radius-card); background:#f7f9ff; color:#1f2f5f; font-size:var(--type-sm); line-height:1.55; }
+.legal-page .contact a { color:var(--blue); font-weight:700; }
+
+@media (max-width:640px) {
+    .legal-top { flex-direction:column; }
+    .legal-nav { justify-content:flex-start; }
+    .legal-card { padding:20px; }
+    .legal-page h1 { font-size:var(--type-3xl); }
+}

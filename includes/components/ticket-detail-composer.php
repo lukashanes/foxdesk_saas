@@ -197,7 +197,7 @@
                                     <label id="timer-log-toggle"
                                         class="ticket-composer-timer-log <?php echo $timer_state === 'stopped' ? 'hidden' : ''; ?>">
                                         <input type="checkbox" name="stop_timer" id="stop-timer-toggle" value="1" <?php echo $timer_state !== 'stopped' ? 'checked' : 'disabled'; ?>
-                                            class="rounded text-blue-600 focus:ring-blue-500 w-4 h-4">
+                                            class="fd-rounded-control text-blue-600 focus:ring-blue-500 w-4 h-4">
                                         <span><?php echo e(t('Log on submit')); ?></span>
                                     </label>
                                     <!-- Discard button (visible when timer active) -->

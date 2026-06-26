@@ -26,8 +26,9 @@ test('admin system page renders the simplified layout', async ({ page }) => {
   await page.goto('/index.php?page=admin&section=settings&tab=system');
   await expect(page.locator('.admin-system')).toBeVisible();
   await expect(page.locator('.admin-page-nav')).toHaveCount(0);
-  await expect(page.locator('.admin-tabs')).toBeVisible();
-  await expect(page.locator('.admin-tab.is-active')).toContainText('System');
+  await expect(page.locator('.admin-tabs')).toHaveCount(0);
+  await expect(page.locator('.settings-section-nav')).toBeVisible();
+  await expect(page.locator('.settings-section-nav a.is-active, .settings-section-nav button.is-active')).toContainText('System');
   await expect(page.locator('body')).toContainText('Operations overview');
   await expect(page.locator('body')).toContainText('Backups');
   await expect(page.locator('body')).not.toContainText('System information');
@@ -37,23 +38,20 @@ test('customer admin navigation stays compact and stable across sections', async
   await login(page);
   await page.goto('/index.php?page=admin&section=users');
 
-  const nav = page.locator('.admin-page-nav');
-  await expect(nav).toBeVisible();
-  await expect(nav).toContainText('People');
-  await expect(nav).toContainText('Companies');
-  await expect(nav).toContainText('Workflow');
-  await expect(nav).toContainText('Operations');
-  await expect(nav).toContainText('Reports');
-
-  await nav.getByRole('link', { name: /Users/ }).click();
-  await expect(page).toHaveURL(/section=users/);
-  await expect(page.locator('.admin-page-nav')).toBeVisible();
-  await expect(page.locator('.admin-page-nav__item.is-active')).toContainText('Users');
-
-  await page.locator('.admin-page-nav').getByRole('link', { name: /Settings/ }).click();
-  await expect(page).toHaveURL(/section=settings/);
   await expect(page.locator('.admin-page-nav')).toHaveCount(0);
-  await expect(page.locator('.admin-tabs')).toBeVisible();
+  await expect(page.locator('body')).toContainText('Users');
+  await expect(page.locator('#main-content').getByRole('link', { name: 'Settings' })).toBeVisible();
+  await expect(page.locator('body')).toContainText('Add user');
+
+  await page.goto('/index.php?page=admin&section=settings');
+  await expect(page.locator('.admin-page-nav')).toHaveCount(0);
+  await expect(page.locator('.settings-management-grid')).toBeVisible();
+  await expect(page.locator('.settings-management-grid')).toContainText('Team & access');
+  await expect(page.locator('.settings-management-grid')).toContainText('Clients');
+  await expect(page.locator('.settings-management-grid')).toContainText('Companies');
+  await expect(page.locator('.settings-management-grid')).toContainText('Ticket workflow');
+  await expect(page.locator('.settings-management-grid')).toContainText('Time reports');
+  await expect(page.locator('.settings-section-nav')).toHaveCount(1);
 });
 
 test('GET impersonation does not switch user, POST impersonation with CSRF does', async ({ page }) => {

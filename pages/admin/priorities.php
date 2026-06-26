@@ -171,12 +171,12 @@ include BASE_PATH . '/includes/components/page-header.php';
                     <span class="text-gray-400 cursor-move drag-handle">
                         <?php echo get_icon('grip-vertical'); ?>
                     </span>
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background-color: <?php echo e($priority['color']); ?>20; color: <?php echo e($priority['color']); ?>">
+                    <div class="w-8 h-8 fd-rounded-pill flex items-center justify-center" style="background-color: <?php echo e($priority['color']); ?>20; color: <?php echo e($priority['color']); ?>">
                         <?php echo get_icon($priority['icon'] ?? 'flag'); ?>
                     </div>
                     <span class="font-medium text-gray-800"><?php echo e($priority['name']); ?></span>
                     <?php if ($priority['is_default']): ?>
-                    <span class="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-md"><?php echo e(t('Default')); ?></span>
+                    <span class="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 fd-rounded-control"><?php echo e(t('Default')); ?></span>
                     <?php endif; ?>
                     <span class="text-sm text-gray-500">(<?php echo e(t('{count} tickets', ['count' => $tickets_count['c']])); ?>)</span>
                 </div>
@@ -226,18 +226,18 @@ include BASE_PATH . '/includes/components/page-header.php';
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1"><?php echo e(t('Color')); ?></label>
                 <input type="color" name="color" value="#3b82f6"
-                       class="w-full h-10 border border-gray-200 rounded-lg cursor-pointer">
+                       class="w-full h-10 border border-gray-200 fd-rounded-card cursor-pointer">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1"><?php echo e(t('Icon')); ?></label>
-                <div class="grid grid-cols-4 gap-2 p-3 bg-gray-50 rounded-lg">
+                <div class="grid grid-cols-4 gap-2 p-3 bg-gray-50 fd-rounded-card">
                     <?php foreach ($common_icons as $icon => $label): ?>
                     <label class="relative cursor-pointer" title="<?php echo e($label); ?>">
                         <input type="radio" name="icon" value="<?php echo $icon; ?>"
                                <?php echo $icon === 'fa-flag' ? 'checked' : ''; ?>
                                class="sr-only peer">
-                        <div class="w-10 h-10 flex items-center justify-center rounded-lg border-2 border-gray-200
+                        <div class="w-10 h-10 flex items-center justify-center fd-rounded-card border-2 border-gray-200
                                     peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:bg-blue-900/20 hover:border-gray-300 transition text-gray-600">
                             <?php echo get_icon($icon); ?>
                         </div>
@@ -248,7 +248,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 
             <div>
                 <label class="flex items-center space-x-2">
-                    <input type="checkbox" name="is_default" class="rounded text-blue-500 focus:ring-blue-500">
+                    <input type="checkbox" name="is_default" class="fd-rounded-control text-blue-500 focus:ring-blue-500">
                     <span class="text-sm text-gray-700"><?php echo e(t('Set as default')); ?></span>
                 </label>
             </div>
@@ -263,7 +263,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 
 <!-- Edit Priority Modal -->
 <div id="editPriorityModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="workflow-admin-modal rounded-xl shadow-xl max-w-lg w-full mx-4 p-4 max-h-[90vh] overflow-y-auto">
+    <div class="workflow-admin-modal fd-rounded-card shadow-xl max-w-lg w-full mx-4 p-4 max-h-[90vh] overflow-y-auto">
         <h3 class="font-semibold text-gray-800 mb-4"><?php echo e(t('Edit priority')); ?></h3>
 
         <form method="post" id="editPriorityForm" class="space-y-4">
@@ -278,17 +278,17 @@ include BASE_PATH . '/includes/components/page-header.php';
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1"><?php echo e(t('Color')); ?></label>
                     <input type="color" name="color" id="edit_priority_color"
-                           class="w-full h-10 border border-gray-200 rounded-lg cursor-pointer">
+                           class="w-full h-10 border border-gray-200 fd-rounded-card cursor-pointer">
                 </div>
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1"><?php echo e(t('Icon')); ?></label>
-                <div class="grid grid-cols-8 gap-2 p-3 bg-gray-50 rounded-lg" id="edit_icon_grid">
+                <div class="grid grid-cols-8 gap-2 p-3 bg-gray-50 fd-rounded-card" id="edit_icon_grid">
                     <?php foreach ($common_icons as $icon => $label): ?>
                     <label class="relative cursor-pointer" title="<?php echo e($label); ?>">
                         <input type="radio" name="icon" value="<?php echo $icon; ?>" class="sr-only peer edit-icon-radio">
-                        <div class="w-10 h-10 flex items-center justify-center rounded-lg border-2 border-gray-200
+                        <div class="w-10 h-10 flex items-center justify-center fd-rounded-card border-2 border-gray-200
                                     peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:bg-blue-900/20 hover:border-gray-300 transition text-gray-600">
                             <?php echo get_icon($icon); ?>
                         </div>
@@ -299,7 +299,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 
             <div>
                 <label class="flex items-center space-x-2">
-                    <input type="checkbox" name="is_default" id="edit_priority_is_default" class="rounded text-blue-500 focus:ring-blue-500">
+                    <input type="checkbox" name="is_default" id="edit_priority_is_default" class="fd-rounded-control text-blue-500 focus:ring-blue-500">
                     <span class="text-sm text-gray-700"><?php echo e(t('Set as default priority')); ?></span>
                 </label>
             </div>

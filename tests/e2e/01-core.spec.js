@@ -134,17 +134,21 @@ test('admin can create a ticket, upload, preview, download, and delete attachmen
   expect(attachmentResponse.ok()).toBeTruthy();
   expect(await attachmentResponse.text()).toContain('hello from foxdesk e2e');
 
-  await page.locator('a.ticket-attachment-link', { hasText: 'foxdesk-e2e-preview.png' }).first().click();
+  await page.getByRole('link', { name: 'foxdesk-e2e-preview.png' }).first().click();
   await expect(page.locator('#image-lightbox')).toBeVisible();
   await expect(page.locator('#lightbox-name')).toContainText('foxdesk-e2e-preview.png');
   await page.keyboard.press('Escape');
   await expect(page.locator('#image-lightbox')).not.toBeVisible();
 
-  const deleteButton = page.locator('.ticket-attachment-item', { hasText: 'foxdesk-e2e-attachment.txt' }).getByRole('button', { name: 'Delete attachment' });
+  const sideAttachments = page.locator('details.ticket-side-section').filter({
+    has: page.locator('summary', { hasText: 'Attachments' })
+  }).first();
+  await sideAttachments.evaluate(details => { details.open = true; });
+  const deleteButton = sideAttachments.locator('.ticket-attachment-item', { hasText: 'foxdesk-e2e-attachment.txt' }).getByRole('button', { name: 'Delete attachment' });
   page.once('dialog', dialog => dialog.accept());
   await deleteButton.click();
   await expect(page.locator('body')).toContainText('Attachment deleted.');
-  await expect(page.locator('.ticket-attachment-item', { hasText: 'foxdesk-e2e-attachment.txt' })).toHaveCount(0);
+  await expect(sideAttachments.locator('.ticket-attachment-item', { hasText: 'foxdesk-e2e-attachment.txt' })).toHaveCount(0);
 
   const remaining = rowObject(dbQuery(`
     SELECT COUNT(*) AS attachment_count

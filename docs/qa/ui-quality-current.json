@@ -1,0 +1,62 @@
+{
+  "status": "passed",
+  "metrics": {
+    "generatedAt": "2026-06-26T15:24:03.822Z",
+    "root": "/Users/mac/Dev/FoxDesk/foxdesk_saas",
+    "css": {
+      "uniqueFontSizes": 5,
+      "uniqueBorderRadii": 6,
+      "uniqueBoxShadows": 0,
+      "viewportFontClamp": 0,
+      "cssRawBytes": 309635,
+      "cssGzipBytes": 48650
+    },
+    "ui": {
+      "scannedFiles": 174,
+      "productionLoc": 73614,
+      "styleAttrs": 103,
+      "nonAllowlistedStyleAttrs": 33,
+      "roundedUtilities": 0
+    },
+    "translations": {
+      "sourceKeys": 1442,
+      "missingTotal": 0,
+      "languages": {
+        "cs": {
+          "keys": 1442,
+          "missing": 0,
+          "extra": 0,
+          "missingSample": []
+        },
+        "de": {
+          "keys": 1442,
+          "missing": 0,
+          "extra": 0,
+          "missingSample": []
+        },
+        "es": {
+          "keys": 1442,
+          "missing": 0,
+          "extra": 0,
+          "missingSample": []
+        },
+        "it": {
+          "keys": 1442,
+          "missing": 0,
+          "extra": 0,
+          "missingSample": []
+        }
+      }
+    },
+    "thresholds": {
+      "viewportFontClamp": 0,
+      "missingTranslationKeys": 0,
+      "uniqueFontSizes": 42,
+      "uniqueBorderRadii": 14,
+      "uniqueBoxShadows": 30,
+      "styleAttrs": 35,
+      "roundedUtilities": 35
+    }
+  },
+  "failures": []
+}

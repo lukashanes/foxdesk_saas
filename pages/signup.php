@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <h2 class="text-3xl font-bold mb-2">Check your email</h2>
                         <p class="text-theme-muted">We sent a secure link. Open it within 30 minutes to create your FoxDesk.</p>
                     </div>
-                    <p class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                    <p class="fd-rounded-card border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                         If the email does not arrive in a minute or two, check spam or try again.
                     </p>
                     <form method="post" class="mt-5">
@@ -115,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
 
                     <?php if ($error): ?>
-                        <div class="mb-5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"><?php echo e($error); ?></div>
+                        <div class="mb-5 fd-rounded-card border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"><?php echo e($error); ?></div>
                     <?php endif; ?>
 
                     <form method="post" class="space-y-4">

@@ -25,6 +25,9 @@ $admin_nav = read_admin_ui_file($root, 'includes/components/admin-nav.php');
 $admin_settings_tabs = read_admin_ui_file($root, 'includes/components/admin-settings-tabs.php');
 $admin_settings = read_admin_ui_file($root, 'pages/admin/settings.php');
 $admin_users = read_admin_ui_file($root, 'pages/admin/users.php');
+$admin_user_surface = $admin_users
+    . "\n" . read_admin_ui_file($root, 'includes/components/team-ai-agents-tab.php')
+    . "\n" . read_admin_ui_file($root, 'includes/components/team-users-tab.php');
 $admin_clients = read_admin_ui_file($root, 'pages/admin/clients.php');
 $ui_css = $theme . "\n" . $tickets;
 
@@ -135,7 +138,7 @@ foreach ([
 foreach ([
     '.settings-management-panel',
     '.settings-management-panel__head',
-    '.settings-section-nav--management',
+    '.settings-management-grid',
 ] as $needle) {
     assert_admin_ui(str_contains($theme, $needle), 'Settings management CSS missing: ' . $needle);
 }
@@ -177,7 +180,7 @@ foreach ([
     'data-label="<?php echo e(t(\'Company\')); ?>"',
     'data-label="<?php echo e(t(\'Actions\')); ?>"',
 ] as $needle) {
-    assert_admin_ui(str_contains($admin_users, $needle), 'Users admin responsive contract missing: ' . $needle);
+    assert_admin_ui(str_contains($admin_user_surface, $needle), 'Users admin responsive contract missing: ' . $needle);
 }
 
 foreach ([
@@ -193,6 +196,6 @@ foreach ([
     assert_admin_ui(str_contains($admin_clients, $needle), 'Clients admin responsive contract missing: ' . $needle);
 }
 
-assert_admin_ui(!str_contains($admin_users . $admin_clients, 'class="admin-cell-title"' . "\n" . '                                                class='), 'Admin tables must not contain duplicate class attributes.');
+assert_admin_ui(!str_contains($admin_user_surface . $admin_clients, 'class="admin-cell-title"' . "\n" . '                                                class='), 'Admin tables must not contain duplicate class attributes.');
 
 echo "Admin UI contract OK\n";

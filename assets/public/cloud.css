@@ -307,7 +307,7 @@ body::before {
     max-width: 12ch;
     margin: 0;
     color: var(--fd-ink);
-    font-size: clamp(3.55rem, 5vw, var(--fd-type-5xl));
+    font-size: var(--fd-type-5xl);
     line-height: 1.03;
     letter-spacing: 0;
     font-weight: 920;
@@ -388,7 +388,7 @@ body::before {
 }
 
 .fd-product-frame {
-    border-radius: 24px;
+    border-radius: var(--fd-radius-card);
 }
 
 .fd-product-toolbar {
@@ -437,7 +437,7 @@ body::before {
     color: var(--fd-muted);
     background: rgba(148, 163, 184, .14);
     text-align: center;
-    font-size: 12px;
+    font-size: var(--type-xs);
     font-weight: 800;
 }
 
@@ -477,7 +477,7 @@ body::before {
 .fd-migration p {
     margin: 16px 0 0;
     color: var(--fd-muted);
-    font-size: 18px;
+    font-size: var(--type-lg);
     line-height: 1.65;
 }
 
@@ -499,7 +499,7 @@ body::before {
 .fd-capability,
 .fd-step {
     border: 1px solid var(--fd-line);
-    border-radius: 20px;
+    border-radius: var(--fd-radius-card);
     background: var(--fd-glass);
     box-shadow: var(--fd-shadow-inset);
     backdrop-filter: blur(18px);
@@ -559,8 +559,8 @@ body::before {
     height: 54px;
     margin-bottom: 22px;
     border: 1px solid rgba(37, 99, 235, .18);
-    border-radius: 16px;
-    font-size: 24px;
+    border-radius: var(--fd-radius-card);
+    font-size: var(--type-2xl);
     font-weight: 900;
 }
 
@@ -591,7 +591,7 @@ body::before {
     width: 22px;
     height: 22px;
     border-radius: var(--fd-radius-pill);
-    font-size: 13px;
+    font-size: var(--type-13);
     font-weight: 900;
 }
 
@@ -619,7 +619,7 @@ body::before {
 
 .fd-capability h4 {
     margin-bottom: 8px;
-    font-size: 17px;
+    font-size: var(--type-lg);
 }
 
 .fd-capability p {
@@ -654,7 +654,7 @@ body::before {
     max-width: 38rem;
     margin: 12px 0 0;
     color: var(--fd-muted);
-    font-size: 15px;
+    font-size: var(--type-15);
     line-height: 1.55;
 }
 
@@ -669,14 +669,14 @@ body::before {
 
 .fd-price strong {
     color: var(--fd-ink);
-    font-size: 4rem;
+    font-size: var(--type-4xl);
     line-height: .95;
     font-weight: 920;
 }
 
 .fd-price span {
     color: var(--fd-soft);
-    font-size: 18px;
+    font-size: var(--type-lg);
     font-weight: 800;
 }
 
@@ -684,7 +684,7 @@ body::before {
     max-width: 34rem;
     margin: -8px 0 18px;
     color: var(--fd-muted);
-    font-size: 15px;
+    font-size: var(--type-15);
     line-height: 1.55;
 }
 
@@ -718,7 +718,7 @@ body::before {
 .fd-preview-card img {
     aspect-ratio: 16 / 9;
     object-fit: contain;
-    border-radius: 16px;
+    border-radius: var(--fd-radius-card);
     background: transparent;
     box-shadow: var(--fd-shadow-modal);
 }
@@ -727,7 +727,7 @@ body::before {
     max-width: 46rem;
     margin: 14px 0 0;
     color: var(--fd-muted);
-    font-size: 15px;
+    font-size: var(--type-15);
     line-height: 1.55;
 }
 
@@ -764,7 +764,7 @@ body::before {
 
 .fd-step strong {
     display: block;
-    font-size: 15px;
+    font-size: var(--type-15);
 }
 
 .fd-step span {
@@ -918,7 +918,7 @@ body::before {
 
     .fd-brand {
         gap: 8px;
-        font-size: 18px;
+        font-size: var(--type-lg);
     }
 
     .fd-brand img {
@@ -937,7 +937,7 @@ body::before {
     .fd-btn {
         min-height: 38px;
         padding: 0 12px;
-        font-size: 13px;
+        font-size: var(--type-13);
         white-space: nowrap;
     }
 
@@ -959,12 +959,12 @@ body::before {
 
     .fd-hero h1 {
         max-width: 10ch;
-        font-size: clamp(2.85rem, 12vw, 3.15rem);
+        font-size: var(--fd-type-4xl);
         line-height: 1.02;
     }
 
     .fd-hero p {
-        font-size: 1.08rem;
+        font-size: var(--type-lg);
         line-height: 1.65;
     }
 
@@ -1002,7 +1002,7 @@ body::before {
     .fd-heading h2,
     .fd-feature-copy h3,
     .fd-migration h2 {
-        font-size: 2.35rem;
+        font-size: var(--type-3xl);
     }
 
     .fd-card,
@@ -1021,7 +1021,7 @@ body::before {
     }
 
     .fd-price strong {
-        font-size: 3.25rem;
+        font-size: var(--type-4xl);
     }
 
     .fd-price span {

@@ -108,14 +108,14 @@ $type_icons = [
 
 <div class="flex flex-col h-full">
     <!-- Add New Type Button -->
-    <button type="button" class="mb-3 w-full px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-colors bg-theme-secondary text-theme-primary"
+    <button type="button" class="mb-3 w-full px-3 py-2 fd-rounded-card text-xs font-medium flex items-center justify-center gap-2 transition-colors bg-theme-secondary text-theme-primary"
         onclick="document.getElementById('add-type-form').classList.toggle('hidden')">
         <?php echo get_icon('plus', 'w-3.5 h-3.5'); ?>
         <?php echo e(t('Add Type')); ?>
     </button>
 
     <!-- Add Form (Glassmorphic) -->
-    <form method="post" id="add-type-form" class="hidden mb-3 p-3 rounded-lg glass-form" style="background: rgba(255, 255, 255, 0.7);">
+    <form method="post" id="add-type-form" class="hidden mb-3 p-3 fd-rounded-card glass-form">
         <?php echo csrf_field(); ?>
         <h4 class="text-xs font-semibold mb-2 text-theme-primary">
             <?php echo e(t('Add Type')); ?>
@@ -131,7 +131,7 @@ $type_icons = [
                 <label class="block text-xs mb-1 text-theme-secondary">
                     <?php echo e(t('Color')); ?>
                 </label>
-                <input type="color" name="color" value="#8b5cf6" class="w-full h-8 rounded cursor-pointer" style="border: 1px solid var(--border-light);">
+                <input type="color" name="color" value="#8b5cf6" class="w-full h-8 fd-rounded-control fd-color-input cursor-pointer">
             </div>
             <div>
                 <label class="block text-xs mb-1 text-theme-secondary">
@@ -141,7 +141,7 @@ $type_icons = [
                     <?php foreach ($type_icons as $icon => $label): ?>
                     <label class="relative cursor-pointer" title="<?php echo e($label); ?>">
                         <input type="radio" name="icon" value="<?php echo $icon; ?>" class="sr-only peer">
-                        <div class="w-6 h-6 flex items-center justify-center rounded border text-xs peer-checked:border-purple-500 peer-checked:bg-purple-50 border-theme-light text-theme-secondary">
+                        <div class="w-6 h-6 flex items-center justify-center fd-rounded-control border text-xs peer-checked:border-purple-500 peer-checked:bg-purple-50 border-theme-light text-theme-secondary">
                             <?php echo get_icon($icon, 'w-3 h-3'); ?>
                         </div>
                     </label>
@@ -149,14 +149,14 @@ $type_icons = [
                 </div>
             </div>
             <label class="flex items-center gap-2 text-xs cursor-pointer text-theme-secondary">
-                <input type="checkbox" name="is_default" class="rounded w-3.5 h-3.5">
+                <input type="checkbox" name="is_default" class="fd-rounded-control w-3.5 h-3.5">
                 <?php echo e(t('Set as default type')); ?>
             </label>
             <div class="flex gap-2 pt-1">
                 <button type="submit" name="create_type" class="flex-1 btn btn-primary btn-sm text-xs">
                     <?php echo e(t('Create')); ?>
                 </button>
-                <button type="button" class="flex-1 px-2 py-1 rounded text-xs transition-colors bg-theme-border-light text-theme-secondary"
+                <button type="button" class="flex-1 px-2 py-1 fd-rounded-control text-xs transition-colors bg-theme-border-light text-theme-secondary"
                     onclick="document.getElementById('add-type-form').classList.add('hidden')">
                     <?php echo e(t('Cancel')); ?>
                 </button>
@@ -187,8 +187,8 @@ $type_icons = [
                     </span>
 
                     <!-- Icon with Color Background -->
-                    <div class="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 text-xs"
-                        style="background-color: <?php echo e($type['color']); ?>20; color: <?php echo e($type['color']); ?>">
+                    <div class="w-6 h-6 fd-rounded-card flex items-center justify-center flex-shrink-0 text-xs fd-color-token-icon"
+                        style="--token-color: <?php echo e($type['color']); ?>">
                         <?php echo get_icon($type['icon'], 'w-3.5 h-3.5'); ?>
                     </div>
 
@@ -198,7 +198,7 @@ $type_icons = [
                             <?php echo e($type['name']); ?>
                         </div>
                         <?php if (!$type['is_active']): ?>
-                            <span class="text-xs px-1.5 py-0.5 rounded mt-0.5 inline-block" style="background: rgba(107, 114, 128, 0.1); color: #6b7280;">
+                            <span class="text-xs px-1.5 py-0.5 fd-rounded-control mt-0.5 inline-block fd-soft-badge fd-soft-badge--muted">
                                 <?php echo e(t('Inactive')); ?>
                             </span>
                         <?php endif; ?>
@@ -206,14 +206,14 @@ $type_icons = [
 
                     <!-- Default Badge -->
                     <?php if ($type['is_default']): ?>
-                        <span class="text-xs px-1.5 py-0.5 rounded flex-shrink-0" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                        <span class="text-xs px-1.5 py-0.5 fd-rounded-control flex-shrink-0 fd-soft-badge fd-soft-badge--purple">
                             <?php echo e(t('Default')); ?>
                         </span>
                     <?php endif; ?>
 
                     <!-- Edit Button -->
-                    <button type="button" class="px-1.5 py-0.5 rounded transition-colors flex-shrink-0 accordion-toggle"
-                        style="color: #8b5cf6; background: transparent;"
+                    <button type="button" class="px-1.5 py-0.5 fd-rounded-control transition-colors flex-shrink-0 accordion-toggle fd-action-icon"
+                        style="--action-color: #8b5cf6;"
                         onclick="toggleAccordion(this)"
                         title="<?php echo e(t('Edit')); ?>">
                         <?php echo get_icon('edit-2', 'w-3.5 h-3.5'); ?>
@@ -238,8 +238,7 @@ $type_icons = [
                                 <label class="block text-xs mb-1 text-theme-secondary">
                                     <?php echo e(t('Color')); ?>
                                 </label>
-                                <input type="color" name="color" value="<?php echo e($type['color']); ?>" class="w-full h-8 rounded cursor-pointer"
-                                    style="border: 1px solid var(--border-light);">
+                                <input type="color" name="color" value="<?php echo e($type['color']); ?>" class="w-full h-8 fd-rounded-control fd-color-input cursor-pointer">
                             </div>
 
                             <div>
@@ -250,7 +249,7 @@ $type_icons = [
                                     <?php foreach ($type_icons as $icon => $label): ?>
                                     <label class="relative cursor-pointer" title="<?php echo e($label); ?>">
                                         <input type="radio" name="icon" value="<?php echo $icon; ?>" class="sr-only peer" <?php echo $type['icon'] === $icon ? 'checked' : ''; ?>>
-                                        <div class="w-6 h-6 flex items-center justify-center rounded border text-xs peer-checked:border-purple-500 peer-checked:bg-purple-50 border-theme-light text-theme-secondary">
+                                        <div class="w-6 h-6 flex items-center justify-center fd-rounded-control border text-xs peer-checked:border-purple-500 peer-checked:bg-purple-50 border-theme-light text-theme-secondary">
                                             <?php echo get_icon($icon, 'w-3 h-3'); ?>
                                         </div>
                                     </label>
@@ -259,7 +258,7 @@ $type_icons = [
                             </div>
 
                             <label class="flex items-center gap-2 text-xs cursor-pointer text-theme-secondary">
-                                <input type="checkbox" name="is_active" class="rounded w-3.5 h-3.5" <?php echo $type['is_active'] ? 'checked' : ''; ?>>
+                                <input type="checkbox" name="is_active" class="fd-rounded-control w-3.5 h-3.5" <?php echo $type['is_active'] ? 'checked' : ''; ?>>
                                 <?php echo e(t('Active')); ?>
                             </label>
 
@@ -272,7 +271,7 @@ $type_icons = [
                                         <?php echo e(t('Set Default')); ?>
                                     </button>
                                 </div>
-                                <button type="submit" name="delete_type" class="w-full btn btn-sm text-xs" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;"
+                                <button type="submit" name="delete_type" class="w-full btn btn-sm text-xs fd-danger-action"
                                     onclick="return confirm('<?php echo e(t('Are you sure you want to delete this type?')); ?>')">
                                     <?php echo e(t('Delete')); ?>
                                 </button>

@@ -161,7 +161,7 @@
                             <div>
                                 <label class="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" name="is_billable" id="edit-time-billable" value="1"
-                                        class="rounded text-blue-600 focus:ring-blue-500">
+                                        class="fd-rounded-control text-blue-600 focus:ring-blue-500">
                                     <span class="text-sm text-theme-secondary"><?php echo e(t('Billable')); ?></span>
                                 </label>
                             </div>

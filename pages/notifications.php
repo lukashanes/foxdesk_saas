@@ -6,6 +6,7 @@
 
 $page_title = t('Notifications');
 $page = 'notifications';
+$page_extra_css = ['assets/css/notifications.css'];
 $user = current_user();
 
 // Load notification functions

@@ -27,12 +27,12 @@ controls.
 
 | Page | Lines | Status | Owner Track | Next Step |
 | --- | ---: | --- | --- | --- |
-| `pages/admin/reports.php` | 2038 | needs module extraction | shared customer workflow | Query, totals, billing adjustments, CSV export, and billing review JS are extracted; continue only if report rendering grows again. |
-| `pages/admin/settings.php` | 1979 | needs module extraction | shared customer workflow plus self-hosted update compatibility | Main POST actions, workflow POST router, tab view model, tab navigation, templates, and workflow cards are extracted; continue splitting only large rendering sections. |
-| `pages/tickets.php` | 1461 | needs module extraction | shared customer workflow | Filters, bulk actions, row view model, and ticket-list JS are extracted; continue with search result mapping only if API payload grows. |
-| `pages/ticket-detail.php` | 658 | needs module extraction | shared customer workflow | Context, share state, read model, surfaces, and detail JS are extracted; continue only with smaller rendering slices if the route grows again. |
-| `pages/admin/users.php` | 2359 | needs module extraction | shared customer workflow | Team permission payloads, filters, organization assignment, list read model, time totals, and AI-agent token read model are extracted; continue invite/reset rendering only if it grows. |
-| `pages/dashboard.php` | 1549 | needs module extraction | shared customer workflow | Dashboard compatibility helpers are extracted; keep dashboard as an analytics view, not a competing work model. |
+| `pages/admin/reports.php` | 2128 | needs module extraction | shared customer workflow | Query, totals, billing adjustments, CSV export, and billing review JS are extracted; continue only if report rendering grows again. |
+| `pages/admin/settings.php` | 2094 | needs module extraction | shared customer workflow plus self-hosted update compatibility | Main POST actions, workflow POST router, tab view model, tab navigation, templates, and workflow cards are extracted; continue splitting only large rendering sections. |
+| `pages/tickets.php` | 1445 | needs module extraction | shared customer workflow | Filters, bulk actions, row view model, and ticket-list JS are extracted; continue with search result mapping only if API payload grows. |
+| `pages/ticket-detail.php` | 637 | needs module extraction | shared customer workflow | Context, share state, read model, surfaces, and detail JS are extracted; continue only with smaller rendering slices if the route grows again. |
+| `pages/admin/users.php` | 762 | needs module extraction | shared customer workflow | Team permission payloads, filters, organization assignment, list read model, time totals, AI-agent token read model, and users/AI tabs are extracted. |
+| `pages/dashboard.php` | 1538 | needs module extraction | shared customer workflow | Dashboard compatibility helpers are extracted; keep dashboard as an analytics view, not a competing work model. |
 | `pages/new-ticket.php` | 1114 | needs module extraction | shared customer workflow | Extract ticket create form model and assignment defaults. |
 | `pages/admin/organizations.php` | 993 | needs module extraction | shared customer workflow | Extract client CRUD, access rules, and list rendering. |
 | `pages/admin/recurring-tasks.php` | 968 | needs module extraction | shared customer workflow | Extract recurring task CRUD and scheduler preview. |
@@ -204,6 +204,8 @@ Done when:
 Target modules/components:
 
 - `includes/modules/team/team-users.php`
+- `includes/components/team-ai-agents-tab.php`
+- `includes/components/team-users-tab.php`
 
 Contract tests:
 
@@ -214,6 +216,7 @@ Done when:
 - route delegates table capability flags, filter state, organization assignment,
   permission payloads, user list query, time totals, and AI-agent token queries
   to `team-users.php`
+- route delegates AI-agent and users tab rendering to dedicated components
 - tenant filtering stays inside the module and the workspace route does not own
   platform-specific SQL
 
@@ -250,8 +253,8 @@ Done when:
    `tests/ticket-list-js-contract-test.php`. Keep
    `tests/shared-workflow-contract-test.php` and
    `tests/core-ux-flow-parity-contract-test.php` green.
-2. `pages/admin/users.php`: team permissions, invite/reset flows, row view
-   model.
+2. `pages/admin/users.php`: keep route/controller thin; only extract additional
+   invite/reset fragments if the users tab component grows again.
 3. `pages/dashboard.php`: keep as compatibility dashboard, continue extracting
    widget rendering and inline CSS.
 4. Workflow content pages: merge statuses/priorities/types into one reusable

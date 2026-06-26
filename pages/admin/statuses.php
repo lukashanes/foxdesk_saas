@@ -142,16 +142,16 @@ include BASE_PATH . '/includes/components/page-header.php';
                             </div>
 
                             <!-- Color indicator -->
-                            <div class="w-8 h-8 rounded-lg flex-shrink-0" style="background-color: <?php echo e($status['color']); ?>"></div>
+                            <div class="w-8 h-8 fd-rounded-card flex-shrink-0" style="background-color: <?php echo e($status['color']); ?>"></div>
 
                             <!-- Status info -->
                             <div>
                                 <span class="font-medium text-gray-800"><?php echo e($status['name']); ?></span>
                                 <?php if ($status['is_default']): ?>
-                                    <span class="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-md"><?php echo e(t('Default')); ?></span>
+                                    <span class="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 fd-rounded-control"><?php echo e(t('Default')); ?></span>
                                 <?php endif; ?>
                                 <?php if ($status['is_closed']): ?>
-                                    <span class="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md"><?php echo e(t('Closed')); ?></span>
+                                    <span class="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 fd-rounded-control"><?php echo e(t('Closed')); ?></span>
                                 <?php endif; ?>
                                 <div class="text-xs text-gray-500"><?php echo e(t('{count} tickets', ['count' => $tickets_count['c']])); ?></div>
                             </div>
@@ -213,7 +213,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1"><?php echo e(t('Color')); ?></label>
                     <input type="color" name="color" value="#3b82f6"
-                        class="w-full h-10 rounded-lg cursor-pointer border border-gray-200">
+                        class="w-full h-10 fd-rounded-card cursor-pointer border border-gray-200">
                 </div>
 
                 <div>
@@ -231,7 +231,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 
                 <div>
                     <label class="flex items-center text-sm text-gray-600">
-                        <input type="checkbox" name="is_closed" class="mr-2 rounded">
+                        <input type="checkbox" name="is_closed" class="mr-2 fd-rounded-control">
                         <?php echo e(t('Mark as closed status')); ?>
                     </label>
                 </div>
@@ -246,7 +246,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 
 <!-- Edit Status Modal -->
 <div id="editStatusModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="workflow-admin-modal rounded-xl shadow-xl max-w-md w-full mx-4 p-4">
+    <div class="workflow-admin-modal fd-rounded-card shadow-xl max-w-md w-full mx-4 p-4">
         <h3 class="font-semibold text-gray-800 mb-4"><?php echo e(t('Edit status')); ?></h3>
 
         <form method="post" id="editStatusForm" class="space-y-4">
@@ -261,12 +261,12 @@ include BASE_PATH . '/includes/components/page-header.php';
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1"><?php echo e(t('Color')); ?></label>
                 <input type="color" name="color" id="edit_status_color"
-                       class="w-full h-10 rounded-lg cursor-pointer border border-gray-200">
+                       class="w-full h-10 fd-rounded-card cursor-pointer border border-gray-200">
             </div>
 
             <div>
                 <label class="flex items-center text-sm text-gray-600">
-                    <input type="checkbox" name="is_closed" id="edit_status_is_closed" class="mr-2 rounded">
+                    <input type="checkbox" name="is_closed" id="edit_status_is_closed" class="mr-2 fd-rounded-control">
                     <?php echo e(t('Mark as closed status')); ?>
                 </label>
             </div>

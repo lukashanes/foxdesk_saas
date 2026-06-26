@@ -1,0 +1,110 @@
+{
+  "status": "passed",
+  "generatedAt": "2026-06-26T15:24:03.830Z",
+  "css": {
+    "assets": [
+      {
+        "path": "theme.css",
+        "rawBytes": 289985,
+        "gzipBytes": 44585
+      },
+      {
+        "path": "assets/public/cloud.css",
+        "rawBytes": 19650,
+        "gzipBytes": 4065
+      }
+    ],
+    "gzipBytes": 48650,
+    "beforeGzipBytes": 54513,
+    "target10PercentGzipBytes": 49061,
+    "gzipDeltaBytes": -5863,
+    "gzipDeltaPercent": -10.76
+  },
+  "js": {
+    "assets": [
+      {
+        "path": "assets/js/app-api-client.js",
+        "rawBytes": 6394,
+        "gzipBytes": 1784
+      },
+      {
+        "path": "assets/js/app-contract-shell.js",
+        "rawBytes": 23892,
+        "gzipBytes": 4807
+      },
+      {
+        "path": "assets/js/app-footer.js",
+        "rawBytes": 25229,
+        "gzipBytes": 6425
+      },
+      {
+        "path": "assets/js/app-header.js",
+        "rawBytes": 8639,
+        "gzipBytes": 2067
+      },
+      {
+        "path": "assets/js/attachment-paste-drop.js",
+        "rawBytes": 8533,
+        "gzipBytes": 2111
+      },
+      {
+        "path": "assets/js/autosave.js",
+        "rawBytes": 8891,
+        "gzipBytes": 2186
+      },
+      {
+        "path": "assets/js/chip-select.js",
+        "rawBytes": 9856,
+        "gzipBytes": 2516
+      },
+      {
+        "path": "assets/js/kanban.js",
+        "rawBytes": 12231,
+        "gzipBytes": 3018
+      },
+      {
+        "path": "assets/js/quill-image-upload.js",
+        "rawBytes": 6567,
+        "gzipBytes": 1963
+      },
+      {
+        "path": "assets/js/report-billing-review.js",
+        "rawBytes": 7810,
+        "gzipBytes": 1769
+      },
+      {
+        "path": "assets/js/rich-text-editor.js",
+        "rawBytes": 1910,
+        "gzipBytes": 690
+      },
+      {
+        "path": "assets/js/shortcuts.js",
+        "rawBytes": 19585,
+        "gzipBytes": 4841
+      },
+      {
+        "path": "assets/js/ticket-detail.js",
+        "rawBytes": 68430,
+        "gzipBytes": 13562
+      },
+      {
+        "path": "assets/js/ticket-list.js",
+        "rawBytes": 43797,
+        "gzipBytes": 7616
+      },
+      {
+        "path": "assets/js/upload-preview.js",
+        "rawBytes": 8008,
+        "gzipBytes": 2060
+      }
+    ],
+    "gzipBytes": 57415,
+    "largestAsset": {
+      "path": "assets/js/ticket-detail.js",
+      "rawBytes": 68430,
+      "gzipBytes": 13562
+    }
+  },
+  "warnings": [],
+  "failures": []
+}

@@ -1,0 +1,51 @@
+{
+  "status": "failed",
+  "metrics": {
+    "generatedAt": "2026-06-26T00:00:00.000Z",
+    "note": "Before UI quality unification pass. Captured from initial audit output in this implementation run.",
+    "css": {
+      "uniqueFontSizes": 47,
+      "uniqueBorderRadii": 19,
+      "uniqueBoxShadows": 39,
+      "viewportFontClamp": 2,
+      "cssRawBytes": 342401,
+      "cssGzipBytes": 54513
+    },
+    "ui": {
+      "scannedFiles": 177,
+      "productionLoc": 80323,
+      "styleAttrs": 132,
+      "nonAllowlistedStyleAttrs": 132,
+      "roundedUtilities": 217
+    },
+    "translations": {
+      "sourceKeys": 1442,
+      "missingTotal": 789,
+      "languages": {
+        "cs": {
+          "keys": 1442,
+          "missing": 0,
+          "extra": 0
+        },
+        "de": {
+          "keys": 1179,
+          "missing": 263,
+          "extra": 0
+        },
+        "es": {
+          "keys": 1179,
+          "missing": 263,
+          "extra": 0
+        },
+        "it": {
+          "keys": 1179,
+          "missing": 263,
+          "extra": 0
+        }
+      }
+    }
+  },
+  "failures": [
+    "Initial state before unification exceeded style, token, and translation gates."
+  ]
+}

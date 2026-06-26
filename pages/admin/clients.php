@@ -264,7 +264,7 @@ include BASE_PATH . '/includes/components/page-header.php';
 
 <!-- Edit Client Modal -->
 <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="rounded-xl shadow-xl max-w-md w-full mx-4 p-4 bg-theme-app">
+    <div class="fd-rounded-card shadow-xl max-w-md w-full mx-4 p-4 bg-theme-app">
         <h3 class="font-semibold mb-4 text-theme-primary"><?php echo e(t('Edit client')); ?></h3>
         <form method="post" id="editForm" class="space-y-4">
             <?php echo csrf_field(); ?>
