@@ -128,7 +128,10 @@ $expires_label = !empty($share['expires_at']) ? format_date($share['expires_at']
                             <?php if (is_image_mime($attachment['mime_type'] ?? '')): ?>
                                 <a href="<?php echo $_share_url; ?>" target="_blank"
                                    class="block fd-rounded-card overflow-hidden border border-gray-200 hover:shadow-md transition"
-                                   style="max-width: 180px;">
+                                   style="max-width: 180px;"
+                                   data-image-preview-trigger
+                                   data-image-preview-src="<?php echo $_share_url; ?>"
+                                   data-image-preview-name="<?php echo e($attachment['original_name']); ?>">
                                     <img src="<?php echo $_share_url; ?>" alt="<?php echo e($attachment['original_name']); ?>"
                                          class="w-full h-28 object-cover" loading="lazy">
                                     <div class="px-2 py-1 text-xs text-gray-600 truncate"><?php echo e($attachment['original_name']); ?></div>
@@ -193,7 +196,10 @@ $expires_label = !empty($share['expires_at']) ? format_date($share['expires_at']
                                                 <?php if (is_image_mime($attachment['mime_type'] ?? '')): ?>
                                                     <a href="<?php echo $_share_c_url; ?>" target="_blank"
                                                        class="block fd-rounded-control overflow-hidden border border-gray-200 hover:shadow-sm transition"
-                                                       style="max-width: 120px;">
+                                                       style="max-width: 120px;"
+                                                       data-image-preview-trigger
+                                                       data-image-preview-src="<?php echo $_share_c_url; ?>"
+                                                       data-image-preview-name="<?php echo e($attachment['original_name']); ?>">
                                                         <img src="<?php echo $_share_c_url; ?>" alt="<?php echo e($attachment['original_name']); ?>"
                                                              class="w-full h-20 object-cover" loading="lazy">
                                                     </a>

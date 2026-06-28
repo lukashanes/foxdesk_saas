@@ -32,9 +32,12 @@ assert(footer.indexOf('window.appConfig = {') < footer.indexOf('assets/js/app-ap
 assert(footer.indexOf('assets/js/app-api-client.js') < footer.indexOf('assets/js/app-contract-shell.js'), 'Contract shell must load after API client.');
 assert(footer.includes('$footer_asset_version = static function'), 'Footer must use file-aware cache busting for JS assets.');
 assert(footer.includes("filemtime($absolute_path)"), 'Footer JS asset version must change when a file changes.');
-for (const asset of ['assets/js/app-api-client.js', 'assets/js/app-contract-shell.js', 'assets/js/app-footer.js']) {
+for (const asset of ['assets/js/app-api-client.js', 'assets/js/app-contract-shell.js', 'assets/js/image-preview.js', 'assets/js/app-footer.js']) {
   assert(footer.includes(`$footer_asset_version('${asset}')`), `${asset} must use the shared JS cache-busting helper.`);
 }
+assert(footer.includes('id="image-lightbox"'), 'Footer must render the shared image preview lightbox.');
+assert(footer.includes('data-image-preview-close'), 'Footer lightbox must expose a close control for image preview JS.');
+assert(footer.indexOf('assets/js/image-preview.js') < footer.indexOf('assets/js/app-footer.js'), 'Image preview behavior must load before footer enhancements.');
 
 for (const endpoint of [
   'app-shell',

@@ -63,7 +63,7 @@ function api_upload() {
         $result['url'] = 'image.php?f=' . rawurlencode((string) $result['filename']);
 
         if ($ticket_id > 0) {
-            $attachment_id = db_insert('attachments', array_merge([
+            $attachment_row = array_merge([
                 'ticket_id' => $ticket_id,
                 'filename' => $result['filename'],
                 'original_name' => $result['original_name'],
@@ -71,8 +71,13 @@ function api_upload() {
                 'file_size' => $result['file_size'],
                 'uploaded_by' => $user['id'],
                 'created_at' => date('Y-m-d H:i:s'),
-            ], attachment_storage_fields($result)));
+            ], attachment_storage_fields($result));
+            $attachment_id = db_insert('attachments', $attachment_row);
             $result['attachment_id'] = (int) $attachment_id;
+            $attachment_row['id'] = (int) $attachment_id;
+            if (function_exists('attachment_download_url')) {
+                $result['url'] = attachment_download_url($attachment_row);
+            }
         }
 
         api_success(['file' => $result]);

@@ -77,6 +77,29 @@
         var nameClass = options.nameClass || 'truncate';
         var sizeClass = options.sizeClass || 'flex-shrink-0';
         var removeIconClass = options.removeIconClass || 'w-3.5 h-3.5';
+        var objectUrls = [];
+
+        function isImageFile(file) {
+            return String(file && file.type || '').indexOf('image/') === 0;
+        }
+
+        function revokeObjectUrls() {
+            if (typeof URL === 'undefined' || typeof URL.revokeObjectURL !== 'function') {
+                objectUrls = [];
+                return;
+            }
+            objectUrls.forEach(function (url) {
+                URL.revokeObjectURL(url);
+            });
+            objectUrls = [];
+        }
+
+        function createObjectUrl(file) {
+            if (typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') return '';
+            var url = URL.createObjectURL(file);
+            objectUrls.push(url);
+            return url;
+        }
 
         function enforceLimits() {
             if (typeof DataTransfer === 'undefined') return { changed: false, hadErrors: false, messages: [] };
@@ -139,6 +162,7 @@
         function updatePreview() {
             var validation = enforceLimits();
             renderErrors(errors, validation.messages);
+            revokeObjectUrls();
             preview.innerHTML = '';
 
             if (input.files.length === 0) {
@@ -150,23 +174,47 @@
 
             for (var i = 0; i < input.files.length; i++) {
                 var file = input.files[i];
+                var isImage = isImageFile(file);
                 var row = document.createElement('div');
-                row.className = rowClass;
-                row.style.background = 'var(--surface-secondary)';
+                row.className = isImage ? 'upload-preview-card upload-preview-card--image' : rowClass;
+                if (!isImage) row.style.background = 'var(--surface-secondary)';
 
                 var meta = document.createElement('div');
-                meta.className = options.metaClass || 'flex items-center gap-2 min-w-0';
-                meta.innerHTML = renderIcon(file, iconClass);
+                meta.className = isImage
+                    ? 'upload-preview-card__meta'
+                    : (options.metaClass || 'flex items-center gap-2 min-w-0');
+
+                if (isImage) {
+                    var thumbUrl = createObjectUrl(file);
+                    var thumbButton = document.createElement('button');
+                    thumbButton.type = 'button';
+                    thumbButton.className = 'upload-preview-card__thumb';
+                    thumbButton.setAttribute('aria-label', file.name);
+                    if (thumbUrl) {
+                        thumbButton.setAttribute('data-image-preview-trigger', '');
+                        thumbButton.setAttribute('data-image-preview-src', thumbUrl);
+                        thumbButton.setAttribute('data-image-preview-name', file.name);
+                    }
+
+                    var img = document.createElement('img');
+                    img.src = thumbUrl;
+                    img.alt = file.name;
+                    img.loading = 'lazy';
+                    thumbButton.appendChild(img);
+                    row.appendChild(thumbButton);
+                } else {
+                    meta.innerHTML = renderIcon(file, iconClass);
+                }
 
                 var name = document.createElement('span');
-                name.className = nameClass;
-                name.style.color = 'var(--text-secondary)';
+                name.className = isImage ? 'upload-preview-card__name' : nameClass;
+                if (!isImage) name.style.color = 'var(--text-secondary)';
                 name.textContent = file.name;
                 meta.appendChild(name);
 
                 var size = document.createElement('span');
-                size.className = sizeClass;
-                size.style.color = 'var(--text-muted)';
+                size.className = isImage ? 'upload-preview-card__size' : sizeClass;
+                if (!isImage) size.style.color = 'var(--text-muted)';
                 size.textContent = formatFileSize(file.size, sizeDecimals);
                 meta.appendChild(size);
 

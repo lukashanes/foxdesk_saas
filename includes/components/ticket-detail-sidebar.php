@@ -254,7 +254,9 @@ if (is_agent()) {
                             <?php if ($_is_img): ?>
                                 <a href="<?php echo $_att_url; ?>" target="_blank"
                                     class="ticket-attachment-thumb"
-                                    onclick="event.preventDefault(); openImagePreview('<?php echo $_att_url; ?>', '<?php echo e($attachment['original_name']); ?>');">
+                                    data-image-preview-trigger
+                                    data-image-preview-src="<?php echo $_att_url; ?>"
+                                    data-image-preview-name="<?php echo e($attachment['original_name']); ?>">
                                     <img src="<?php echo $_att_url; ?>" alt="" class="w-8 h-8 object-cover" loading="lazy">
                                 </a>
                             <?php else: ?>
@@ -264,7 +266,9 @@ if (is_agent()) {
                                 <?php if ($_is_img): ?>
                                     <a href="<?php echo $_att_url; ?>"
                                         class="ticket-attachment-link cursor-pointer"
-                                        onclick="event.preventDefault(); openImagePreview('<?php echo $_att_url; ?>', '<?php echo e($attachment['original_name']); ?>');">
+                                        data-image-preview-trigger
+                                        data-image-preview-src="<?php echo $_att_url; ?>"
+                                        data-image-preview-name="<?php echo e($attachment['original_name']); ?>">
                                         <?php echo e($attachment['original_name']); ?>
                                     </a>
                                 <?php else: ?>

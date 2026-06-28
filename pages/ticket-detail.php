@@ -36,6 +36,9 @@ if (function_exists('mark_ticket_notifications_read')) {
 }
 $page_title = $ticket['title'];
 $page = 'ticket';
+$ticket_detail_asset_version = static function (string $path): string {
+    return (defined('APP_VERSION') ? (string) APP_VERSION : '1') . '-' . (string) (@filemtime(BASE_PATH . '/' . $path) ?: '0');
+};
 $ticket_detail_context = ticket_detail_context($ticket_id, $ticket, $user, $_SESSION);
 $all_comments = $ticket_detail_context['all_comments'];
 $attachments = $ticket_detail_context['attachments'];
@@ -605,15 +608,15 @@ window.FoxDeskTicketDetailConfig = <?php echo json_encode($ticket_detail_js_conf
 </script>
 <!-- Tag inline editing -->
 <?php if ($tags_supported && can_edit_ticket($ticket, $user)): ?>
-<script src="assets/js/chip-select.js?v=<?php echo APP_VERSION; ?>"></script>
+<script src="assets/js/chip-select.js?v=<?php echo e($ticket_detail_asset_version('assets/js/chip-select.js')); ?>"></script>
 <?php endif; ?>
 <!-- Quill Editor JS -->
 <script src="assets/vendor/quill/2.0.2/quill.js?v=<?php echo APP_VERSION; ?>"></script>
-<script src="assets/js/rich-text-editor.js?v=<?php echo APP_VERSION; ?>"></script>
-<script src="assets/js/quill-image-upload.js?v=<?php echo APP_VERSION; ?>"></script>
-<script src="assets/js/attachment-paste-drop.js?v=<?php echo APP_VERSION; ?>"></script>
+<script src="assets/js/rich-text-editor.js?v=<?php echo e($ticket_detail_asset_version('assets/js/rich-text-editor.js')); ?>"></script>
+<script src="assets/js/quill-image-upload.js?v=<?php echo e($ticket_detail_asset_version('assets/js/quill-image-upload.js')); ?>"></script>
+<script src="assets/js/attachment-paste-drop.js?v=<?php echo e($ticket_detail_asset_version('assets/js/attachment-paste-drop.js')); ?>"></script>
 <!-- Autosave for comment editor -->
-<script src="assets/js/autosave.js?v=<?php echo APP_VERSION; ?>"></script>
+<script src="assets/js/autosave.js?v=<?php echo e($ticket_detail_asset_version('assets/js/autosave.js')); ?>"></script>
 <?php if (function_exists('can_view_timeline') && can_view_timeline($user)): ?>
 <!-- Timeline Modal -->
 <div id="timeline-overlay" class="ticket-timeline-overlay" onclick="closeTimeline()" aria-hidden="true">
@@ -633,5 +636,5 @@ window.FoxDeskTicketDetailConfig = <?php echo json_encode($ticket_detail_js_conf
     </div>
 </div>
 <?php endif; ?>
-<script src="assets/js/ticket-detail.js?v=<?php echo APP_VERSION; ?>"></script>
+<script src="assets/js/ticket-detail.js?v=<?php echo e($ticket_detail_asset_version('assets/js/ticket-detail.js')); ?>"></script>
 <?php require_once BASE_PATH . '/includes/footer.php';

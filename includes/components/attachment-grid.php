@@ -35,7 +35,9 @@ foreach ($component_attachments as $_att) {
         <?php $_src = attachment_download_url($_img); ?>
         <a href="<?php echo e($_src); ?>" target="_blank"
            class="attachment-thumb ticket-attachment-link group relative block fd-rounded-card overflow-hidden border hover:shadow-md transition border-theme-light"
-           onclick="event.preventDefault(); openImagePreview('<?php echo e($_src); ?>', '<?php echo e($_img['original_name']); ?>');">
+           data-image-preview-trigger
+           data-image-preview-src="<?php echo e($_src); ?>"
+           data-image-preview-name="<?php echo e($_img['original_name']); ?>">
             <img src="<?php echo e($_src); ?>" alt="<?php echo e($_img['original_name']); ?>"
                  class="object-cover"
                  style="<?php echo $_layout === 'grid' ? 'width:100%;height:8rem;' : 'width:6rem;height:5rem;'; ?>"

@@ -40,6 +40,7 @@ foreach ([
     'ticket-side-action-button',
     'ticket-attachment-item',
     'ticket-attachment-link',
+    'data-image-preview-trigger',
     'deleteAttachment(',
     'ticket-share-input',
 ] as $needle) {

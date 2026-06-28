@@ -46,5 +46,6 @@ $assert(str_contains($cloudflare, "rate_limit_key('cf_email_ingest'"), 'Cloudfla
 
 $assert(str_contains($security, 'Permissions-Policy'), 'Permissions-Policy security header is missing.');
 $assert(str_contains($security, 'Content-Security-Policy-Report-Only'), 'CSP report-only hardening header is missing.');
+$assert(str_contains($security, "img-src 'self' data: blob: https:"), 'CSP img-src must allow blob previews for local image upload thumbnails.');
 
 echo "Security debt contract OK\n";

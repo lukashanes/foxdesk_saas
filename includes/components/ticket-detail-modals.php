@@ -178,4 +178,11 @@
         </div>
 <?php endif; ?>
 
-<script src="assets/js/upload-preview.js?v=<?php echo APP_VERSION; ?>"></script>
+<?php
+$ticket_detail_modal_asset_version = isset($ticket_detail_asset_version) && is_callable($ticket_detail_asset_version)
+    ? $ticket_detail_asset_version
+    : static function (string $path): string {
+        return (defined('APP_VERSION') ? (string) APP_VERSION : '1') . '-' . (string) (@filemtime(BASE_PATH . '/' . $path) ?: '0');
+    };
+?>
+<script src="assets/js/upload-preview.js?v=<?php echo e($ticket_detail_modal_asset_version('assets/js/upload-preview.js')); ?>"></script>

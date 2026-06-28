@@ -158,34 +158,14 @@ if ('serviceWorker' in navigator) {
 })();
 </script>
 <!-- Image Preview Lightbox -->
-<div id="image-lightbox"
-     style="display:none; position:fixed; inset:0; z-index:9999; align-items:center; justify-content:center; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); padding:1rem; cursor:pointer;"
-     onclick="if(event.target===this)closeImagePreview();">
-    <div style="position:relative; display:flex; flex-direction:column; align-items:center; max-width:90vw; max-height:90vh; cursor:default;">
-        <img id="lightbox-img" src="" alt=""
-             style="max-width:90vw; max-height:85vh; width:auto; height:auto; object-fit:contain; border-radius: var(--fd-radius-control); box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
-        <div id="lightbox-name" style="text-align:center; color:#fff; font-size:0.875rem; margin-top:0.5rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%;"></div>
-        <button onclick="closeImagePreview();"
-                style="position:absolute; top:-0.75rem; right:-0.75rem; width:2rem; height:2rem; border-radius:50%; background:rgba(0,0,0,0.6); color:#fff; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.25rem; line-height:1; transition:background 0.15s;"
-                onmouseover="this.style.background='rgba(0,0,0,0.85)'" onmouseout="this.style.background='rgba(0,0,0,0.6)'">&times;</button>
+<div id="image-lightbox" class="image-lightbox" hidden aria-hidden="true">
+    <div class="image-lightbox__dialog" role="dialog" aria-modal="true" aria-labelledby="lightbox-name">
+        <img id="lightbox-img" class="image-lightbox__image" src="" alt="">
+        <div id="lightbox-name" class="image-lightbox__name"></div>
+        <button type="button" class="image-lightbox__close" data-image-preview-close aria-label="<?php echo e(t('Close')); ?>">&times;</button>
     </div>
 </div>
-<script>
-function openImagePreview(src, name) {
-    var lb = document.getElementById('image-lightbox');
-    document.getElementById('lightbox-img').src = src;
-    document.getElementById('lightbox-name').textContent = name || '';
-    lb.style.display = 'flex';
-    document.addEventListener('keydown', _lbEsc);
-}
-function closeImagePreview() {
-    var lb = document.getElementById('image-lightbox');
-    lb.style.display = 'none';
-    document.getElementById('lightbox-img').src = '';
-    document.removeEventListener('keydown', _lbEsc);
-}
-function _lbEsc(e) { if (e.key === 'Escape') closeImagePreview(); }
-</script>
+<script defer src="assets/js/image-preview.js?v=<?php echo e($footer_asset_version('assets/js/image-preview.js')); ?>"></script>
 <script defer src="assets/js/app-footer.js?v=<?php echo e($footer_asset_version('assets/js/app-footer.js')); ?>"></script>
 </body>
 

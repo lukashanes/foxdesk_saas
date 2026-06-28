@@ -7945,6 +7945,17 @@ display: none;
         border: 1px solid var(--border-light);
         background: var(--surface-secondary);
         box-shadow: var(--shadow-lg);
+        cursor: zoom-in;
+    }
+
+    #comment-editor .ql-editor img.rich-inline-image--uploading,
+    #internal-editor .ql-editor img.rich-inline-image--uploading,
+    #edit-description-editor .ql-editor img.rich-inline-image--uploading,
+    #edit-comment-editor .ql-editor img.rich-inline-image--uploading,
+    #description-editor .ql-editor img.rich-inline-image--uploading {
+        opacity: 0.68;
+        outline: 2px dashed var(--primary);
+        outline-offset: 3px;
     }
 
     #internal-editor .ql-toolbar {
@@ -9436,6 +9447,139 @@ display: none;
 
     .ticket-attachment-link:hover {
         color: var(--primary);
+    }
+
+    .image-lightbox {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: rgba(2, 6, 23, 0.78);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        cursor: zoom-out;
+    }
+
+    .image-lightbox[hidden] {
+        display: none;
+    }
+
+    .image-lightbox__dialog {
+        position: relative;
+        display: flex;
+        max-width: 92vw;
+        max-height: 92vh;
+        flex-direction: column;
+        align-items: center;
+        cursor: default;
+    }
+
+    .image-lightbox__image {
+        width: auto;
+        max-width: 92vw;
+        height: auto;
+        max-height: 84vh;
+        object-fit: contain;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: var(--fd-radius-card);
+        background: #020617;
+        box-shadow: 0 26px 80px rgba(0, 0, 0, 0.42);
+    }
+
+    .image-lightbox__name {
+        max-width: min(92vw, 48rem);
+        margin-top: 0.65rem;
+        overflow: hidden;
+        color: #fff;
+        font-size: var(--type-sm);
+        font-weight: 700;
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .image-lightbox__close {
+        position: absolute;
+        top: -0.75rem;
+        right: -0.75rem;
+        display: inline-flex;
+        width: 2rem;
+        height: 2rem;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: var(--fd-radius-pill);
+        background: rgba(15, 23, 42, 0.88);
+        color: #fff;
+        cursor: pointer;
+        font-size: 1.25rem;
+        line-height: 1;
+        transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .image-lightbox__close:hover {
+        background: rgba(15, 23, 42, 1);
+        transform: translateY(-1px);
+    }
+
+    .upload-preview-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        border: 1px solid var(--border-light);
+        border-radius: var(--fd-radius-card);
+        background: var(--surface-secondary);
+    }
+
+    .upload-preview-card--image {
+        min-height: 4.75rem;
+        padding: 0.5rem;
+    }
+
+    .upload-preview-card__thumb {
+        flex: 0 0 auto;
+        width: 4.75rem;
+        height: 3.75rem;
+        overflow: hidden;
+        border: 1px solid var(--border-light);
+        border-radius: var(--fd-radius-control);
+        background: var(--surface-primary);
+        cursor: zoom-in;
+        padding: 0;
+    }
+
+    .upload-preview-card__thumb img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .upload-preview-card__meta {
+        display: flex;
+        min-width: 0;
+        flex: 1;
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+
+    .upload-preview-card__name {
+        overflow: hidden;
+        color: var(--text-secondary);
+        font-size: var(--type-sm);
+        font-weight: 750;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .upload-preview-card__size {
+        color: var(--text-muted);
+        font-size: var(--type-xs);
+        font-weight: 650;
     }
 
     .ticket-share-input {

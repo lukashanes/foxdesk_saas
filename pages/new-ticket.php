@@ -621,8 +621,13 @@ include BASE_PATH . '/includes/components/page-header.php';
 </div>
 
 
-<script src="assets/js/attachment-paste-drop.js?v=<?php echo APP_VERSION; ?>"></script>
-<script src="assets/js/upload-preview.js?v=<?php echo APP_VERSION; ?>"></script>
+<?php
+$new_ticket_asset_version = static function (string $path): string {
+    return (defined('APP_VERSION') ? (string) APP_VERSION : '1') . '-' . (string) (@filemtime(BASE_PATH . '/' . $path) ?: '0');
+};
+?>
+<script src="assets/js/attachment-paste-drop.js?v=<?php echo e($new_ticket_asset_version('assets/js/attachment-paste-drop.js')); ?>"></script>
+<script src="assets/js/upload-preview.js?v=<?php echo e($new_ticket_asset_version('assets/js/upload-preview.js')); ?>"></script>
 <script>
     const ICONS = {
         'times': '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>',
@@ -1004,8 +1009,8 @@ include BASE_PATH . '/includes/components/page-header.php';
 <!-- Quill Editor -->
 <link href="assets/vendor/quill/2.0.2/quill.snow.css?v=<?php echo APP_VERSION; ?>" rel="stylesheet">
 <script src="assets/vendor/quill/2.0.2/quill.js?v=<?php echo APP_VERSION; ?>"></script>
-<script src="assets/js/rich-text-editor.js?v=<?php echo APP_VERSION; ?>"></script>
-<script src="assets/js/quill-image-upload.js?v=<?php echo APP_VERSION; ?>"></script>
+<script src="assets/js/rich-text-editor.js?v=<?php echo e($new_ticket_asset_version('assets/js/rich-text-editor.js')); ?>"></script>
+<script src="assets/js/quill-image-upload.js?v=<?php echo e($new_ticket_asset_version('assets/js/quill-image-upload.js')); ?>"></script>
 <script>
     // Initialize Quill Editor
     (function() {
