@@ -13,6 +13,12 @@ $included_storage = billing_included_storage_bytes() === 1073741824
     : preg_replace('/\.00\s+/', ' ', format_file_size(billing_included_storage_bytes()));
 $cloud_css_path = BASE_PATH . '/assets/public/cloud.css';
 $cloud_css_version = (string) APP_VERSION . '-' . (file_exists($cloud_css_path) ? (string) filemtime($cloud_css_path) : '0');
+$cloud_asset = static function (string $path): string {
+    $absolute_path = BASE_PATH . '/' . ltrim($path, '/');
+    $version = (string) APP_VERSION . '-' . (file_exists($absolute_path) ? (string) filemtime($absolute_path) : '0');
+
+    return $path . '?v=' . rawurlencode($version);
+};
 
 if (!headers_sent()) {
     header(
@@ -89,8 +95,8 @@ if (!headers_sent()) {
                         <div class="fd-window-dots"><span></span><span></span><span></span></div>
                         <div class="fd-product-url">app.foxdesk.net / dashboard</div>
                     </div>
-                    <img class="fd-light-img" src="assets/public/dashboard-light.webp" alt="FoxDesk dashboard preview" width="1200" height="675" fetchpriority="high" decoding="async">
-                    <img class="fd-dark-img" src="assets/public/dashboard-dark.webp" alt="FoxDesk dashboard preview in dark mode" width="1200" height="675" fetchpriority="high" decoding="async">
+                    <img class="fd-light-img" src="<?php echo e($cloud_asset('assets/public/dashboard-light.webp')); ?>" alt="FoxDesk dashboard preview" width="1200" height="675" fetchpriority="high" decoding="async">
+                    <img class="fd-dark-img" src="<?php echo e($cloud_asset('assets/public/dashboard-dark.webp')); ?>" alt="FoxDesk dashboard preview in dark mode" width="1200" height="675" fetchpriority="high" decoding="async">
                 </div>
             </div>
         </section>
@@ -129,8 +135,8 @@ if (!headers_sent()) {
                     </ul>
                 </div>
                 <div class="fd-feature-media fd-span-7">
-                    <img class="fd-light-img" src="assets/public/ticket-detail-light.webp" alt="FoxDesk ticket detail" width="1200" height="675" loading="lazy" decoding="async">
-                    <img class="fd-dark-img" src="assets/public/ticket-detail-dark.webp" alt="FoxDesk ticket detail in dark mode" width="1200" height="675" loading="lazy" decoding="async">
+                    <img class="fd-light-img" src="<?php echo e($cloud_asset('assets/public/ticket-detail-light.webp')); ?>" alt="FoxDesk ticket detail" width="1200" height="675" loading="lazy" decoding="async">
+                    <img class="fd-dark-img" src="<?php echo e($cloud_asset('assets/public/ticket-detail-dark.webp')); ?>" alt="FoxDesk ticket detail in dark mode" width="1200" height="675" loading="lazy" decoding="async">
                 </div>
             </div>
 
@@ -146,8 +152,8 @@ if (!headers_sent()) {
                     </ul>
                 </div>
                 <div class="fd-feature-media fd-span-7">
-                    <img class="fd-light-img" src="assets/public/time-report-light.webp" alt="FoxDesk time reporting" width="1200" height="675" loading="lazy" decoding="async">
-                    <img class="fd-dark-img" src="assets/public/time-report-dark.webp" alt="FoxDesk time reporting in dark mode" width="1200" height="675" loading="lazy" decoding="async">
+                    <img class="fd-light-img" src="<?php echo e($cloud_asset('assets/public/time-report-light.webp')); ?>" alt="FoxDesk time reporting" width="1200" height="675" loading="lazy" decoding="async">
+                    <img class="fd-dark-img" src="<?php echo e($cloud_asset('assets/public/time-report-dark.webp')); ?>" alt="FoxDesk time reporting in dark mode" width="1200" height="675" loading="lazy" decoding="async">
                 </div>
             </div>
 
@@ -204,13 +210,13 @@ if (!headers_sent()) {
             </div>
             <div class="fd-preview-stack fd-grid-12">
                 <figure class="fd-preview-card fd-span-6">
-                    <img class="fd-light-img" src="assets/public/dashboard-light.webp" alt="FoxDesk dashboard" width="1200" height="675" loading="lazy" decoding="async">
-                    <img class="fd-dark-img" src="assets/public/dashboard-dark.webp" alt="FoxDesk dashboard in dark mode" width="1200" height="675" loading="lazy" decoding="async">
+                    <img class="fd-light-img" src="<?php echo e($cloud_asset('assets/public/dashboard-light.webp')); ?>" alt="FoxDesk dashboard" width="1200" height="675" loading="lazy" decoding="async">
+                    <img class="fd-dark-img" src="<?php echo e($cloud_asset('assets/public/dashboard-dark.webp')); ?>" alt="FoxDesk dashboard in dark mode" width="1200" height="675" loading="lazy" decoding="async">
                     <figcaption>See what needs attention across tickets, clients, and work logs.</figcaption>
                 </figure>
                 <figure class="fd-preview-card fd-span-6">
-                    <img class="fd-light-img" src="assets/public/ticket-detail-light.webp" alt="FoxDesk ticket detail" width="1200" height="675" loading="lazy" decoding="async">
-                    <img class="fd-dark-img" src="assets/public/ticket-detail-dark.webp" alt="FoxDesk ticket detail in dark mode" width="1200" height="675" loading="lazy" decoding="async">
+                    <img class="fd-light-img" src="<?php echo e($cloud_asset('assets/public/ticket-detail-light.webp')); ?>" alt="FoxDesk ticket detail" width="1200" height="675" loading="lazy" decoding="async">
+                    <img class="fd-dark-img" src="<?php echo e($cloud_asset('assets/public/ticket-detail-dark.webp')); ?>" alt="FoxDesk ticket detail in dark mode" width="1200" height="675" loading="lazy" decoding="async">
                     <figcaption>Reply, assign, track time, and keep the client history together.</figcaption>
                 </figure>
             </div>
