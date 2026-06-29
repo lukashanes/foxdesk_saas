@@ -119,7 +119,7 @@ if (!headers_sent()) {
         <section class="fd-section">
             <div class="fd-feature-section fd-grid-12 fd-grid-center">
                 <div class="fd-feature-copy fd-span-5">
-                    <div class="fd-feature-icon">T</div>
+                    <div class="fd-feature-icon">TK</div>
                     <h3>Ticket lifecycle management.</h3>
                     <p>Run daily support from one workspace: statuses, priorities, assignments, comments, attachments, and client visibility.</p>
                     <ul class="fd-feature-list">
@@ -136,7 +136,7 @@ if (!headers_sent()) {
 
             <div class="fd-feature-section reverse fd-grid-12 fd-grid-center">
                 <div class="fd-feature-copy fd-span-5">
-                    <div class="fd-feature-icon">⏱</div>
+                    <div class="fd-feature-icon">TM</div>
                     <h3>Time tracking and client reports.</h3>
                     <p>Track billable work directly on tickets, review time by client, and prepare reports without exporting support data into a second tool.</p>
                     <ul class="fd-feature-list">
@@ -156,14 +156,14 @@ if (!headers_sent()) {
                 <p>Everything your team needs to support clients, track work, and automate the routine parts.</p>
             </div>
             <div class="fd-capability-grid fd-grid-12">
-                <article class="fd-capability fd-span-3"><span>A</span><h4>AI Agent API</h4><p>Create tickets, post updates, and log work from AI agents or internal tools.</p></article>
-                <article class="fd-capability fd-span-3"><span>✉</span><h4>Email tickets</h4><p>Turn support emails into tickets and keep replies in the thread.</p></article>
-                <article class="fd-capability fd-span-3"><span>O</span><h4>Organizations</h4><p>Group clients, tickets, time, reports, and permissions by account.</p></article>
-                <article class="fd-capability fd-span-3"><span>🔒</span><h4>Permissions</h4><p>Control admins, agents, client access, 2FA, and audit logs.</p></article>
-                <article class="fd-capability fd-span-3"><span>🌐</span><h4>Languages</h4><p>Use FoxDesk across localized app and customer-facing text.</p></article>
-                <article class="fd-capability fd-span-3"><span>🔔</span><h4>Notifications</h4><p>Keep teams and clients informed about ticket activity.</p></article>
-                <article class="fd-capability fd-span-3"><span>📎</span><h4>Files</h4><p>Attach files, keep history, and share what clients need.</p></article>
-                <article class="fd-capability fd-span-3"><span>⚙</span><h4>Admin settings</h4><p>Customize statuses, priorities, ticket types, users, clients, and reports.</p></article>
+                <article class="fd-capability fd-span-3"><span>AI</span><h4>AI Agent API</h4><p>Create tickets, post updates, and log work from AI agents or internal tools.</p></article>
+                <article class="fd-capability fd-span-3"><span>EM</span><h4>Email tickets</h4><p>Turn support emails into tickets and keep replies in the thread.</p></article>
+                <article class="fd-capability fd-span-3"><span>CL</span><h4>Organizations</h4><p>Group clients, tickets, time, reports, and permissions by account.</p></article>
+                <article class="fd-capability fd-span-3"><span>AC</span><h4>Permissions</h4><p>Control admins, agents, client access, 2FA, and audit logs.</p></article>
+                <article class="fd-capability fd-span-3"><span>LG</span><h4>Languages</h4><p>Use FoxDesk across localized app and customer-facing text.</p></article>
+                <article class="fd-capability fd-span-3"><span>NT</span><h4>Notifications</h4><p>Keep teams and clients informed about ticket activity.</p></article>
+                <article class="fd-capability fd-span-3"><span>FL</span><h4>Files</h4><p>Attach files, keep history, and share what clients need.</p></article>
+                <article class="fd-capability fd-span-3"><span>AD</span><h4>Admin settings</h4><p>Customize statuses, priorities, ticket types, users, clients, and reports.</p></article>
             </div>
         </section>
 

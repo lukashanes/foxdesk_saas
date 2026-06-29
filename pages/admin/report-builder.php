@@ -343,7 +343,7 @@ include BASE_PATH . '/includes/header.php';
         <!-- Step 1: Basic Information -->
         <div class="card card-body">
             <h2 class="text-xl font-semibold mb-4 flex items-center text-theme-primary">
-                <span class="bg-blue-50 dark:bg-blue-900/200 text-white fd-rounded-pill w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">1</span>
+                <span class="fd-step-index">1</span>
                 <?php echo e(t('Basic Information')); ?>
             </h2>
 
@@ -425,7 +425,7 @@ include BASE_PATH . '/includes/header.php';
         <!-- Step 2: Timeframe -->
         <div class="card card-body">
             <h2 class="text-xl font-semibold mb-4 flex items-center text-theme-primary">
-                <span class="bg-blue-50 dark:bg-blue-900/200 text-white fd-rounded-pill w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">2</span>
+                <span class="fd-step-index">2</span>
                 <?php echo e(t('Timeframe')); ?>
             </h2>
 
@@ -472,7 +472,7 @@ include BASE_PATH . '/includes/header.php';
         <!-- Step 3: Configuration -->
         <div class="card card-body">
             <h2 class="text-xl font-semibold mb-4 flex items-center text-theme-primary">
-                <span class="bg-blue-50 dark:bg-blue-900/200 text-white fd-rounded-pill w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">3</span>
+                <span class="fd-step-index">3</span>
                 <?php echo e(t('Display Options')); ?>
             </h2>
 
@@ -574,7 +574,7 @@ include BASE_PATH . '/includes/header.php';
         <!-- Step 4: Executive Summary -->
         <div class="card card-body">
             <h2 class="text-xl font-semibold mb-4 flex items-center text-theme-primary">
-                <span class="bg-blue-50 dark:bg-blue-900/200 text-white fd-rounded-pill w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">4</span>
+                <span class="fd-step-index">4</span>
                 <?php echo e(t('Executive Summary')); ?>
             </h2>
 
@@ -593,7 +593,7 @@ include BASE_PATH . '/includes/header.php';
         <?php ensure_report_schedule_columns(); ?>
         <div class="card card-body">
             <h2 class="text-xl font-semibold mb-4 flex items-center text-theme-primary">
-                <span class="bg-blue-50 dark:bg-blue-900/200 text-white fd-rounded-pill w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">5</span>
+                <span class="fd-step-index">5</span>
                 <?php echo e(t('Schedule & Email Delivery')); ?>
                 <span class="ml-2 text-xs font-normal px-2 py-0.5 fd-rounded-pill bg-blue-100 text-blue-700"><?php echo e(t('Optional')); ?></span>
             </h2>

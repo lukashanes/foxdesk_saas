@@ -98,10 +98,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="login-card fd-rounded-card w-full max-w-md p-8 relative z-10 animate-scale-in">
         <!-- Logo -->
         <div class="text-center mb-8">
-            <div class="auth-logo-mark w-16 h-16 fd-rounded-pill flex items-center justify-center mx-auto mb-4 transition-transform hover:scale-105">
+            <div class="auth-logo-mark w-16 h-16 fd-rounded-pill flex items-center justify-center mx-auto mb-4">
                 <span class="text-white text-2xl font-bold"><?php echo strtoupper(substr($app_name, 0, 1)); ?></span>
             </div>
-            <h1 class="text-2xl font-bold text-gradient"><?php echo e(t('Reset password')); ?></h1>
+            <h1 class="text-2xl font-bold text-theme-primary"><?php echo e(t('Reset password')); ?></h1>
             <p class="text-theme-muted"><?php echo e(t('Enter your email to reset your password')); ?></p>
         </div>
 

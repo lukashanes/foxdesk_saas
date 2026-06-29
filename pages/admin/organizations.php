@@ -724,8 +724,7 @@ include BASE_PATH . '/includes/components/page-header.php';
             removeLogoForm.style.display = 'inline';
         } else {
             const wrapper = document.createElement('div');
-            wrapper.className = 'w-14 h-14 fd-rounded-card flex items-center justify-center';
-            wrapper.style.cssText = 'background: var(--surface-tertiary); color: var(--text-secondary);';
+            wrapper.className = 'w-14 h-14 fd-rounded-card flex items-center justify-center bg-theme-tertiary text-theme-secondary';
             const span = document.createElement('span');
             span.className = 'text-lg font-bold';
             span.textContent = (org.name || '?').charAt(0).toUpperCase();

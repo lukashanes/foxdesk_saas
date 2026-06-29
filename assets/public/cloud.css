@@ -83,22 +83,12 @@ body {
     font-family: var(--fd-font);
     font-size: var(--fd-type-base);
     letter-spacing: 0;
-    background:
-        radial-gradient(circle at 52% -12%, rgba(37, 99, 235, .18), transparent 36rem),
-        radial-gradient(circle at 88% 16%, rgba(14, 165, 233, .10), transparent 30rem),
-        linear-gradient(180deg, var(--fd-bg) 0%, var(--fd-bg) 54%, var(--fd-bg-2) 100%);
+    background: linear-gradient(180deg, var(--fd-bg) 0%, var(--fd-bg) 62%, var(--fd-bg-2) 100%);
     color: var(--fd-ink);
 }
 
 body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -2;
-    pointer-events: none;
-    background:
-        linear-gradient(115deg, transparent 0 18%, rgba(37, 99, 235, .12) 34%, transparent 52%),
-        linear-gradient(245deg, transparent 0 22%, rgba(125, 211, 252, .12) 40%, transparent 62%);
+    content: none;
 }
 
 ::selection {
@@ -107,16 +97,7 @@ body::before {
 }
 
 .fd-glow-top {
-    position: fixed;
-    inset: -320px auto auto 50%;
-    z-index: -1;
-    width: min(980px, 100vw);
-    height: min(980px, 100vw);
-    transform: translateX(-50%);
-    border-radius: var(--fd-radius-pill);
-    background: radial-gradient(circle, rgba(37, 99, 235, .20), rgba(96, 165, 250, .08) 36%, transparent 66%);
-    filter: blur(4px);
-    pointer-events: none;
+    display: none;
 }
 
 .fd-header {
@@ -126,14 +107,12 @@ body::before {
     right: 0;
     z-index: 50;
     border-bottom: 1px solid var(--fd-line);
-    background: rgba(255, 255, 255, .66);
+    background: var(--fd-bg);
     box-shadow: var(--fd-shadow-inset-light);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
 }
 
 [data-theme="dark"] .fd-header {
-    background: rgba(3, 7, 18, .62);
+    background: var(--fd-bg);
     box-shadow: var(--fd-shadow-inset-light);
 }
 
@@ -215,7 +194,7 @@ body::before {
 
 .fd-btn.primary {
     color: #fff;
-    background: linear-gradient(180deg, var(--fd-blue), var(--fd-blue-strong));
+    background: var(--fd-blue);
     box-shadow: var(--fd-shadow-button);
 }
 
@@ -227,10 +206,8 @@ body::before {
 .fd-btn.secondary,
 .fd-theme-toggle {
     border: 1px solid var(--fd-line);
-    background: var(--fd-glass);
+    background: var(--fd-panel);
     box-shadow: var(--fd-shadow-inset);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
 }
 
 .fd-theme-toggle {
@@ -337,10 +314,8 @@ body::before {
     overflow: hidden;
     border: 1px solid var(--fd-line);
     border-radius: var(--fd-radius);
-    background: var(--fd-glass);
+    background: var(--fd-panel);
     box-shadow: var(--fd-shadow-panel);
-    backdrop-filter: blur(22px);
-    -webkit-backdrop-filter: blur(22px);
 }
 
 .fd-proof-item {
@@ -381,10 +356,8 @@ body::before {
     overflow: hidden;
     border: 1px solid var(--fd-line);
     border-radius: var(--fd-radius);
-    background: var(--fd-glass);
-    box-shadow: var(--fd-shadow), inset 0 1px 0 rgba(255, 255, 255, .58);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: var(--fd-panel);
+    box-shadow: var(--fd-shadow-inset);
 }
 
 .fd-product-frame {
@@ -500,10 +473,8 @@ body::before {
 .fd-step {
     border: 1px solid var(--fd-line);
     border-radius: var(--fd-radius-card);
-    background: var(--fd-glass);
+    background: var(--fd-panel);
     box-shadow: var(--fd-shadow-inset);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
 }
 
 .fd-card {

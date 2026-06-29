@@ -34,13 +34,12 @@ foreach ($component_attachments as $_att) {
     <?php foreach ($_images as $_img): ?>
         <?php $_src = attachment_download_url($_img); ?>
         <a href="<?php echo e($_src); ?>" target="_blank"
-           class="attachment-thumb ticket-attachment-link group relative block fd-rounded-card overflow-hidden border hover:shadow-md transition border-theme-light"
+           class="attachment-thumb ticket-attachment-link group fd-attachment-thumb <?php echo $_layout === 'grid' ? '' : 'fd-attachment-thumb--inline'; ?>"
            data-image-preview-trigger
            data-image-preview-src="<?php echo e($_src); ?>"
            data-image-preview-name="<?php echo e($_img['original_name']); ?>">
             <img src="<?php echo e($_src); ?>" alt="<?php echo e($_img['original_name']); ?>"
                  class="object-cover"
-                 style="<?php echo $_layout === 'grid' ? 'width:100%;height:8rem;' : 'width:6rem;height:5rem;'; ?>"
                  loading="lazy">
             <span class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition">
                 <span class="hidden group-hover:inline-flex text-white text-xs font-medium bg-black/50 px-2 py-1 fd-rounded-control">
@@ -56,8 +55,7 @@ foreach ($component_attachments as $_att) {
 <div class="flex flex-wrap gap-2 <?php echo !empty($_images) ? 'mt-2' : 'mt-2'; ?>">
     <?php foreach ($_files as $_f): ?>
         <a href="<?php echo e(attachment_download_url($_f)); ?>" target="_blank"
-           class="ticket-attachment-link inline-flex items-center gap-1.5 fd-rounded-card px-2.5 py-1.5 text-xs font-medium transition hover:shadow-sm"
-           style="background: var(--surface-secondary); color: var(--text-secondary); border: 1px solid var(--border-light);">
+           class="ticket-attachment-link fd-attachment-file">
             <?php echo get_icon(get_file_icon($_f['mime_type']), 'w-3.5 h-3.5 flex-shrink-0'); ?>
             <span class="truncate max-w-[140px]"><?php echo e($_f['original_name']); ?></span>
             <span class="text-xs text-theme-muted"><?php echo format_file_size($_f['file_size']); ?></span>

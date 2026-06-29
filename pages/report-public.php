@@ -179,7 +179,7 @@ $extract_report_tags = static function ($value) {
         <!-- KPI Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
             <!-- Total Time -->
-            <div class="kpi-card text-white fd-rounded-card p-6 shadow-lg">
+            <div class="kpi-card fd-rounded-card p-6">
                 <div class="flex items-center justify-between mb-2">
                     <?php echo get_icon('clock', 'text-3xl opacity-80 inline-block'); ?>
                     <span class="text-xs font-semibold uppercase tracking-wide"><?php echo e(t('Total Time')); ?></span>
@@ -188,7 +188,7 @@ $extract_report_tags = static function ($value) {
             </div>
 
             <!-- Total Tasks -->
-            <div class="kpi-card-alt-1 text-white fd-rounded-card p-6 shadow-lg">
+            <div class="kpi-card-alt-1 fd-rounded-card p-6">
                 <div class="flex items-center justify-between mb-2">
                     <?php echo get_icon('tasks', 'text-3xl opacity-80 inline-block'); ?>
                     <span class="text-xs font-semibold uppercase tracking-wide"><?php echo e(t('Tasks')); ?></span>
@@ -198,7 +198,7 @@ $extract_report_tags = static function ($value) {
 
             <!-- Total Amount (if enabled) -->
             <?php if ($template['show_financials']): ?>
-                <div class="kpi-card-alt-2 text-white fd-rounded-card p-6 shadow-lg">
+                <div class="kpi-card-alt-2 fd-rounded-card p-6">
                     <div class="flex items-center justify-between mb-2">
                         <?php echo get_icon('coins', 'text-3xl opacity-80 inline-block'); ?>
                         <span
@@ -210,7 +210,7 @@ $extract_report_tags = static function ($value) {
 
             <!-- Team Members (if enabled) -->
             <?php if ($template['show_team_attribution']): ?>
-                <div class="kpi-card-alt-3 text-white fd-rounded-card p-6 shadow-lg">
+                <div class="kpi-card-alt-3 fd-rounded-card p-6">
                     <div class="flex items-center justify-between mb-2">
                         <?php echo get_icon('users', 'text-3xl opacity-80 inline-block'); ?>
                         <span
@@ -420,8 +420,7 @@ $extract_report_tags = static function ($value) {
 
         <!-- Action Buttons -->
         <div class="flex justify-center space-x-4 mb-5 no-print">
-            <button onclick="window.print()"
-                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white fd-rounded-card font-medium transition shadow-lg">
+            <button onclick="window.print()" class="fd-button fd-button--primary">
                 <?php echo get_icon('print', 'mr-2 inline-block'); ?><?php echo e(t('Print / Save as PDF')); ?>
             </button>
         </div>
