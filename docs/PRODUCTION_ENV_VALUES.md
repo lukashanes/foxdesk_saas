@@ -131,7 +131,7 @@ Where:
 1. Stripe Dashboard.
 2. Developers -> API keys: copy live secret key.
 3. Product catalog: create `FoxDesk Cloud`.
-4. Add recurring base price: EUR 9.90/month launch price with tax behavior `exclusive`.
+4. Add recurring base price: EUR 9.90/month introductory price with tax behavior `exclusive`.
 5. Add recurring metered storage price: EUR 1.90 per extra GB/month with tax behavior `exclusive`.
 6. Developers -> Webhooks: endpoint `https://app.foxdesk.net/index.php?page=stripe-webhook`.
 7. Copy webhook signing secret.

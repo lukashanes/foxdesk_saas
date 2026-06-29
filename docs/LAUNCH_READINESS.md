@@ -55,10 +55,12 @@ and recovery checks below to be completed and acknowledged.
 ### 3. Stripe Go-Live
 
 - Create/confirm Stripe live product `FoxDesk Cloud`.
-- Create/confirm recurring base Price: EUR 9.90/month launch price through May
-  31, 2026.
-- After launch, create a new recurring base Price and switch
-  `STRIPE_PRICE_CLOUD_BASE` if the public price changes.
+- Create/confirm recurring base Price: EUR 9.90/month introductory price.
+- Keep existing active workspaces on the Stripe Price they subscribed to while
+  their subscription stays active.
+- When the public price changes for new customers, create a new recurring base
+  Price and switch `STRIPE_PRICE_CLOUD_BASE`; do not rewrite existing active
+  subscriptions as part of the public price change.
 - Create/confirm recurring metered storage Price for extra GB. Current app
   default is EUR 1.90 per started extra GB/month.
 - Create/confirm Stripe meter event name: `foxdesk_storage_extra_gb`.

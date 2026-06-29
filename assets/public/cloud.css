@@ -630,6 +630,10 @@ body::before {
     max-width: 700px;
 }
 
+#pricing .fd-heading h2 {
+    white-space: nowrap;
+}
+
 .fd-pricing {
     margin: 0 auto;
 }
@@ -1003,6 +1007,10 @@ body::before {
     .fd-feature-copy h3,
     .fd-migration h2 {
         font-size: var(--type-3xl);
+    }
+
+    #pricing .fd-heading h2 {
+        font-size: var(--fd-type-2xl);
     }
 
     .fd-card,

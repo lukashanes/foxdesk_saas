@@ -66,13 +66,14 @@ Default commercial model:
 - unlimited agents
 - unlimited tickets
 - 1 GB storage included
-- EUR 9.90/month launch base price through May 31, 2026
+- EUR 9.90/month introductory base price for new launch workspaces
 - EUR 1.90/extra GB/month storage overage
 
 Launch offer:
 
-- Keep the live recurring Price at EUR 9.90/month for launch.
-- Create a new recurring Price and switch `STRIPE_PRICE_CLOUD_BASE` after the launch window if the public price changes.
+- Keep active workspaces on the Stripe Price they subscribed to while their subscription stays active.
+- Create a new recurring Price and switch `STRIPE_PRICE_CLOUD_BASE` only when the public price changes for new customers.
+- Do not update existing active subscriptions just because a new public Price exists.
 - Do not create permanent product copy that exposes internal margin or infrastructure cost.
 
 ## Webhook

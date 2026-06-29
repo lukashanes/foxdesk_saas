@@ -144,6 +144,7 @@ require_once BASE_PATH . '/includes/header.php';
                 <div>
                     <h2><?php echo e(billing_format_money(billing_cloud_base_price_cents())); ?>/month</h2>
                     <p class="billing-muted">Unlimited users, clients, agents, and tickets. <?php echo e(format_file_size($usage['included_storage_bytes'])); ?> storage included.</p>
+                    <p class="billing-muted">Excl. VAT where applicable. Valid EU VAT IDs can be added at checkout or later in billing.</p>
                 </div>
                 <div class="billing-overage-price">
                     <strong><?php echo e(billing_format_money(billing_storage_overage_price_cents())); ?>/extra GB</strong>

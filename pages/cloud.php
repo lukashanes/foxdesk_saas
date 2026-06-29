@@ -8,8 +8,6 @@
 
 $page_title = 'FoxDesk Cloud';
 $cloud_launch_price = billing_currency() === 'CZK' ? '249 Kc' : 'EUR 9.90';
-$cloud_regular_price = billing_currency() === 'CZK' ? '499 Kc' : 'EUR 19.80';
-$cloud_launch_until = 'May 31, 2026';
 $included_storage = billing_included_storage_bytes() === 1073741824
     ? '1 GB'
     : preg_replace('/\.00\s+/', ' ', format_file_size(billing_included_storage_bytes()));
@@ -179,15 +177,15 @@ if (!headers_sent()) {
                     <div class="fd-price-top">
                         <div>
                             <h3 class="fd-plan-title">FoxDesk Cloud</h3>
-                            <p class="fd-offer-line">Launch price until <?php echo e($cloud_launch_until); ?>.</p>
+                            <p class="fd-offer-line">Introductory price.</p>
                         </div>
                     </div>
                     <div class="fd-price">
                         <strong><?php echo e($cloud_launch_price); ?></strong>
                         <span>/ month</span>
                     </div>
-                    <p class="fd-price-note">Then <?php echo e($cloud_regular_price); ?>/month. One workspace, one invoice, unlimited seats.</p>
-                    <p class="fd-tax-note">Excl. VAT where applicable. Valid EU VAT IDs are handled at checkout.</p>
+                    <p class="fd-price-note">Keep this price for this workspace while it stays active. One workspace, one invoice, unlimited seats.</p>
+                    <p class="fd-tax-note">Excl. VAT where applicable. Valid EU VAT IDs can be added at checkout or later in billing.</p>
                     <ul class="fd-list">
                         <li><span class="fd-check">✓</span><span>Unlimited users, agents, clients, organizations, and tickets</span></li>
                         <li><span class="fd-check">✓</span><span>Helpdesk and billable time tracking in one app</span></li>

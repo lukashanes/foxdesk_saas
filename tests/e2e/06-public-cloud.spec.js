@@ -7,11 +7,16 @@ test('public Cloud page keeps marketing copy, pricing, and previews separated', 
   await expect(page.locator('h1')).toHaveText('Helpdesk & time tracking');
   await expect(page.locator('body')).toContainText('Track support tickets and billable hours');
   await expect(page.locator('#pricing')).toContainText('One plan. No per-seat math.');
-  await expect(page.locator('#pricing')).toContainText('Launch price until May 31, 2026.');
+  await expect(page.locator('#pricing')).toContainText('Introductory price.');
+  await expect(page.locator('#pricing')).toContainText('Keep this price for this workspace while it stays active.');
   await expect(page.locator('#pricing')).toContainText('One workspace, one invoice, unlimited seats.');
   await expect(page.locator('#pricing')).toContainText('EUR 9.90');
+  await expect(page.locator('#pricing')).toContainText('Excl. VAT where applicable. Valid EU VAT IDs can be added at checkout or later in billing.');
   await expect(page.locator('#pricing')).toContainText('Unlimited users, agents, clients, organizations, and tickets');
   await expect(page.locator('#pricing')).not.toContainText('Stripe checkout ready');
+  await expect(page.locator('#pricing')).not.toContainText('Launch price until');
+  await expect(page.locator('#pricing')).not.toContainText('May 31, 2026');
+  await expect(page.locator('#pricing')).not.toContainText('Then EUR 19.80/month');
   await expect(page.locator('#pricing img')).toHaveCount(0);
   await expect(page.locator('#preview')).toContainText('The daily workspace.');
   await expect(page.locator('#preview figure')).toHaveCount(2);

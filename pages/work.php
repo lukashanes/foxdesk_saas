@@ -278,12 +278,11 @@ require_once BASE_PATH . '/includes/header.php';
 <?php endif; ?>
 
 <section class="fd-card fd-page-section work-overview-card" data-work-time-overview>
-    <div class="work-overview-head">
-        <div>
-            <p class="work-overview-kicker"><?php echo e(t('Worked time')); ?></p>
-            <h2 class="work-overview-title"><?php echo e(t('Work overview')); ?></h2>
+    <div class="fd-section-header work-overview-head">
+        <div class="fd-section-main">
+            <h2 class="fd-section-title work-overview-title"><?php echo e(t('Work overview')); ?></h2>
         </div>
-        <div class="work-range-controls">
+        <div class="fd-section-actions work-range-controls">
             <div class="fd-segmented work-period-switch" aria-label="<?php echo e(t('Time period')); ?>">
                 <?php foreach ($time_period_options as $period_key => $period_label): ?>
                     <?php if ($period_key === 'custom') continue; ?>
@@ -344,10 +343,9 @@ require_once BASE_PATH . '/includes/header.php';
 
 <?php if ($is_staff): ?>
 <section class="fd-card fd-page-section work-current-card" data-work-current>
-    <div class="work-team-head">
-        <div>
-            <p class="work-overview-kicker"><?php echo e(t('Now')); ?></p>
-            <h2 class="work-team-title"><?php echo e(t('Current work')); ?></h2>
+    <div class="fd-section-header work-team-head">
+        <div class="fd-section-main">
+            <h2 class="fd-section-title work-team-title"><?php echo e(t('Current work')); ?></h2>
         </div>
     </div>
     <?php $render_current_work_timers($current_work_timers); ?>
@@ -358,12 +356,11 @@ require_once BASE_PATH . '/includes/header.php';
          data-work-user-activity
          data-work-log-surface
          data-work-filter-mode="<?php echo e((string) ($my_activity_filter['key'] ?? 'last3')); ?>">
-    <div class="work-team-head">
-        <div>
-            <p class="work-overview-kicker"><?php echo e(t('Activity')); ?></p>
-            <h2 class="work-team-title"><?php echo e(t('My work log')); ?></h2>
+    <div class="fd-section-header work-team-head">
+        <div class="fd-section-main">
+            <h2 class="fd-section-title work-team-title"><?php echo e(t('My work log')); ?></h2>
         </div>
-        <div class="work-log-controls">
+        <div class="fd-section-actions work-log-controls">
             <?php $render_activity_filter($my_activity_filter, 'my_activity', t('My work log filter')); ?>
             <?php $render_work_search($my_activity_filter, 'work-my-search'); ?>
         </div>
@@ -377,12 +374,11 @@ require_once BASE_PATH . '/includes/header.php';
          data-work-team-time
          data-work-log-surface
          data-work-filter-mode="<?php echo e((string) ($team_activity_filter['key'] ?? 'last3')); ?>">
-    <div class="work-team-head">
-        <div>
-            <p class="work-overview-kicker"><?php echo e(t('Team')); ?></p>
-            <h2 class="work-team-title"><?php echo e(t('Team time')); ?></h2>
+    <div class="fd-section-header work-team-head">
+        <div class="fd-section-main">
+            <h2 class="fd-section-title work-team-title"><?php echo e(t('Team time')); ?></h2>
         </div>
-        <div class="work-log-controls">
+        <div class="fd-section-actions work-log-controls">
             <?php $render_activity_filter($team_activity_filter, 'team_activity', t('Team time filter')); ?>
             <?php $render_work_search($team_activity_filter, 'work-team-search'); ?>
             <a href="<?php echo e(url('admin', ['section' => 'reports'])); ?>" class="btn btn-secondary btn-sm fd-button fd-button--secondary fd-button--sm">

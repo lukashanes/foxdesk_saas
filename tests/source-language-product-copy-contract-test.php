@@ -38,6 +38,13 @@ $cloud = read_product_file($root, 'pages/cloud.php');
 assert_product_copy(str_contains($cloud, 'Helpdesk & time tracking.'), 'Public SaaS front must lead with clear product category copy.');
 assert_product_copy(!str_contains($cloud, 'Support work in one place.'), 'Public SaaS front must not use generic one-place copy.');
 assert_product_copy(!str_contains($cloud, 'Simple price'), 'Public SaaS front must not use weak pricing copy.');
+assert_product_copy(str_contains($cloud, 'Introductory price.'), 'Public pricing must use introductory price copy.');
+assert_product_copy(str_contains($cloud, 'Keep this price for this workspace while it stays active.'), 'Public pricing must explain that the introductory price is retained for the active workspace.');
+assert_product_copy(!str_contains($cloud, 'Launch price until'), 'Public pricing must not show a dated launch deadline.');
+assert_product_copy(!str_contains($cloud, 'May 31, 2026'), 'Public pricing must not show the expired launch date.');
+assert_product_copy(!str_contains($cloud, 'Then '), 'Public pricing must not imply an automatic move to a future price.');
+assert_product_copy(!str_contains($cloud, 'EUR 19.80'), 'Public pricing must not expose the future public price before it is active.');
+assert_product_copy(str_contains($cloud, '<h2>One plan. No per-seat math.</h2>'), 'Public pricing headline must stay in one heading without manual line breaks.');
 
 $billing = read_product_file($root, 'pages/billing.php');
 $billing_functions = read_product_file($root, 'includes/billing-functions.php');
@@ -55,6 +62,8 @@ assert_product_copy(!str_contains($billing, "echo e(\$tenant['status'])"), 'Bill
 assert_product_copy(!str_contains($billing, "echo e(\$tenant['subscription_status']"), 'Billing page must not echo raw subscription status.');
 assert_product_copy(!str_contains($billing_functions, 'platform-approved'), 'Workspace billing copy must not expose platform internals.');
 assert_product_copy(!str_contains($billing_functions, 'Billing is off'), 'Workspace billing copy must not expose internal setup state.');
+assert_product_copy(str_contains($billing, 'Excl. VAT where applicable. Valid EU VAT IDs can be added at checkout or later in billing.'), 'Billing page must show the shared VAT copy.');
+assert_product_copy(str_contains($cloud, 'Excl. VAT where applicable. Valid EU VAT IDs can be added at checkout or later in billing.'), 'Public pricing must show the shared VAT copy.');
 assert_product_copy(!str_contains($index, 'Workspace access is restricted'), 'Workspace access guard must use actionable customer copy.');
 assert_product_copy(!str_contains($settings, 'Cloudflare Email Service'), 'SaaS workspace settings must not expose the email provider.');
 assert_product_copy(!str_contains($settings, 'Outbound email is configured from server config'), 'SaaS workspace settings must not expose server config copy.');
