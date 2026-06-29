@@ -66,6 +66,7 @@ Default commercial model:
 - unlimited agents
 - unlimited tickets
 - 1 GB storage included
+- EUR 19.90/month regular public price
 - EUR 9.90/month introductory base price for new launch workspaces
 - EUR 1.90/extra GB/month storage overage
 

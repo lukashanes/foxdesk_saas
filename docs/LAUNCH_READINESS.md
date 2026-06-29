@@ -55,6 +55,8 @@ and recovery checks below to be completed and acknowledged.
 ### 3. Stripe Go-Live
 
 - Create/confirm Stripe live product `FoxDesk Cloud`.
+- Public pricing shows regular price EUR 19.90/month and introductory price
+  EUR 9.90/month.
 - Create/confirm recurring base Price: EUR 9.90/month introductory price.
 - Keep existing active workspaces on the Stripe Price they subscribed to while
   their subscription stays active.

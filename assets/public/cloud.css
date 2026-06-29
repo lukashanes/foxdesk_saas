@@ -656,10 +656,19 @@ body::before {
 
 .fd-offer-line {
     max-width: 38rem;
-    margin: 12px 0 0;
+    margin: 6px 0 0;
     color: var(--fd-muted);
     font-size: var(--type-15);
     line-height: 1.55;
+}
+
+.fd-regular-price {
+    max-width: 38rem;
+    margin: 12px 0 0;
+    color: var(--fd-soft);
+    font-size: var(--fd-type-sm);
+    font-weight: 800;
+    line-height: 1.5;
 }
 
 .fd-price {
@@ -686,17 +695,10 @@ body::before {
 
 .fd-price-note {
     max-width: 34rem;
-    margin: -8px 0 18px;
+    margin: -8px 0 12px;
     color: var(--fd-muted);
     font-size: var(--type-15);
     line-height: 1.55;
-}
-
-.fd-tax-note {
-    margin: 0 0 18px;
-    color: var(--fd-soft);
-    font-size: var(--fd-type-sm);
-    line-height: 1.5;
 }
 
 .fd-full-width {

@@ -177,15 +177,16 @@ if (!headers_sent()) {
                     <div class="fd-price-top">
                         <div>
                             <h3 class="fd-plan-title">FoxDesk Cloud</h3>
-                            <p class="fd-offer-line">Introductory price.</p>
+                            <p class="fd-regular-price">Regular price EUR 19.90/month</p>
+                            <p class="fd-offer-line">Introductory price EUR 9.90/month</p>
                         </div>
                     </div>
                     <div class="fd-price">
                         <strong><?php echo e($cloud_launch_price); ?></strong>
                         <span>/ month</span>
                     </div>
-                    <p class="fd-price-note">Keep this price for this workspace while it stays active. One workspace, one invoice, unlimited seats.</p>
-                    <p class="fd-tax-note">Excl. VAT where applicable. Valid EU VAT IDs can be added at checkout or later in billing.</p>
+                    <p class="fd-price-note">Join during the introductory period and keep EUR 9.90/month.</p>
+                    <p class="fd-price-note">One workspace. Unlimited seats, clients, tickets and team members.</p>
                     <ul class="fd-list">
                         <li><span class="fd-check">✓</span><span>Unlimited users, agents, clients, organizations, and tickets</span></li>
                         <li><span class="fd-check">✓</span><span>Helpdesk and billable time tracking in one app</span></li>
@@ -223,7 +224,6 @@ if (!headers_sent()) {
                 <img src="assets/public/logo.png" alt="" width="28" height="28" loading="lazy" decoding="async">
                 <strong>FoxDesk</strong>
             </div>
-            <div>Open-source FoxDesk remains available at <a href="https://foxdesk.org" class="fd-link-blue" target="_blank" rel="noopener">foxdesk.org</a>. FoxDesk Cloud runs at <strong>app.foxdesk.net</strong>.</div>
             <div class="fd-footer-links">
                 <a href="<?php echo e(url('legal', ['type' => 'privacy'])); ?>">Privacy</a>
                 <a href="<?php echo e(url('legal', ['type' => 'terms'])); ?>">Terms</a>
