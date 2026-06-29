@@ -160,7 +160,7 @@ if ('serviceWorker' in navigator) {
 <!-- Image Preview Lightbox -->
 <div id="image-lightbox" class="image-lightbox" hidden aria-hidden="true">
     <div class="image-lightbox__dialog" role="dialog" aria-modal="true" aria-labelledby="lightbox-name">
-        <img id="lightbox-img" class="image-lightbox__image" src="" alt="">
+        <img id="lightbox-img" class="image-lightbox__image" alt="">
         <div id="lightbox-name" class="image-lightbox__name"></div>
         <button type="button" class="image-lightbox__close" data-image-preview-close aria-label="<?php echo e(t('Close')); ?>">&times;</button>
     </div>

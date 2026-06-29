@@ -32,7 +32,11 @@
         var lightbox = getLightbox();
         if (!lightbox.root || !lightbox.image) return;
 
-        lightbox.image.src = src || '';
+        if (src) {
+            lightbox.image.src = src;
+        } else {
+            lightbox.image.removeAttribute('src');
+        }
         lightbox.image.alt = name || '';
         if (lightbox.name) lightbox.name.textContent = name || '';
         lightbox.root.hidden = false;
@@ -52,7 +56,7 @@
         lightbox.root.classList.remove('is-open');
         lightbox.root.hidden = true;
         lightbox.root.setAttribute('aria-hidden', 'true');
-        lightbox.image.src = '';
+        lightbox.image.removeAttribute('src');
         lightbox.image.alt = '';
         if (lightbox.name) lightbox.name.textContent = '';
 

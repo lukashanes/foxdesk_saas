@@ -794,11 +794,11 @@ $health_class = $health_label === 'Stable' ? 'good' : 'warn';
                             <div class="op-field-row">
                                 <div class="op-field">
                                     <label>Owner first name</label>
-                                    <input class="op-input" name="admin_first_name" placeholder="Lukas" required>
+                                    <input class="op-input" name="admin_first_name" placeholder="Alex" required>
                                 </div>
                                 <div class="op-field">
                                     <label>Owner last name</label>
-                                    <input class="op-input" name="admin_last_name" placeholder="Hanes">
+                                    <input class="op-input" name="admin_last_name" placeholder="Morgan">
                                 </div>
                             </div>
                             <div class="op-field">

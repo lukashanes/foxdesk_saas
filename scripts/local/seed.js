@@ -32,6 +32,103 @@ function seed_uuid(string $value): string {
     return substr($hash, 0, 8) . '-' . substr($hash, 8, 4) . '-4' . substr($hash, 13, 3) . '-8' . substr($hash, 17, 3) . '-' . substr($hash, 20, 12);
 }
 
+function seed_demo_avatar(string $filename): string {
+    return 'public/demo-avatars/' . basename($filename);
+}
+
+function ensure_seed_demo_avatars(): void {
+    $source_dir = BASE_PATH . '/assets/demo/avatars';
+    $upload_dir = trim((defined('UPLOAD_DIR') ? UPLOAD_DIR : 'uploads/'), "/\\\\");
+    $target_dir = BASE_PATH . '/' . ($upload_dir !== '' ? $upload_dir : 'uploads') . '/public/demo-avatars';
+
+    if (!is_dir($source_dir)) {
+        return;
+    }
+    if (!is_dir($target_dir)) {
+        mkdir($target_dir, 0775, true);
+    }
+
+    foreach (glob($source_dir . '/*.png') ?: [] as $source) {
+        $target = $target_dir . '/' . basename($source);
+        if (!is_file($target) || hash_file('sha256', $target) !== hash_file('sha256', $source)) {
+            copy($source, $target);
+        }
+    }
+}
+
+function ensure_seed_workflow_baseline(): void {
+    $statuses = [
+        ['Open', 'open', '#2563eb', 10, 1, 0],
+        ['In progress', 'in-progress', '#f59e0b', 20, 0, 0],
+        ['Waiting', 'waiting', '#7c3aed', 30, 0, 0],
+        ['Closed', 'closed', '#059669', 90, 0, 1],
+    ];
+    foreach ($statuses as [$name, $slug, $color, $sort, $default, $closed]) {
+        $existing = db_fetch_one('SELECT id FROM statuses WHERE slug = ? LIMIT 1', [$slug]);
+        $payload = [
+            'name' => $name,
+            'slug' => $slug,
+            'color' => $color,
+            'sort_order' => $sort,
+            'is_default' => $default,
+            'is_closed' => $closed,
+        ];
+        if ($existing) {
+            db_update('statuses', $payload, 'id = ?', [(int) $existing['id']]);
+        } else {
+            db_insert('statuses', $payload);
+        }
+    }
+
+    $priorities = [
+        ['Urgent', 'urgent', '#dc2626', 'alert-triangle', 5, 0],
+        ['High', 'high', '#ea580c', 'arrow-up', 10, 0],
+        ['Medium', 'medium', '#2563eb', 'minus', 20, 1],
+        ['Low', 'low', '#64748b', 'arrow-down', 30, 0],
+    ];
+    foreach ($priorities as [$name, $slug, $color, $icon, $sort, $default]) {
+        $existing = db_fetch_one('SELECT id FROM priorities WHERE slug = ? LIMIT 1', [$slug]);
+        $payload = [
+            'name' => $name,
+            'slug' => $slug,
+            'color' => $color,
+            'icon' => $icon,
+            'sort_order' => $sort,
+            'is_default' => $default,
+        ];
+        if ($existing) {
+            db_update('priorities', $payload, 'id = ?', [(int) $existing['id']]);
+        } else {
+            db_insert('priorities', $payload);
+        }
+    }
+
+    if (table_exists('ticket_types')) {
+        $types = [
+            ['Incident', 'incident', 'alert-circle', '#dc2626', 10, 0, 1],
+            ['Task', 'task', 'check-square', '#2563eb', 20, 1, 1],
+            ['Question', 'question', 'help-circle', '#7c3aed', 30, 0, 1],
+        ];
+        foreach ($types as [$name, $slug, $icon, $color, $sort, $default, $active]) {
+            $existing = db_fetch_one('SELECT id FROM ticket_types WHERE slug = ? LIMIT 1', [$slug]);
+            $payload = [
+                'name' => $name,
+                'slug' => $slug,
+                'icon' => $icon,
+                'color' => $color,
+                'sort_order' => $sort,
+                'is_default' => $default,
+                'is_active' => $active,
+            ];
+            if ($existing) {
+                db_update('ticket_types', $payload, 'id = ?', [(int) $existing['id']]);
+            } else {
+                db_insert('ticket_types', $payload);
+            }
+        }
+    }
+}
+
 function seed_status_id(string $slug, bool $closed = false): int {
     $row = db_fetch_one('SELECT id FROM statuses WHERE slug = ? LIMIT 1', [$slug]);
     if (!$row) {
@@ -129,6 +226,9 @@ function upsert_user(int $tenant_id, string $email, string $password, string $fi
         'is_active' => 1,
         'deleted_at' => null,
     ];
+    if (column_exists('users', 'avatar') && !empty($extra['avatar'])) {
+        $payload['avatar'] = $extra['avatar'];
+    }
     if ($existing) {
         db_update('users', $payload, 'id = ?', [(int) $existing['id']]);
         return (int) $existing['id'];
@@ -138,10 +238,15 @@ function upsert_user(int $tenant_id, string $email, string $password, string $fi
     return (int) db_insert('users', $payload);
 }
 
-function clean_ticket_children(int $ticket_id): void {
+function clean_ticket_children(int $ticket_id, int $tenant_id): void {
     foreach (['attachments', 'ticket_time_entries', 'comments', 'activity_log', 'notifications'] as $table) {
         if (table_exists($table)) {
-            db_delete($table, 'ticket_id = ?', [$ticket_id]);
+            validate_sql_identifier($table);
+            if (column_exists($table, 'tenant_id')) {
+                db_query("DELETE FROM {$table} WHERE ticket_id = ? AND (tenant_id = ? OR tenant_id IS NULL)", [$ticket_id, $tenant_id]);
+            } else {
+                db_query("DELETE FROM {$table} WHERE ticket_id = ?", [$ticket_id]);
+            }
         }
     }
 }
@@ -170,7 +275,7 @@ function upsert_demo_ticket(int $tenant_id, array $data): int {
     ];
     if ($existing) {
         $ticket_id = (int) $existing['id'];
-        clean_ticket_children($ticket_id);
+        clean_ticket_children($ticket_id, $tenant_id);
         db_update('tickets', $payload, 'id = ?', [$ticket_id]);
         return $ticket_id;
     }
@@ -203,6 +308,24 @@ function add_seed_time(int $tenant_id, int $ticket_id, int $user_id, string $sta
         'is_manual' => 1,
         'summary' => $summary,
         'created_at' => date('Y-m-d H:i:s', strtotime($started_at . ' +' . ($minutes + 3) . ' minutes')),
+    ]);
+}
+
+function add_seed_active_time(int $tenant_id, int $ticket_id, int $user_id, string $started_at, string $summary, float $billable_rate, float $cost_rate): void {
+    db_insert('ticket_time_entries', [
+        'tenant_id' => $tenant_id,
+        'ticket_id' => $ticket_id,
+        'user_id' => $user_id,
+        'comment_id' => null,
+        'started_at' => $started_at,
+        'ended_at' => null,
+        'duration_minutes' => 0,
+        'is_billable' => 1,
+        'billable_rate' => $billable_rate,
+        'cost_rate' => $cost_rate,
+        'is_manual' => 0,
+        'summary' => $summary,
+        'created_at' => $started_at,
     ]);
 }
 
@@ -265,12 +388,14 @@ function upsert_report_template(int $tenant_id, int $org_id, int $user_id, strin
     db_insert('report_templates', $payload);
 }
 
+ensure_seed_demo_avatars();
+ensure_seed_workflow_baseline();
 $default_tenant = default_tenant_id();
 $tenants = [
     [
-        'name' => 'Acme Local Demo',
+        'name' => 'Atlas Support',
         'slug' => 'default',
-        'primary_domain' => 'acme.foxdesk.test',
+        'primary_domain' => 'atlas.foxdesk.test',
         'status' => 'active',
         'subscription_status' => 'active',
         'billing_email' => 'admin@example.test',
@@ -353,34 +478,72 @@ foreach ($tenants as $tenant_data) {
         'notes' => 'Secondary organization used to exercise filters and scoped permissions.',
     ]);
 
+    $people = [
+        'default' => [
+            'owner' => ['Emma', 'Carter', 'emma-novak.png'],
+            'agent' => ['Sarah', 'Mitchell', 'rachel-edwards.png'],
+            'client' => ['Oliver', 'Reed', 'marcus-thompson.png'],
+            'field' => ['Maya', 'Chen', 'nina-hartley.png'],
+        ],
+        'northline-support' => [
+            'owner' => ['Ava', 'Collins', 'anna-kowalski.png'],
+            'agent' => ['Daniel', 'Brooks', 'david-harrison.png'],
+            'client' => ['Hannah', 'Miller', 'lisa-campbell.png'],
+            'field' => ['Jonas', 'Blake', 'james-crawford.png'],
+        ],
+        'metro-it-desk' => [
+            'owner' => ['Lucas', 'Harris', 'james-crawford.png'],
+            'agent' => ['Thomas', 'Parker', 'michael-foster.png'],
+            'client' => ['Patricia', 'Cole', 'sophie-bennett.png'],
+            'field' => ['Martin', 'Brooks', 'david-harrison.png'],
+        ],
+        'studio-care' => [
+            'owner' => ['Mark', 'Sullivan', 'marcus-thompson.png'],
+            'agent' => ['Laura', 'Stone', 'lisa-campbell.png'],
+            'client' => ['Nora', 'White', 'anna-kowalski.png'],
+            'field' => ['Adam', 'Green', 'michael-foster.png'],
+        ],
+    ];
+    $tenant_people = $people[$tenant_data['slug']] ?? $people['default'];
+
     $owner_email = $tenant_data['slug'] === 'default' ? 'admin@example.test' : 'owner+' . $tenant_data['slug'] . '@example.test';
-    $owner_first = $tenant_data['slug'] === 'northline-support' ? 'Eva' : ($tenant_data['slug'] === 'metro-it-desk' ? 'Lukas' : ($tenant_data['slug'] === 'studio-care' ? 'Marek' : 'Admin'));
-    $owner_last = $tenant_data['slug'] === 'northline-support' ? 'Novak' : ($tenant_data['slug'] === 'metro-it-desk' ? 'Hanes' : ($tenant_data['slug'] === 'studio-care' ? 'Svoboda' : 'Local'));
+    [$owner_first, $owner_last, $owner_avatar] = $tenant_people['owner'];
     $owner_id = upsert_user($tenant_id, $owner_email, 'AdminPass123!', $owner_first, $owner_last, 'admin', $org_main, null, [
         'is_platform_admin' => $tenant_data['slug'] === 'default' ? 1 : 0,
         'cost_rate' => 42,
+        'avatar' => seed_demo_avatar($owner_avatar),
     ]);
     db_update('tenants', ['owner_user_id' => $owner_id], 'id = ?', [$tenant_id]);
 
-    $agent_id = upsert_user($tenant_id, 'agent+' . $tenant_data['slug'] . '@example.test', 'AgentPass123!', 'Agent', ucwords(str_replace('-', ' ', $tenant_data['slug'])), 'agent', $org_main, [
+    [$agent_first, $agent_last, $agent_avatar] = $tenant_people['agent'];
+    $agent_id = upsert_user($tenant_id, 'agent+' . $tenant_data['slug'] . '@example.test', 'AgentPass123!', $agent_first, $agent_last, 'agent', $org_main, [
         'ticket_scope' => 'organization',
         'organization_ids' => [$org_main, $org_secondary],
         'can_view_time' => true,
         'can_view_timeline' => true,
-    ], ['cost_rate' => 35]);
-    $client_id = upsert_user($tenant_id, 'client+' . $tenant_data['slug'] . '@example.test', 'ClientPass123!', 'Client', ucwords(str_replace('-', ' ', $tenant_data['slug'])), 'user', $org_main, [
+    ], [
+        'cost_rate' => 35,
+        'avatar' => seed_demo_avatar($agent_avatar),
+    ]);
+    [$client_first, $client_last, $client_avatar] = $tenant_people['client'];
+    $client_id = upsert_user($tenant_id, 'client+' . $tenant_data['slug'] . '@example.test', 'ClientPass123!', $client_first, $client_last, 'user', $org_main, [
         'ticket_scope' => 'organization',
         'organization_ids' => [$org_main],
+    ], [
+        'avatar' => seed_demo_avatar($client_avatar),
     ]);
-    $field_client_id = upsert_user($tenant_id, 'field+' . $tenant_data['slug'] . '@example.test', 'ClientPass123!', 'Field', 'Requester', 'user', $org_secondary, [
+    [$field_first, $field_last, $field_avatar] = $tenant_people['field'];
+    $field_client_id = upsert_user($tenant_id, 'field+' . $tenant_data['slug'] . '@example.test', 'ClientPass123!', $field_first, $field_last, 'user', $org_secondary, [
         'ticket_scope' => 'organization',
         'organization_ids' => [$org_secondary],
+    ], [
+        'avatar' => seed_demo_avatar($field_avatar),
     ]);
 
     $ticket_specs = [
         [
-            'title' => 'Demo urgent login outage - ' . $tenant_data['name'],
-            'description' => '<p>Users cannot sign in after an SSO certificate rotation. This seeded ticket checks urgent queues, email source labels, comments, and time tracking.</p>',
+            'title' => 'VPN access stopped working',
+            'description' => '<p>The VPN client asks for MFA on every connection and rejects the code after the first attempt.</p><ul><li>Started after yesterday\\'s certificate rotation</li><li>Affects finance and operations users</li><li>Screenshot attached by the requester</li></ul>',
             'priority_id' => $urgent,
             'status_id' => $open,
             'ticket_type_id' => $incident,
@@ -396,8 +559,8 @@ foreach ($tenants as $tenant_data) {
             'storage' => 42 * 1024 * 1024,
         ],
         [
-            'title' => 'Demo onboarding checklist - ' . $tenant_data['name'],
-            'description' => '<p>New team onboarding: configure departments, canned replies, reports, and first client workspace.</p>',
+            'title' => 'Prepare onboarding checklist for finance team',
+            'description' => '<p>Prepare a clean onboarding checklist for new finance users, including mailbox access, shared folders, VPN, and first login checks.</p>',
             'priority_id' => $medium,
             'status_id' => $progress,
             'ticket_type_id' => $task,
@@ -412,8 +575,8 @@ foreach ($tenants as $tenant_data) {
             'storage' => 180 * 1024 * 1024,
         ],
         [
-            'title' => 'Demo storage and backup review - ' . $tenant_data['name'],
-            'description' => '<p>Review attachment growth, backup status, and R2 migration readiness.</p>',
+            'title' => 'Monthly storage and backup review',
+            'description' => '<p>Review attachment growth, backup status, and restore evidence for this month.</p>',
             'priority_id' => $high,
             'status_id' => $waiting,
             'ticket_type_id' => $question,
@@ -428,8 +591,8 @@ foreach ($tenants as $tenant_data) {
             'storage' => $tenant_data['slug'] === 'metro-it-desk' ? 1700 * 1024 * 1024 : ($tenant_data['slug'] === 'northline-support' ? 620 * 1024 * 1024 : 120 * 1024 * 1024),
         ],
         [
-            'title' => 'Demo resolved SLA report - ' . $tenant_data['name'],
-            'description' => '<p>Closed sample ticket used for reports, timeline, and dashboard completed-work widgets.</p>',
+            'title' => 'Closed SLA report for executive review',
+            'description' => '<p>Closed sample ticket used for reports, timeline, and completed-work widgets.</p>',
             'priority_id' => $low,
             'status_id' => $closed,
             'ticket_type_id' => $task,
@@ -445,10 +608,12 @@ foreach ($tenants as $tenant_data) {
         ],
     ];
 
+    $seed_ticket_ids = [];
     foreach ($ticket_specs as $index => $spec) {
         $ticket_id = upsert_demo_ticket($tenant_id, $spec);
-        $public_comment = add_seed_comment($tenant_id, $ticket_id, $spec['user_id'], '<p>Seeded customer update for local SaaS validation.</p><p>Second paragraph verifies rich text rendering and email-style line breaks.</p>', false, date('Y-m-d H:i:s', strtotime($spec['created_at'] . ' +20 minutes')));
-        $internal_comment = add_seed_comment($tenant_id, $ticket_id, $agent_id, '<p>Internal note: validate owner, company, time, and attachment displays.</p>', true, date('Y-m-d H:i:s', strtotime($spec['created_at'] . ' +55 minutes')));
+        $seed_ticket_ids[$index] = $ticket_id;
+        $public_comment = add_seed_comment($tenant_id, $ticket_id, $spec['user_id'], '<p>We reproduced this on two laptops.</p><ul><li>Codes arrive by SMS</li><li>The first code fails immediately</li><li>Second attempt locks the user for 15 minutes</li></ul>', false, date('Y-m-d H:i:s', strtotime($spec['created_at'] . ' +20 minutes')));
+        $internal_comment = add_seed_comment($tenant_id, $ticket_id, $agent_id, '<p>Checked the identity provider logs and found repeated challenge failures after the certificate rollover. Next step is to rotate the VPN profile and retry with one affected user.</p>', true, date('Y-m-d H:i:s', strtotime($spec['created_at'] . ' +55 minutes')));
         foreach ($spec['times'] as $time_index => $minutes) {
             add_seed_time(
                 $tenant_id,
@@ -462,12 +627,64 @@ foreach ($tenants as $tenant_data) {
                 $time_index === 0 ? $internal_comment : null
             );
         }
+        if ($tenant_data['slug'] === 'default' && $index === 0) {
+            add_seed_time(
+                $tenant_id,
+                $ticket_id,
+                $owner_id,
+                date('Y-m-d H:i:s', strtotime('today 09:20')),
+                38,
+                'Reviewed customer impact and prepared the handoff notes',
+                95,
+                42
+            );
+        }
+        if ($tenant_data['slug'] === 'default' && $index === 1) {
+            add_seed_active_time(
+                $tenant_id,
+                $ticket_id,
+                $owner_id,
+                date('Y-m-d H:i:s', strtotime('-24 minutes')),
+                'Updating the onboarding checklist for the finance team',
+                95,
+                42
+            );
+        }
         add_seed_attachment($tenant_id, $ticket_id, $agent_id, 'seed-' . $tenant_data['slug'] . '-' . ($index + 1) . '.bin', (int) $spec['storage'], $public_comment);
         add_seed_activity($tenant_id, $ticket_id, $spec['user_id'], 'created', 'Seed ticket created', $spec['created_at']);
         add_seed_activity($tenant_id, $ticket_id, $agent_id, 'commented', 'Seed comments and time entries added', date('Y-m-d H:i:s', strtotime($spec['created_at'] . ' +1 hour')));
     }
 
-    upsert_report_template($tenant_id, $org_main, $owner_id, 'Demo monthly service report - ' . $tenant_data['name']);
+    if ($tenant_data['slug'] === 'default' && !empty($seed_ticket_ids)) {
+        $weekly_time_entries = [
+            [$seed_ticket_ids[0] ?? null, $agent_id, '-6 days 10:00', 72, 'VPN profile validation and customer follow-up', 95, 35],
+            [$seed_ticket_ids[1] ?? null, $owner_id, '-6 days 14:10', 48, 'Finance onboarding checklist review', 95, 42],
+            [$seed_ticket_ids[2] ?? null, $agent_id, '-5 days 09:30', 54, 'Storage review and restore evidence check', 125, 35],
+            [$seed_ticket_ids[0] ?? null, $owner_id, '-4 days 11:15', 66, 'Customer impact review and escalation notes', 95, 42],
+            [$seed_ticket_ids[1] ?? null, $agent_id, '-3 days 15:20', 85, 'Checklist implementation and ticket updates', 95, 35],
+            [$seed_ticket_ids[2] ?? null, $owner_id, '-2 days 10:45', 42, 'Backup status review with client context', 125, 42],
+            [$seed_ticket_ids[0] ?? null, $agent_id, '-1 day 13:05', 63, 'MFA retry testing and reply preparation', 95, 35],
+            [$seed_ticket_ids[3] ?? null, $owner_id, '-1 day 16:20', 35, 'Executive report cleanup', 95, 42],
+        ];
+
+        foreach ($weekly_time_entries as [$week_ticket_id, $week_user_id, $week_start, $week_minutes, $week_summary, $week_rate, $week_cost]) {
+            if (!$week_ticket_id) {
+                continue;
+            }
+            add_seed_time(
+                $tenant_id,
+                (int) $week_ticket_id,
+                (int) $week_user_id,
+                date('Y-m-d H:i:s', strtotime($week_start)),
+                (int) $week_minutes,
+                $week_summary,
+                (float) $week_rate,
+                (float) $week_cost
+            );
+        }
+    }
+
+    upsert_report_template($tenant_id, $org_main, $owner_id, 'Monthly service report - ' . $tenant_data['name']);
 
     if (table_exists('page_views')) {
         db_delete('page_views', 'tenant_id = ? AND user_id IN (?, ?)', [$tenant_id, $owner_id, $agent_id]);
