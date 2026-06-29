@@ -6,15 +6,23 @@ Ship a native SwiftUI iPhone app for FoxDesk Cloud first. The app should feel
 like a fast companion for daily support work, not a wrapper around the PHP web
 interface.
 
+The current SaaS source of truth is the hosted FoxDesk Cloud stack:
+`app.foxdesk.net` for workspaces, Cloudflare Email/R2 for inbound replies and
+attachments, and web-only Stripe billing. The iOS app must reflect that state
+without becoming a purchase surface.
+
 ## MVP Scope
 
 1. Sign in to a FoxDesk Cloud workspace.
 2. Load `app-shell` and `app-home`.
-3. Show Work queues and Inbox queues.
-4. Open ticket detail.
-5. Reply, add internal note, assign, start/pause/stop timer.
-6. Push notifications for actionable ticket events.
-7. Account/settings screen with logout and data/deletion request links.
+3. Load `app-tenant-state` and respect workspace access.
+4. Show Work queues and Inbox queues.
+5. Open ticket detail.
+6. Reply and view email-originated ticket context.
+7. Show attachments through authorized backend URLs; never expose R2 keys.
+8. Push notifications for actionable ticket events.
+9. Account/settings screen with workspace status, logout, privacy, support, and
+   data/deletion request links.
 
 ## Backend Milestones
 
@@ -26,6 +34,7 @@ interface.
 5. Comment/reply API with attachment support.
 6. Device token registration for push notifications.
 7. App privacy and account deletion flows.
+8. Tenant state endpoint for SaaS lifecycle, usage, and access messages.
 
 ## Current Implementation
 
@@ -40,6 +49,7 @@ interface.
 - Native ticket endpoints are available through:
   - `app-ticket-detail`
   - `app-add-comment`
+  - `app-tenant-state`
 - Mobile sessions are stored separately from automation API tokens.
 - iOS access tokens are short lived. Refresh tokens are rotated on refresh.
 - TOTP and backup codes are supported for mobile sign-in.
@@ -47,6 +57,13 @@ interface.
   milestone.
 - Initial SwiftUI scaffold lives in `ios/FoxDesk` with login, Work, Inbox,
   Settings, ticket detail, and public reply flow.
+- The iOS scaffold now reads `app-tenant-state`, shows workspace status in
+  Settings, and blocks work screens when SaaS access is suspended, expired,
+  canceled, or blocked.
+- Production SaaS evidence currently verifies deployment evidence, R2 storage,
+  Cloudflare outbound email, inbound email archive, and Stripe live meter
+  configuration. Legal review and full Stripe live-flow acknowledgement remain
+  human/operator gates before paid public launch.
 
 ## iOS Milestones
 
@@ -64,6 +81,7 @@ interface.
    - Work
    - Inbox
    - Ticket detail
+   - Workspace access state
    - Timer sheet
    - Settings
 6. TestFlight build.
@@ -91,6 +109,13 @@ Preferred first release: publish the iOS app as a free companion app for
 existing FoxDesk Cloud workspaces. Do not sell, upgrade, show pricing, or link to
 Stripe Checkout from inside the iOS app. Billing, plan changes, invoices, and
 Stripe Customer Portal stay web-only.
+
+The app may display read-only workspace status such as `Active`,
+`Trial active`, `Included access`, `Past due grace`, or `Workspace suspended`.
+For blocked access, show the server-provided access message and ask the user to
+contact their workspace admin or FoxDesk support. Do not include a "Manage
+billing", "Upgrade", "Start plan", "Restart plan", or external checkout link in
+the iOS UI for the first release.
 
 This keeps the iOS app focused on support work and avoids App Review risk around
 external purchase calls to action. Existing customers can sign in and use the
@@ -125,3 +150,40 @@ Apple billing setup:
 - Whether Stripe subscription management opens the web billing portal from the
   app or remains web-only for the first release. Recommended: web-only and no
   in-app purchase calls to action.
+
+## Updated Native Screen Plan
+
+### Login
+
+- Target `https://app.foxdesk.net/index.php` for App Store builds.
+- Support email/password, TOTP, backup codes, token refresh, and logout.
+- Do not support self-hosted server selection in the first App Store build.
+
+### Work And Inbox
+
+- Preserve separate navigation stacks for Work and Inbox.
+- Show compact ticket cards with code, status, client, requester, tags, and an
+  Email pill when `source=email`.
+- Refresh `app-home` and `app-tenant-state` together.
+
+### Ticket Detail
+
+- Keep public reply as the first write action.
+- Add internal note, timer actions, assignment/status actions, and attachment
+  preview/download in later beta slices using the frozen `app-*` endpoints.
+- Treat attachment URLs as opaque authorized backend URLs.
+
+### Settings
+
+- Show signed-in user, workspace name, access state, subscription state, and
+  server notice copy.
+- Keep legal/support/deletion links.
+- No Stripe, pricing, checkout, portal, or upgrade links.
+
+### Access Lock
+
+- If `app-tenant-state.data.access.allowed` is false, replace Work/Inbox with a
+  locked state.
+- Offer only Refresh and Sign Out.
+- Message copy should come from the SaaS backend and remain neutral for App
+  Review.

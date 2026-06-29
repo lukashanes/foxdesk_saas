@@ -35,6 +35,7 @@ translation files or customer-facing localized content.
 ## Product And UI
 
 - [Product voice and visual restyle](PRODUCT_VOICE_AND_VISUAL_RESTYLE.md): copy, visual principles, and completed QA gates.
+- [Screenshots](SCREENSHOTS.md): generated SaaS public website screenshots and refresh command.
 - [CSP-safe UI audit](CSP_SAFE_UI_AUDIT.md): inline style debt and CSP baseline.
 - [Product architecture refactor](product-architecture-refactor.md): workflow simplification and module direction.
 

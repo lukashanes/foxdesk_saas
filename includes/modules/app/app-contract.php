@@ -45,6 +45,7 @@ function app_contract_frozen_response_keys(): array
         'log_time' => ['ticket', 'time_entry_id', 'duration_minutes'],
         'notifications' => ['unread_count', 'items', 'pagination'],
         'notification_read_state' => ['unread_count', 'updated'],
+        'tenant_state' => ['tenant', 'access', 'billing_actions', 'usage', 'capabilities', 'links'],
         'mobile_session' => ['token_type', 'access_token', 'refresh_token', 'expires_in', 'refresh_expires_in'],
     ];
 }

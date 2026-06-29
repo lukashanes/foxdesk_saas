@@ -86,6 +86,28 @@ Frozen `data.home` keys:
 - `timers`
 - `notifications`
 
+### Tenant State
+
+`GET index.php?page=api&action=app-tenant-state`
+
+Native apps use this endpoint to mirror the SaaS workspace lifecycle without
+opening checkout or billing portal UI inside the app.
+
+Frozen `data` keys:
+
+- `tenant`
+- `access`
+- `billing_actions`
+- `usage`
+- `capabilities`
+- `links`
+
+Native clients may display workspace name, access status, trial/past-due/free
+copy, and usage summaries. The first iOS release must not render pricing,
+upgrade buttons, Stripe Checkout, or Customer Portal links. If
+`data.access.allowed` is false, block work screens and show the access message
+with a neutral "contact your workspace admin or FoxDesk support" action.
+
 ### Ticket List
 
 `GET index.php?page=api&action=app-ticket-list&view=open&limit=25&offset=0`
@@ -256,6 +278,7 @@ Frozen response keys:
 The first native beta should be able to implement:
 
 - sign in, 2FA, refresh, logout
+- workspace access state and read-only billing/usage status
 - home/work queues
 - ticket list
 - ticket detail

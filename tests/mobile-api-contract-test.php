@@ -73,6 +73,7 @@ $assert($nativeDocs !== false, 'Native API docs are missing.');
 $assert(str_contains($nativeDocs, 'Status: frozen for the first iOS and Android beta.'), 'Native API docs must declare the beta freeze.');
 $assert(str_contains($nativeDocs, 'Authorization: Bearer fdm_at_'), 'Native API docs must document mobile Bearer auth.');
 $assert(str_contains($nativeDocs, 'app-attachment-metadata'), 'Native API docs must document attachment metadata.');
+$assert(str_contains($nativeDocs, 'app-tenant-state'), 'Native API docs must document tenant state.');
 $assert(str_contains($nativeDocs, 'app-ticket-timer-action'), 'Native API docs must document timer actions.');
 $assert(str_contains($nativeDocs, 'app-notification-read-state'), 'Native API docs must document notification read state.');
 
