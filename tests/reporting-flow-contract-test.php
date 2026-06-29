@@ -33,6 +33,7 @@ $assert(str_contains($billing, 'function billing_review_total_labels'), 'Billing
 $assert(str_contains($billing, "'total_labels' => billing_review_total_labels"), 'Billing review payload must expose formatted total labels.');
 $assert(str_contains($billing, "'discount_amount'"), 'Billing review must support amount discounts.');
 $assert(str_contains($reports, 'class="reporting-flow-card"'), 'Reports page must render the compact billing review flow.');
+$assert(str_contains($reports, '$page_header_suppressed = true;'), 'Reports page must suppress the duplicate page header for laptop density.');
 $assert(str_contains($reports, 'name="organizations[]"'), 'Billing review must submit the selected client as a report filter.');
 $assert(str_contains($reports, 'name="tab" value="billing"'), 'Billing review must open the billing review mode.');
 $assert(str_contains($reports, 'name="show_money" value="1"'), 'Billing review must show money columns.');
@@ -79,6 +80,9 @@ $assert(str_contains($theme, '.workflow-surface') && str_contains($theme, 'grid-
 $assert(str_contains($theme, 'width: 100%;') && str_contains($theme, 'min-width: 0;'), 'Reporting flow card must shrink inside the workspace shell.');
 $assert(str_contains($theme, '@media (max-width: 1280px)') && str_contains($theme, '.reporting-flow-side'), 'Reporting flow must collapse before it can overflow the workspace viewport.');
 $assert(str_contains($theme, '.reporting-flow-step strong') && str_contains($theme, 'overflow-wrap: anywhere;'), 'Reporting flow step labels must wrap instead of pushing the card off screen.');
+$assert(str_contains($theme, '.workflow-surface--reports.admin-legacy-page') && str_contains($theme, 'gap: 0.625rem;'), 'Reports surface must use the compact laptop density layer.');
+$assert(str_contains($theme, '.workflow-surface--reports .report-filter-grid') && str_contains($theme, 'grid-template-columns: repeat(4, minmax(0, 1fr));'), 'Report filters must use a compact grid on desktop.');
+$assert(str_contains($theme, '@media (min-width: 981px) and (max-width: 1280px)') && str_contains($theme, 'grid-template-columns: repeat(4, minmax(0, 1fr));'), 'Report flow steps must stay compact on MacBook-width screens.');
 $assert(str_contains($theme, '.report-page-toolbar'), 'Report toolbar styling is missing.');
 $assert(str_contains($theme, '.report-filter-summary'), 'Report filter summary styling is missing.');
 $assert(str_contains($theme, '.report-metric__value'), 'Report metric styling is missing.');
