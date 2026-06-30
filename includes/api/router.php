@@ -91,7 +91,6 @@ function route_api_request($action) {
             } elseif (!$is_agent_endpoint && function_exists('authenticate_mobile_session')) {
                 $mobile_user = authenticate_mobile_session();
                 if ($mobile_user) {
-                    $GLOBALS['is_api_token_auth'] = true;
                     $GLOBALS['is_mobile_token_auth'] = true;
                 }
             }
@@ -212,6 +211,7 @@ function route_api_request($action) {
         'test-smtp' => 'api_test_smtp',
 
         // --- Agent / external API endpoints ---
+        'agent-docs' => 'api_agent_docs',
         'agent-me' => 'api_agent_me',
         'agent-list-statuses' => 'api_agent_list_statuses',
         'agent-list-priorities' => 'api_agent_list_priorities',

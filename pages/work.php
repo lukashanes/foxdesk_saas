@@ -51,6 +51,7 @@ $week_chart = $time_work['week_chart'] ?? [
     'max_minutes' => 0,
     'total_minutes' => 0,
 ];
+$period_chart = $time_work['period_chart'] ?? $week_chart;
 $current_work_timers = [];
 if ($is_staff
     && function_exists('ticket_time_table_exists')
@@ -77,6 +78,9 @@ $show_selected_period_metric = !in_array($selected_period_key, ['today', 'this_w
 $work_queue_url = static function (string $key): string {
     return url('work', $key === 'mine' ? [] : ['queue' => $key]);
 };
+$work_asset_version = static function (string $path): string {
+    return (defined('APP_VERSION') ? (string) APP_VERSION : '1') . '-' . (string) (@filemtime(BASE_PATH . '/' . $path) ?: '0');
+};
 
 $work_period_url = static function (string $period) use ($queue_key, $my_activity_filter, $team_activity_filter): string {
     $params = ['period' => $period];
@@ -97,6 +101,31 @@ $work_activity_filter_url = static function (string $param, string $value): stri
     unset($params['page']);
     $params[$param] = $value;
     return url('work', $params);
+};
+
+$work_report_url = static function (string $period, ?int $agent_id = null) use ($queue_key, $time_period): string {
+    $params = [
+        'page' => 'admin',
+        'section' => 'reports',
+        'tab' => 'time',
+        'period' => $period,
+    ];
+    if ($period === 'custom') {
+        if (!empty($time_period['from_date'])) {
+            $params['from_date'] = (string) $time_period['from_date'];
+        }
+        if (!empty($time_period['to_date'])) {
+            $params['to_date'] = (string) $time_period['to_date'];
+        }
+    }
+    if ($agent_id !== null && $agent_id > 0) {
+        $params['agents'] = [$agent_id];
+    }
+    if ($queue_key !== 'mine') {
+        $params['source_queue'] = $queue_key;
+    }
+
+    return 'index.php?' . http_build_query($params) . '#report-work-log';
 };
 
 $work_tickets_url = static function (string $key) use ($user): string {
@@ -336,18 +365,18 @@ require_once BASE_PATH . '/includes/header.php';
     </div>
 
     <div class="work-time-grid">
-        <div class="work-time-metric">
+        <a class="work-time-metric" href="<?php echo e($work_report_url('today', (int) ($user['id'] ?? 0))); ?>">
             <span><?php echo e(t('Today')); ?></span>
             <strong><?php echo e(format_duration_minutes((int) ($my_time_totals['today'] ?? 0))); ?></strong>
-        </div>
-        <div class="work-time-metric">
+        </a>
+        <a class="work-time-metric" href="<?php echo e($work_report_url('this_week', (int) ($user['id'] ?? 0))); ?>">
             <span><?php echo e(t('This week')); ?></span>
             <strong><?php echo e(format_duration_minutes((int) ($my_time_totals['week'] ?? 0))); ?></strong>
-        </div>
-        <div class="work-time-metric">
+        </a>
+        <a class="work-time-metric" href="<?php echo e($work_report_url('this_month', (int) ($user['id'] ?? 0))); ?>">
             <span><?php echo e(t('This month')); ?></span>
             <strong><?php echo e(format_duration_minutes((int) ($my_time_totals['month'] ?? 0))); ?></strong>
-        </div>
+        </a>
         <div class="work-time-metric work-time-metric--selected">
             <span><?php echo e(t('Active now')); ?></span>
             <strong><?php echo e(format_duration_minutes($active_timer_minutes)); ?></strong>
@@ -355,44 +384,185 @@ require_once BASE_PATH . '/includes/header.php';
     </div>
 
     <?php
-    $chart_days = $week_chart['days'] ?? [];
-    $chart_max_minutes = max(1, (int) ($week_chart['max_minutes'] ?? 0));
+    $chart_days = $period_chart['days'] ?? [];
+    $chart_max_minutes = max(1, (int) ($period_chart['max_minutes'] ?? 0));
+    $chart_agents = [];
+    foreach ($chart_days as $day) {
+        foreach (($day['users'] ?? []) as $chart_user) {
+            $chart_user_name = trim((string) ($chart_user['name'] ?? t('Agent')));
+            $chart_user_name = $chart_user_name !== '' ? $chart_user_name : t('Agent');
+            $chart_user_id = (int) ($chart_user['user_id'] ?? 0);
+            $chart_user_key = $chart_user_id > 0 ? 'u' . $chart_user_id : 'n' . mb_strtolower($chart_user_name);
+            if (!isset($chart_agents[$chart_user_key])) {
+                $chart_agents[$chart_user_key] = [
+                    'name' => $chart_user_name,
+                    'minutes' => 0,
+                ];
+            }
+            $chart_agents[$chart_user_key]['minutes'] += max(0, (int) ($chart_user['minutes'] ?? 0));
+        }
+    }
+    uasort($chart_agents, static fn(array $a, array $b): int => ($b['minutes'] ?? 0) <=> ($a['minutes'] ?? 0));
+    $chart_agent_color_index = [];
+    $chart_color_i = 0;
+    foreach (array_keys($chart_agents) as $chart_agent_key) {
+        $chart_agent_color_index[$chart_agent_key] = $chart_color_i % 8;
+        $chart_color_i++;
+    }
+    $chart_palette = ['#3b5bdb', '#0ca678', '#f59f00', '#9c36b5', '#e03131', '#1971c2', '#2b8a3e', '#e8590c'];
+    $chart_labels = [];
+    $chart_full_labels = [];
+    $chart_agent_datasets = [];
+    foreach ($chart_agents as $chart_agent_key => $chart_agent) {
+        $chart_agent_datasets[$chart_agent_key] = [
+            'label' => (string) ($chart_agent['name'] ?? t('Agent')),
+            'data' => array_fill(0, count($chart_days), 0),
+            'backgroundColor' => $chart_palette[$chart_agent_color_index[$chart_agent_key] ?? 0] ?? $chart_palette[0],
+            'borderColor' => $chart_palette[$chart_agent_color_index[$chart_agent_key] ?? 0] ?? $chart_palette[0],
+        ];
+    }
+    foreach ($chart_days as $day_index => $day) {
+        $chart_labels[] = (string) ($day['label'] ?? '');
+        $chart_full_labels[] = (string) ($day['full_label'] ?? $day['label'] ?? '');
+        foreach (($day['users'] ?? []) as $chart_user) {
+            $chart_user_name = trim((string) ($chart_user['name'] ?? t('Agent')));
+            $chart_user_name = $chart_user_name !== '' ? $chart_user_name : t('Agent');
+            $chart_user_id = (int) ($chart_user['user_id'] ?? 0);
+            $chart_user_key = $chart_user_id > 0 ? 'u' . $chart_user_id : 'n' . mb_strtolower($chart_user_name);
+            if (!isset($chart_agent_datasets[$chart_user_key])) {
+                continue;
+            }
+            $chart_agent_datasets[$chart_user_key]['data'][$day_index] = max(0, (int) ($chart_user['minutes'] ?? 0));
+        }
+    }
+    $work_chart_payload = [
+        'labels' => $chart_labels,
+        'fullLabels' => $chart_full_labels,
+        'datasets' => array_values($chart_agent_datasets),
+        'emptyLabel' => t('No activity'),
+        'totalLabel' => t('Total'),
+    ];
+    $chart_has_minutes = (int) ($period_chart['total_minutes'] ?? 0) > 0;
     ?>
-    <div class="work-week-chart" data-work-week-chart>
+    <div class="work-week-chart work-hours-chart" data-work-week-chart data-work-period-chart data-work-hours-chart>
         <div class="work-week-chart__header">
-            <h3><?php echo e(t('Weekly activity')); ?></h3>
-            <span><?php echo e(t('Last 7 days')); ?> · <?php echo e(format_duration_minutes((int) ($week_chart['total_minutes'] ?? 0))); ?></span>
+            <h3><?php echo e(t('Worked hours')); ?></h3>
+            <span><?php echo e((string) ($time_period['label'] ?? t('This month'))); ?> · <?php echo e(format_duration_minutes((int) ($period_chart['total_minutes'] ?? 0))); ?></span>
         </div>
-        <div class="work-week-chart__bars" role="list" aria-label="<?php echo e(t('Hours by day')); ?>">
-            <?php foreach ($chart_days as $day): ?>
+        <div class="work-hours-chart__canvas-wrap">
+            <canvas data-work-hours-chart-canvas aria-label="<?php echo e(t('Hours by day')); ?>"></canvas>
+        </div>
+        <div class="work-hours-chart__fallback" data-work-hours-chart-fallback>
+            <?php if ($chart_has_minutes): ?>
                 <?php
-                $day_minutes = (int) ($day['minutes'] ?? 0);
-                $bar_height = $day_minutes > 0 ? max(8, (int) round(($day_minutes / $chart_max_minutes) * 100)) : 4;
-                $users_for_day = $day['users'] ?? [];
-                $day_label = (string) ($day['full_label'] ?? $day['label'] ?? '');
+                $svg_day_count = max(1, count($chart_days));
+                $svg_width = max(720, $svg_day_count * 30);
+                $svg_height = 218;
+                $svg_plot_left = 18.0;
+                $svg_plot_right = 12.0;
+                $svg_plot_top = 22.0;
+                $svg_plot_height = 142.0;
+                $svg_plot_bottom = 34.0;
+                $svg_slot_width = max(1.0, ($svg_width - $svg_plot_left - $svg_plot_right) / $svg_day_count);
+                $svg_bar_width = max(8.0, min(24.0, $svg_slot_width * 0.58));
+                $svg_dense_chart = $svg_day_count > 14;
+                $svg_format = static function (float $value): string {
+                    $formatted = rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
+                    return $formatted === '' ? '0' : $formatted;
+                };
                 ?>
-                <div class="work-week-chart__day" role="listitem">
-                    <div class="work-week-chart__bar-track">
-                        <button type="button"
-                                class="work-week-chart__bar"
-                                style="--bar-height: <?php echo e((string) $bar_height); ?>%;"
-                                aria-label="<?php echo e(trim($day_label . ' ' . format_duration_minutes($day_minutes))); ?>">
-                            <span class="work-week-chart__tooltip" role="tooltip">
-                                <strong><?php echo e($day_label); ?></strong>
-                                <span><?php echo e(t('Total')); ?>: <?php echo e(format_duration_minutes($day_minutes)); ?></span>
+                <div class="work-hours-chart__svg-wrap" role="img" aria-label="<?php echo e(t('Hours by day')); ?>">
+                    <svg class="work-hours-chart__svg"
+                         viewBox="0 0 <?php echo e((string) $svg_width); ?> <?php echo e((string) $svg_height); ?>"
+                         aria-hidden="true">
+                        <line class="work-hours-chart__grid-line"
+                              x1="<?php echo e($svg_format($svg_plot_left)); ?>"
+                              x2="<?php echo e($svg_format($svg_width - $svg_plot_right)); ?>"
+                              y1="<?php echo e($svg_format($svg_plot_top + $svg_plot_height)); ?>"
+                              y2="<?php echo e($svg_format($svg_plot_top + $svg_plot_height)); ?>"></line>
+                        <line class="work-hours-chart__grid-line"
+                              x1="<?php echo e($svg_format($svg_plot_left)); ?>"
+                              x2="<?php echo e($svg_format($svg_width - $svg_plot_right)); ?>"
+                              y1="<?php echo e($svg_format($svg_plot_top + ($svg_plot_height / 2))); ?>"
+                              y2="<?php echo e($svg_format($svg_plot_top + ($svg_plot_height / 2))); ?>"></line>
+                    <?php foreach ($chart_days as $day_index => $day): ?>
+                        <?php
+                        $day_minutes = (int) ($day['minutes'] ?? 0);
+                        $users_for_day = $day['users'] ?? [];
+                        $day_label = (string) ($day['full_label'] ?? $day['label'] ?? '');
+                        $show_day_label = !$svg_dense_chart || $day_index === 0 || $day_index === count($chart_days) - 1 || $day_index % 5 === 4;
+                        $axis_label = (string) ($day['label'] ?? '');
+                        if ($svg_dense_chart && !empty($day['key'])) {
+                            $axis_ts = strtotime((string) $day['key']);
+                            if ($axis_ts !== false) {
+                                $axis_label = date('j', $axis_ts);
+                            }
+                        }
+                        $slot_x = $svg_plot_left + ($svg_slot_width * $day_index);
+                        $bar_x = $slot_x + (($svg_slot_width - $svg_bar_width) / 2);
+                        $baseline_y = $svg_plot_top + $svg_plot_height;
+                        $segment_y = $baseline_y;
+                        ?>
+                        <g>
+                            <title><?php echo e(trim($day_label . ' ' . format_duration_minutes($day_minutes))); ?></title>
+                            <?php if ($day_minutes > 0 && !empty($users_for_day)): ?>
                                 <?php foreach ($users_for_day as $chart_user): ?>
-                                    <span><?php echo e($chart_user['name'] ?? t('Agent')); ?>: <?php echo e(format_duration_minutes((int) ($chart_user['minutes'] ?? 0))); ?></span>
+                                    <?php
+                                    $chart_user_minutes = max(0, (int) ($chart_user['minutes'] ?? 0));
+                                    if ($chart_user_minutes <= 0) {
+                                        continue;
+                                    }
+                                    $chart_user_name = trim((string) ($chart_user['name'] ?? t('Agent')));
+                                    $chart_user_name = $chart_user_name !== '' ? $chart_user_name : t('Agent');
+                                    $chart_user_id = (int) ($chart_user['user_id'] ?? 0);
+                                    $chart_user_key = $chart_user_id > 0 ? 'u' . $chart_user_id : 'n' . mb_strtolower($chart_user_name);
+                                    $segment_color = $chart_palette[$chart_agent_color_index[$chart_user_key] ?? 0] ?? $chart_palette[0];
+                                    $segment_height = max(2.0, ($chart_user_minutes / max(1, $chart_max_minutes)) * $svg_plot_height);
+                                    $segment_y -= $segment_height;
+                                    ?>
+                                    <rect x="<?php echo e($svg_format($bar_x)); ?>"
+                                          y="<?php echo e($svg_format(max($svg_plot_top, $segment_y))); ?>"
+                                          width="<?php echo e($svg_format($svg_bar_width)); ?>"
+                                          height="<?php echo e($svg_format(max(2.0, min($svg_plot_top + $svg_plot_height, $segment_y + $segment_height) - max($svg_plot_top, $segment_y)))); ?>"
+                                          rx="4"
+                                          fill="<?php echo e($segment_color); ?>">
+                                        <title><?php echo e($day_label); ?> · <?php echo e($chart_user_name); ?>: <?php echo e(format_duration_minutes($chart_user_minutes)); ?></title>
+                                    </rect>
                                 <?php endforeach; ?>
-                                <?php if (empty($users_for_day)): ?>
-                                    <span><?php echo e(t('No activity')); ?></span>
-                                <?php endif; ?>
-                            </span>
-                        </button>
-                    </div>
-                    <span><?php echo e($day['label'] ?? ''); ?></span>
+                            <?php else: ?>
+                                <rect class="work-hours-chart__bar-empty"
+                                      x="<?php echo e($svg_format($bar_x)); ?>"
+                                      y="<?php echo e($svg_format($baseline_y - 3)); ?>"
+                                      width="<?php echo e($svg_format($svg_bar_width)); ?>"
+                                      height="3"
+                                      rx="2"></rect>
+                            <?php endif; ?>
+                            <?php if ($show_day_label): ?>
+                                <text class="work-hours-chart__axis"
+                                      x="<?php echo e($svg_format($bar_x + ($svg_bar_width / 2))); ?>"
+                                      y="<?php echo e($svg_format($svg_plot_top + $svg_plot_height + $svg_plot_bottom - 8)); ?>"
+                                      text-anchor="middle"><?php echo e($axis_label); ?></text>
+                            <?php endif; ?>
+                        </g>
+                    <?php endforeach; ?>
+                    </svg>
                 </div>
-            <?php endforeach; ?>
+                <?php if (!empty($chart_agents)): ?>
+                    <div class="work-week-chart__legend" aria-label="<?php echo e(t('Agent')); ?>">
+                        <?php foreach ($chart_agents as $chart_agent_key => $chart_agent): ?>
+                            <?php $legend_color = $chart_palette[$chart_agent_color_index[$chart_agent_key] ?? 0] ?? $chart_palette[0]; ?>
+                            <span class="work-week-chart__legend-item">
+                                <span class="work-week-chart__legend-dot" style="background: <?php echo e($legend_color); ?>;"></span>
+                                <?php echo e((string) ($chart_agent['name'] ?? t('Agent'))); ?>
+                            </span>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            <?php else: ?>
+                <div class="work-hours-chart__empty"><?php echo e(t('No activity')); ?></div>
+            <?php endif; ?>
         </div>
+        <script type="application/json" data-work-hours-chart-payload><?php echo json_encode($work_chart_payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?></script>
     </div>
 
 </section>
@@ -466,11 +636,7 @@ require_once BASE_PATH . '/includes/header.php';
                     $staff_id = (int) ($staff['id'] ?? 0);
                     $totals = $row['totals'] ?? [];
                     $entries = $row['entries'] ?? [];
-                    $agent_report_url = url('admin', [
-                        'section' => 'reports',
-                        'tab' => 'time',
-                        'period' => $time_period['period'] ?? 'this_month',
-                    ]) . '&agents%5B%5D=' . urlencode((string) $staff_id);
+                    $agent_report_url = $work_report_url((string) ($time_period['period'] ?? 'this_month'), $staff_id);
                     $team_search_text = trim(($row['name'] ?? '') . ' ' . implode(' ', array_map(
                         static fn($entry): string => (string) ($entry['ticket_title'] ?? '') . ' ' . (string) ($entry['organization_name'] ?? ''),
                         $entries
@@ -485,11 +651,11 @@ require_once BASE_PATH . '/includes/header.php';
                                 <span class="work-team-running"><?php echo e(t('Running')); ?></span>
                             <?php endif; ?>
                         </td>
-                        <td data-label="<?php echo e(t('Today')); ?>"><?php echo e(format_duration_minutes((int) ($totals['today'] ?? 0))); ?></td>
-                        <td data-label="<?php echo e(t('This week')); ?>"><?php echo e(format_duration_minutes((int) ($totals['week'] ?? 0))); ?></td>
-                        <td data-label="<?php echo e(t('This month')); ?>"><?php echo e(format_duration_minutes((int) ($totals['month'] ?? 0))); ?></td>
+                        <td data-label="<?php echo e(t('Today')); ?>"><a href="<?php echo e($work_report_url('today', $staff_id)); ?>" class="work-time-link"><?php echo e(format_duration_minutes((int) ($totals['today'] ?? 0))); ?></a></td>
+                        <td data-label="<?php echo e(t('This week')); ?>"><a href="<?php echo e($work_report_url('this_week', $staff_id)); ?>" class="work-time-link"><?php echo e(format_duration_minutes((int) ($totals['week'] ?? 0))); ?></a></td>
+                        <td data-label="<?php echo e(t('This month')); ?>"><a href="<?php echo e($work_report_url('this_month', $staff_id)); ?>" class="work-time-link"><?php echo e(format_duration_minutes((int) ($totals['month'] ?? 0))); ?></a></td>
                         <?php if ($show_selected_period_metric): ?>
-                            <td data-label="<?php echo e(t('Selected')); ?>"><strong><?php echo e(format_duration_minutes((int) ($totals['selected'] ?? 0))); ?></strong></td>
+                            <td data-label="<?php echo e(t('Selected')); ?>"><a href="<?php echo e($agent_report_url); ?>" class="work-time-link"><strong><?php echo e(format_duration_minutes((int) ($totals['selected'] ?? 0))); ?></strong></a></td>
                         <?php endif; ?>
                         <td class="work-team-last" data-label="<?php echo e(t('Work log')); ?>">
                             <?php $render_work_activity_entries($entries, true); ?>
@@ -517,5 +683,6 @@ workspace_render_queue_page([
 ]);
 ?>
 
-<script defer src="assets/js/work-dashboard.js?v=<?php echo e((string) APP_VERSION); ?>"></script>
+<script src="assets/vendor/chartjs/4.4.0/chart.umd.js?v=<?php echo e($work_asset_version('assets/vendor/chartjs/4.4.0/chart.umd.js')); ?>"></script>
+<script defer src="assets/js/work-dashboard.js?v=<?php echo e($work_asset_version('assets/js/work-dashboard.js')); ?>"></script>
 <?php require_once BASE_PATH . '/includes/footer.php'; ?>

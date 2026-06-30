@@ -121,26 +121,24 @@ assert_admin_ui(str_contains($page_header, "\$is_admin_child_page"), 'Admin chil
 assert_admin_ui(str_contains($page_header, "url('admin', ['section' => 'settings'])"), 'Admin child breadcrumbs must link back to Settings.');
 
 foreach ([
-    'data-settings-management',
-    'render_admin_settings_management_links',
+    'function admin_settings_tabs',
+    'function render_admin_settings_tabs',
+    "'api' => ['label' => t('API & agents')",
     "url('admin', ['section' => 'users'])",
     "url('admin', ['section' => 'clients'])",
-    "url('admin', ['section' => 'organizations'])",
-    "url('admin', ['section' => 'statuses'])",
-    "url('admin', ['section' => 'recurring-tasks'])",
-    "url('admin', ['section' => 'reports'])",
-    "url('admin', ['section' => 'reports-list'])",
-    "url('admin', ['section' => 'activity'])",
+    "url('admin', ['section' => 'reports', 'tab' => 'time'])",
+    'Settings sections',
 ] as $needle) {
-    assert_admin_ui(str_contains($admin_settings . "\n" . $admin_nav . "\n" . $admin_settings_tabs, $needle), 'Settings must expose moved admin area: ' . $needle);
+    assert_admin_ui(str_contains($admin_settings . "\n" . $admin_nav . "\n" . $admin_settings_tabs, $needle), 'Settings must expose unified settings area: ' . $needle);
 }
 
 foreach ([
-    '.settings-management-panel',
-    '.settings-management-panel__head',
-    '.settings-management-grid',
+    'admin_settings_management_links',
+    'render_admin_settings_management_links',
+    'settings-management-grid',
+    'data-settings-management',
 ] as $needle) {
-    assert_admin_ui(str_contains($theme, $needle), 'Settings management CSS missing: ' . $needle);
+    assert_admin_ui(!str_contains($admin_settings . "\n" . $admin_settings_tabs . "\n" . $theme, $needle), 'Settings must not keep legacy parallel management navigation: ' . $needle);
 }
 
 foreach ([

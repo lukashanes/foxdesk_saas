@@ -8,6 +8,15 @@
 
 function app_feed_ticket_card(array $ticket): array
 {
+    $status_label = function_exists('ticket_status_group_display_name')
+        ? ticket_status_group_display_name([
+            'id' => (int) ($ticket['status_id'] ?? 0),
+            'name' => (string) ($ticket['status_name'] ?? ''),
+            'color' => $ticket['status_color'] ?? null,
+            'is_closed' => $ticket['is_closed'] ?? 0,
+            'status_group' => $ticket['status_group'] ?? null,
+        ])
+        : (string) ($ticket['status_name'] ?? '');
     $status_group = function_exists('ticket_status_group_from_status')
         ? ticket_status_group_from_status([
             'name' => $ticket['status_name'] ?? '',
@@ -34,9 +43,11 @@ function app_feed_ticket_card(array $ticket): array
         'hash' => $ticket['hash'] ?? null,
         'code' => function_exists('get_ticket_code') ? get_ticket_code($ticket_id) : ('#' . $ticket_id),
         'title' => (string) ($ticket['title'] ?? ''),
-        'description_preview' => mb_substr(trim(strip_tags((string) ($ticket['description'] ?? ''))), 0, 180),
+        'description_preview' => function_exists('app_contract_text_excerpt')
+            ? app_contract_text_excerpt($ticket['description'] ?? '', 180)
+            : mb_substr(trim(strip_tags((string) ($ticket['description'] ?? ''))), 0, 180),
         'status' => [
-            'name' => (string) ($ticket['status_name'] ?? ''),
+            'name' => $status_label,
             'color' => $ticket['status_color'] ?? null,
             'group' => $status_group,
         ],

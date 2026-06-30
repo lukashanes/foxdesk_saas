@@ -29,6 +29,9 @@ $assert(str_contains($module, 'function report_time_overview_work_log_rows'), 'T
 $assert(str_contains($module, "'summary' => \$summary !== '' ? \$summary : t('No note')"), 'Work log rows must expose the time entry summary.');
 $assert(str_contains($reports, 'report_time_overview_work_log_rows($entries, 120)'), 'Time overview must build concrete work log rows.');
 $assert(str_contains($reports, 'data-report-time-overview-log'), 'Time overview must render a concrete work log surface.');
+$assert(str_contains($reports, 'id="report-work-log"'), 'Time overview work log must expose a stable drilldown anchor.');
+$assert(str_contains($reports, '$report_log_url'), 'Time overview must build drilldown URLs for summary time.');
+$assert(str_contains($reports, 'class="report-time-drilldown"'), 'Grouped time values must be clickable drilldowns.');
 $assert(str_contains($reports, 'class="data-table report-worklog-table"'), 'Time overview work log must use the styled data table surface.');
 $assert(str_contains($reports, "url('ticket', ['id' => \$row['ticket_id']])"), 'Work log rows must link back to the ticket.');
 $assert(str_contains($theme, '.report-summary-strip'), 'Report summary strip styling is missing.');

@@ -8,11 +8,24 @@ Create `examples/agent-api/.env` from `.env.example` and store:
 
 ```bash
 FOXDESK_BASE_URL=https://app.foxdesk.net
-FOXDESK_API_TOKEN=fdx_replace_with_token_from_profile
+FOXDESK_API_TOKEN=fdx_replace_with_token_from_settings
 ```
 
 Never paste a production token into a shared prompt. Never print FOXDESK_API_TOKEN.
 Prefer the local `.env` file or your secret manager.
+
+## Start Every Session
+
+Before choosing a FoxDesk action, load the live documentation for the current
+token:
+
+```bash
+curl -s "$FOXDESK_BASE_URL/index.php?page=api&action=agent-docs" \
+  -H "Authorization: Bearer $FOXDESK_API_TOKEN"
+```
+
+Use that response as the source of truth for allowed actions, required scopes,
+request fields, and safety rules.
 
 ## Allowed Tools
 

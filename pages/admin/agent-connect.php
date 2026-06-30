@@ -26,7 +26,7 @@ if ($agent_id > 0) {
 
 if (!$agent) {
     flash(t('Agent not found.'), 'error');
-    header('Location: index.php?page=admin&section=users&tab=ai_agents');
+    header('Location: index.php?page=admin&section=settings&tab=api');
     exit;
 }
 
@@ -371,10 +371,10 @@ include BASE_PATH . '/includes/components/page-header.php';
 
 <!-- Back link -->
 <div class="mb-4">
-    <a href="<?php echo url('admin', ['section' => 'users', 'tab' => 'ai_agents']); ?>"
+    <a href="<?php echo url('admin', ['section' => 'settings', 'tab' => 'api']); ?>"
        class="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center gap-1">
         <?php echo get_icon('arrow-left', 'w-4 h-4'); ?>
-        <?php echo e(t('Back to AI agents')); ?>
+        <?php echo e(t('Back to API & agents')); ?>
     </a>
 </div>
 
@@ -562,7 +562,7 @@ include BASE_PATH . '/includes/components/page-header.php';
             <div class="pt-0.5">
                 <p class="font-medium text-sm text-theme-primary"><?php echo e(t('Ready!')); ?></p>
                 <p class="text-xs mt-0.5 text-theme-muted">
-                    <?php echo t('{name} can now create tickets, add comments, update statuses, and log time.', ['name' => $agent_name_safe]); ?>
+                    <?php echo t('{name} can now use the selected API actions.', ['name' => $agent_name_safe]); ?>
                 </p>
             </div>
         </div>

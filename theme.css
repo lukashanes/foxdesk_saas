@@ -7147,6 +7147,42 @@ display: none;
     border-color: color-mix(in srgb, var(--primary) 35%, var(--border-light));
     background: var(--primary-soft);
 }
+.ticket-list-section-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+    border-top: 1px solid var(--border-light);
+    background: var(--surface-secondary);
+    color: var(--text-secondary);
+    font-size: var(--type-xs);
+    font-weight: 850;
+}
+.ticket-list-section-label span:last-child,
+.ticket-list-section-row strong {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    padding: 0 0.45rem;
+    border-radius: var(--fd-radius-pill);
+    background: var(--surface-primary);
+    color: var(--text-muted);
+    font-size: var(--type-3xs);
+}
+.ticket-list-section-row td {
+    padding: 0.55rem 0.75rem;
+    border-top: 1px solid var(--border-light);
+    background: var(--surface-secondary);
+    color: var(--text-secondary);
+    font-size: var(--type-xs);
+    font-weight: 850;
+}
+.ticket-list-section-row td > span {
+    margin-right: 0.45rem;
+}
 .ticket-view-tab__count {
     min-width: 1.55rem;
     padding: 0.125rem 0.4rem;
@@ -12268,31 +12304,6 @@ color: var(--text-muted);
 font-size: var(--type-sm);
 font-weight: 650;
 }
-.settings-management-panel {
-display: grid;
-gap: 0.65rem;
-margin-bottom: 0.875rem;
-}
-.settings-management-panel__head {
-display: flex;
-align-items: flex-start;
-gap: 0.55rem;
-min-width: 0;
-}
-.settings-management-panel__head h2 {
-margin: 0;
-color: var(--text-primary);
-font-size: var(--type-lg);
-font-weight: 850;
-line-height: 1.15;
-letter-spacing: 0;
-}
-.settings-management-grid {
-display: grid;
-grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-gap: 0.6rem;
-margin-bottom: 0;
-}
 .settings-section-card {
 display: flex;
 align-items: flex-start;
@@ -12455,6 +12466,13 @@ padding: 0.75rem;
 border: 1px solid var(--border-light);
 border-radius: var(--fd-radius-card);
 background: var(--surface-secondary);
+text-decoration: none;
+transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+.work-time-metric[href]:hover {
+border-color: color-mix(in srgb, var(--primary) 28%, var(--border-light));
+background: var(--surface-primary);
+transform: translateY(-1px);
 }
 .work-time-metric span {
 color: var(--text-muted);
@@ -12501,16 +12519,81 @@ font-size: var(--type-xs);
 font-weight: 750;
 white-space: nowrap;
 }
+.work-hours-chart__canvas-wrap {
+position: relative;
+display: block;
+min-height: 278px;
+height: clamp(240px, 32vh, 340px);
+width: 100%;
+}
+.work-hours-chart.is-chart-ready .work-hours-chart__canvas-wrap {
+display: block;
+}
+.work-hours-chart.is-chart-ready .work-hours-chart__fallback {
+display: none;
+}
+.work-hours-chart.is-chart-fallback .work-hours-chart__canvas-wrap {
+display: none;
+}
+.work-hours-chart.is-chart-fallback .work-hours-chart__fallback {
+display: grid;
+}
+.work-hours-chart__canvas-wrap canvas {
+display: block;
+width: 100% !important;
+height: 100% !important;
+}
+.work-hours-chart__fallback {
+display: none;
+gap: 0.65rem;
+min-width: 0;
+}
+.work-hours-chart__svg-wrap {
+min-height: 230px;
+overflow: hidden;
+border: 1px solid var(--border-light);
+border-radius: var(--fd-radius-control);
+background: var(--surface-primary);
+}
+.work-hours-chart__svg {
+display: block;
+width: 100%;
+height: 230px;
+}
+.work-hours-chart__axis {
+fill: var(--text-muted);
+font-size: 10px;
+font-weight: 750;
+}
+.work-hours-chart__grid-line {
+stroke: var(--border-light);
+stroke-width: 1;
+}
+.work-hours-chart__bar-empty {
+fill: var(--surface-tertiary);
+}
+.work-hours-chart__empty {
+display: grid;
+place-items: center;
+min-height: 168px;
+border: 1px dashed var(--border-light);
+border-radius: var(--fd-radius-control);
+color: var(--text-muted);
+font-size: var(--type-xs);
+font-weight: 750;
+}
 .work-week-chart__bars {
 display: grid;
-grid-template-columns: repeat(7, minmax(0, 1fr));
+grid-template-columns: repeat(var(--chart-day-count, 7), minmax(0, 1fr));
 align-items: end;
-gap: 0.5rem;
+gap: 0.35rem;
 min-height: 156px;
+overflow-x: visible;
+padding-bottom: 0.15rem;
 }
 .work-week-chart__day {
 display: grid;
-grid-template-rows: minmax(118px, 1fr) auto;
+grid-template-rows: auto minmax(118px, 1fr) auto;
 gap: 0.45rem;
 min-width: 0;
 color: var(--text-muted);
@@ -12518,26 +12601,101 @@ font-size: var(--type-3xs);
 font-weight: 800;
 text-align: center;
 }
+.work-week-chart__total {
+min-height: 1.1rem;
+color: var(--text-secondary);
+font-size: var(--type-3xs);
+font-weight: 850;
+line-height: 1.1;
+white-space: nowrap;
+}
+.work-week-chart__day-label {
+min-height: 1rem;
+overflow: hidden;
+color: var(--text-muted);
+font-size: var(--type-3xs);
+line-height: 1.1;
+text-overflow: ellipsis;
+white-space: nowrap;
+}
+.work-week-chart__day-label.is-muted {
+visibility: hidden;
+}
 .work-week-chart__bar-track {
 position: relative;
 display: flex;
 align-items: end;
 justify-content: center;
 min-height: 118px;
-border-radius: var(--fd-radius-control);
-background: rgba(148, 163, 184, 0.12);
+border-bottom: 1px solid var(--border-light);
 }
 .work-week-chart__bar {
 position: relative;
-display: block;
-width: min(100%, 2.75rem);
+display: flex;
+flex-direction: column-reverse;
+overflow: hidden;
+width: min(100%, 1.8rem);
 height: max(0.35rem, var(--bar-height));
 border: 0;
 border-radius: var(--fd-radius-control) var(--fd-radius-control) 0.35rem 0.35rem;
-background: linear-gradient(180deg, #5f75ff, var(--primary));
+background: transparent;
 box-shadow: 0 0.5rem 1.2rem rgba(59, 91, 219, 0.18);
 cursor: default;
 transition: height 160ms ease, filter 160ms ease;
+}
+.work-week-chart__bar.is-empty {
+background: rgba(148, 163, 184, 0.22);
+box-shadow: none;
+}
+.work-week-chart__segment {
+display: block;
+flex: var(--segment-flex) 0 auto;
+min-height: 3px;
+width: 100%;
+}
+.work-week-chart__segment--0 { background: #3b5bdb; }
+.work-week-chart__segment--1 { background: #0ca678; }
+.work-week-chart__segment--2 { background: #f59f00; }
+.work-week-chart__segment--3 { background: #9c36b5; }
+.work-week-chart__segment--4 { background: #e03131; }
+.work-week-chart__segment--5 { background: #1971c2; }
+.work-week-chart__segment--6 { background: #2b8a3e; }
+.work-week-chart__segment--7 { background: #e8590c; }
+.work-week-chart__legend {
+display: flex;
+flex-wrap: wrap;
+gap: 0.45rem 0.75rem;
+padding-top: 0.2rem;
+}
+.work-week-chart__legend-item {
+display: inline-flex;
+align-items: center;
+gap: 0.35rem;
+color: var(--text-secondary);
+font-size: var(--type-xs);
+font-weight: 750;
+line-height: 1.2;
+}
+.work-week-chart__legend-dot {
+display: inline-block;
+width: 0.65rem;
+height: 0.65rem;
+border-radius: var(--radius-full);
+box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 12%, transparent);
+}
+.work-time-link,
+.report-time-drilldown,
+.report-metric__link {
+color: inherit;
+font-weight: inherit;
+text-decoration: none;
+border-bottom: 1px dotted color-mix(in srgb, currentColor 42%, transparent);
+}
+.work-time-link:hover,
+.report-time-drilldown:hover,
+.report-metric__link:hover {
+color: var(--primary);
+border-bottom-color: currentColor;
 }
 .work-week-chart__bar:focus-visible,
 .work-week-chart__bar:hover {
@@ -12812,9 +12970,11 @@ grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .work-week-chart__bars {
 min-height: 132px;
+overflow-x: auto;
+grid-template-columns: repeat(var(--chart-day-count, 7), minmax(2rem, 1fr));
 }
 .work-week-chart__day {
-grid-template-rows: minmax(96px, 1fr) auto;
+grid-template-rows: auto minmax(96px, 1fr) auto;
 }
 .work-week-chart__bar-track {
 min-height: 96px;
@@ -12843,8 +13003,12 @@ gap: 0.25rem;
 gap: 0.3rem;
 min-height: 112px;
 }
+.work-hours-chart__canvas-wrap {
+min-height: 230px;
+height: 250px;
+}
 .work-week-chart__day {
-grid-template-rows: minmax(82px, 1fr) auto;
+grid-template-rows: auto minmax(82px, 1fr) auto;
 }
 .work-week-chart__bar-track {
 min-height: 82px;

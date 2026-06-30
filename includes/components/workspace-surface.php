@@ -103,7 +103,12 @@ function workspace_render_ticket_rows(array $tickets, array $options = []): void
 
 function workspace_render_ticket_row(array $ticket, array $options = []): void
 {
-    $status_name = trim((string) ($ticket['status_name'] ?? ''));
+    $status_name = function_exists('ticket_status_group_display_name')
+        ? ticket_status_group_display_name([
+            'name' => (string) ($ticket['status_name'] ?? ''),
+            'is_closed' => $ticket['is_closed'] ?? 0,
+        ])
+        : trim((string) ($ticket['status_name'] ?? ''));
     $organization = trim((string) ($ticket['organization_name'] ?? ''));
     $source = trim((string) ($ticket['source'] ?? ''));
     $assignee = trim((string) (($ticket['assignee_first_name'] ?? '') . ' ' . ($ticket['assignee_last_name'] ?? '')));

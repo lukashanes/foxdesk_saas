@@ -53,6 +53,15 @@ const TOOLS = [
     },
   },
   {
+    name: 'foxdesk_agent_docs',
+    description: 'Load live FoxDesk API documentation, current token scopes, available actions, and safety rules from the workspace.',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'foxdesk_list_tickets',
     description: 'List FoxDesk tickets visible to the API-token user.',
     inputSchema: {
@@ -167,6 +176,14 @@ const TOOL_POLICY = {
     supportsDryRun: false,
     requiresConfirmation: false,
   },
+  foxdesk_agent_docs: {
+    action: 'agent-docs',
+    method: 'GET',
+    scopes: [],
+    writes: false,
+    supportsDryRun: false,
+    requiresConfirmation: false,
+  },
   foxdesk_list_tickets: {
     action: 'app-ticket-list',
     method: 'GET',
@@ -226,6 +243,7 @@ const TOOL_MANIFEST = TOOLS.map((tool) => ({
 
 const TOOL_HANDLERS = {
   foxdesk_agent_manifest: () => agentManifest(),
+  foxdesk_agent_docs: () => apiGet('agent-docs'),
   foxdesk_list_tickets: (args) => apiGet('app-ticket-list', pickDefined(args, ['view', 'search', 'limit', 'offset'])),
   foxdesk_get_ticket: (args) => {
     requireTicketSelector(args);

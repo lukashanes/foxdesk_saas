@@ -227,6 +227,107 @@ function time_activity_weekly_chart(int $viewer_user_id, bool $include_team = fa
 
         $days[$day_key]['minutes'] += $minutes;
         $days[$day_key]['users'][] = [
+            'user_id' => (int) ($row['user_id'] ?? 0),
+            'name' => $name,
+            'minutes' => $minutes,
+        ];
+    }
+
+    $max_minutes = 0;
+    $total_minutes = 0;
+    foreach ($days as $day) {
+        $minutes = (int) ($day['minutes'] ?? 0);
+        $max_minutes = max($max_minutes, $minutes);
+        $total_minutes += $minutes;
+    }
+
+    return [
+        'days' => array_values($days),
+        'max_minutes' => $max_minutes,
+        'total_minutes' => $total_minutes,
+    ];
+}
+
+function time_activity_period_chart(int $viewer_user_id, bool $include_team, array $period): array
+{
+    $start = !empty($period['start']) ? strtotime((string) $period['start']) : strtotime('-6 days 00:00:00');
+    $end = !empty($period['end']) ? strtotime((string) $period['end']) : time();
+    if ($start === false || $end === false || $start > $end) {
+        return time_activity_weekly_chart($viewer_user_id, $include_team);
+    }
+
+    $start = strtotime(date('Y-m-d 00:00:00', $start));
+    $end = strtotime(date('Y-m-d 23:59:59', $end));
+    $max_days = 62;
+    if ((int) floor(($end - $start) / 86400) + 1 > $max_days) {
+        $start = strtotime('-' . ($max_days - 1) . ' days', $end);
+        $start = strtotime(date('Y-m-d 00:00:00', $start));
+    }
+
+    $days = [];
+    for ($cursor = $start; $cursor <= $end; $cursor = strtotime('+1 day', $cursor)) {
+        $date = date('Y-m-d', $cursor);
+        $days[$date] = [
+            'key' => $date,
+            'label' => function_exists('format_date_localized') ? format_date_localized($date, 'd.m.') : date('d.m.', $cursor),
+            'full_label' => function_exists('format_date_localized') ? format_date_localized($date, 'l, j. F') : date('l, M j', $cursor),
+            'minutes' => 0,
+            'users' => [],
+        ];
+    }
+
+    if (!function_exists('ticket_time_table_exists') || !ticket_time_table_exists()) {
+        return [
+            'days' => array_values($days),
+            'max_minutes' => 0,
+            'total_minutes' => 0,
+        ];
+    }
+
+    $duration_sql = time_activity_duration_sql();
+    $params = [date('Y-m-d H:i:s', $start), date('Y-m-d H:i:s', $end)];
+    $tenant_filter = time_activity_tenant_filter('tickets', 't', $params);
+    $user_filter = '';
+
+    if (!$include_team) {
+        $params[] = max(0, $viewer_user_id);
+        $user_filter = 'AND tte.user_id = ?';
+    }
+
+    $rows = db_fetch_all("
+        SELECT
+            DATE(tte.started_at) AS day_key,
+            tte.user_id,
+            u.first_name,
+            u.last_name,
+            u.email,
+            SUM({$duration_sql}) AS minutes
+        FROM ticket_time_entries tte
+        JOIN tickets t ON t.id = tte.ticket_id
+        LEFT JOIN users u ON u.id = tte.user_id
+        WHERE tte.started_at >= ?
+          AND tte.started_at <= ?
+          {$tenant_filter}
+          {$user_filter}
+        GROUP BY DATE(tte.started_at), tte.user_id, u.first_name, u.last_name, u.email
+        ORDER BY day_key ASC, minutes DESC
+    ", $params);
+
+    foreach ($rows as $row) {
+        $day_key = (string) ($row['day_key'] ?? '');
+        if (!isset($days[$day_key])) {
+            continue;
+        }
+
+        $minutes = (int) round((float) ($row['minutes'] ?? 0));
+        $name = trim((string) (($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')));
+        if ($name === '') {
+            $name = (string) ($row['email'] ?? t('Agent'));
+        }
+
+        $days[$day_key]['minutes'] += $minutes;
+        $days[$day_key]['users'][] = [
+            'user_id' => (int) ($row['user_id'] ?? 0),
             'name' => $name,
             'minutes' => $minutes,
         ];
@@ -407,6 +508,7 @@ function time_activity_work_model(array $user, array $request): array
         'my_totals' => time_activity_user_totals($user_id, $period),
         'my_entries' => time_activity_user_entries($user_id, $my_activity_period, $my_activity_filter['limit']),
         'team' => $is_admin_user ? time_activity_team_summary($period, 80, $team_activity_filter['limit'], $team_activity_period) : [],
+        'period_chart' => time_activity_period_chart($user_id, $is_admin_user, $period),
         'week_chart' => time_activity_weekly_chart($user_id, $is_admin_user),
     ];
 }

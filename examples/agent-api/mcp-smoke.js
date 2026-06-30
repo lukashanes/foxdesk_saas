@@ -18,6 +18,7 @@ async function call(id, method, params = {}) {
   const toolNames = list.result.tools.map((tool) => tool.name);
   for (const name of [
     'foxdesk_agent_manifest',
+    'foxdesk_agent_docs',
     'foxdesk_list_tickets',
     'foxdesk_get_ticket',
     'foxdesk_create_ticket',

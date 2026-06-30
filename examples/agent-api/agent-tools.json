@@ -23,6 +23,13 @@
       "writes": false
     },
     {
+      "name": "foxdesk_agent_docs",
+      "action": "agent-docs",
+      "method": "GET",
+      "scopes": [],
+      "writes": false
+    },
+    {
       "name": "foxdesk_list_tickets",
       "action": "app-ticket-list",
       "method": "GET",

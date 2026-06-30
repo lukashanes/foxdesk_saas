@@ -43,17 +43,106 @@ function settings_render_update_redirect(string $redirect_url): void
     exit;
 }
 
+function settings_api_redirect(): void
+{
+    redirect('admin', ['section' => 'settings', 'tab' => 'api']);
+}
+
+function settings_api_token_expires_at(string $expiry): ?string
+{
+    if ($expiry === 'never') {
+        return null;
+    }
+
+    $days = max(1, min(365, (int) $expiry));
+    return date('Y-m-d H:i:s', time() + ($days * 86400));
+}
+
+function settings_fetch_user_api_tokens(int $user_id): array
+{
+    if (!function_exists('api_tokens_table_exists') || !api_tokens_table_exists()) {
+        return [];
+    }
+
+    $params = [$user_id];
+    $sql = "SELECT * FROM api_tokens WHERE user_id = ?";
+    if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('api_tokens')) {
+        $sql .= " AND tenant_id = ?";
+        $params[] = current_tenant_id();
+    }
+    $sql .= " ORDER BY created_at DESC";
+
+    return db_fetch_all($sql, $params);
+}
+
+function settings_handle_api_access_post(): void
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return;
+    }
+
+    $user = current_user();
+    if (!$user) {
+        return;
+    }
+
+    if (isset($_POST['create_api_token']) && function_exists('generate_api_token')) {
+        require_csrf_token();
+        $token_name = trim((string) ($_POST['api_token_name'] ?? ''));
+        $selected_scopes = $_POST['api_token_scopes'] ?? [];
+
+        if ($token_name === '') {
+            flash(t('Token name is required.'), 'error');
+            settings_api_redirect();
+        }
+
+        $token_result = generate_api_token(
+            (int) $user['id'],
+            $token_name,
+            settings_api_token_expires_at((string) ($_POST['api_token_expiry'] ?? '90')),
+            $selected_scopes
+        );
+
+        if (!empty($token_result['token'])) {
+            $_SESSION['new_profile_api_token'] = $token_result['token'];
+            $_SESSION['new_profile_api_token_scopes'] = $token_result['scopes'] ?? [];
+            flash(t('API key created. Copy it now.'), 'success');
+        } else {
+            flash(t('Could not create API key.'), 'error');
+        }
+        settings_api_redirect();
+    }
+
+    if (isset($_POST['revoke_api_token']) && function_exists('revoke_api_token')) {
+        require_csrf_token();
+        $token_id = (int) ($_POST['token_id'] ?? 0);
+        $params = [$token_id, (int) $user['id']];
+        $sql = "SELECT id FROM api_tokens WHERE id = ? AND user_id = ?";
+        if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('api_tokens')) {
+            $sql .= " AND tenant_id = ?";
+            $params[] = current_tenant_id();
+        }
+        $token = $token_id > 0 && function_exists('api_tokens_table_exists') && api_tokens_table_exists()
+            ? db_fetch_one($sql, $params)
+            : null;
+
+        if ($token) {
+            revoke_api_token($token_id);
+            flash(t('API key revoked.'), 'success');
+        } else {
+            flash(t('API key not found.'), 'error');
+        }
+        settings_api_redirect();
+    }
+}
+
 // Handle form submissions
 settings_handle_post_request($settings_audit);
+settings_handle_api_access_post();
 
 // Refresh settings
 $settings = get_settings();
 $tab = settings_tab_from_request($_GET);
-
-// API tab was removed — redirect to general
-if ($tab === 'api') {
-    redirect('admin', ['section' => 'settings', 'tab' => 'general']);
-}
 
 // Process POST handlers for workflow tab before any layout output
 settings_handle_workflow_post($tab, $_POST);
@@ -166,6 +255,57 @@ if ($tab === 'email') {
 	    $all_users = db_fetch_all("SELECT id, first_name, last_name, email FROM users WHERE is_active = 1 AND tenant_id = ? ORDER BY first_name, last_name", [current_tenant_id()]);
 }
 
+$api_scope_catalog = [];
+$profile_api_tokens = [];
+$new_profile_api_token = null;
+$new_profile_api_token_scopes = [];
+$api_agents_available = false;
+$api_ai_agents = [];
+$api_ai_agent_tokens = [];
+$ai_agent_token_scope_groups = [];
+$ai_agent_token_default_scope_groups = [];
+$ai_agent_token_group_scopes = [];
+$new_ai_token = null;
+$new_ai_agent_id = null;
+$api_organizations = [];
+$organization_names_by_id = [];
+$ai_agent_col_exists = false;
+
+if ($tab === 'api') {
+    $settings_api_user = current_user() ?: [];
+    $api_scope_catalog = function_exists('api_token_scope_catalog') ? api_token_scope_catalog($settings_api_user) : [];
+    $profile_api_tokens = settings_fetch_user_api_tokens((int) ($settings_api_user['id'] ?? 0));
+    $new_profile_api_token = $_SESSION['new_profile_api_token'] ?? null;
+    $new_profile_api_token_scopes = $_SESSION['new_profile_api_token_scopes'] ?? [];
+    unset($_SESSION['new_profile_api_token'], $_SESSION['new_profile_api_token_scopes']);
+
+    $api_user_table_capabilities = function_exists('team_users_table_capabilities') ? team_users_table_capabilities() : [];
+    $ai_agent_col_exists = !empty($api_user_table_capabilities['ai_agent']);
+    $api_agents_available = $ai_agent_col_exists;
+    try {
+        $api_organizations = get_organizations(true);
+    } catch (Throwable $e) {
+        $api_organizations = [];
+    }
+    foreach ($api_organizations as $organization) {
+        $organization_names_by_id[(int) ($organization['id'] ?? 0)] = (string) ($organization['name'] ?? '');
+    }
+
+    if ($api_agents_available) {
+        $api_ai_agents = team_ai_agents_fetch(!empty($api_user_table_capabilities['deleted_at']));
+        $api_ai_agent_tokens = team_ai_agent_tokens_fetch($api_ai_agents);
+        $ai_agent_token_scope_groups = function_exists('team_ai_agent_token_scope_groups') ? team_ai_agent_token_scope_groups() : [];
+        $ai_agent_token_default_scope_groups = function_exists('team_ai_agent_token_default_scope_groups') ? team_ai_agent_token_default_scope_groups() : [];
+        foreach ($ai_agent_token_scope_groups as $group_key => $group) {
+            $ai_agent_token_group_scopes[$group_key] = $group['scopes'] ?? [];
+        }
+    }
+
+    $new_ai_token = $_SESSION['new_ai_agent_token'] ?? null;
+    $new_ai_agent_id = $_SESSION['new_ai_agent_id'] ?? null;
+    unset($_SESSION['new_ai_agent_token'], $_SESSION['new_ai_agent_id']);
+}
+
 // Get template language
 $template_lang = strtolower(trim((string) ($_GET['lang'] ?? 'en')));
 if (!in_array($template_lang, ['en', 'cs', 'de', 'it', 'es'], true)) {
@@ -197,9 +337,6 @@ include BASE_PATH . '/includes/components/page-header.php';
 ?>
 
 <div class="admin-shell">
-    <?php render_admin_settings_management_links(); ?>
-
-    <!-- Tabs -->
     <?php render_admin_settings_tabs($tab); ?>
 
     <?php if ($tab === 'general'): ?>
@@ -446,6 +583,314 @@ include BASE_PATH . '/includes/components/page-header.php';
                     </div>
                 </div>
             </form>
+        </div>
+
+    <?php elseif ($tab === 'api'): ?>
+        <div class="space-y-3" data-settings-api-access>
+            <div class="card card-body">
+                <div class="fd-section-header">
+                    <div class="fd-section-main">
+                        <h2 class="fd-section-title"><?php echo e(t('API & agents')); ?></h2>
+                        <p class="text-sm text-theme-secondary">
+                            <?php echo e(t('Create a key, choose what it can do, copy it once, and store it only in the tool that will use it.')); ?>
+                        </p>
+                    </div>
+                </div>
+
+                <?php if ($new_profile_api_token): ?>
+                    <div class="mb-4 p-3 fd-rounded-card border border-green-200 bg-green-50 text-green-900">
+                        <p class="text-sm font-medium mb-2"><?php echo e(t('Copy this API key now. It will not be shown again.')); ?></p>
+                        <code class="block p-2 fd-rounded-control bg-white border text-xs font-mono break-all select-all"><?php echo e($new_profile_api_token); ?></code>
+                        <?php if (!empty($new_profile_api_token_scopes)): ?>
+                            <p class="text-xs mt-2"><?php echo e(t('Scopes')); ?>: <?php echo e(implode(', ', $new_profile_api_token_scopes)); ?></p>
+                        <?php endif; ?>
+                        <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                            <div class="fd-rounded-control bg-white/80 border border-green-200 p-2">
+                                <div class="font-semibold mb-1"><?php echo e(t('Where to put it')); ?></div>
+                                <p><?php echo e(t('Add it to Codex, Claude, or your automation as a secret named FOXDESK_API_TOKEN.')); ?></p>
+                            </div>
+                            <div class="fd-rounded-control bg-white/80 border border-green-200 p-2">
+                                <div class="font-semibold mb-1"><?php echo e(t('How to use it safely')); ?></div>
+                                <p><?php echo e(t('Do not paste the key into chat, screenshots, tickets, or shared documents.')); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <div class="mb-5 space-y-4" data-api-access-builder>
+                    <div>
+                        <h3 class="font-semibold text-theme-primary"><?php echo e(t('Create access')); ?></h3>
+                        <p class="text-sm text-theme-muted mt-1">
+                            <?php echo e(t('Create one key for a trusted tool. Choose whether it acts as you or as a separate AI worker.')); ?>
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3" role="radiogroup" aria-label="<?php echo e(t('Who will use this access?')); ?>">
+                        <label class="fd-rounded-card border border-theme-light p-3 cursor-pointer bg-theme-app" data-api-access-choice>
+                            <input type="radio" name="api_access_mode" value="user" class="mr-2" checked data-api-access-mode>
+                            <span class="font-semibold text-theme-primary"><?php echo e(t('Use my account')); ?></span>
+                            <span class="block text-sm text-theme-muted mt-1">
+                                <?php echo e(t('Best for Codex, Claude, scripts, or automations that should use your current permissions.')); ?>
+                            </span>
+                        </label>
+                        <label class="fd-rounded-card border border-theme-light p-3 cursor-pointer bg-theme-app" data-api-access-choice>
+                            <input type="radio" name="api_access_mode" value="agent" class="mr-2" data-api-access-mode>
+                            <span class="font-semibold text-theme-primary"><?php echo e(t('Create a separate AI worker')); ?></span>
+                            <span class="block text-sm text-theme-muted mt-1">
+                                <?php echo e(t('Use this when you want a separate name, hourly rate, and audit trail for the assistant.')); ?>
+                            </span>
+                        </label>
+                    </div>
+
+                    <form method="post" action="<?php echo e(url('admin', ['section' => 'settings', 'tab' => 'api'])); ?>" class="space-y-4" data-api-token-create-form data-api-access-panel="user">
+                        <?php echo csrf_field(); ?>
+                        <input type="hidden" name="api_token_usage" value="automation">
+                        <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-3">
+                            <div>
+                                <label for="settings-api-token-name" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Access name')); ?></label>
+                                <input type="text" name="api_token_name" id="settings-api-token-name" class="form-input"
+                                    placeholder="<?php echo e(t('Codex local assistant')); ?>" maxlength="120">
+                            </div>
+                            <div>
+                                <label for="settings-api-token-expiry" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Expires')); ?></label>
+                                <select name="api_token_expiry" id="settings-api-token-expiry" class="form-select">
+                                    <option value="30"><?php echo e(t('30 days')); ?></option>
+                                    <option value="90" selected><?php echo e(t('90 days')); ?></option>
+                                    <option value="365"><?php echo e(t('1 year')); ?></option>
+                                    <option value="never"><?php echo e(t('Never')); ?></option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <?php if (!empty($api_scope_catalog)): ?>
+                            <div>
+                                <div class="text-sm font-medium mb-2 text-theme-secondary"><?php echo e(t('Permissions')); ?></div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+                                    <?php foreach ($api_scope_catalog as $scope => $label): ?>
+                                        <label class="flex items-start gap-2 text-sm cursor-pointer fd-rounded-card border border-theme-light p-2">
+                                            <input type="checkbox" name="api_token_scopes[]" value="<?php echo e($scope); ?>" class="mt-0.5 fd-rounded-control"
+                                                <?php echo in_array($scope, ['work:read', 'tickets:read', 'tickets:write', 'comments:write'], true) ? 'checked' : ''; ?>>
+                                            <span>
+                                                <span class="font-medium text-theme-primary"><?php echo e($scope); ?></span>
+                                                <span class="block text-xs text-theme-muted"><?php echo e(t($label)); ?></span>
+                                            </span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
+                        <button type="submit" name="create_api_token" class="btn btn-primary">
+                            <?php echo e(t('Create key')); ?>
+                        </button>
+                    </form>
+
+                    <?php if ($api_agents_available): ?>
+                        <form method="post" action="<?php echo e(url('admin', ['section' => 'users', 'tab' => 'ai_agents'])); ?>" id="aiAddAgentForm" class="space-y-4 hidden" data-api-access-panel="agent" data-ai-agent-create>
+                            <?php echo csrf_field(); ?>
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Worker name')); ?> *</label>
+                                    <input type="text" name="agent_name" required class="form-input" placeholder="<?php echo e(t('e.g. Codex')); ?>">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Model')); ?></label>
+                                    <input type="text" name="ai_model" class="form-input"
+                                        placeholder="<?php echo e(t('Optional, for your records')); ?>">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Rate/h')); ?></label>
+                                    <input type="number" name="cost_rate" step="0.01" min="0" class="form-input" placeholder="0.00">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] gap-3">
+                                <div class="fd-rounded-card border border-theme-light p-3">
+                                    <h4 class="text-sm font-semibold mb-2 text-theme-primary">
+                                        <?php echo e(t('Ticket access')); ?>
+                                    </h4>
+                                    <div class="space-y-2">
+                                        <label class="flex items-center text-sm">
+                                            <input type="radio" name="ticket_scope" value="assigned" class="mr-2" checked>
+                                            <?php echo e(t('Assigned tickets only')); ?>
+                                        </label>
+                                        <label class="flex items-center text-sm">
+                                            <input type="radio" name="ticket_scope" value="organization" class="mr-2">
+                                            <?php echo e(t('Tickets from selected organizations')); ?>
+                                        </label>
+                                        <label class="flex items-center text-sm">
+                                            <input type="radio" name="ticket_scope" value="all" class="mr-2">
+                                            <?php echo e(t('All tickets')); ?>
+                                        </label>
+                                    </div>
+                                    <?php if (!empty($api_organizations)): ?>
+                                        <div id="ai_add_org_select" class="mt-2 hidden">
+                                            <label class="block text-xs mb-1 text-theme-muted">
+                                                <?php echo e(t('Select clients')); ?>
+                                            </label>
+                                            <select name="scope_organization_ids[]" multiple size="4" class="form-select text-sm">
+                                                <?php foreach ($api_organizations as $org): ?>
+                                                    <option value="<?php echo $org['id']; ?>"><?php echo e($org['name']); ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                    <?php endif; ?>
+                                    <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="can_view_time" class="mr-2" checked>
+                                            <?php echo e(t('Can view time entries')); ?>
+                                        </label>
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="can_view_timeline" class="mr-2" checked>
+                                            <?php echo e(t('Can view activity timeline')); ?>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <?php if (!empty($ai_agent_token_scope_groups)): ?>
+                                    <div class="fd-rounded-card border border-theme-light p-3">
+                                        <h4 class="text-sm font-semibold mb-1 text-theme-primary">
+                                            <?php echo e(t('Permissions')); ?>
+                                        </h4>
+                                        <p class="text-xs mb-2 text-theme-muted">
+                                            <?php echo e(t('Start with read access, then add only the actions this worker really needs.')); ?>
+                                        </p>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                            <?php foreach ($ai_agent_token_scope_groups as $group_key => $group): ?>
+                                                <label class="flex items-start gap-2 text-sm fd-rounded-control border border-theme-light p-2 cursor-pointer">
+                                                    <input type="checkbox" name="api_token_scope_groups[]"
+                                                        value="<?php echo e($group_key); ?>" class="mt-0.5 fd-rounded-control"
+                                                        <?php echo in_array($group_key, $ai_agent_token_default_scope_groups, true) ? 'checked' : ''; ?>>
+                                                    <span>
+                                                        <span class="font-medium text-theme-primary">
+                                                            <?php echo e(t($group['label'])); ?>
+                                                        </span>
+                                                        <span class="block text-xs text-theme-muted">
+                                                            <?php echo e(t($group['description'])); ?>
+                                                        </span>
+                                                    </span>
+                                                </label>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <p class="text-xs text-theme-muted">
+                                    <?php echo e(t('After creating the worker, copy the key once and store it as a secret.')); ?>
+                                </p>
+                                <button type="submit" name="add_ai_agent" class="btn btn-primary">
+                                    <?php echo e(t('Create worker and key')); ?>
+                                </button>
+                            </div>
+                        </form>
+                    <?php endif; ?>
+
+                    <div class="p-3 fd-rounded-card border border-theme-light bg-theme-secondary" data-agent-docs-instructions>
+                        <div class="font-semibold text-theme-primary"><?php echo e(t('Agent instructions')); ?></div>
+                        <p class="text-sm text-theme-muted mt-1">
+                            <?php echo e(t('Every key can read live instructions before it acts. The response shows allowed actions, missing permissions, request fields, and safety rules.')); ?>
+                        </p>
+                        <code class="mt-2 block p-2 fd-rounded-control bg-theme-app border text-xs font-mono break-all">GET /index.php?page=api&amp;action=agent-docs</code>
+                    </div>
+                </div>
+
+                <div class="admin-responsive-table-wrap">
+                    <table class="admin-responsive-table tickets-table" data-api-token-table>
+                        <thead>
+                            <tr>
+                                <th class="th-label text-left py-2"><?php echo e(t('Name')); ?></th>
+                                <th class="th-label text-left py-2"><?php echo e(t('Prefix')); ?></th>
+                                <th class="th-label text-left py-2"><?php echo e(t('Scopes')); ?></th>
+                                <th class="th-label text-left py-2"><?php echo e(t('Last used')); ?></th>
+                                <th class="th-label text-right py-2"><?php echo e(t('Actions')); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($profile_api_tokens)): ?>
+                                <tr>
+                                    <td colspan="5" class="py-4 text-sm text-theme-muted"><?php echo e(t('No API keys yet.')); ?></td>
+                                </tr>
+                            <?php endif; ?>
+                            <?php foreach ($profile_api_tokens as $token): ?>
+                                <?php
+                                $token_scopes = !empty($token['scopes_json']) ? json_decode((string) $token['scopes_json'], true) : ['*'];
+                                if (!is_array($token_scopes) || empty($token_scopes)) {
+                                    $token_scopes = ['*'];
+                                }
+                                $is_active_token = !empty($token['is_active']) && empty($token['revoked_at']);
+                                ?>
+                                <tr class="<?php echo $is_active_token ? '' : 'opacity-60'; ?>">
+                                    <td class="py-2 text-sm text-theme-primary" data-label="<?php echo e(t('Name')); ?>"><?php echo e($token['name']); ?></td>
+                                    <td class="py-2 text-xs font-mono text-theme-muted" data-label="<?php echo e(t('Prefix')); ?>"><?php echo e($token['token_prefix']); ?>...</td>
+                                    <td class="py-2 text-xs text-theme-muted" data-label="<?php echo e(t('Scopes')); ?>"><?php echo e(implode(', ', $token_scopes)); ?></td>
+                                    <td class="py-2 text-xs text-theme-muted" data-label="<?php echo e(t('Last used')); ?>"><?php echo e(!empty($token['last_used_at']) ? format_date($token['last_used_at']) : t('Never')); ?></td>
+                                    <td class="py-2 text-right" data-label="<?php echo e(t('Actions')); ?>">
+                                        <?php if ($is_active_token): ?>
+                                            <form method="post" action="<?php echo e(url('admin', ['section' => 'settings', 'tab' => 'api'])); ?>" class="inline">
+                                                <?php echo csrf_field(); ?>
+                                                <input type="hidden" name="token_id" value="<?php echo (int) $token['id']; ?>">
+                                                <button type="submit" name="revoke_api_token" class="btn btn-danger btn-sm"
+                                                    onclick="return confirm('<?php echo e(t('Revoke this API key?')); ?>')">
+                                                    <?php echo e(t('Revoke')); ?>
+                                                </button>
+                                            </form>
+                                        <?php else: ?>
+                                            <span class="text-xs text-theme-muted"><?php echo e(t('Revoked')); ?></span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card card-body" data-api-tester>
+                <div class="fd-section-header">
+                    <div class="fd-section-main">
+                        <h2 class="fd-section-title"><?php echo e(t('Test API')); ?></h2>
+                        <p class="text-sm text-theme-secondary">
+                            <?php echo e(t('Paste a token, choose an action, and run a request without leaving Settings.')); ?>
+                        </p>
+                    </div>
+                </div>
+                <form class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px_140px] gap-3" data-api-test-form>
+                    <div>
+                        <label for="api-test-token" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Bearer token')); ?></label>
+                        <input type="password" id="api-test-token" class="form-input" autocomplete="off" placeholder="fdx_...">
+                    </div>
+                    <div>
+                        <label for="api-test-action" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Action')); ?></label>
+                        <select id="api-test-action" class="form-select">
+                            <option value="agent-me" data-method="GET">GET agent-me</option>
+                            <option value="agent-list-tickets" data-method="GET">GET agent-list-tickets</option>
+                            <option value="agent-create-ticket" data-method="POST">POST agent-create-ticket</option>
+                            <option value="agent-log-time" data-method="POST">POST agent-log-time</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="btn btn-primary w-full"><?php echo e(t('Run test')); ?></button>
+                    </div>
+                    <div class="lg:col-span-3">
+                        <label for="api-test-body" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Request body')); ?></label>
+                        <textarea id="api-test-body" class="form-input min-h-24 font-mono text-xs" spellcheck="false">{"title":"API test ticket","description":"Created from Settings API tester"}</textarea>
+                    </div>
+                </form>
+                <pre class="mt-3 p-3 fd-rounded-card border border-theme-light bg-theme-secondary text-xs overflow-auto hidden" data-api-test-response></pre>
+            </div>
+
+            <?php if ($api_agents_available): ?>
+                <?php
+                $ai_agents = $api_ai_agents;
+                $ai_agent_tokens = $api_ai_agent_tokens;
+                $organizations = $api_organizations;
+                $ai_agent_form_action = url('admin', ['section' => 'users', 'tab' => 'ai_agents']);
+                $ai_agent_hide_create_form = true;
+                ?>
+                <?php include BASE_PATH . '/includes/components/team-ai-agents-tab.php'; ?>
+            <?php endif; ?>
         </div>
 
     <?php elseif ($tab === 'email'): ?>
@@ -1814,6 +2259,71 @@ include BASE_PATH . '/includes/components/page-header.php';
 
     <?php endif; ?>
 </div>
+
+<?php if ($tab === 'api'): ?>
+    <script>
+        (function () {
+            const modeInputs = document.querySelectorAll('[data-api-access-mode]');
+            const accessPanels = document.querySelectorAll('[data-api-access-panel]');
+            function syncAccessMode() {
+                const checked = document.querySelector('[data-api-access-mode]:checked');
+                const mode = checked ? checked.value : 'user';
+                accessPanels.forEach(function (panel) {
+                    panel.classList.toggle('hidden', panel.getAttribute('data-api-access-panel') !== mode);
+                });
+            }
+            modeInputs.forEach(function (input) {
+                input.addEventListener('change', syncAccessMode);
+            });
+            syncAccessMode();
+
+            const form = document.querySelector('[data-api-test-form]');
+            const output = document.querySelector('[data-api-test-response]');
+            if (!form || !output) return;
+
+            form.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                const token = document.getElementById('api-test-token')?.value.trim() || '';
+                const actionSelect = document.getElementById('api-test-action');
+                const selected = actionSelect?.selectedOptions?.[0];
+                const action = actionSelect?.value || '';
+                const method = selected?.dataset?.method || 'GET';
+                const bodyValue = document.getElementById('api-test-body')?.value.trim() || '';
+
+                output.classList.remove('hidden');
+                if (!token) {
+                    output.textContent = <?php echo json_encode(t('Paste a bearer token first.')); ?>;
+                    return;
+                }
+
+                const options = {
+                    method,
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Accept': 'application/json'
+                    }
+                };
+                if (method !== 'GET') {
+                    options.headers['Content-Type'] = 'application/json';
+                    options.body = bodyValue || '{}';
+                }
+
+                output.textContent = <?php echo json_encode(t('Running...')); ?>;
+                try {
+                    const response = await fetch('index.php?page=api&action=' + encodeURIComponent(action), options);
+                    const text = await response.text();
+                    let formatted = text;
+                    try {
+                        formatted = JSON.stringify(JSON.parse(text), null, 2);
+                    } catch (ignored) {}
+                    output.textContent = method + ' ' + action + '\nHTTP ' + response.status + '\n\n' + formatted;
+                } catch (error) {
+                    output.textContent = String(error && error.message ? error.message : error);
+                }
+            });
+        })();
+    </script>
+<?php endif; ?>
 
 <?php if ($tab === 'email'): ?>
     <script>

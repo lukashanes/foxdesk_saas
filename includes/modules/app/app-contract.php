@@ -50,9 +50,42 @@ function app_contract_frozen_response_keys(): array
     ];
 }
 
+function app_contract_plain_text($html): string
+{
+    $text = (string) $html;
+    if ($text === '') {
+        return '';
+    }
+
+    $text = preg_replace('/<(br|hr)\b[^>]*>/i', "\n", $text);
+    $text = preg_replace('/<\/(p|div|li|ul|ol|h[1-6]|tr|blockquote)>/i', "\n", $text);
+    $text = preg_replace('/<(p|div|li|ul|ol|h[1-6]|tr|blockquote)\b[^>]*>/i', "\n", $text);
+    $text = html_entity_decode(strip_tags($text ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $text = preg_replace('/[ \t\x{00A0}]+/u', ' ', $text);
+    $text = preg_replace('/ *\R */u', "\n", $text);
+    $text = preg_replace('/\R{2,}/u', "\n", $text);
+
+    return trim($text ?? '');
+}
+
+function app_contract_text_excerpt($html, int $limit = 180): string
+{
+    $plain = app_contract_plain_text($html);
+    $plain = preg_replace('/\s+/u', ' ', $plain);
+    return mb_substr(trim($plain ?? ''), 0, $limit);
+}
+
 function app_contract_ticket_payload(array $ticket): array
 {
     $ticket_id = (int) ($ticket['id'] ?? 0);
+    $status_label = function_exists('ticket_status_group_display_name')
+        ? ticket_status_group_display_name([
+            'id' => (int) ($ticket['status_id'] ?? 0),
+            'name' => (string) ($ticket['status_name'] ?? ''),
+            'color' => $ticket['status_color'] ?? null,
+            'is_closed' => $ticket['is_closed'] ?? 0,
+        ])
+        : (string) ($ticket['status_name'] ?? '');
 
     return [
         'id' => $ticket_id,
@@ -60,10 +93,10 @@ function app_contract_ticket_payload(array $ticket): array
         'code' => function_exists('get_ticket_code') ? get_ticket_code($ticket_id) : ('#' . $ticket_id),
         'title' => (string) ($ticket['title'] ?? ''),
         'description_html' => (string) ($ticket['description'] ?? ''),
-        'description_text' => trim(strip_tags((string) ($ticket['description'] ?? ''))),
+        'description_text' => app_contract_plain_text($ticket['description'] ?? ''),
         'status' => [
             'id' => (int) ($ticket['status_id'] ?? 0),
-            'name' => (string) ($ticket['status_name'] ?? ''),
+            'name' => $status_label,
             'color' => $ticket['status_color'] ?? null,
             'group' => function_exists('ticket_status_group_for_status_id')
                 ? ticket_status_group_for_status_id(isset($ticket['status_id']) ? (int) $ticket['status_id'] : null)
@@ -101,7 +134,7 @@ function app_contract_ticket_payload(array $ticket): array
 function app_contract_ticket_list_item(array $ticket): array
 {
     $payload = app_contract_ticket_payload($ticket);
-    $payload['description_preview'] = mb_substr(trim(strip_tags((string) ($ticket['description'] ?? ''))), 0, 180);
+    $payload['description_preview'] = app_contract_text_excerpt($ticket['description'] ?? '', 180);
     $payload['attachment_count'] = (int) ($ticket['attachment_count'] ?? 0);
     $payload['is_archived'] = !empty($ticket['is_archived']);
     return $payload;

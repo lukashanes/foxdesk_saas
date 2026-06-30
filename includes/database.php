@@ -206,3 +206,30 @@ function column_exists($table, $column)
 
     return $cache[$key];
 }
+
+/**
+ * Check if a column exists without using the static cache. Use this from
+ * schema self-healing code that may add the column during the same request.
+ */
+function column_exists_uncached($table, $column)
+{
+    validate_sql_identifier($table);
+    validate_sql_identifier($column);
+
+    try {
+        return (bool) db_fetch_one("SHOW COLUMNS FROM {$table} LIKE '{$column}'");
+    } catch (\Throwable $e) {
+        return false;
+    }
+}
+
+function index_exists($table, $index_name)
+{
+    validate_sql_identifier($table);
+
+    try {
+        return (bool) db_fetch_one("SHOW INDEX FROM {$table} WHERE Key_name = ?", [$index_name]);
+    } catch (\Throwable $e) {
+        return false;
+    }
+}

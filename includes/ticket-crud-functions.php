@@ -196,12 +196,28 @@ function get_ticket_tags_array($value) {
  * Get tickets
  */
 function get_tickets($filters = []) {
+    $completed_at_select = 't.updated_at as completed_at';
+    if (function_exists('ticket_history_table_exists') && ticket_history_table_exists()) {
+        $completed_at_select = "COALESCE(
+                        (
+                            SELECT MAX(th.created_at)
+                            FROM ticket_history th
+                            WHERE th.ticket_id = t.id
+                              AND th.field_name = 'status_id'
+                              AND CAST(th.new_value AS UNSIGNED) = t.status_id
+                        ),
+                        t.updated_at,
+                        t.created_at
+                   ) as completed_at";
+    }
+
     $sql = "SELECT t.*,
                    s.name as status_name, s.color as status_color, s.is_closed,
                    u.first_name, u.last_name, u.email,
                    o.name as organization_name,
                    p.name as priority_name, p.color as priority_color,
                    a.first_name as assignee_first_name, a.last_name as assignee_last_name,
+                   {$completed_at_select},
                    IFNULL(ac.attachment_count, 0) as attachment_count
             FROM tickets t
             LEFT JOIN statuses s ON t.status_id = s.id

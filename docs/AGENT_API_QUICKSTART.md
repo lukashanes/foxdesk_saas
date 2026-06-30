@@ -6,15 +6,14 @@ giving the assistant more access than the user who created the key.
 ## Steps
 
 1. Sign in as the user whose permissions the assistant should inherit.
-2. Open **Profile -> API access**.
+2. Open **Settings -> API & agents**.
 3. Create a scoped key with a clear name, for example `Codex local assistant`.
 4. Select only the scopes the assistant needs.
 5. Copy the key once.
 
-Do not use **Admin -> Users -> AI agents** for normal Codex/Claude access. That
-admin area manages AI-agent records and cost/rate metadata. Scoped API keys for
-external assistants live in **Profile -> API access** because the key must inherit
-the permissions of the person creating it.
+Use the same **API & agents** page for Codex, Claude, automations, and tracked AI
+agents. The key inherits the permissions of the admin creating it and is further
+limited by the scopes selected on the form.
 6. Configure the local example env:
 
 ```bash
@@ -29,6 +28,18 @@ sh examples/agent-api/create-ticket.sh
 ```
 
 ## Examples
+
+Every agent session should start by loading live API documentation for the
+current token:
+
+```bash
+curl -s "${FOXDESK_BASE_URL}/index.php?page=api&action=agent-docs" \
+  -H "Authorization: Bearer ${FOXDESK_API_TOKEN}"
+```
+
+The response lists the current token scopes, available actions, missing scopes,
+request shapes, safety rules, and examples. This lets Codex, Claude, or an
+automation decide what it can do before it reads or writes helpdesk data.
 
 Create a ticket:
 
@@ -69,6 +80,7 @@ npm run agent:mcp
 
 ## Required scopes
 
+- Read live docs: valid token only, no specific scope
 - Create ticket: `tickets:write`
 - Add comment: `comments:write`
 - Log time: `time:write`

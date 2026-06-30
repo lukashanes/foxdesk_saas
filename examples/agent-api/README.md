@@ -5,7 +5,7 @@ the same scoped API permissions as the user who created the token.
 
 ## 1. Create a key
 
-Open **Profile -> API access**, create a key, and select only the scopes the
+Open **Settings -> API & agents**, create a key, and select only the scopes the
 assistant needs. For the examples below, use:
 
 - `tickets:write`
@@ -26,6 +26,13 @@ Edit `examples/agent-api/.env` and paste the token. The real `.env` file is
 ignored by git.
 
 ## 3. Run examples
+
+Start by asking FoxDesk what this token can do:
+
+```bash
+curl -fsS "$FOXDESK_BASE_URL/index.php?page=api&action=agent-docs" \
+  -H "Authorization: Bearer $FOXDESK_API_TOKEN"
+```
 
 ```bash
 sh examples/agent-api/create-ticket.sh

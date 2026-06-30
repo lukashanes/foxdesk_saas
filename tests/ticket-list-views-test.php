@@ -1,6 +1,8 @@
 <?php
 $root = dirname(__DIR__);
+require_once $root . '/includes/modules/tickets/ticket-status-groups.php';
 require_once $root . '/includes/modules/tickets/ticket-list-views.php';
+require_once $root . '/includes/modules/tickets/ticket-row-view-model.php';
 
 function assert_ticket_list_view($condition, $message)
 {
@@ -80,6 +82,31 @@ assert_ticket_list_view(ticket_list_view_shows_closed_inline('done'), 'Done view
 assert_ticket_list_view(ticket_list_view_shows_closed_inline('all'), 'All view should show closed tickets inline.');
 assert_ticket_list_view(ticket_list_view_shows_closed_inline('open', true), 'Explicit closed status filter should show closed tickets inline.');
 
+$statuses = [
+    ['id' => 1, 'name' => 'New', 'is_closed' => 0],
+    ['id' => 2, 'name' => 'Dokončeno', 'is_closed' => 1],
+    ['id' => 3, 'name' => 'Canceled', 'is_closed' => 1],
+    ['id' => 4, 'name' => 'Done', 'is_closed' => 1],
+];
+$visible_statuses = ticket_status_group_visible_workflow_statuses($statuses);
+assert_ticket_list_view(count($visible_statuses) === 2, 'Workflow status options should expose one open status and one canonical done status.');
+assert_ticket_list_view(($visible_statuses[1]['name'] ?? '') === 'Done', 'Workflow status options should prefer canonical Done over duplicate done labels.');
+assert_ticket_list_view(ticket_status_group_display_name(['id' => 3, 'name' => 'Canceled', 'is_closed' => 1]) === 'Done', 'Canceled terminal status should be presented as Done in the UI.');
+assert_ticket_list_view(ticket_status_group_display_name(['id' => 2, 'name' => 'Dokončeno', 'is_closed' => 1]) === 'Done', 'Localized duplicate terminal status should be presented as Done in the UI.');
+assert_ticket_list_view(ticket_status_group_display_name(['id' => 4, 'name' => 'Closed']) === 'Done', 'Closed terminal status should be presented as Done in the UI.');
+
+$done_groups = ticket_registry_done_ticket_groups([
+    ['id' => 10, 'title' => 'Today', 'completed_at' => '2026-07-02 12:00:00'],
+    ['id' => 11, 'title' => 'Yesterday', 'completed_at' => '2026-07-01 12:00:00'],
+    ['id' => 12, 'title' => 'This week', 'completed_at' => '2026-06-30 12:00:00'],
+    ['id' => 13, 'title' => 'Older', 'completed_at' => '2026-01-01 12:00:00'],
+    ['id' => 13, 'title' => 'Older duplicate', 'completed_at' => '2026-01-01 12:00:00'],
+], strtotime('2026-07-02 12:00:00'));
+$done_group_names = array_column($done_groups, 'name');
+assert_ticket_list_view(in_array('done_today', $done_group_names, true), 'Done view should expose Done today section.');
+assert_ticket_list_view(in_array('done_yesterday', $done_group_names, true), 'Done view should expose Done yesterday section.');
+assert_ticket_list_view(count(array_merge(...array_map(static fn(array $group): array => $group['tickets'], $done_groups))) === 4, 'Done section model must not duplicate ticket rows.');
+
 $tickets_page = file_get_contents($root . '/pages/tickets.php');
 assert_ticket_list_view($tickets_page !== false, 'Tickets page must be readable.');
 assert_ticket_list_view(str_contains($tickets_page, 'ticket_registry_render_view_tabs'), 'Tickets page should render view tabs through the registry surface component.');
@@ -88,5 +115,8 @@ assert_ticket_list_view(str_contains($tickets_page, '$ticket_clear_url'), 'Ticke
 assert_ticket_list_view(substr_count($tickets_page, 'name="search_scope" value="all"') >= 2, 'Ticket search forms should request all-ticket search by default.');
 assert_ticket_list_view(str_contains($tickets_page, 'ticket_list_view_shows_closed_inline'), 'Tickets page must use the closed visibility helper.');
 assert_ticket_list_view(str_contains($tickets_page, 'if (!$show_closed_tickets_inline'), 'Board closed-ticket hiding must follow the same closed visibility helper.');
+assert_ticket_list_view(str_contains($tickets_page, '$workflow_statuses'), 'Tickets page must use deduplicated workflow status options.');
+assert_ticket_list_view(str_contains($tickets_page, '$ticket_status_display_name'), 'Tickets page must render canonical status labels instead of raw legacy names.');
+assert_ticket_list_view(str_contains($tickets_page, 'ticket-list-section-row'), 'Done view must render desktop section rows.');
 
 echo "Ticket list view tests passed\n";

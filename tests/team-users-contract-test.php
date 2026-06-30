@@ -13,10 +13,12 @@ $page = file_get_contents($root . '/pages/admin/users.php');
 $aiAgentsComponent = file_get_contents($root . '/includes/components/team-ai-agents-tab.php');
 $usersComponent = file_get_contents($root . '/includes/components/team-users-tab.php');
 $agentConnectPage = file_get_contents($root . '/pages/admin/agent-connect.php');
+$profilePage = file_get_contents($root . '/pages/profile.php');
+$settingsPage = file_get_contents($root . '/pages/admin/settings.php');
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
 $module = file_get_contents($root . '/includes/modules/team/team-users.php');
 
-$assert($page !== false && $aiAgentsComponent !== false && $usersComponent !== false && $agentConnectPage !== false && $bootstrap !== false && $module !== false, 'Team users contract files must be readable.');
+$assert($page !== false && $aiAgentsComponent !== false && $usersComponent !== false && $agentConnectPage !== false && $profilePage !== false && $settingsPage !== false && $bootstrap !== false && $module !== false, 'Team users contract files must be readable.');
 $assert(str_contains($bootstrap, '/team/team-users.php'), 'Module bootstrap must load team users helpers.');
 $teamUiSurface = $page . "\n" . $aiAgentsComponent . "\n" . $usersComponent;
 
@@ -48,8 +50,29 @@ foreach ([
     'setAiAgentAccess(agent)',
     'setAiAgentTokenScopeGroups(token)',
     'bindAiAgentScope(',
+    'data-ai-agent-create',
+    'Create AI agent access',
+    'Create agent and key',
 ] as $needle) {
     $assert(str_contains($teamUiSurface, $needle), 'AI agent access management must stay in the AI agents UI: ' . $needle);
+}
+
+$assert(!str_contains($page, 'data-admin-api-access-card'), 'Users page must not duplicate API access management.');
+$assert(!str_contains($teamUiSurface, "url('profile'); ?>#api-access"), 'AI agent UI must not send admins to profile API access.');
+$assert(!str_contains($teamUiSurface, 'Connect Codex, Claude, or another assistant'), 'AI agent UI must not keep the old duplicate intro card.');
+$assert(str_contains($profilePage, 'id="api-access"'), 'Profile page must keep the legacy API access anchor.');
+$assert(str_contains($profilePage, 'Open API & agents'), 'Profile API anchor must point users to Settings API & agents.');
+
+foreach ([
+    "elseif (\$tab === 'api')",
+    'data-settings-api-access',
+    'data-api-token-create-form',
+    'data-api-tester',
+    'data-api-test-response',
+    'team_ai_agents_fetch(!empty($api_user_table_capabilities',
+    "url('admin', ['section' => 'users', 'tab' => 'ai_agents'])",
+] as $needle) {
+    $assert(str_contains($settingsPage, $needle), 'Settings API & agents section missing: ' . $needle);
 }
 
 foreach ([
@@ -82,6 +105,8 @@ foreach ([
 
 foreach ([
     'function team_users_table_capabilities',
+    'function team_users_ensure_ai_agent_schema',
+    'function team_users_schema_column_exists',
     'function team_users_filter_state',
     'function team_users_tenant_filter',
     'function team_users_normalize_organization_assignment',
@@ -98,5 +123,33 @@ foreach ([
 ] as $needle) {
     $assert(str_contains($module, $needle), 'Team users module missing: ' . $needle);
 }
+
+foreach ([
+    'ALTER TABLE users ADD COLUMN is_ai_agent',
+    'ALTER TABLE users ADD COLUMN ai_model',
+    'team_users_schema_column_exists(\'users\', \'is_ai_agent\')',
+] as $needle) {
+    $assert(str_contains($module, $needle), 'Team users schema self-healing missing: ' . $needle);
+}
+
+foreach ([
+    "'tickets_read'",
+    "'tickets_write'",
+    "'comments_write'",
+    "'time_read'",
+    "'time_write'",
+    "'attachments_read'",
+    "'attachments_write'",
+    "'reports_read'",
+    "'reports_write'",
+    "'notifications_read'",
+    "'notifications_write'",
+] as $needle) {
+    $assert(str_contains($module, $needle), 'AI agent token scopes must expose granular read/write controls: ' . $needle);
+}
+
+$assert(!str_contains($module, "'ticket_work'"), 'AI agent token scopes must not combine ticket read/write/comment permissions into one group.');
+$assert(!str_contains($module, "'time_tracking'"), 'AI agent token scopes must not combine time read/write permissions into one group.');
+$assert(!str_contains($module, "'attachments' => ["), 'AI agent token scopes must not combine attachment read/write permissions into one group.');
 
 echo "Team users contract OK\n";

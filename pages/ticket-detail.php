@@ -43,6 +43,9 @@ $ticket_detail_context = ticket_detail_context($ticket_id, $ticket, $user, $_SES
 $all_comments = $ticket_detail_context['all_comments'];
 $attachments = $ticket_detail_context['attachments'];
 $statuses = $ticket_detail_context['statuses'];
+$composer_statuses = function_exists('ticket_status_group_visible_workflow_statuses')
+    ? ticket_status_group_visible_workflow_statuses($statuses)
+    : $statuses;
 $tags_supported = $ticket_detail_context['tags_supported'];
 $organizations = $ticket_detail_context['organizations'];
 $ticket_tags = $ticket_detail_context['ticket_tags'];

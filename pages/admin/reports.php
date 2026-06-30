@@ -64,6 +64,20 @@ report_export_csv_if_requested($_GET, $tab, $entries, $by_org, $tags_supported, 
 $base_params = $_GET;
 $base_params['page'] = 'admin';
 $base_params['section'] = 'reports';
+$report_log_url = static function (array $overrides = []) use ($base_params): string {
+    $params = $base_params;
+    unset($params['export']);
+    foreach ($overrides as $key => $value) {
+        if ($value === null) {
+            unset($params[$key]);
+            continue;
+        }
+        $params[$key] = $value;
+    }
+    $params['tab'] = 'time';
+
+    return 'index.php?' . http_build_query($params) . '#report-work-log';
+};
 
 require_once BASE_PATH . '/includes/header.php';
 ?>
@@ -497,7 +511,7 @@ include BASE_PATH . '/includes/components/page-header.php';
             <div class="report-summary-strip">
                 <div class="report-metric">
                     <div class="report-metric__label"><?php echo e(is_admin() ? t('Total time') : t('My time')); ?></div>
-                    <div class="report-metric__value"><?php echo e(format_duration_minutes($totals['minutes'])); ?></div>
+                    <a class="report-metric__value report-metric__link" href="#report-work-log"><?php echo e(format_duration_minutes($totals['minutes'])); ?></a>
                 </div>
                 <div class="report-metric">
                     <div class="report-metric__label"><?php echo e(t('Entries')); ?></div>
@@ -515,7 +529,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                 <?php endif; ?>
             </div>
             <?php if (!empty($work_log_rows)): ?>
-            <section class="card report-worklog-card" data-report-time-overview-log>
+            <section class="card report-worklog-card" id="report-work-log" data-report-time-overview-log>
                 <div class="card-header report-worklog-card__header">
                     <div>
                         <p class="admin-eyebrow"><?php echo e(t('Work log')); ?></p>
@@ -659,7 +673,9 @@ include BASE_PATH . '/includes/components/page-header.php';
                                     <tr>
                                         <td class="px-3 py-1.5 text-xs text-theme-primary"><?php echo e($org['name']); ?></td>
                                         <td class="px-3 py-1.5 text-xs text-theme-secondary">
-                                            <?php echo e(format_duration_minutes($org['minutes'])); ?>
+                                            <a href="<?php echo e($report_log_url(['organizations' => [(int) ($org['id'] ?? 0)]])); ?>" class="report-time-drilldown">
+                                                <?php echo e(format_duration_minutes($org['minutes'])); ?>
+                                            </a>
                                             <div class="flex items-center gap-1.5 mt-1">
                                                 <div class="report-mini-progress">
                                                     <div class="report-mini-progress__bar report-mini-progress__bar--org <?php echo e(report_width_class($org_pct)); ?>"></div>
@@ -717,7 +733,9 @@ include BASE_PATH . '/includes/components/page-header.php';
                                     <tr>
                                         <td class="px-3 py-1.5 text-xs text-theme-primary"><?php echo e($agent['name']); ?></td>
                                         <td class="px-3 py-1.5 text-xs text-theme-secondary">
-                                            <?php echo e(format_duration_minutes($agent['minutes'])); ?>
+                                            <a href="<?php echo e($report_log_url(['agents' => [(int) ($agent['id'] ?? 0)]])); ?>" class="report-time-drilldown">
+                                                <?php echo e(format_duration_minutes($agent['minutes'])); ?>
+                                            </a>
                                             <div class="flex items-center gap-1.5 mt-1">
                                                 <div class="report-mini-progress">
                                                     <div class="report-mini-progress__bar report-mini-progress__bar--agent <?php echo e(report_width_class($agent_pct)); ?>"></div>

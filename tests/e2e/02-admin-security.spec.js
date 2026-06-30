@@ -45,13 +45,18 @@ test('customer admin navigation stays compact and stable across sections', async
 
   await page.goto('/index.php?page=admin&section=settings');
   await expect(page.locator('.admin-page-nav')).toHaveCount(0);
-  await expect(page.locator('.settings-management-grid')).toBeVisible();
-  await expect(page.locator('.settings-management-grid')).toContainText('Team & access');
-  await expect(page.locator('.settings-management-grid')).toContainText('Clients');
-  await expect(page.locator('.settings-management-grid')).toContainText('Companies');
-  await expect(page.locator('.settings-management-grid')).toContainText('Ticket workflow');
-  await expect(page.locator('.settings-management-grid')).toContainText('Time reports');
+  await expect(page.locator('.settings-management-grid')).toHaveCount(0);
   await expect(page.locator('.settings-section-nav')).toHaveCount(1);
+  await expect(page.locator('.settings-section-nav')).toContainText('Workspace');
+  await expect(page.locator('.settings-section-nav')).toContainText('Team & access');
+  await expect(page.locator('.settings-section-nav')).toContainText('API & agents');
+  await expect(page.locator('.settings-section-nav')).toContainText('Clients');
+  await expect(page.locator('.settings-section-nav')).toContainText('Reports & rates');
+
+  await page.goto('/index.php?page=admin&section=settings&tab=api');
+  await expect(page.locator('[data-settings-api-access]')).toBeVisible();
+  await expect(page.locator('[data-api-token-create-form]')).toBeVisible();
+  await expect(page.locator('[data-api-tester]')).toBeVisible();
 });
 
 test('GET impersonation does not switch user, POST impersonation with CSRF does', async ({ page }) => {

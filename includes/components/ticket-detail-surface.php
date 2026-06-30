@@ -77,11 +77,13 @@ function ticket_detail_priority_pill_class(string $priority_name): string
 function ticket_detail_render_status_pill(array $ticket, array $statuses = []): void
 {
     $group = ticket_detail_status_group($ticket, $statuses);
-    $label = (string) ($ticket['status_name'] ?? 'Status');
+    $label = function_exists('ticket_registry_status_label_from_ticket')
+        ? ticket_registry_status_label_from_ticket($ticket, $statuses)
+        : (string) ($ticket['status_name'] ?? 'Status');
     ?>
     <span class="<?php echo e(ticket_detail_status_pill_class($ticket, $statuses)); ?>"
           data-ticket-status-group="<?php echo e($group); ?>">
-        <?php echo e(t($label)); ?>
+        <?php echo e($label); ?>
     </span>
     <?php
 }

@@ -119,6 +119,317 @@ function api_agent_resolve_ticket(array $source, array $user, string $hash_key, 
     return $ticket;
 }
 
+function api_agent_base_url(): string
+{
+    $configured = '';
+    if (defined('APP_URL')) {
+        $configured = (string) APP_URL;
+    }
+    if ($configured === '') {
+        $configured = (string) (getenv('APP_URL') ?: '');
+    }
+    if ($configured === '') {
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
+        $configured = $scheme . '://' . $host;
+    }
+
+    return rtrim($configured, '/');
+}
+
+function api_agent_endpoint_url(string $action): string
+{
+    return api_agent_base_url() . '/index.php?page=api&action=' . rawurlencode($action);
+}
+
+function api_agent_docs_tools(): array
+{
+    return [
+        [
+            'action' => 'agent-docs',
+            'method' => 'GET',
+            'scope' => null,
+            'writes' => false,
+            'description' => 'Read this live documentation, available actions, token scopes, and safety rules.',
+            'query' => [],
+            'body' => null,
+        ],
+        [
+            'action' => 'agent-me',
+            'method' => 'GET',
+            'scope' => 'work:read',
+            'writes' => false,
+            'description' => 'Identify the API-token user or AI agent.',
+            'query' => [],
+            'body' => null,
+        ],
+        [
+            'action' => 'agent-list-statuses',
+            'method' => 'GET',
+            'scope' => 'tickets:read',
+            'writes' => false,
+            'description' => 'List ticket statuses that can be used when creating or updating tickets.',
+            'query' => [],
+            'body' => null,
+        ],
+        [
+            'action' => 'agent-list-priorities',
+            'method' => 'GET',
+            'scope' => 'tickets:read',
+            'writes' => false,
+            'description' => 'List priority levels that can be used when creating tickets.',
+            'query' => [],
+            'body' => null,
+        ],
+        [
+            'action' => 'agent-list-users',
+            'method' => 'GET',
+            'scope' => 'users:read',
+            'writes' => false,
+            'description' => 'List users visible to the token owner.',
+            'query' => ['role', 'exclude_ai'],
+            'body' => null,
+        ],
+        [
+            'action' => 'agent-list-tickets',
+            'method' => 'GET',
+            'scope' => 'tickets:read',
+            'writes' => false,
+            'description' => 'Search and list tickets visible to the token owner.',
+            'query' => ['status', 'priority', 'search', 'user_id', 'assignee_id', 'sort', 'limit', 'offset'],
+            'body' => null,
+        ],
+        [
+            'action' => 'agent-get-ticket',
+            'method' => 'GET',
+            'scope' => 'tickets:read',
+            'writes' => false,
+            'description' => 'Read one ticket, including comments and time entries.',
+            'query' => ['hash', 'id'],
+            'body' => null,
+        ],
+        [
+            'action' => 'agent-create-ticket',
+            'method' => 'POST',
+            'scope' => 'tickets:write',
+            'writes' => true,
+            'description' => 'Create a ticket inside the token owner visibility and permission boundary.',
+            'query' => [],
+            'body' => [
+                'title' => 'required string',
+                'description' => 'optional string',
+                'user_id' => 'optional requester user id',
+                'organization_id' => 'optional client id',
+                'assignee_id' => 'optional staff user id',
+                'priority_id' => 'optional priority id',
+                'status_id' => 'optional status id',
+                'due_date' => 'optional YYYY-MM-DD',
+                'tags' => 'optional comma-separated tags',
+                'duration_minutes' => 'optional time entry minutes',
+            ],
+        ],
+        [
+            'action' => 'agent-add-comment',
+            'method' => 'POST',
+            'scope' => 'comments:write',
+            'writes' => true,
+            'description' => 'Add a public or internal comment to an accessible ticket.',
+            'query' => [],
+            'body' => [
+                'ticket_hash' => 'required unless ticket_id is provided',
+                'ticket_id' => 'required unless ticket_hash is provided',
+                'content' => 'required string',
+                'is_internal' => 'optional boolean',
+                'duration_minutes' => 'optional time entry minutes',
+                'time_summary' => 'optional time entry summary',
+            ],
+        ],
+        [
+            'action' => 'agent-update-status',
+            'method' => 'POST',
+            'scope' => 'tickets:write',
+            'writes' => true,
+            'description' => 'Change status on an accessible ticket.',
+            'query' => [],
+            'body' => [
+                'ticket_hash' => 'required unless ticket_id is provided',
+                'ticket_id' => 'required unless ticket_hash is provided',
+                'status_id' => 'required unless status is provided',
+                'status' => 'required unless status_id is provided',
+            ],
+        ],
+        [
+            'action' => 'agent-log-time',
+            'method' => 'POST',
+            'scope' => 'time:write',
+            'writes' => true,
+            'description' => 'Add a manual time entry to an accessible ticket.',
+            'query' => [],
+            'body' => [
+                'ticket_hash' => 'required unless ticket_id is provided',
+                'ticket_id' => 'required unless ticket_hash is provided',
+                'duration_minutes' => 'required positive integer',
+                'summary' => 'optional string',
+                'is_billable' => 'optional boolean',
+                'started_at' => 'optional datetime',
+                'ended_at' => 'optional datetime',
+            ],
+        ],
+        [
+            'action' => 'app-reporting-review',
+            'method' => 'GET',
+            'scope' => 'reports:read',
+            'writes' => false,
+            'description' => 'Prepare a billing review model for visible work.',
+            'query' => ['organization_id', 'time_range', 'limit'],
+            'body' => null,
+        ],
+        [
+            'action' => 'upload',
+            'method' => 'POST',
+            'scope' => 'attachments:write',
+            'writes' => true,
+            'description' => 'Upload an attachment using multipart form data.',
+            'query' => [],
+            'body' => [
+                'file' => 'required uploaded file',
+                'ticket_id' => 'optional ticket id depending on upload flow',
+                'ticket_hash' => 'optional ticket hash depending on upload flow',
+            ],
+        ],
+    ];
+}
+
+function api_agent_docs_scope_allowed(?string $scope, ?array $token_row, array $user): bool
+{
+    if ($scope === null || $scope === '') {
+        return true;
+    }
+
+    if ($token_row) {
+        return api_token_has_scope($scope);
+    }
+
+    return in_array($scope, api_token_allowed_scopes_for_user($user), true);
+}
+
+// =============================================================================
+// AGENT-DOCS — live documentation for the current token
+// =============================================================================
+
+function api_agent_docs()
+{
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+
+    $token_row = function_exists('api_token_current_row') ? api_token_current_row() : null;
+    $token_scopes = $token_row && function_exists('api_token_scopes_from_row')
+        ? api_token_scopes_from_row($token_row)
+        : api_token_allowed_scopes_for_user($user);
+    $scope_catalog = api_token_scope_catalog($user);
+    $base_url = api_agent_base_url();
+    $api_action_base = $base_url . '/index.php?page=api&action=';
+
+    $actions = [];
+    foreach (api_agent_docs_tools() as $tool) {
+        $scope = $tool['scope'] ?? null;
+        $available = api_agent_docs_scope_allowed($scope, $token_row, $user);
+        $actions[] = array_merge($tool, [
+            'url' => api_agent_endpoint_url($tool['action']),
+            'available' => $available,
+            'missing_scope' => $available ? null : $scope,
+            'idempotency_recommended' => !empty($tool['writes']),
+        ]);
+    }
+
+    api_success([
+        'documentation' => [
+            'schema_version' => 1,
+            'name' => 'FoxDesk Agent API',
+            'purpose' => 'Use this endpoint at the start of every agent session to learn available actions, permissions, request shapes, and safety rules.',
+            'base_url' => $base_url,
+            'api_action_base' => $api_action_base,
+            'auth' => [
+                'type' => 'Bearer',
+                'header' => 'Authorization: Bearer $FOXDESK_API_TOKEN',
+                'env' => 'FOXDESK_API_TOKEN',
+                'token_is_shown_once' => true,
+                'token_storage' => 'Store the key in a private environment file or secret manager. Never paste it into chat, screenshots, tickets, or shared documents.',
+            ],
+            'current_identity' => [
+                'user_id' => (int) $user['id'],
+                'name' => trim((string) ($user['first_name'] ?? '') . ' ' . (string) ($user['last_name'] ?? '')),
+                'email' => $user['email'] ?? null,
+                'role' => $user['role'] ?? null,
+                'is_ai_agent' => !empty($user['is_ai_agent']),
+                'ai_model' => $user['ai_model'] ?? null,
+            ],
+            'current_token' => [
+                'authenticated_by_token' => (bool) $token_row,
+                'token_prefix' => $token_row['token_prefix'] ?? null,
+                'expires_at' => $token_row['expires_at'] ?? null,
+                'scopes' => $token_scopes,
+                'scope_catalog' => $scope_catalog,
+            ],
+            'workflow' => [
+                'start_here' => 'Call agent-docs, then agent-me. Use read actions first. Use writes only when the user clearly asked for a change.',
+                'read_before_write' => 'Before changing a ticket, read it with agent-get-ticket or app-ticket-detail so the action is based on current state.',
+                'idempotency' => 'For POST requests, send an Idempotency-Key header to prevent duplicate tickets, comments, uploads, or time entries during retries.',
+                'errors' => [
+                    '401' => 'Missing, invalid, expired, or revoked token.',
+                    '403' => 'Token is valid but the user role, ticket visibility, or selected scope does not allow the action.',
+                    '422' => 'Request is valid JSON but missing required fields or contains invalid values.',
+                ],
+            ],
+            'safety_rules' => [
+                'Never reveal FOXDESK_API_TOKEN.',
+                'Never invent ticket ids, client ids, status ids, or priority ids; read them from the API first.',
+                'Never perform destructive or billing-impacting actions unless the user explicitly asked for that specific action.',
+                'Prefer internal comments for assistant notes and public comments only when the answer should go to the customer.',
+                'Log time only when the user asked you to record work or when the workflow explicitly includes time tracking.',
+            ],
+            'actions' => $actions,
+            'examples' => [
+                'read_docs' => [
+                    'method' => 'GET',
+                    'url' => api_agent_endpoint_url('agent-docs'),
+                    'headers' => ['Authorization' => 'Bearer $FOXDESK_API_TOKEN'],
+                ],
+                'create_ticket' => [
+                    'method' => 'POST',
+                    'url' => api_agent_endpoint_url('agent-create-ticket'),
+                    'headers' => [
+                        'Authorization' => 'Bearer $FOXDESK_API_TOKEN',
+                        'Content-Type' => 'application/json',
+                        'Idempotency-Key' => 'agent-create-ticket-unique-key',
+                    ],
+                    'body' => [
+                        'title' => 'Customer cannot sign in',
+                        'description' => 'Short, factual summary of the issue.',
+                        'priority_id' => 1,
+                    ],
+                ],
+                'log_time' => [
+                    'method' => 'POST',
+                    'url' => api_agent_endpoint_url('agent-log-time'),
+                    'headers' => [
+                        'Authorization' => 'Bearer $FOXDESK_API_TOKEN',
+                        'Content-Type' => 'application/json',
+                        'Idempotency-Key' => 'agent-log-time-unique-key',
+                    ],
+                    'body' => [
+                        'ticket_hash' => 'ticket_hash_from_agent_get_ticket',
+                        'duration_minutes' => 30,
+                        'summary' => 'Investigated and documented the fix.',
+                    ],
+                ],
+            ],
+        ],
+    ]);
+}
+
 // =============================================================================
 // AGENT-ME — current token's user info
 // =============================================================================

@@ -11,13 +11,16 @@ Store the key outside the prompt:
 cp examples/agent-api/.env.example examples/agent-api/.env
 ```
 
-Then edit `.env` and paste the key from **Profile -> API access**.
+Then edit `.env` and paste the key from **Settings -> API & agents**.
 
 ## Project Prompt
 
 ```text
 You can operate FoxDesk only through the scripts in examples/agent-api.
 Never print FOXDESK_API_TOKEN.
+At the start of every session, load agent-docs with the current token and use it
+as the source of truth for allowed actions, scopes, request fields, and safety
+rules.
 Before write actions, confirm the target ticket or client when it is ambiguous.
 Use app-create-ticket for new work, app-add-comment for ticket updates,
 app-log-time for time entries, and app-reporting-review for report drafts.

@@ -12,7 +12,7 @@ Create a local env file first:
 cp examples/agent-api/.env.example examples/agent-api/.env
 ```
 
-Paste a token from **Profile -> API access** into that file, then start the
+Paste a token from **Settings -> API & agents** into that file, then start the
 server:
 
 ```bash
@@ -46,6 +46,9 @@ Use absolute paths in real client configs:
 ## Tools
 
 - `foxdesk_agent_manifest` describes available tools, scopes, and safety rules.
+- `foxdesk_agent_docs` loads live API documentation, current token scopes,
+  available actions, missing scopes, request shapes, and examples from the
+  workspace. Call this at the start of every agent session.
 - `foxdesk_list_tickets` reads visible tickets.
 - `foxdesk_get_ticket` reads one ticket by id or hash.
 - `foxdesk_create_ticket` creates a ticket.
@@ -55,6 +58,7 @@ Use absolute paths in real client configs:
 
 ## Scopes
 
+- `foxdesk_agent_docs` requires only a valid token, not a specific scope.
 - `tickets:read` for listing and reading tickets.
 - `tickets:write` for creating tickets.
 - `comments:write` for comments.
@@ -64,7 +68,7 @@ Use absolute paths in real client configs:
 401 means the key is missing or invalid. 403 means the key is valid but the
 user or token scope cannot perform that action.
 
-Never print `FOXDESK_API_TOKEN`. Rotate the key from **Profile -> API access**
+Never print `FOXDESK_API_TOKEN`. Rotate the key from **Settings -> API & agents**
 if it is exposed.
 
 ## Write Safety

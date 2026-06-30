@@ -7,7 +7,7 @@ giving it more power than the person who created the key.
 
 Implemented v1:
 
-- Profile API key creation/revocation with scoped permissions and expiry.
+- Settings API key creation/revocation with scoped permissions and expiry.
 - Bearer-token authentication for agent/app/upload API actions.
 - Scope enforcement, rate limiting metadata, idempotency keys for write retries,
   and write audit logging.
@@ -16,6 +16,9 @@ Implemented v1:
   ticket actions, attachment metadata, timers, client overview, reporting
   review, notifications, plus write actions for creating tickets, adding
   comments, logging time, timer actions, and uploads.
+- Live `agent-docs` endpoint for assistants to read current token scopes,
+  allowed actions, missing scopes, request shapes, examples, and safety rules
+  before doing work.
 - Practical quickstart examples for Codex, Claude, and curl live in
   `docs/AGENT_API_QUICKSTART.md` and `examples/agent-api/`.
 - A local stdio MCP server wrapper lives in `examples/agent-api/mcp-server.js`
@@ -29,7 +32,7 @@ Still future-facing:
 
 ## User Flow
 
-1. A user opens **Profile -> API access**.
+1. An admin opens **Settings -> API & agents**.
 2. The user creates an API key for an assistant, CLI, or MCP client.
 3. The user chooses an expiry and optional scopes such as tickets, comments,
    time entries, reports, clients, attachments, or read-only access.
@@ -43,15 +46,24 @@ FOXDESK_API_TOKEN=fdx_...
 5. Codex, Claude, a CLI script, or a future MCP server uses the key through the
    public API. Pasting a key into a conversation can work for short tests, but a
    local environment secret is the safer default.
+6. The agent starts each session with:
+
+```bash
+GET /index.php?page=api&action=agent-docs
+Authorization: Bearer $FOXDESK_API_TOKEN
+```
+
+This endpoint is available to every valid API token and returns the live
+permission-aware documentation for that token.
 
 Important distinction:
 
-- **Profile -> API access** creates scoped personal assistant/API keys.
-- **Admin -> Users -> AI agents** manages AI-agent records, rate metadata, and
-  workspace-level AI-agent administration.
+- **Settings -> API & agents** creates scoped keys and manages AI-agent records.
+- **Profile** only links to the API page; it is no longer the main setup path.
 
 External tools such as Codex, Claude, curl scripts, and MCP clients should use
-Profile API keys. They should not require a platform/admin-only setup path.
+scoped workspace API keys from Settings. They should not require a
+platform/admin-only setup path.
 
 ## Permission Model
 
@@ -67,6 +79,7 @@ Profile API keys. They should not require a platform/admin-only setup path.
 ## Agent Actions
 
 - Read app shell, Work queues, ticket lists, ticket detail, clients, and reports.
+- Read live API documentation and its own allowed actions through `agent-docs`.
 - Search open and done tickets.
 - Create tickets.
 - Add public or internal comments.

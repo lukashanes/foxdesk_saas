@@ -5,8 +5,10 @@
 
 function team_users_table_capabilities(): array
 {
+    $ai_agent_available = team_users_ensure_ai_agent_schema();
+
     return [
-        'ai_agent' => function_exists('column_exists') && column_exists('users', 'is_ai_agent'),
+        'ai_agent' => $ai_agent_available,
         'email_notifications' => function_exists('column_exists') && column_exists('users', 'email_notifications_enabled'),
         'in_app_notifications' => function_exists('column_exists') && column_exists('users', 'in_app_notifications_enabled'),
         'in_app_sound' => function_exists('column_exists') && column_exists('users', 'in_app_sound_enabled'),
@@ -14,6 +16,45 @@ function team_users_table_capabilities(): array
         'notes' => function_exists('column_exists') && column_exists('users', 'notes'),
         'deleted_at' => function_exists('column_exists') && column_exists('users', 'deleted_at'),
     ];
+}
+
+function team_users_schema_column_exists(string $table, string $column): bool
+{
+    if (function_exists('column_exists_uncached')) {
+        return column_exists_uncached($table, $column);
+    }
+
+    return function_exists('column_exists') && column_exists($table, $column);
+}
+
+function team_users_ensure_ai_agent_schema(): bool
+{
+    static $available = null;
+    if ($available !== null) {
+        return $available;
+    }
+
+    $available = false;
+    if (!function_exists('table_exists') || !table_exists('users')) {
+        return false;
+    }
+
+    try {
+        if (!team_users_schema_column_exists('users', 'is_ai_agent')) {
+            db_query("ALTER TABLE users ADD COLUMN is_ai_agent TINYINT(1) NOT NULL DEFAULT 0 AFTER is_active");
+        }
+
+        if (!team_users_schema_column_exists('users', 'ai_model')) {
+            db_query("ALTER TABLE users ADD COLUMN ai_model VARCHAR(100) NULL DEFAULT NULL AFTER is_ai_agent");
+        }
+
+        $available = team_users_schema_column_exists('users', 'is_ai_agent');
+    } catch (Throwable $e) {
+        error_log('AI agent schema check failed: ' . $e->getMessage());
+        $available = false;
+    }
+
+    return $available;
 }
 
 function team_users_filter_state(array $input): array
@@ -246,37 +287,76 @@ function team_ai_agent_tokens_fetch(array $ai_agents): array
 function team_ai_agent_token_scope_groups(): array
 {
     return [
-        'ticket_work' => [
-            'label' => 'Tickets and replies',
-            'description' => 'Read, create, update tickets, and add replies.',
-            'scopes' => ['work:read', 'tickets:read', 'tickets:write', 'comments:write', 'users:read', 'clients:read'],
+        'tickets_read' => [
+            'label' => 'Read tickets',
+            'description' => 'View Work queues, tickets, users, and clients visible to this agent.',
+            'scopes' => ['work:read', 'tickets:read', 'users:read', 'clients:read'],
         ],
-        'time_tracking' => [
-            'label' => 'Time tracking',
-            'description' => 'Read and log time entries.',
-            'scopes' => ['time:read', 'time:write'],
+        'tickets_write' => [
+            'label' => 'Create and update tickets',
+            'description' => 'Create tickets and update ticket fields or status.',
+            'scopes' => ['tickets:write'],
         ],
-        'attachments' => [
-            'label' => 'Attachments',
-            'description' => 'Read and upload ticket attachments.',
-            'scopes' => ['attachments:read', 'attachments:write'],
+        'comments_write' => [
+            'label' => 'Add replies',
+            'description' => 'Add public or internal comments to tickets.',
+            'scopes' => ['comments:write'],
         ],
-        'reports' => [
-            'label' => 'Reports',
+        'time_read' => [
+            'label' => 'Read time',
+            'description' => 'View time entries visible to this agent.',
+            'scopes' => ['time:read'],
+        ],
+        'time_write' => [
+            'label' => 'Log time',
+            'description' => 'Add and control time entries.',
+            'scopes' => ['time:write'],
+        ],
+        'attachments_read' => [
+            'label' => 'Read attachments',
+            'description' => 'View ticket attachment metadata.',
+            'scopes' => ['attachments:read'],
+        ],
+        'attachments_write' => [
+            'label' => 'Upload attachments',
+            'description' => 'Upload files to tickets.',
+            'scopes' => ['attachments:write'],
+        ],
+        'reports_read' => [
+            'label' => 'Read reports',
             'description' => 'Read report and billing review data.',
             'scopes' => ['reports:read'],
         ],
-        'notifications' => [
-            'label' => 'Notifications',
-            'description' => 'Read and update notifications.',
-            'scopes' => ['notifications:read', 'notifications:write'],
+        'reports_write' => [
+            'label' => 'Publish reports',
+            'description' => 'Prepare and publish reports.',
+            'scopes' => ['reports:write'],
+        ],
+        'notifications_read' => [
+            'label' => 'Read notifications',
+            'description' => 'Read notifications visible to this agent.',
+            'scopes' => ['notifications:read'],
+        ],
+        'notifications_write' => [
+            'label' => 'Update notifications',
+            'description' => 'Mark notifications as read.',
+            'scopes' => ['notifications:write'],
         ],
     ];
 }
 
 function team_ai_agent_token_default_scope_groups(): array
 {
-    return ['ticket_work', 'time_tracking', 'attachments', 'reports'];
+    return [
+        'tickets_read',
+        'tickets_write',
+        'comments_write',
+        'time_read',
+        'time_write',
+        'attachments_read',
+        'attachments_write',
+        'reports_read',
+    ];
 }
 
 function team_ai_agent_token_scopes_from_input(array $input): array

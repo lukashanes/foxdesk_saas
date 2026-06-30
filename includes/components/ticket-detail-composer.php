@@ -73,9 +73,9 @@
                             <div class="ticket-composer-tool-grid">
                                 <div>
                                     <select name="status_id" class="form-select ticket-composer-status-select">
-                                        <?php foreach ($statuses as $status): ?>
+                                        <?php foreach (($composer_statuses ?? $statuses) as $status): ?>
                                                 <option value="<?php echo $status['id']; ?>" <?php echo $status['id'] == $ticket['status_id'] ? 'selected' : ''; ?>>
-                                                    <?php echo e(t('Status')); ?>: <?php echo e($status['name']); ?>
+                                                    <?php echo e(t('Status')); ?>: <?php echo e(function_exists('ticket_status_group_display_name') ? ticket_status_group_display_name($status) : (string) ($status['name'] ?? '')); ?>
                                                 </option>
                                         <?php endforeach; ?>
                                     </select>

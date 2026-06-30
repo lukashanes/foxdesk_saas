@@ -564,7 +564,80 @@ function bearer_token_from_request(): string
  */
 function api_tokens_table_exists()
 {
-    return table_exists('api_tokens');
+    ensure_api_token_schema();
+
+    try {
+        return (bool) db_fetch_one("SHOW TABLES LIKE 'api_tokens'");
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+function ensure_api_token_schema(): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+
+    try {
+        if (!db_fetch_one("SHOW TABLES LIKE 'api_tokens'")) {
+            db_query("
+                CREATE TABLE api_tokens (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    tenant_id INT NULL,
+                    user_id INT NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    token_hash CHAR(64) NOT NULL,
+                    token_prefix VARCHAR(10) NOT NULL,
+                    scopes_json TEXT NULL,
+                    expires_at DATETIME NULL,
+                    is_active TINYINT(1) DEFAULT 1,
+                    revoked_at DATETIME NULL,
+                    last_used_at DATETIME NULL,
+                    last_used_ip VARCHAR(45) NULL,
+                    last_used_user_agent VARCHAR(255) NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY uniq_token_hash (token_hash),
+                    INDEX idx_tenant_id (tenant_id),
+                    INDEX idx_user (user_id),
+                    INDEX idx_active (is_active),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+            return;
+        }
+
+        $columns = [
+            'tenant_id' => "ALTER TABLE api_tokens ADD COLUMN tenant_id INT NULL AFTER id",
+            'scopes_json' => "ALTER TABLE api_tokens ADD COLUMN scopes_json TEXT NULL AFTER token_prefix",
+            'revoked_at' => "ALTER TABLE api_tokens ADD COLUMN revoked_at DATETIME NULL AFTER is_active",
+            'last_used_ip' => "ALTER TABLE api_tokens ADD COLUMN last_used_ip VARCHAR(45) NULL AFTER last_used_at",
+            'last_used_user_agent' => "ALTER TABLE api_tokens ADD COLUMN last_used_user_agent VARCHAR(255) NULL AFTER last_used_ip",
+        ];
+
+        foreach ($columns as $column => $sql) {
+            $exists = function_exists('column_exists_uncached')
+                ? column_exists_uncached('api_tokens', $column)
+                : column_exists('api_tokens', $column);
+            if (!$exists) {
+                db_query($sql);
+            }
+        }
+
+        if (function_exists('index_exists') && !index_exists('api_tokens', 'idx_tenant_id')) {
+            db_query('ALTER TABLE api_tokens ADD INDEX idx_tenant_id (tenant_id)');
+        }
+        if (function_exists('index_exists') && !index_exists('api_tokens', 'idx_user')) {
+            db_query('ALTER TABLE api_tokens ADD INDEX idx_user (user_id)');
+        }
+        if (function_exists('index_exists') && !index_exists('api_tokens', 'idx_active')) {
+            db_query('ALTER TABLE api_tokens ADD INDEX idx_active (is_active)');
+        }
+    } catch (Throwable $e) {
+        error_log('API token schema check failed: ' . $e->getMessage());
+    }
 }
 
 function mobile_sessions_table_exists(): bool
@@ -704,6 +777,7 @@ function api_token_required_scope_for_action(string $action): ?string
     $map = [
         'upload' => 'attachments:write',
         'delete-attachment' => 'attachments:write',
+        'agent-docs' => null,
         'agent-me' => 'work:read',
         'agent-list-statuses' => 'tickets:read',
         'agent-list-priorities' => 'tickets:read',
@@ -730,6 +804,7 @@ function api_token_required_scope_for_action(string $action): ?string
         'app-notifications' => 'notifications:read',
         'app-notifications-summary' => 'notifications:read',
         'app-notification-read-state' => 'notifications:write',
+        'app-tenant-state' => 'work:read',
     ];
 
     return $map[$action] ?? null;
@@ -738,6 +813,12 @@ function api_token_required_scope_for_action(string $action): ?string
 function api_token_enforce_action_scope(string $action): void
 {
     if (empty($GLOBALS['is_api_token_auth'])) {
+        return;
+    }
+
+    // A valid token must always be able to introspect its own documentation,
+    // allowed actions, and safety rules, even when it has only one narrow scope.
+    if ($action === 'agent-docs') {
         return;
     }
 
@@ -1097,6 +1178,8 @@ function update_token_last_used($token_id)
  */
 function generate_api_token($user_id, $name, $expires_at = null, $scopes = null)
 {
+    ensure_api_token_schema();
+
     $token_user = get_user((int) $user_id);
     if (!$token_user) {
         return ['token' => null, 'id' => null, 'scopes' => []];
@@ -1116,10 +1199,16 @@ function generate_api_token($user_id, $name, $expires_at = null, $scopes = null)
         'is_active' => 1,
         'created_at' => date('Y-m-d H:i:s'),
     ];
-    if (column_exists('api_tokens', 'scopes_json')) {
+    $has_scopes_column = function_exists('column_exists_uncached')
+        ? column_exists_uncached('api_tokens', 'scopes_json')
+        : column_exists('api_tokens', 'scopes_json');
+    if ($has_scopes_column) {
         $data['scopes_json'] = json_encode($granted_scopes, JSON_UNESCAPED_SLASHES);
     }
-    if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('api_tokens')) {
+    $has_tenant_column = function_exists('column_exists_uncached')
+        ? column_exists_uncached('api_tokens', 'tenant_id')
+        : (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('api_tokens'));
+    if ($has_tenant_column) {
         $data['tenant_id'] = (int) ($token_user['tenant_id'] ?? current_tenant_id());
     }
 

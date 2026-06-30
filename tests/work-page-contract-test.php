@@ -23,9 +23,17 @@ assert_work_page(strpos($work, 'time_activity_work_model') !== false, 'work page
 assert_work_page(strpos($work, 'data-work-time-overview') !== false, 'work page must expose a stable time overview hook.');
 assert_work_page(strpos($work, 'work-range-controls') !== false, 'work page must group preset and custom date range controls together.');
 assert_work_page(strpos($work, 'class="work-custom-period"') < strpos($work, 'class="work-time-grid"'), 'custom date range controls must stay above KPI cards.');
-assert_work_page(strpos($work, 'data-work-week-chart') !== false, 'work page must render the weekly activity chart.');
+assert_work_page(strpos($work, 'data-work-period-chart') !== false, 'work page must render the selected-period activity chart.');
+assert_work_page(strpos($work, '$chart_agents') !== false, 'work chart must build a visible agent legend.');
+assert_work_page(strpos($work, 'data-work-hours-chart-canvas') !== false, 'work chart must render a real chart canvas, not a calendar-like manual grid.');
+assert_work_page(strpos($work, 'data-work-hours-chart-payload') !== false, 'work chart must pass per-agent data to the chart renderer.');
+assert_work_page(strpos($work, 'data-work-hours-chart-fallback') !== false, 'work chart must render a visible server-side fallback graph.');
+assert_work_page(strpos($work, 'work-hours-chart__svg') !== false, 'work chart fallback must be an SVG bar chart, not a calendar-like manual grid.');
+assert_work_page(strpos($work, 'work-week-chart__bars') === false, 'work chart must not render the old calendar-like manual day grid.');
+assert_work_page(strpos($work, 'assets/vendor/chartjs/4.4.0/chart.umd.js') !== false, 'work chart must load Chart.js.');
 assert_work_page(strpos($work, "t('Active now')") !== false, 'work page must show active timer time as the fourth KPI.');
-assert_work_page(strpos($work, "t('Weekly activity')") !== false, 'work page must use a concise weekly chart title.');
+assert_work_page(strpos($work, "t('Worked hours')") !== false, 'work page must use a concise worked-hours chart title.');
+assert_work_page(strpos($work, '$work_report_url') !== false, 'worked-time metrics must link to the underlying report log.');
 assert_work_page(strpos($work, 'calculate_timer_elapsed') !== false, 'active timer KPI must account for paused timers.');
 assert_work_page(strpos($work, 'data-work-current') !== false, 'work page must expose quick access to current in-progress work.');
 assert_work_page(strpos($work, 'data-work-team-time') !== false, 'admin work page must expose a stable team time hook.');
@@ -39,6 +47,10 @@ assert_work_page(strpos($work, 'data-work-log-search') !== false, 'work page mus
 assert_work_page(strpos($work, "my_activity") !== false, 'my work log must have an independent filter parameter.');
 assert_work_page(strpos($work, "team_activity") !== false, 'team time must have an independent filter parameter.');
 assert_work_page(strpos($work, "assets/js/work-dashboard.js") !== false, 'work page must load dynamic work dashboard filtering JS.');
+$workDashboardJs = file_get_contents($root . '/assets/js/work-dashboard.js');
+assert_work_page($workDashboardJs !== false && strpos($workDashboardJs, 'new window.Chart') !== false, 'work dashboard JS must initialize a real Chart.js graph.');
+assert_work_page(strpos($workDashboardJs, 'stacked: true') !== false, 'worked-hours graph must stack agents by day.');
+assert_work_page(strpos($workDashboardJs, 'showFallback') !== false, 'work dashboard JS must keep the fallback graph visible when Chart.js is unavailable.');
 assert_work_page(strpos($work, "t('All work')") === false, 'work page must not render the old all-work range.');
 assert_work_page(strpos($work, 'workspace_render_queue_page') !== false, 'work page should use the shared workspace queue renderer.');
 assert_work_page(strpos($work, "'primary_action' => ''") !== false, 'dashboard queue should not render a duplicate new-ticket action.');
@@ -72,8 +84,8 @@ assert_work_page(strpos($timeModel, "'search' => t('Search')") !== false, 'time 
 assert_work_page(strpos($timeModel, "'foxdesk_work_my_activity_filter'") !== false, 'my work filter must be remembered in session.');
 assert_work_page(strpos($timeModel, "'foxdesk_work_team_activity_filter'") !== false, 'team work filter must be remembered in session.');
 assert_work_page(strpos($timeModel, "'entries' => \$entries") !== false, 'team time model must return per-agent activity entries.');
-assert_work_page(strpos($timeModel, 'function time_activity_weekly_chart') !== false, 'time activity model must expose weekly chart data.');
-assert_work_page(strpos($timeModel, "'week_chart' => time_activity_weekly_chart") !== false, 'work model must pass weekly chart data to the page.');
+assert_work_page(strpos($timeModel, 'function time_activity_period_chart') !== false, 'time activity model must expose selected-period chart data.');
+assert_work_page(strpos($timeModel, "'period_chart' => time_activity_period_chart") !== false, 'work model must pass selected-period chart data to the page.');
 assert_work_page(strpos($timeModel, 'time_activity_team_summary($period, 80, $team_activity_filter[\'limit\'], $team_activity_period)') !== false, 'work model must pass the team activity filter into team summaries.');
 
 echo "Work page contract tests passed\n";

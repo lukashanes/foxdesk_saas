@@ -57,12 +57,14 @@ foreach ([
     'Idempotency-Key',
     'Never print',
     'foxdesk_list_tickets',
+    'foxdesk_agent_docs',
     'foxdesk_get_ticket',
     'foxdesk_create_ticket',
     'foxdesk_add_comment',
     'foxdesk_log_time',
     'foxdesk_prepare_report',
     'app-ticket-list',
+    'agent-docs',
     'app-ticket-detail',
     'app-create-ticket',
     'app-add-comment',
@@ -86,6 +88,7 @@ foreach ([
     'FOXDESK_AGENT_CONFIRM_WRITES',
     'mcpServers',
     'foxdesk_agent_manifest',
+    'foxdesk_agent_docs',
     'foxdesk_create_ticket',
     'foxdesk_log_time',
     'foxdesk_prepare_report',
@@ -107,6 +110,7 @@ $assert(str_contains($milestones, 'Milník 4'), 'Milestone evidence must include
 $assert(str_contains($milestones, 'Milník 5'), 'Milestone evidence must include Milník 5.');
 $assert(str_contains($milestones, 'Milník 6'), 'Milestone evidence must include Milník 6.');
 $assert(str_contains($manifest, 'foxdesk_agent_manifest'), 'Tool manifest must include the manifest tool.');
+$assert(str_contains($manifest, 'foxdesk_agent_docs'), 'Tool manifest must include the live docs tool.');
 $assert(str_contains($manifest, '"writes_require_confirmation": true'), 'Tool manifest must require write confirmation.');
 $assert(str_contains($manifest, '"supports_dry_run": true'), 'Tool manifest must mark write dry-run support.');
 $assert(str_contains($smoke, 'dry_run: true'), 'MCP smoke must test dry-run writes.');

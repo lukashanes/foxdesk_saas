@@ -167,6 +167,22 @@ require_once BASE_PATH . '/includes/header.php';
 ?>
 <?php
 $statuses = get_statuses();
+$workflow_statuses = function_exists('ticket_status_group_visible_workflow_statuses')
+    ? ticket_status_group_visible_workflow_statuses($statuses)
+    : $statuses;
+$filter_statuses = function_exists('ticket_status_group_visible_workflow_statuses')
+    ? ticket_status_group_visible_workflow_statuses($statuses)
+    : $statuses;
+$status_display_name = static function (array $status): string {
+    return function_exists('ticket_status_group_display_name')
+        ? ticket_status_group_display_name($status)
+        : (string) ($status['name'] ?? '');
+};
+$ticket_status_display_name = static function (array $ticket) use ($statuses): string {
+    return function_exists('ticket_registry_status_label_from_ticket')
+        ? ticket_registry_status_label_from_ticket($ticket, $statuses)
+        : (string) ($ticket['status_name'] ?? '');
+};
 $priorities = get_priorities();
 $filter_users = [];
 if (is_agent()) {
@@ -207,7 +223,7 @@ $filter_notes = [];
 if (!empty($status_id)) {
     $status = get_status($status_id);
     if ($status)
-        $filter_notes[] = $status['name'];
+        $filter_notes[] = $status_display_name($status);
 }
 if (!empty($priority_id)) {
     $priority = get_priority($priority_id);
@@ -249,7 +265,7 @@ if ($is_archive) {
     $page_header_breadcrumbs[] = ['label' => t('Archive')];
 }
 if (!empty($status_id) && !empty($status['name'])) {
-    $page_header_breadcrumbs[] = ['label' => $status['name']];
+    $page_header_breadcrumbs[] = ['label' => $status_display_name($status)];
 }
 if (!empty($organization_id) && !empty($org['name'])) {
     $page_header_breadcrumbs[] = ['label' => $org['name']];
@@ -473,7 +489,7 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                          data-kanban-scope="main">
                         <div class="kanban-column-header">
                             <span class="<?php echo e(ticket_registry_status_dot_class(ticket_registry_status_group_from_status($status), 'kanban-dot')); ?>"></span>
-                            <span class="kanban-status-name"><?php echo e($status['name']); ?></span>
+                            <span class="kanban-status-name"><?php echo e($status_display_name($status)); ?></span>
                             <span class="kanban-count"><?php echo count($status_tickets); ?></span>
                         </div>
                         <div class="kanban-cards"
@@ -520,11 +536,11 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                                     </a>
                                     <?php if ($can_drag): ?>
                                         <select class="kanban-mobile-status" data-ticket-id="<?php echo (int) $ticket['id']; ?>" aria-label="<?php echo e(t('Move to')); ?>">
-                                            <?php foreach ($statuses as $opt_status): ?>
+                                            <?php foreach ($workflow_statuses as $opt_status): ?>
                                                 <option value="<?php echo (int) $opt_status['id']; ?>"
                                                         data-is-closed="<?php echo !empty($opt_status['is_closed']) ? '1' : '0'; ?>"
                                                         <?php echo (int) $opt_status['id'] === (int) $ticket['status_id'] ? 'selected' : ''; ?>>
-                                                    <?php echo e($opt_status['name']); ?>
+                                                    <?php echo e($status_display_name($opt_status)); ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
@@ -556,7 +572,7 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                                  data-kanban-scope="archived">
                                 <div class="kanban-column-header">
                                     <span class="<?php echo e(ticket_registry_status_dot_class(ticket_registry_status_group_from_status($status), 'kanban-dot')); ?>"></span>
-                                    <span class="kanban-status-name"><?php echo e($status['name']); ?></span>
+                                    <span class="kanban-status-name"><?php echo e($status_display_name($status)); ?></span>
                                     <span class="kanban-count"><?php echo count($status_tickets); ?></span>
                                 </div>
                                 <div class="kanban-cards"
@@ -603,11 +619,11 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                                             </a>
                                             <?php if ($can_drag): ?>
                                                 <select class="kanban-mobile-status" data-ticket-id="<?php echo (int) $ticket['id']; ?>" aria-label="<?php echo e(t('Move to')); ?>">
-                                                    <?php foreach ($statuses as $opt_status): ?>
+                                                    <?php foreach ($workflow_statuses as $opt_status): ?>
                                                         <option value="<?php echo (int) $opt_status['id']; ?>"
                                                                 data-is-closed="<?php echo !empty($opt_status['is_closed']) ? '1' : '0'; ?>"
                                                                 <?php echo (int) $opt_status['id'] === (int) $ticket['status_id'] ? 'selected' : ''; ?>>
-                                                            <?php echo e($opt_status['name']); ?>
+                                                            <?php echo e($status_display_name($opt_status)); ?>
                                                         </option>
                                                     <?php endforeach; ?>
                                                 </select>
@@ -642,9 +658,9 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                 <?php endif; ?>
                 <select name="status" class="form-select form-select-sm text-xs" onchange="this.form.submit()">
                     <option value=""><?php echo e(t('Status')); ?></option>
-                    <?php foreach ($statuses as $status): ?>
+                    <?php foreach ($filter_statuses as $status): ?>
                         <option value="<?php echo $status['id']; ?>" <?php echo $status_id == $status['id'] ? 'selected' : ''; ?>>
-                            <?php echo e($status['name']); ?>
+                            <?php echo e($status_display_name($status)); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -713,6 +729,12 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                     </div>
                     <div id="closed-tickets-mobile" class="hidden divide-y">
                 <?php else: ?>
+                    <?php if (!empty($group['label'])): ?>
+                        <div class="ticket-list-section-label">
+                            <span><?php echo e($group['label']); ?></span>
+                            <span><?php echo e((string) count($group['tickets'])); ?></span>
+                        </div>
+                    <?php endif; ?>
                     <div class="divide-y">
                 <?php endif; ?>
                 <?php foreach ($group['tickets'] as $ticket):
@@ -731,7 +753,7 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                             <a href="<?php echo ticket_url($ticket); ?>" class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2 text-xs mb-1 text-theme-muted">
                                     <span class="<?php echo e(ticket_registry_status_dot_class(ticket_registry_status_group_from_ticket($ticket, $statuses))); ?>"></span>
-                                    <span data-ticket-field="status"><?php echo e($ticket['status_name']); ?></span>
+                                    <span data-ticket-field="status"><?php echo e($ticket_status_display_name($ticket)); ?></span>
                                     <span class="ticket-code-pill" data-ticket-field="code" title="<?php echo e('#' . (int) $ticket['id']); ?>">
                                         <?php echo e(get_ticket_code($ticket['id'])); ?>
                                     </span>
@@ -851,9 +873,9 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                         <th class="px-2 py-2.5 tickets-col-status">
                             <select name="status" class="filter-select" onchange="this.form.submit()">
                                 <option value=""><?php echo e(t('Status')); ?></option>
-                                <?php foreach ($statuses as $status): ?>
+                                <?php foreach ($filter_statuses as $status): ?>
                                     <option value="<?php echo $status['id']; ?>" <?php echo $status_id == $status['id'] ? 'selected' : ''; ?>>
-                                        <?php echo e($status['name']); ?>
+                                        <?php echo e($status_display_name($status)); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -953,8 +975,8 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                         </td>
                         <td class="px-2 py-1.5 align-middle">
                             <select id="new-ticket-status" class="nt-input w-full">
-                                <?php foreach ($statuses as $st): ?>
-                                    <option value="<?php echo (int)$st['id']; ?>"><?php echo e($st['name']); ?></option>
+                                <?php foreach ($workflow_statuses as $st): ?>
+                                    <option value="<?php echo (int)$st['id']; ?>"><?php echo e($status_display_name($st)); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </td>
@@ -1012,6 +1034,14 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                             </tr>
                         </tbody>
                         <tbody id="closed-tickets-desktop" class="hidden">
+                    <?php elseif (!empty($group['label'])): ?>
+                        <tr class="ticket-list-section-row">
+                            <?php $colspan = is_admin() ? 8 : (is_agent() ? 6 : 5); ?>
+                            <td colspan="<?php echo $colspan; ?>">
+                                <span><?php echo e($group['label']); ?></span>
+                                <strong><?php echo e((string) count($group['tickets'])); ?></strong>
+                            </td>
+                        </tr>
                     <?php endif; ?>
                     <?php foreach ($group['tickets'] as $ticket):
                         $priority_name = $ticket['priority_name'] ?? get_priority_label($ticket['priority_id'] ?? $ticket['priority'] ?? 'medium');
@@ -1096,24 +1126,24 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                                 <div class="tl-inline-edit tl-inline-anchor">
                                     <span class="<?php echo e(ticket_registry_status_badge_class($ticket, $statuses)); ?> tl-edit-trigger" data-ticket="<?php echo (int)$ticket['id']; ?>" data-field="status" data-ticket-field="status"
                                         title="<?php echo e(t('Click to change')); ?>">
-                                        <?php echo e($ticket['status_name']); ?>
+                                        <?php echo e($ticket_status_display_name($ticket)); ?>
                                     </span>
                                     <div class="tl-dropdown hidden" data-dropdown="status-<?php echo (int)$ticket['id']; ?>">
-                                        <?php foreach ($statuses as $st): ?>
+                                        <?php foreach ($workflow_statuses as $st): ?>
                                         <?php $status_group = ticket_registry_status_group_from_status($st); ?>
                                         <button type="button" class="tl-dropdown-item ticket-status-option ticket-status-option--<?php echo e($status_group); ?>"
                                             data-tone-class="ticket-status-inline--<?php echo e($status_group); ?>"
                                             data-row-accent-class="ticket-status-accent--<?php echo e($status_group); ?>"
                                             onclick="inlineUpdate(<?php echo (int)$ticket['id']; ?>, 'status', <?php echo (int)$st['id']; ?>, this)">
                                             <span class="<?php echo e(ticket_registry_status_dot_class($status_group)); ?> mr-1.5"></span>
-                                            <?php echo e($st['name']); ?>
+                                            <?php echo e($status_display_name($st)); ?>
                                         </button>
                                         <?php endforeach; ?>
                                     </div>
                                 </div>
                                 <?php else: ?>
                                 <span class="<?php echo e(ticket_registry_status_badge_class($ticket, $statuses)); ?>" data-ticket-field="status">
-                                    <?php echo e($ticket['status_name']); ?>
+                                    <?php echo e($ticket_status_display_name($ticket)); ?>
                                 </span>
                                 <?php endif; ?>
                             </td>
@@ -1343,8 +1373,8 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                             </select>
                             <select name="bulk_status_id" class="form-select form-select-sm">
                                 <option value=""><?php echo e(t('Keep status')); ?></option>
-                                <?php foreach ($statuses as $status): ?>
-                                    <option value="<?php echo (int) $status['id']; ?>"><?php echo e($status['name']); ?></option>
+                                <?php foreach ($workflow_statuses as $status): ?>
+                                    <option value="<?php echo (int) $status['id']; ?>"><?php echo e($status_display_name($status)); ?></option>
                                 <?php endforeach; ?>
                             </select>
                             <select name="bulk_priority_id" class="form-select form-select-sm">

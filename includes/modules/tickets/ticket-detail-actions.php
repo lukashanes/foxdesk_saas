@@ -56,7 +56,13 @@ function ticket_detail_done_status_score(array $status): int
     $text = ticket_detail_status_search_text($status);
 
     if ($text !== '') {
-        if (preg_match('/\b(done|complete|completed|hotovo|dokonceno)\b/u', $text)) {
+        if ($text === 'done') {
+            return 120;
+        }
+        if (preg_match('/\bdone\b/u', $text)) {
+            return 110;
+        }
+        if (preg_match('/\b(complete|completed|hotovo|dokonceno)\b/u', $text)) {
             return 100;
         }
         if (preg_match('/\b(resolve|resolved|vyreseno)\b/u', $text)) {

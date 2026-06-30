@@ -43,6 +43,9 @@ $assert(str_contains($router, "'app-ticket-timer-action'"), 'app-ticket-timer-ac
 $assert(str_contains($router, "'app-notification-read-state'"), 'app-notification-read-state route is missing.');
 $assert(str_contains($router, 'authenticate_mobile_session()'), 'Router must authenticate mobile Bearer tokens.');
 $assert(str_contains($router, "'mobile-login',"), 'mobile-login must be public before auth.');
+$mobileBranch = "if (\$mobile_user) {\n                    \$GLOBALS['is_mobile_token_auth'] = true;\n                }";
+$assert(str_contains($router, $mobileBranch), 'Mobile Bearer auth must not be flagged as API-token auth.');
+$assert(str_contains($auth, "'app-tenant-state' => 'work:read'"), 'API tokens need a read scope for app tenant state.');
 
 $assert(str_contains($handler, 'function api_mobile_login'), 'Mobile login handler is missing.');
 $assert(str_contains($handler, 'function api_mobile_verify_2fa'), 'Mobile 2FA verification handler is missing.');

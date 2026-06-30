@@ -82,6 +82,8 @@ $assert(str_contains($bootstrap, "/app/app-contract.php"), 'Bootstrap must load 
 foreach ([
     'function app_contract_schema_version',
     'function app_contract_frozen_response_keys',
+    'function app_contract_plain_text',
+    'function app_contract_text_excerpt',
     'function app_contract_ticket_payload',
     'function app_contract_ticket_list_item',
     'function app_contract_ticket_filters_from_request',
@@ -105,6 +107,12 @@ foreach ([
 ] as $needle) {
     $assert(str_contains($appContract, $needle), 'App contract module missing behavior: ' . $needle);
 }
+
+require_once $root . '/includes/modules/app/app-contract.php';
+$plainText = app_contract_plain_text('<p>First sentence.</p><ul><li>Second item</li><li>Third item</li></ul>');
+$assert($plainText === "First sentence.\nSecond item\nThird item", 'Native ticket text must preserve readable block spacing.');
+$excerpt = app_contract_text_excerpt('<p>First sentence.</p><p>Second sentence.</p>', 200);
+$assert($excerpt === 'First sentence. Second sentence.', 'Native ticket previews must collapse blocks into readable spaces.');
 
 foreach ([
     'function billing_review_filters_from_request',

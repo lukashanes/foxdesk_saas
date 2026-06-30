@@ -201,7 +201,9 @@ function api_app_ticket_comments(int $ticket_id, bool $include_internal): array
             'author_name' => trim((string) (($comment['first_name'] ?? '') . ' ' . ($comment['last_name'] ?? ''))),
             'author_email' => $comment['email'] ?? null,
             'content_html' => (string) ($comment['content'] ?? ''),
-            'content_text' => trim(strip_tags((string) ($comment['content'] ?? ''))),
+            'content_text' => function_exists('app_contract_plain_text')
+                ? app_contract_plain_text($comment['content'] ?? '')
+                : trim(strip_tags((string) ($comment['content'] ?? ''))),
             'is_internal' => !empty($comment['is_internal']),
             'created_at' => $comment['created_at'] ?? null,
         ];

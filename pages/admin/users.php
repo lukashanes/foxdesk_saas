@@ -8,6 +8,9 @@ $page = 'admin';
 
 // Tab: 'users' (default) or 'ai_agents'
 $tab = ($_GET['tab'] ?? '') === 'ai_agents' ? 'ai_agents' : 'users';
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $tab === 'ai_agents') {
+    redirect('admin', ['section' => 'settings', 'tab' => 'api']);
+}
 $user_table_capabilities = team_users_table_capabilities();
 $ai_agent_col_exists = $user_table_capabilities['ai_agent'];
 
@@ -365,7 +368,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $is_ai = !empty($target_user['is_ai_agent']);
         if ($is_ai) {
             flash(t('AI agents cannot be deleted. Deactivate instead.'), 'error');
-            redirect('admin', ['section' => 'users', 'tab' => 'ai_agents']);
+            redirect('admin', ['section' => 'settings', 'tab' => 'api']);
         }
 
         // Prevent deleting self
@@ -554,7 +557,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 flash(t('Failed to create AI agent.'), 'error');
             }
         }
-        redirect('admin', ['section' => 'users', 'tab' => 'ai_agents']);
+        redirect('admin', ['section' => 'settings', 'tab' => 'api']);
     }
 
     // Update AI agent
@@ -613,7 +616,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 flash(t('Settings saved.'), 'success');
             }
         }
-        redirect('admin', ['section' => 'users', 'tab' => 'ai_agents']);
+        redirect('admin', ['section' => 'settings', 'tab' => 'api']);
     }
 
     // Generate token for AI agent
@@ -634,7 +637,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 flash(t('API token generated for agent.'), 'success');
             }
         }
-        redirect('admin', ['section' => 'users', 'tab' => 'ai_agents']);
+        redirect('admin', ['section' => 'settings', 'tab' => 'api']);
     }
 
     // Revoke AI agent token
@@ -644,7 +647,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $revoked = revoke_api_token($token_id);
             flash($revoked ? t('Token revoked.') : t('Token not found.'), $revoked ? 'success' : 'error');
         }
-        redirect('admin', ['section' => 'users', 'tab' => 'ai_agents']);
+        redirect('admin', ['section' => 'settings', 'tab' => 'api']);
     }
 
     // Delete AI agent (and their tokens via CASCADE FK)
@@ -657,7 +660,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 flash(t('Agent deleted.'), 'success');
             }
         }
-        redirect('admin', ['section' => 'users', 'tab' => 'ai_agents']);
+        redirect('admin', ['section' => 'settings', 'tab' => 'api']);
     }
 
     // Upload user avatar (admin)
@@ -739,24 +742,6 @@ $page_header_subtitle = t('Manage users, roles, and access.');
 include BASE_PATH . '/includes/components/page-header.php';
 ?>
 
-<?php if ($ai_agent_col_exists): ?>
-        <!-- Tab navigation -->
-        <div class="admin-tabs mb-3">
-            <a href="<?php echo url('admin', ['section' => 'users']); ?>"
-                class="admin-tab <?php echo $tab === 'users' ? 'is-active' : ''; ?>">
-                <?php echo get_icon('users', 'w-3.5 h-3.5'); ?><span><?php echo e(t('Users')); ?></span>
-            </a>
-            <a href="<?php echo url('admin', ['section' => 'users', 'tab' => 'ai_agents']); ?>"
-                class="admin-tab <?php echo $tab === 'ai_agents' ? 'is-active' : ''; ?>">
-                <?php echo get_icon('magic', 'w-3.5 h-3.5'); ?><span><?php echo e(t('AI agents')); ?></span>
-            </a>
-        </div>
-<?php endif; ?>
-
-<?php if ($tab === 'ai_agents' && $ai_agent_col_exists): ?>
-    <?php include BASE_PATH . '/includes/components/team-ai-agents-tab.php'; ?>
-<?php else: ?>
-    <?php include BASE_PATH . '/includes/components/team-users-tab.php'; ?>
-<?php endif; // end AI Agents tab vs Users tab ?>
+<?php include BASE_PATH . '/includes/components/team-users-tab.php'; ?>
 
 <?php require_once BASE_PATH . '/includes/footer.php';
