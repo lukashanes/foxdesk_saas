@@ -41,7 +41,8 @@ foreach ([
     'id="editAiAgentForm"',
     'name="ticket_scope"',
     'name="scope_organization_ids[]"',
-    'name="api_token_scope_groups[]"',
+    'name="api_permission_preset"',
+    'ai-token-permission-preset',
     'save_and_generate_agent_token',
     "'permissions' => \$permissions_data !== null ? json_encode(\$permissions_data) : null",
     "'organization_id' => \$organization_id",
@@ -76,17 +77,16 @@ foreach ([
 }
 
 foreach ([
-    'team_ai_agent_token_scope_groups()',
-    'team_ai_agent_token_default_scope_groups()',
     'team_ai_agent_token_scopes_from_input($_POST)',
     'SELECT id, token_prefix, scopes_json, is_active, created_at, last_used_at FROM api_tokens',
-    'api_token_scopes_from_row($db_token)',
-    '$token_scope_group_checked',
-    'name="api_token_scope_groups[]"',
-    'Choose what this token can do before generating it.',
+    '$ai_agent_permission_presets',
+    'name="api_permission_preset"',
+    'Choose the broad access level first. All is the only level that can delete records.',
 ] as $needle) {
-    $assert(str_contains($agentConnectPage, $needle), 'Agent Connect token generation must expose selected token scopes: ' . $needle);
+    $assert(str_contains($agentConnectPage, $needle), 'Agent Connect token generation must expose permission presets: ' . $needle);
 }
+
+$assert(!str_contains($agentConnectPage, 'name="api_token_scope_groups[]"'), 'Agent Connect must not expose low-level token scope checkbox groups.');
 
 $assert(!str_contains($agentConnectPage, 'team_ai_agent_token_scopes_from_input([])'), 'Agent Connect must not generate AI tokens with hardcoded default scopes.');
 

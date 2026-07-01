@@ -39,8 +39,8 @@ foreach ([
 foreach ([
     "'app-add-comment' => 'comments:write'",
     "'app-add-comment-with-time' => 'comments:write'",
-    "'app-delete-comment' => 'comments:write'",
-    "'app-delete-time-entry' => 'time:write'",
+    "'app-delete-comment' => 'delete:write'",
+    "'app-delete-time-entry' => 'delete:write'",
 ] as $needle) {
     $assert(str_contains($contents['auth'], $needle), 'Missing API token action scope: ' . $needle);
 }
@@ -80,6 +80,14 @@ foreach ([
     $assert(str_contains($contents['app'], $needle), 'app-add-comment must create a linked comment/time record: ' . $needle);
 }
 
+preg_match('/function api_app_add_comment\(\).*?function api_app_add_comment_with_time\(\)/s', $contents['app'], $addCommentMatch);
+$addCommentBlock = $addCommentMatch[0] ?? '';
+$assert(!str_contains($addCommentBlock, "api_app_require_api_token_scope('delete:write')"), 'Adding comments must not require delete:write.');
+
+preg_match('/function api_app_log_time\(\).*?function api_app_delete_comment\(\)/s', $contents['app'], $logTimeMatch);
+$logTimeBlock = $logTimeMatch[0] ?? '';
+$assert(!str_contains($logTimeBlock, "api_app_require_api_token_scope('delete:write')"), 'Logging time must not require delete:write.');
+
 foreach ([
     'function api_app_add_comment_with_time()',
     "\$GLOBALS['api_app_comment_time_required'] = true",
@@ -91,6 +99,7 @@ foreach ([
 foreach ([
     'function api_app_delete_comment()',
     'can_manage_comment($comment, $user)',
+    "api_app_require_api_token_scope('delete:write')",
     "db_delete('comments', 'id = ?', [\$comment_id])",
     'function api_app_delete_time_entry()',
     'can_manage_time_entry($entry, $user)',

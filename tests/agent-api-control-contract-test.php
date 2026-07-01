@@ -12,6 +12,7 @@ $files = [
     'upload' => $root . '/includes/api/upload-handler.php',
     'profile' => $root . '/pages/profile.php',
     'settings' => $root . '/pages/admin/settings.php',
+    'teamComponent' => $root . '/includes/components/team-ai-agents-tab.php',
     'docs' => $root . '/docs/AGENT_API_CONTROL.md',
 ];
 
@@ -136,6 +137,14 @@ $assert(str_contains($contents['settings'], 'data-agent-docs-instructions'), 'Se
 $assert(str_contains($contents['settings'], 'data-api-access-builder'), 'Settings API & agents must expose one unified access builder.');
 $assert(str_contains($contents['settings'], 'data-api-access-panel="user"'), 'Settings API & agents must keep normal API keys in the unified builder.');
 $assert(str_contains($contents['settings'], 'data-api-access-panel="agent"'), 'Settings API & agents must keep AI worker keys in the unified builder.');
+$assert(str_contains($contents['settings'], 'data-api-permission-presets'), 'Settings API & agents must expose permission presets before key creation.');
+$assert(str_contains($contents['settings'], "'read_only' =>"), 'Settings API & agents must offer a Read only preset.');
+$assert(str_contains($contents['settings'], "'read_write' =>"), 'Settings API & agents must offer a Read & write preset.');
+$assert(str_contains($contents['settings'], "'all' =>"), 'Settings API & agents must offer an All preset.');
+$assert(!str_contains($contents['settings'], 'value="never"'), 'Settings API keys must not offer never-expiring tokens.');
+$assert(str_contains($contents['auth'], "\$expires_at = date('Y-m-d H:i:s', time() + (90 * 86400));"), 'API tokens must always receive a default expiration when callers omit one.');
+$assert(str_contains($contents['teamComponent'], 'ai-token-permission-preset'), 'AI agent edit flow must use simple permission presets.');
+$assert(!str_contains($contents['teamComponent'], 'name="api_token_scope_groups[]"'), 'AI agent UI must not expose low-level scope checkbox groups.');
 $assert(str_contains($contents['settings'], '$ai_agent_hide_create_form = true'), 'Settings API & agents must hide the legacy duplicate AI agent create form.');
 $assert(!str_contains($contents['settings'], "t('Create API access')"), 'Settings API & agents must not show a second Create API access path.');
 $assert(!str_contains($contents['settings'], "t('Create AI agent access')"), 'Settings API & agents must not show a second Create AI agent access path.');

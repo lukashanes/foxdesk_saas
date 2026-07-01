@@ -807,6 +807,7 @@ function api_app_delete_comment()
     api_app_require_write_auth();
     api_app_require_api_token_scope('tickets:read');
     api_app_require_api_token_scope('comments:write');
+    api_app_require_api_token_scope('delete:write');
 
     $user = current_user();
     if (!$user) {
@@ -862,6 +863,7 @@ function api_app_delete_time_entry()
     api_app_require_write_auth();
     api_app_require_api_token_scope('tickets:read');
     api_app_require_api_token_scope('time:write');
+    api_app_require_api_token_scope('delete:write');
 
     $user = current_user();
     if (!$user) {

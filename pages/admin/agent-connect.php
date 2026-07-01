@@ -30,12 +30,20 @@ if (!$agent) {
     exit;
 }
 
-$ai_agent_token_scope_groups = function_exists('team_ai_agent_token_scope_groups')
-    ? team_ai_agent_token_scope_groups()
-    : [];
-$ai_agent_token_default_scope_groups = function_exists('team_ai_agent_token_default_scope_groups')
-    ? team_ai_agent_token_default_scope_groups()
-    : [];
+$ai_agent_permission_presets = [
+    'read_only' => [
+        'label' => 'Read only',
+        'description' => 'Can view tickets, clients, reports, attachments, and time without changing data.',
+    ],
+    'read_write' => [
+        'label' => 'Read & write',
+        'description' => 'Can create and update tickets, comments, time, attachments, reports, and notifications.',
+    ],
+    'all' => [
+        'label' => 'All',
+        'description' => 'Includes read/write plus deleting comments and time entries. Use only for trusted admins or agents.',
+    ],
+];
 
 // Handle token generation request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['generate_connect_token'])) {
@@ -79,27 +87,6 @@ $db_token = db_fetch_one(
 $token_prefix_db = $db_token['token_prefix'] ?? null;
 $token_created_at = $db_token['created_at'] ?? null;
 $token_last_used  = $db_token['last_used_at'] ?? null;
-$active_token_scopes = ($db_token && function_exists('api_token_scopes_from_row'))
-    ? api_token_scopes_from_row($db_token)
-    : [];
-$active_token_uses_wildcard = in_array('*', $active_token_scopes, true);
-$token_scope_group_checked = static function (string $group_key) use (
-    $ai_agent_token_scope_groups,
-    $ai_agent_token_default_scope_groups,
-    $active_token_scopes,
-    $active_token_uses_wildcard
-): bool {
-    if ($active_token_uses_wildcard) {
-        return true;
-    }
-
-    if (empty($active_token_scopes)) {
-        return in_array($group_key, $ai_agent_token_default_scope_groups, true);
-    }
-
-    $group_scopes = $ai_agent_token_scope_groups[$group_key]['scopes'] ?? [];
-    return !empty(array_intersect($group_scopes, $active_token_scopes));
-};
 
 // Build context data
 $base_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
@@ -472,27 +459,23 @@ include BASE_PATH . '/includes/components/page-header.php';
                     <form method="post" class="space-y-3">
                         <?php echo csrf_field(); ?>
                         <input type="hidden" name="generate_connect_token" value="1">
-                        <?php if (!empty($ai_agent_token_scope_groups)): ?>
+                        <?php if (!empty($ai_agent_permission_presets)): ?>
                             <div class="fd-rounded-card border border-theme-light p-3 bg-theme-secondary/40">
                                 <h4 class="text-sm font-semibold mb-1 text-theme-secondary">
-                                    <?php echo e(t('Token actions')); ?>
+                                    <?php echo e(t('Permission level')); ?>
                                 </h4>
                                 <p class="text-xs mb-2 text-theme-muted">
-                                    <?php echo e(t('Choose what this token can do before generating it.')); ?>
+                                    <?php echo e(t('Choose the broad access level first. All is the only level that can delete records.')); ?>
                                 </p>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    <?php foreach ($ai_agent_token_scope_groups as $group_key => $group): ?>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" role="radiogroup" aria-label="<?php echo e(t('Permission level')); ?>">
+                                    <?php foreach ($ai_agent_permission_presets as $preset_key => $preset): ?>
                                         <label class="flex items-start gap-2 text-sm fd-rounded-card border border-theme-light p-2 cursor-pointer bg-theme-primary">
-                                            <input type="checkbox" name="api_token_scope_groups[]"
-                                                value="<?php echo e($group_key); ?>" class="mt-0.5 fd-rounded-control"
-                                                <?php echo $token_scope_group_checked((string) $group_key) ? 'checked' : ''; ?>>
+                                            <input type="radio" name="api_permission_preset"
+                                                value="<?php echo e($preset_key); ?>" class="mt-0.5 fd-rounded-control"
+                                                <?php echo $preset_key === 'read_write' ? 'checked' : ''; ?>>
                                             <span>
-                                                <span class="font-medium text-theme-primary">
-                                                    <?php echo e(t($group['label'])); ?>
-                                                </span>
-                                                <span class="block text-xs text-theme-muted">
-                                                    <?php echo e(t($group['description'])); ?>
-                                                </span>
+                                                <span class="font-medium text-theme-primary"><?php echo e(t($preset['label'])); ?></span>
+                                                <span class="block text-xs text-theme-muted"><?php echo e(t($preset['description'])); ?></span>
                                             </span>
                                         </label>
                                     <?php endforeach; ?>

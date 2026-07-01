@@ -673,6 +673,7 @@ function api_token_scope_catalog(array $user = null): array
 
     if ($is_staff) {
         $catalog['time:write'] = 'Add and control time entries';
+        $catalog['delete:write'] = 'Delete comments and time entries';
     }
 
     if (($user['role'] ?? '') === 'admin' || $can_time) {
@@ -796,8 +797,8 @@ function api_token_required_scope_for_action(string $action): ?string
         'app-create-ticket' => 'tickets:write',
         'app-add-comment' => 'comments:write',
         'app-add-comment-with-time' => 'comments:write',
-        'app-delete-comment' => 'comments:write',
-        'app-delete-time-entry' => 'time:write',
+        'app-delete-comment' => 'delete:write',
+        'app-delete-time-entry' => 'delete:write',
         'app-attachment-metadata' => 'attachments:read',
         'app-ticket-timer' => 'time:read',
         'app-ticket-timer-action' => 'time:write',
@@ -1176,7 +1177,7 @@ function update_token_last_used($token_id)
  *
  * @param int    $user_id  The user this token belongs to.
  * @param string $name     A human-readable label.
- * @param string|null $expires_at  Optional expiration datetime.
+ * @param string|null $expires_at  Expiration datetime. Defaults to 90 days.
  * @return array  ['token' => full plain-text token, 'id' => row id, 'scopes' => granted scopes]
  */
 function generate_api_token($user_id, $name, $expires_at = null, $scopes = null)
@@ -1189,6 +1190,9 @@ function generate_api_token($user_id, $name, $expires_at = null, $scopes = null)
     }
 
     $granted_scopes = api_token_normalize_scopes($scopes, $token_user);
+    if ($expires_at === null || trim((string) $expires_at) === '') {
+        $expires_at = date('Y-m-d H:i:s', time() + (90 * 86400));
+    }
     $raw_token = 'fdx_' . bin2hex(random_bytes(24));
     $token_hash = hash('sha256', $raw_token);
     $token_prefix = substr($raw_token, 0, 8);

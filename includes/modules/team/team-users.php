@@ -312,6 +312,11 @@ function team_ai_agent_token_scope_groups(): array
             'description' => 'Add and control time entries.',
             'scopes' => ['time:write'],
         ],
+        'delete_write' => [
+            'label' => 'Delete records',
+            'description' => 'Delete comments and time entries.',
+            'scopes' => ['delete:write'],
+        ],
         'attachments_read' => [
             'label' => 'Read attachments',
             'description' => 'View ticket attachment metadata.',
@@ -359,10 +364,41 @@ function team_ai_agent_token_default_scope_groups(): array
     ];
 }
 
+function team_ai_agent_token_scope_groups_for_preset(string $preset): array
+{
+    $read = [
+        'tickets_read',
+        'time_read',
+        'attachments_read',
+        'reports_read',
+        'notifications_read',
+    ];
+
+    $write = array_merge($read, [
+        'tickets_write',
+        'comments_write',
+        'time_write',
+        'attachments_write',
+        'reports_write',
+        'notifications_write',
+    ]);
+
+    if ($preset === 'read_only') {
+        return $read;
+    }
+    if ($preset === 'all') {
+        return array_merge($write, ['delete_write']);
+    }
+
+    return $write;
+}
+
 function team_ai_agent_token_scopes_from_input(array $input): array
 {
     $groups = team_ai_agent_token_scope_groups();
-    $selected = $input['api_token_scope_groups'] ?? team_ai_agent_token_default_scope_groups();
+    $selected = !empty($input['api_permission_preset'])
+        ? team_ai_agent_token_scope_groups_for_preset((string) $input['api_permission_preset'])
+        : ($input['api_token_scope_groups'] ?? team_ai_agent_token_default_scope_groups());
     if (!is_array($selected)) {
         $selected = [$selected];
     }

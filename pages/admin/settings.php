@@ -50,12 +50,71 @@ function settings_api_redirect(): void
 
 function settings_api_token_expires_at(string $expiry): ?string
 {
-    if ($expiry === 'never') {
-        return null;
+    $days = (int) $expiry;
+    if (!in_array($days, [30, 90, 180, 365], true)) {
+        $days = 90;
     }
 
-    $days = max(1, min(365, (int) $expiry));
     return date('Y-m-d H:i:s', time() + ($days * 86400));
+}
+
+function settings_api_scope_presets(array $catalog): array
+{
+    $filter = static function (array $scopes) use ($catalog): array {
+        return array_values(array_filter($scopes, static fn(string $scope): bool => isset($catalog[$scope])));
+    };
+
+    $read = $filter([
+        'work:read',
+        'tickets:read',
+        'attachments:read',
+        'notifications:read',
+        'users:read',
+        'clients:read',
+        'time:read',
+        'reports:read',
+    ]);
+
+    $write = $filter(array_merge($read, [
+        'tickets:write',
+        'comments:write',
+        'attachments:write',
+        'notifications:write',
+        'time:write',
+        'reports:write',
+    ]));
+
+    $all = $filter(array_merge($write, [
+        'delete:write',
+    ]));
+
+    return [
+        'read_only' => [
+            'label' => 'Read only',
+            'description' => 'Can view tickets, clients, reports, attachments, and time without changing data.',
+            'scopes' => $read,
+        ],
+        'read_write' => [
+            'label' => 'Read & write',
+            'description' => 'Can create and update tickets, comments, time, attachments, reports, and notifications.',
+            'scopes' => $write,
+        ],
+        'all' => [
+            'label' => 'All',
+            'description' => 'Includes read/write plus deleting comments and time entries. Use only for trusted admins or agents.',
+            'scopes' => $all,
+        ],
+    ];
+}
+
+function settings_api_scopes_from_preset(string $preset, array $catalog, array $fallback_scopes = []): array
+{
+    $presets = settings_api_scope_presets($catalog);
+    if (isset($presets[$preset])) {
+        return $presets[$preset]['scopes'];
+    }
+
+    return $fallback_scopes;
 }
 
 function settings_fetch_user_api_tokens(int $user_id): array
@@ -90,6 +149,12 @@ function settings_handle_api_access_post(): void
         require_csrf_token();
         $token_name = trim((string) ($_POST['api_token_name'] ?? ''));
         $selected_scopes = $_POST['api_token_scopes'] ?? [];
+        $scope_catalog = function_exists('api_token_scope_catalog') ? api_token_scope_catalog($user) : [];
+        $selected_scopes = settings_api_scopes_from_preset(
+            (string) ($_POST['api_permission_preset'] ?? 'read_write'),
+            $scope_catalog,
+            is_array($selected_scopes) ? $selected_scopes : []
+        );
 
         if ($token_name === '') {
             flash(t('Token name is required.'), 'error');
@@ -259,6 +324,7 @@ $api_scope_catalog = [];
 $profile_api_tokens = [];
 $new_profile_api_token = null;
 $new_profile_api_token_scopes = [];
+$api_permission_presets = [];
 $api_agents_available = false;
 $api_ai_agents = [];
 $api_ai_agent_tokens = [];
@@ -274,6 +340,7 @@ $ai_agent_col_exists = false;
 if ($tab === 'api') {
     $settings_api_user = current_user() ?: [];
     $api_scope_catalog = function_exists('api_token_scope_catalog') ? api_token_scope_catalog($settings_api_user) : [];
+    $api_permission_presets = settings_api_scope_presets($api_scope_catalog);
     $profile_api_tokens = settings_fetch_user_api_tokens((int) ($settings_api_user['id'] ?? 0));
     $new_profile_api_token = $_SESSION['new_profile_api_token'] ?? null;
     $new_profile_api_token_scopes = $_SESSION['new_profile_api_token_scopes'] ?? [];
@@ -645,6 +712,25 @@ include BASE_PATH . '/includes/components/page-header.php';
                     <form method="post" action="<?php echo e(url('admin', ['section' => 'settings', 'tab' => 'api'])); ?>" class="space-y-4" data-api-token-create-form data-api-access-panel="user">
                         <?php echo csrf_field(); ?>
                         <input type="hidden" name="api_token_usage" value="automation">
+                        <?php if (!empty($api_permission_presets)): ?>
+                            <div data-api-permission-presets>
+                                <div class="flex items-center justify-between gap-3 mb-2">
+                                    <div class="text-sm font-medium text-theme-secondary"><?php echo e(t('Permission level')); ?></div>
+                                    <div class="text-xs text-theme-muted"><?php echo e(t('All is the only level that can delete records.')); ?></div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-2" role="radiogroup" aria-label="<?php echo e(t('Permission level')); ?>">
+                                    <?php foreach ($api_permission_presets as $preset_key => $preset): ?>
+                                        <label class="fd-rounded-card border border-theme-light p-3 cursor-pointer bg-theme-app" data-api-permission-preset>
+                                            <input type="radio" name="api_permission_preset" value="<?php echo e($preset_key); ?>" class="mr-2"
+                                                <?php echo $preset_key === 'read_write' ? 'checked' : ''; ?>>
+                                            <span class="font-semibold text-theme-primary"><?php echo e(t($preset['label'])); ?></span>
+                                            <span class="block text-xs text-theme-muted mt-1"><?php echo e(t($preset['description'])); ?></span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+
                         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px] gap-3">
                             <div>
                                 <label for="settings-api-token-name" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Access name')); ?></label>
@@ -652,33 +738,16 @@ include BASE_PATH . '/includes/components/page-header.php';
                                     placeholder="<?php echo e(t('Codex local assistant')); ?>" maxlength="120">
                             </div>
                             <div>
-                                <label for="settings-api-token-expiry" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Expires')); ?></label>
+                                <label for="settings-api-token-expiry" class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Valid for')); ?></label>
                                 <select name="api_token_expiry" id="settings-api-token-expiry" class="form-select">
                                     <option value="30"><?php echo e(t('30 days')); ?></option>
                                     <option value="90" selected><?php echo e(t('90 days')); ?></option>
+                                    <option value="180"><?php echo e(t('180 days')); ?></option>
                                     <option value="365"><?php echo e(t('1 year')); ?></option>
-                                    <option value="never"><?php echo e(t('Never')); ?></option>
                                 </select>
                             </div>
                         </div>
-
-                        <?php if (!empty($api_scope_catalog)): ?>
-                            <div>
-                                <div class="text-sm font-medium mb-2 text-theme-secondary"><?php echo e(t('Permissions')); ?></div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-                                    <?php foreach ($api_scope_catalog as $scope => $label): ?>
-                                        <label class="flex items-start gap-2 text-sm cursor-pointer fd-rounded-card border border-theme-light p-2">
-                                            <input type="checkbox" name="api_token_scopes[]" value="<?php echo e($scope); ?>" class="mt-0.5 fd-rounded-control"
-                                                <?php echo in_array($scope, ['work:read', 'tickets:read', 'tickets:write', 'comments:write'], true) ? 'checked' : ''; ?>>
-                                            <span>
-                                                <span class="font-medium text-theme-primary"><?php echo e($scope); ?></span>
-                                                <span class="block text-xs text-theme-muted"><?php echo e(t($label)); ?></span>
-                                            </span>
-                                        </label>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
+                        <p class="text-xs text-theme-muted"><?php echo e(t('Every key expires. Create a new key here when it needs to be renewed.')); ?></p>
 
                         <button type="submit" name="create_api_token" class="btn btn-primary">
                             <?php echo e(t('Create key')); ?>
@@ -747,28 +816,21 @@ include BASE_PATH . '/includes/components/page-header.php';
                                     </div>
                                 </div>
 
-                                <?php if (!empty($ai_agent_token_scope_groups)): ?>
+                                <?php if (!empty($api_permission_presets)): ?>
                                     <div class="fd-rounded-card border border-theme-light p-3">
                                         <h4 class="text-sm font-semibold mb-1 text-theme-primary">
-                                            <?php echo e(t('Permissions')); ?>
+                                            <?php echo e(t('Permission level')); ?>
                                         </h4>
                                         <p class="text-xs mb-2 text-theme-muted">
-                                            <?php echo e(t('Start with read access, then add only the actions this worker really needs.')); ?>
+                                            <?php echo e(t('Choose the broad access level first. All is the only level that can delete records.')); ?>
                                         </p>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                            <?php foreach ($ai_agent_token_scope_groups as $group_key => $group): ?>
-                                                <label class="flex items-start gap-2 text-sm fd-rounded-control border border-theme-light p-2 cursor-pointer">
-                                                    <input type="checkbox" name="api_token_scope_groups[]"
-                                                        value="<?php echo e($group_key); ?>" class="mt-0.5 fd-rounded-control"
-                                                        <?php echo in_array($group_key, $ai_agent_token_default_scope_groups, true) ? 'checked' : ''; ?>>
-                                                    <span>
-                                                        <span class="font-medium text-theme-primary">
-                                                            <?php echo e(t($group['label'])); ?>
-                                                        </span>
-                                                        <span class="block text-xs text-theme-muted">
-                                                            <?php echo e(t($group['description'])); ?>
-                                                        </span>
-                                                    </span>
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2" role="radiogroup" aria-label="<?php echo e(t('Permission level')); ?>">
+                                            <?php foreach ($api_permission_presets as $preset_key => $preset): ?>
+                                                <label class="fd-rounded-control border border-theme-light p-2 cursor-pointer bg-theme-app">
+                                                    <input type="radio" name="api_permission_preset" value="<?php echo e($preset_key); ?>" class="mr-2"
+                                                        <?php echo $preset_key === 'read_write' ? 'checked' : ''; ?>>
+                                                    <span class="font-medium text-theme-primary"><?php echo e(t($preset['label'])); ?></span>
+                                                    <span class="block text-xs text-theme-muted mt-1"><?php echo e(t($preset['description'])); ?></span>
                                                 </label>
                                             <?php endforeach; ?>
                                         </div>

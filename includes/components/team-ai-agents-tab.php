@@ -3,6 +3,20 @@ defined('BASE_PATH') || exit;
 $ai_agent_form_action = isset($ai_agent_form_action) ? (string) $ai_agent_form_action : '';
 $ai_agent_form_action_attr = $ai_agent_form_action !== '' ? ' action="' . e($ai_agent_form_action) . '"' : '';
 $ai_agent_hide_create_form = !empty($ai_agent_hide_create_form);
+$ai_agent_permission_presets = [
+    'read_only' => [
+        'label' => 'Read only',
+        'description' => 'Can view tickets, clients, reports, attachments, and time without changing data.',
+    ],
+    'read_write' => [
+        'label' => 'Read & write',
+        'description' => 'Can create and update tickets, comments, time, attachments, reports, and notifications.',
+    ],
+    'all' => [
+        'label' => 'All',
+        'description' => 'Includes read/write plus deleting comments and time entries. Use only for trusted admins or agents.',
+    ],
+];
 ?>
 <!-- ============================================= -->
         <!-- AI AGENTS TAB -->
@@ -110,28 +124,21 @@ $ai_agent_hide_create_form = !empty($ai_agent_hide_create_form);
                             </div>
                         </div>
 
-                        <?php if (!empty($ai_agent_token_scope_groups)): ?>
+                        <?php if (!empty($ai_agent_permission_presets)): ?>
                                 <div class="fd-rounded-card border border-theme-light p-3">
                                     <h4 class="text-sm font-semibold mb-1 text-theme-primary">
-                                        <?php echo e(t('Allowed actions')); ?>
+                                        <?php echo e(t('Permission level')); ?>
                                     </h4>
                                     <p class="text-xs mb-2 text-theme-muted">
-                                        <?php echo e(t('Start with read access, then add only the actions this agent really needs.')); ?>
+                                        <?php echo e(t('Choose the broad access level first. All is the only level that can delete records.')); ?>
                                     </p>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                        <?php foreach ($ai_agent_token_scope_groups as $group_key => $group): ?>
-                                                <label class="flex items-start gap-2 text-sm fd-rounded-control border border-theme-light p-2 cursor-pointer">
-                                                    <input type="checkbox" name="api_token_scope_groups[]"
-                                                        value="<?php echo e($group_key); ?>" class="mt-0.5 fd-rounded-control"
-                                                        <?php echo in_array($group_key, $ai_agent_token_default_scope_groups, true) ? 'checked' : ''; ?>>
-                                                    <span>
-                                                        <span class="font-medium text-theme-primary">
-                                                            <?php echo e(t($group['label'])); ?>
-                                                        </span>
-                                                        <span class="block text-xs text-theme-muted">
-                                                            <?php echo e(t($group['description'])); ?>
-                                                        </span>
-                                                    </span>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2" role="radiogroup" aria-label="<?php echo e(t('Permission level')); ?>">
+                                        <?php foreach ($ai_agent_permission_presets as $preset_key => $preset): ?>
+                                                <label class="fd-rounded-control border border-theme-light p-2 cursor-pointer bg-theme-app">
+                                                    <input type="radio" name="api_permission_preset" value="<?php echo e($preset_key); ?>" class="mr-2"
+                                                        <?php echo $preset_key === 'read_write' ? 'checked' : ''; ?>>
+                                                    <span class="font-medium text-theme-primary"><?php echo e(t($preset['label'])); ?></span>
+                                                    <span class="block text-xs text-theme-muted mt-1"><?php echo e(t($preset['description'])); ?></span>
                                                 </label>
                                         <?php endforeach; ?>
                                     </div>
@@ -379,28 +386,24 @@ $ai_agent_hide_create_form = !empty($ai_agent_hide_create_form);
                                 </label>
                             </div>
                         </div>
-                        <?php if (!empty($ai_agent_token_scope_groups)): ?>
+                        <?php if (!empty($ai_agent_permission_presets)): ?>
                                 <div class="border-t border-theme-light pt-3">
                                     <h4 class="text-sm font-semibold mb-1 text-theme-secondary">
-                                        <?php echo e(t('Token actions')); ?>
+                                        <?php echo e(t('Permission level')); ?>
                                     </h4>
                                     <p class="text-xs mb-2 text-theme-muted">
-                                        <?php echo e(t('Choose what this token can do.')); ?>
+                                        <?php echo e(t('Choose the broad access level first. All is the only level that can delete records.')); ?>
                                     </p>
-                                    <div class="space-y-2">
-                                        <?php foreach ($ai_agent_token_scope_groups as $group_key => $group): ?>
+                                    <div class="grid grid-cols-1 gap-2">
+                                        <?php foreach ($ai_agent_permission_presets as $preset_key => $preset): ?>
                                                 <label class="flex items-start gap-2 text-sm fd-rounded-card border border-theme-light p-2 cursor-pointer">
-                                                    <input type="checkbox" name="api_token_scope_groups[]"
-                                                        value="<?php echo e($group_key); ?>" class="mt-0.5 fd-rounded-control ai-token-scope-group"
-                                                        data-group="<?php echo e($group_key); ?>"
-                                                        <?php echo in_array($group_key, $ai_agent_token_default_scope_groups, true) ? 'checked' : ''; ?>>
+                                                    <input type="radio" name="api_permission_preset"
+                                                        value="<?php echo e($preset_key); ?>" class="mt-0.5 fd-rounded-control ai-token-permission-preset"
+                                                        data-preset="<?php echo e($preset_key); ?>"
+                                                        <?php echo $preset_key === 'read_write' ? 'checked' : ''; ?>>
                                                     <span>
-                                                        <span class="font-medium text-theme-primary">
-                                                            <?php echo e(t($group['label'])); ?>
-                                                        </span>
-                                                        <span class="block text-xs text-theme-muted">
-                                                            <?php echo e(t($group['description'])); ?>
-                                                        </span>
+                                                        <span class="font-medium text-theme-primary"><?php echo e(t($preset['label'])); ?></span>
+                                                        <span class="block text-xs text-theme-muted"><?php echo e(t($preset['description'])); ?></span>
                                                     </span>
                                                 </label>
                                         <?php endforeach; ?>
@@ -554,12 +557,17 @@ $ai_agent_hide_create_form = !empty($ai_agent_hide_create_form);
                 var hasWildcard = tokenScopes.indexOf('*') !== -1;
                 var tokenScopeSet = new Set(tokenScopes);
 
-                form.querySelectorAll('input[name="api_token_scope_groups[]"]').forEach(function (checkbox) {
-                    var group = checkbox.getAttribute('data-group') || checkbox.value;
-                    var groupScopes = _aiAgentTokenGroupScopes[group] || [];
-                    checkbox.checked = useDefaults
-                        ? _aiAgentDefaultTokenGroups.indexOf(group) !== -1
-                        : (hasWildcard || groupScopes.some(function (scope) { return tokenScopeSet.has(scope); }));
+                var preset = 'read_write';
+                if (!useDefaults) {
+                    var canDelete = hasWildcard || tokenScopeSet.has('delete:write');
+                    var hasWrite = hasWildcard || ['tickets:write', 'comments:write', 'time:write', 'attachments:write', 'reports:write', 'notifications:write'].some(function (scope) {
+                        return tokenScopeSet.has(scope);
+                    });
+                    preset = canDelete ? 'all' : (hasWrite ? 'read_write' : 'read_only');
+                }
+
+                form.querySelectorAll('input[name="api_permission_preset"]').forEach(function (radio) {
+                    radio.checked = radio.value === preset;
                 });
             }
 
