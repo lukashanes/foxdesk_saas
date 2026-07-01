@@ -35,6 +35,9 @@ assert(footer.includes("filemtime($absolute_path)"), 'Footer JS asset version mu
 for (const asset of ['assets/js/app-api-client.js', 'assets/js/app-contract-shell.js', 'assets/js/image-preview.js', 'assets/js/app-footer.js']) {
   assert(footer.includes(`$footer_asset_version('${asset}')`), `${asset} must use the shared JS cache-busting helper.`);
 }
+assert(footer.includes("assets/js/page-transitions.js"), 'Footer must load smooth page transitions.');
+assert(footer.includes("$footer_asset_version('assets/js/page-transitions.js')"), 'Page transition JS must use file-aware cache busting.');
+assert(footer.indexOf('assets/js/app-contract-shell.js') < footer.indexOf('assets/js/page-transitions.js'), 'Page transition behavior must load after the contract shell bridge.');
 assert(footer.includes('id="image-lightbox"'), 'Footer must render the shared image preview lightbox.');
 assert(footer.includes('data-image-preview-close'), 'Footer lightbox must expose a close control for image preview JS.');
 assert(footer.indexOf('assets/js/image-preview.js') < footer.indexOf('assets/js/app-footer.js'), 'Image preview behavior must load before footer enhancements.');

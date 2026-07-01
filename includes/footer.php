@@ -39,6 +39,7 @@ $footer_asset_version = static function (string $path) use ($footer_asset_base_v
 ?>
 <script defer src="assets/js/app-api-client.js?v=<?php echo e($footer_asset_version('assets/js/app-api-client.js')); ?>"></script>
 <script defer src="assets/js/app-contract-shell.js?v=<?php echo e($footer_asset_version('assets/js/app-contract-shell.js')); ?>"></script>
+<script defer src="assets/js/page-transitions.js?v=<?php echo e($footer_asset_version('assets/js/page-transitions.js')); ?>"></script>
 <script>
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function() {});
