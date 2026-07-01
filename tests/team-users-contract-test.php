@@ -52,6 +52,9 @@ foreach ([
     'setAiAgentTokenScopeGroups(token)',
     'bindAiAgentScope(',
     'data-ai-agent-create',
+    'data-ai-agent-key-ready',
+    'data-ai-agent-key-copy',
+    'copyGeneratedAgentKey(',
     'Create AI agent access',
     'Create agent and key',
 ] as $needle) {

@@ -136,6 +136,9 @@ $assert(str_contains($contents['settings'], 'revoke_api_token'), 'Settings API &
 $assert(str_contains($contents['settings'], 'api_token_scope_catalog'), 'Settings API & agents must render the shared scope catalog.');
 $assert(str_contains($contents['settings'], 'data-agent-docs-instructions'), 'Settings API & agents must explain the live agent-docs self-check.');
 $assert(str_contains($contents['settings'], 'data-api-access-builder'), 'Settings API & agents must expose one unified access builder.');
+$assert(str_contains($contents['settings'], 'data-api-key-ready'), 'Settings API key creation must render the one-time key inside the access builder.');
+$assert(str_contains($contents['settings'], 'data-api-key-copy'), 'Settings API key creation must provide a direct copy button for the one-time key.');
+$assert(str_contains($contents['settings'], 'copyGeneratedApiKey('), 'Settings API key creation must copy the one-time key without requiring manual selection.');
 $assert(str_contains($contents['settings'], 'data-api-access-panel="user"'), 'Settings API & agents must keep normal API keys in the unified builder.');
 $assert(str_contains($contents['settings'], 'data-api-access-panel="agent"'), 'Settings API & agents must keep AI worker keys in the unified builder.');
 $assert(str_contains($contents['settings'], 'data-api-permission-presets'), 'Settings API & agents must expose permission presets before key creation.');
@@ -145,6 +148,9 @@ $assert(str_contains($contents['settings'], "'all' =>"), 'Settings API & agents 
 $assert(!str_contains($contents['settings'], 'value="never"'), 'Settings API keys must not offer never-expiring tokens.');
 $assert(str_contains($contents['auth'], "\$expires_at = date('Y-m-d H:i:s', time() + (90 * 86400));"), 'API tokens must always receive a default expiration when callers omit one.');
 $assert(str_contains($contents['teamComponent'], 'ai-token-permission-preset'), 'AI agent edit flow must use simple permission presets.');
+$assert(str_contains($contents['teamComponent'], 'data-ai-agent-key-ready'), 'AI agent token creation must render the one-time key in the agent flow.');
+$assert(str_contains($contents['teamComponent'], 'data-ai-agent-key-copy'), 'AI agent token creation must provide a direct copy button.');
+$assert(str_contains($contents['teamComponent'], 'copyGeneratedAgentKey('), 'AI agent token creation must copy the one-time key without requiring manual selection.');
 $assert(!str_contains($contents['teamComponent'], 'name="api_token_scope_groups[]"'), 'AI agent UI must not expose low-level scope checkbox groups.');
 $assert(str_contains($contents['settings'], '$ai_agent_hide_create_form = true'), 'Settings API & agents must hide the legacy duplicate AI agent create form.');
 $assert(!str_contains($contents['settings'], "t('Create API access')"), 'Settings API & agents must not show a second Create API access path.');

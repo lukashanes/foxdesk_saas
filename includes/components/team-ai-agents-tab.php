@@ -22,12 +22,24 @@ $ai_agent_permission_presets = [
         <!-- AI AGENTS TAB -->
         <!-- ============================================= -->
 
-        <?php if ($new_ai_token): ?>
-                <div class="mb-3 p-4 bg-green-50 border border-green-200 fd-rounded-card">
-                    <p class="text-sm font-medium text-green-800 mb-1">
-                        <?php echo e(t('Copy this agent key now. It will not be shown again.')); ?>
-                    </p>
-                    <code class="block p-2 border fd-rounded-control text-sm font-mono break-all select-all bg-theme-app"><?php echo e($new_ai_token); ?></code>
+        <div class="space-y-3">
+            <?php if ($new_ai_token): ?>
+                <div class="card card-body border border-green-200 bg-green-50 text-green-900" data-ai-agent-key-ready>
+                    <div class="fd-section-header">
+                        <div class="fd-section-main">
+                            <h3 class="fd-section-title text-green-950"><?php echo e(t('API token generated. Copy it now.')); ?></h3>
+                            <p class="text-sm text-green-900">
+                                <?php echo e(t('Copy this agent key now. It will not be shown again.')); ?>
+                            </p>
+                        </div>
+                        <div class="fd-section-actions">
+                            <button type="button" class="btn btn-primary" data-ai-agent-key-copy
+                                onclick="copyGeneratedAgentKey('generated-ai-agent-token', this)">
+                                <?php echo get_icon('copy', 'w-4 h-4 mr-1 inline-block'); ?><?php echo e(t('Copy')); ?>
+                            </button>
+                        </div>
+                    </div>
+                    <code id="generated-ai-agent-token" class="block p-3 border fd-rounded-control text-sm font-mono break-all select-all bg-theme-app"><?php echo e($new_ai_token); ?></code>
                     <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-green-900">
                         <div class="fd-rounded-control bg-white/80 border border-green-200 p-2">
                             <div class="font-semibold mb-1"><?php echo e(t('Give it only to')); ?></div>
@@ -43,17 +55,14 @@ $ai_agent_permission_presets = [
                         </div>
                     </div>
                     <?php if ($new_ai_agent_id): ?>
-                            <a href="<?php echo url('admin', ['section' => 'agent-connect', 'id' => $new_ai_agent_id]); ?>"
-                                class="inline-flex items-center gap-1 mt-3 text-sm font-medium text-green-800 hover:text-green-950">
-                                <?php echo get_icon('link', 'w-4 h-4'); ?>
-                                <?php echo e(t('Open setup guide')); ?>
-                            </a>
+                        <a href="<?php echo url('admin', ['section' => 'agent-connect', 'id' => $new_ai_agent_id]); ?>"
+                            class="inline-flex items-center gap-1 mt-3 text-sm font-medium text-green-800 hover:text-green-950">
+                            <?php echo get_icon('link', 'w-4 h-4'); ?>
+                            <?php echo e(t('Open setup guide')); ?>
+                        </a>
                     <?php endif; ?>
                 </div>
-        <?php endif; ?>
-
-        <div class="space-y-3">
-            <?php if (!$ai_agent_hide_create_form): ?>
+            <?php elseif (!$ai_agent_hide_create_form): ?>
             <div class="card card-body" data-ai-agent-create>
                 <div class="fd-section-header">
                     <div class="fd-section-main">
@@ -454,6 +463,41 @@ $ai_agent_permission_presets = [
                 var q1 = '<?php echo addslashes(e(t('Delete agent "{name}" and all their records (API tokens, time entries)?'))); ?>'.replace('{name}', name);
                 if (!confirm(q1)) return false;
                 return confirm('<?php echo addslashes(e(t('Are you sure? This cannot be undone.'))); ?>');
+            }
+
+            function copyGeneratedAgentKey(fieldId, button) {
+                var field = document.getElementById(fieldId);
+                if (!field) return;
+                var value = (field.value || field.textContent || '').trim();
+                if (!value) return;
+                var original = button ? button.innerHTML : '';
+                function markDone() {
+                    if (!button) return;
+                    button.textContent = '<?php echo e(t('Copied')); ?>';
+                    setTimeout(function () {
+                        button.innerHTML = original || '<?php echo e(t('Copy')); ?>';
+                    }, 1400);
+                }
+                function fallbackCopy() {
+                    var temp = document.createElement('textarea');
+                    temp.value = value;
+                    temp.setAttribute('readonly', 'readonly');
+                    temp.style.position = 'fixed';
+                    temp.style.opacity = '0';
+                    document.body.appendChild(temp);
+                    temp.select();
+                    try {
+                        document.execCommand('copy');
+                        markDone();
+                    } finally {
+                        document.body.removeChild(temp);
+                    }
+                }
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(value).then(markDone).catch(fallbackCopy);
+                    return;
+                }
+                fallbackCopy();
             }
 
             function editAiAgent(agent, token) {
