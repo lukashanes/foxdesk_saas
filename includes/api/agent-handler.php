@@ -386,6 +386,8 @@ function api_agent_docs()
                 'type' => 'Bearer',
                 'header' => 'Authorization: Bearer $FOXDESK_API_TOKEN',
                 'env' => 'FOXDESK_API_TOKEN',
+                'browser_login_required' => false,
+                'do_not_open_login_page' => 'Do not open /index.php?page=login. API tokens do not create browser sessions; call API endpoints with the Authorization header.',
                 'token_is_shown_once' => true,
                 'token_storage' => 'Store the key in a private environment file or secret manager. Never paste it into chat, screenshots, tickets, or shared documents.',
             ],
@@ -405,7 +407,7 @@ function api_agent_docs()
                 'scope_catalog' => $scope_catalog,
             ],
             'workflow' => [
-                'start_here' => 'Call agent-docs, then agent-me. Use read actions first. Use writes only when the user clearly asked for a change.',
+                'start_here' => 'Treat base_url as an API host, not a web page to log into. Call agent-docs, then agent-me. Use read actions first. Use writes only when the user clearly asked for a change.',
                 'read_before_write' => 'Before changing a ticket, read it with agent-get-ticket or app-ticket-detail so the action is based on current state.',
                 'idempotency' => 'For POST requests, send an Idempotency-Key header to prevent duplicate tickets, comments, uploads, or time entries during retries.',
                 'errors' => [
@@ -416,6 +418,7 @@ function api_agent_docs()
             ],
             'safety_rules' => [
                 'Never reveal FOXDESK_API_TOKEN.',
+                'Never navigate to /index.php?page=login or wait for browser cookies. This API is authenticated only by Authorization: Bearer $FOXDESK_API_TOKEN.',
                 'Never invent ticket ids, client ids, status ids, or priority ids; read them from the API first.',
                 'Never perform destructive or billing-impacting actions unless the user explicitly asked for that specific action.',
                 'Prefer internal comments for assistant notes and public comments only when the answer should go to the customer.',

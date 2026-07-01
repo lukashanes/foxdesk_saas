@@ -32,6 +32,9 @@ assert_work_page(strpos($work, 'data-work-hours-chart-canvas') !== false, 'work 
 assert_work_page(strpos($work, 'data-work-hours-chart-payload') !== false, 'work chart must pass per-agent data to the chart renderer.');
 assert_work_page(strpos($work, 'data-work-hours-chart-fallback') !== false, 'work chart must render a visible server-side fallback graph.');
 assert_work_page(strpos($work, 'work-hours-chart__svg') !== false, 'work chart fallback must be an SVG bar chart, not a calendar-like manual grid.');
+assert_work_page(strpos($work, '<clipPath id="<?php echo e($clip_id); ?>">') !== false, 'work chart fallback must round the whole stacked bar through one clip path.');
+assert_work_page(strpos($work, 'work-hours-chart__bar-segment') !== false, 'work chart fallback must render straight internal bar segments.');
+assert_work_page(strpos($work, 'rx="4"') === false, 'work chart fallback must not round individual stacked segments.');
 assert_work_page(strpos($work, 'work-week-chart__bars') === false, 'work chart must not render the old calendar-like manual day grid.');
 assert_work_page(strpos($work, 'assets/vendor/chartjs/4.4.0/chart.umd.js') !== false, 'work chart must load Chart.js.');
 assert_work_page(strpos($work, "t('Active now')") !== false, 'work page must show active timer time as the fourth KPI.');
@@ -56,6 +59,8 @@ assert_work_page(strpos($work, "assets/js/work-dashboard.js") !== false, 'work p
 $workDashboardJs = file_get_contents($root . '/assets/js/work-dashboard.js');
 assert_work_page($workDashboardJs !== false && strpos($workDashboardJs, 'new window.Chart') !== false, 'work dashboard JS must initialize a real Chart.js graph.');
 assert_work_page(strpos($workDashboardJs, 'stacked: true') !== false, 'worked-hours graph must stack agents by day.');
+assert_work_page(strpos($workDashboardJs, 'function stackEdgeRadius') !== false, 'worked-hours graph must only round the outer top of each stacked day bar.');
+assert_work_page(strpos($workDashboardJs, 'bottomLeft: 0') !== false, 'worked-hours graph must keep internal stacked joins square.');
 assert_work_page(strpos($workDashboardJs, 'showFallback') !== false, 'work dashboard JS must keep the fallback graph visible when Chart.js is unavailable.');
 assert_work_page(strpos($work, "t('All work')") === false, 'work page must not render the old all-work range.');
 assert_work_page(strpos($work, 'workspace_render_queue_page') !== false, 'work page should use the shared workspace queue renderer.');

@@ -56,6 +56,10 @@ foreach ([
     'Settings -> API & agents',
     'agent-docs',
     'current token scopes',
+    'API access, not browser login',
+    'do not open the web',
+    '/index.php?page=login',
+    'Authorization: Bearer',
     'cp examples/agent-api/.env.example examples/agent-api/.env',
     'create-ticket.sh',
     'comment-with-time.sh',
@@ -116,6 +120,8 @@ foreach ([
 foreach ([$codex, $claude] as $agentDoc) {
     foreach ([
         'Never print FOXDESK_API_TOKEN',
+        '/index.php?page=login',
+        'Authorization: Bearer',
         'agent-docs',
         '401',
         '403',

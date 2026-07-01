@@ -143,18 +143,49 @@
         var tooltipBorder = cssVar('--border-color', 'rgba(148, 163, 184, 0.35)');
         var denseChart = labels.length > 21;
 
-        var chartDatasets = datasets
+        var sourceDatasets = datasets
             .filter(function (dataset) {
                 return Array.isArray(dataset.data) && dataset.data.some(function (value) { return Number(value) > 0; });
-            })
-            .map(function (dataset) {
+            });
+
+        function hasPositiveValue(dataset, dataIndex) {
+            return Number(dataset && dataset.data ? dataset.data[dataIndex] : 0) > 0;
+        }
+
+        function stackEdgeRadius(datasetIndex, dataIndex) {
+            var radius = denseChart ? 5 : 7;
+            var topIndex = -1;
+
+            for (var index = sourceDatasets.length - 1; index >= 0; index -= 1) {
+                if (hasPositiveValue(sourceDatasets[index], dataIndex)) {
+                    topIndex = index;
+                    break;
+                }
+            }
+
+            if (datasetIndex !== topIndex) {
+                return 0;
+            }
+
+            return {
+                topLeft: radius,
+                topRight: radius,
+                bottomLeft: 0,
+                bottomRight: 0
+            };
+        }
+
+        var chartDatasets = sourceDatasets
+            .map(function (dataset, datasetIndex) {
                 return {
                     label: dataset.label || 'Agent',
                     data: dataset.data || [],
                     backgroundColor: dataset.backgroundColor || '#3b5bdb',
                     borderColor: dataset.borderColor || dataset.backgroundColor || '#3b5bdb',
                     borderWidth: 0,
-                    borderRadius: denseChart ? 6 : 8,
+                    borderRadius: function (context) {
+                        return stackEdgeRadius(datasetIndex, context.dataIndex);
+                    },
                     borderSkipped: false,
                     barPercentage: denseChart ? 0.86 : 0.78,
                     categoryPercentage: denseChart ? 0.82 : 0.74,

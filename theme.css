@@ -2275,6 +2275,9 @@ min-width: 0;
 max-width: 100%;
 overflow: hidden;
 }
+.reporting-flow-card--unified {
+grid-template-columns: minmax(0, 1fr);
+}
 .reporting-flow-main,
 .reporting-flow-side {
 display: flex;
@@ -2311,6 +2314,25 @@ gap: 0.25rem;
 min-width: 0;
 font-size: var(--type-xs);
 font-weight: 650;
+color: var(--text-secondary);
+}
+.reporting-flow-card--unified .reporting-flow-form {
+display: flex;
+flex-wrap: wrap;
+align-items: end;
+gap: 0.625rem;
+}
+.reporting-flow-card--unified .reporting-flow-form label:first-of-type {
+flex: 1 1 320px;
+}
+.reporting-flow-card--unified .reporting-flow-form label:nth-of-type(2) {
+flex: 0 1 220px;
+}
+.reporting-flow-card--unified .reporting-flow-form .btn {
+flex: 0 0 auto;
+}
+.reporting-flow-agent-note {
+font-size: var(--type-sm);
 color: var(--text-secondary);
 }
 .reporting-flow-steps {
@@ -12850,6 +12872,9 @@ font-weight: 750;
 .work-hours-chart__grid-line {
 stroke: var(--border-light);
 stroke-width: 1;
+}
+.work-hours-chart__bar-segment {
+shape-rendering: geometricPrecision;
 }
 .work-hours-chart__bar-empty {
 fill: var(--surface-tertiary);

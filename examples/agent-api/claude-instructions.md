@@ -18,6 +18,9 @@ Then edit `.env` and paste the key from **Settings -> API & agents**.
 ```text
 You can operate FoxDesk only through the scripts in examples/agent-api.
 Never print FOXDESK_API_TOKEN.
+Treat FOXDESK_BASE_URL as an API host, not a browser page. Do not open
+/index.php?page=login and do not wait for cookies. Use Authorization: Bearer
+FOXDESK_API_TOKEN on every request.
 At the start of every session, load agent-docs with the current token and use it
 as the source of truth for allowed actions, scopes, request fields, and safety
 rules.

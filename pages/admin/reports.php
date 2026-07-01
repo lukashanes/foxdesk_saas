@@ -3,7 +3,7 @@
  * Admin - Time Reports
  */
 
-$page_title = t('Time report');
+$page_title = t('Reports');
 $page = 'admin';
 $current_user = current_user();
 
@@ -72,9 +72,9 @@ $by_agent = $report_data['by_agent'];
 $by_ticket = $report_data['by_ticket'];
 $by_week = $report_data['by_week'];
 $by_source = $report_data['by_source'];
-$billable_time_notice = $tab === 'billing' ? report_billable_time_notice($totals, $rounding) : null;
+$billable_time_notice = null;
 $has_cost_data = abs((float) ($totals['cost_amount'] ?? 0)) > 0.001;
-$billing_ticket_details = ($tab === 'billing' && !empty($entries))
+$billing_ticket_details = !empty($entries)
     ? report_ticket_detail_model($entries, [
         'show_financials' => (bool) $show_money,
         'show_team_attribution' => true,
@@ -119,7 +119,7 @@ $report_period_label = $time_range_labels[$time_range] ?? $time_range;
 $report_export_params = $base_params;
 $report_export_params['export'] = 'csv';
 $billing_col_defs = [];
-if ($tab === 'billing') {
+if (is_admin()) {
     $billing_col_defs = [
         'ticket' => t('Ticket'),
         'company' => t('Company'),
@@ -143,6 +143,9 @@ if ($tab === 'billing') {
         $billing_col_defs['profit'] = t('Profit');
     }
 }
+$is_report_history_view = $tab === 'published';
+$is_client_report_review = is_admin() && $selected_flow_org !== null && !$is_report_history_view;
+$billable_time_notice = $is_client_report_review ? report_billable_time_notice($totals, $rounding) : null;
 
 require_once BASE_PATH . '/includes/header.php';
 ?>
@@ -153,13 +156,13 @@ include BASE_PATH . '/includes/components/page-header.php';
 ?>
 
 <div class="workflow-surface workflow-surface--reports admin-legacy-page" data-core-workflow-surface="reports">
-    <?php if (is_admin() && $tab === 'billing'): ?>
-    <section class="reporting-flow-card" data-report-generation-card>
+    <section class="reporting-flow-card reporting-flow-card--unified" data-report-generation-card data-report-unified-workspace>
         <div class="reporting-flow-main">
             <div class="reporting-flow-heading">
-                <h2><?php echo e(t('Create client report')); ?></h2>
-                <p><?php echo e(t('Choose a client and period, then review the work before publishing.')); ?></p>
+                <h2><?php echo e(t('Reports')); ?></h2>
+                <p><?php echo e(t('Choose the data once, review ticket details, then share or export.')); ?></p>
             </div>
+            <?php if (is_admin()): ?>
             <form method="GET" action="index.php" class="reporting-flow-form">
                 <input type="hidden" name="page" value="admin">
                 <input type="hidden" name="section" value="reports">
@@ -190,52 +193,29 @@ include BASE_PATH . '/includes/components/page-header.php';
                     </select>
                 </label>
                 <button type="submit" class="btn btn-primary btn-sm">
-                    <?php echo get_icon('search', 'w-3.5 h-3.5'); ?><?php echo e(t('Review work')); ?>
+                    <?php echo get_icon('search', 'w-3.5 h-3.5'); ?><?php echo e(t('Update preview')); ?>
                 </button>
+                <?php if ($selected_flow_org !== null && !empty($entries)): ?>
+                <a href="<?php echo reporting_flow_builder_url($selected_flow_org, $time_range); ?>"
+                    class="btn btn-secondary btn-sm">
+                    <?php echo get_icon('file-text', 'w-3.5 h-3.5'); ?><?php echo e(t('Create client report')); ?>
+                </a>
+                <?php endif; ?>
+                <a href="<?php echo url('admin', ['section' => 'reports-list']); ?>"
+                    class="btn btn-ghost btn-sm">
+                    <?php echo get_icon('list', 'w-3.5 h-3.5'); ?><?php echo e(t('Report history')); ?>
+                </a>
             </form>
-        </div>
-        <div class="reporting-flow-side">
-            <div class="reporting-flow-steps">
-                <?php foreach (reporting_flow_steps() as $index => $step): ?>
-                    <div class="reporting-flow-step">
-                        <span><?php echo (int) $index + 1; ?></span>
-                        <strong><?php echo e($step['label']); ?></strong>
-                    </div>
-                <?php endforeach; ?>
+            <?php else: ?>
+            <div class="reporting-flow-agent-note">
+                <?php echo e(t('Review your worked time by period, ticket, and client.')); ?>
             </div>
-            <div class="admin-hero-actions">
-            <a href="<?php echo url('admin', ['section' => 'reports-list']); ?>"
-                class="btn btn-secondary btn-sm">
-                <?php echo get_icon('list', 'w-3.5 h-3.5'); ?><?php echo e(t('Client reports')); ?>
-            </a>
-            </div>
+            <?php endif; ?>
         </div>
     </section>
-    <?php endif; ?>
 
-    <div class="report-page-toolbar report-page-toolbar--modes">
-        <div class="report-mode-switch" aria-label="<?php echo e(t('Report mode')); ?>">
-            <?php
-            $tab_labels = [
-                'time' => t('Time overview'),
-            ];
-            if (is_admin()) {
-                $tab_labels['billing'] = t('Billing review');
-                $tab_labels['published'] = t('Published reports');
-            }
-            foreach ($tab_labels as $tab_key => $label):
-                $params = $base_params;
-                $params['tab'] = $tab_key;
-                $tab_url = 'index.php?' . http_build_query($params);
-                ?>
-                <a href="<?php echo e($tab_url); ?>"
-                    class="report-mode-link <?php echo $tab === $tab_key ? 'is-active' : ''; ?>">
-                    <?php echo e($label); ?>
-                </a>
-            <?php endforeach; ?>
-        </div>
-
-        <?php if ($tab === 'time' && !empty($entries)): ?>
+    <?php if (($tab === 'time' || $tab === 'billing') && !empty($entries)): ?>
+    <div class="report-page-toolbar">
         <div class="report-actions">
             <a href="index.php?<?php echo http_build_query($report_export_params); ?>"
                 class="report-mini-action"
@@ -250,8 +230,8 @@ include BASE_PATH . '/includes/components/page-header.php';
                 <?php echo get_icon('print', 'w-3 h-3 inline-block'); ?><?php echo e(t('Print')); ?>
             </button>
         </div>
-        <?php endif; ?>
     </div>
+    <?php endif; ?>
 
     <?php if (!$time_tracking_available): ?>
         <div class="card card-body text-theme-secondary">
@@ -355,7 +335,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                 <form method="get">
                     <input type="hidden" name="page" value="admin">
                     <input type="hidden" name="section" value="reports">
-                    <input type="hidden" name="tab" value="<?php echo e($tab); ?>">
+                    <input type="hidden" name="tab" value="<?php echo e(is_admin() ? 'billing' : 'time'); ?>">
 
                     <!-- Row 1: All filter fields on one horizontal line -->
                     <div class="report-filter-grid">
@@ -477,7 +457,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                             <?php endforeach; ?>
                         </div>
 
-                        <button type="button" id="report-apply-btn" class="btn btn-primary btn-sm"><?php echo e(t('Apply')); ?></button>
+                        <button type="submit" class="btn btn-primary btn-sm"><?php echo e(t('Update preview')); ?></button>
                     </div>
 
                     <!-- Custom date range (shown only when "Custom range" selected) -->
@@ -492,15 +472,6 @@ include BASE_PATH . '/includes/components/page-header.php';
                         </div>
                     </div>
 
-                    <!-- Confirmation overlay (hidden) -->
-                    <div id="report-confirm" class="report-confirm hidden">
-                        <div class="report-confirm__title"><?php echo e(t('Generate report with these filters?')); ?></div>
-                        <div id="report-confirm-body"></div>
-                        <div class="report-confirm__actions">
-                            <button type="button" id="report-confirm-back" class="btn btn-sm report-confirm-back"><?php echo e(t('Back')); ?></button>
-                            <button type="submit" class="btn btn-primary btn-sm"><?php echo e(t('Generate Report')); ?></button>
-                        </div>
-                    </div>
                 </form>
                 </div>
             </details>
@@ -1069,9 +1040,9 @@ include BASE_PATH . '/includes/components/page-header.php';
             <section class="report-preview-card" data-report-preview>
                 <div class="report-preview-header">
                     <div>
-                        <p class="report-preview-kicker"><?php echo e(t('Report preview')); ?></p>
+                        <p class="report-preview-kicker"><?php echo e(t('Client report preview')); ?></p>
                         <h3><?php echo e($selected_flow_org_name ?: t('Selected client')); ?></h3>
-                        <p><?php echo e($report_period_label); ?> · <?php echo e(empty($entries) ? t('No billable items found yet.') : t('Review the numbers before creating the client-facing report.')); ?></p>
+                        <p><?php echo e($report_period_label); ?> · <?php echo e(empty($entries) ? t('No work found for this selection yet.') : t('Open tickets below to review the work notes before publishing.')); ?></p>
                     </div>
                     <div class="report-preview-actions">
                         <?php if (!empty($entries)): ?>
@@ -1102,12 +1073,12 @@ include BASE_PATH . '/includes/components/page-header.php';
                         </button>
                         <a href="<?php echo reporting_flow_builder_url($selected_flow_org, $time_range); ?>"
                             class="btn btn-primary btn-sm">
-                            <?php echo get_icon('file-text', 'w-3.5 h-3.5'); ?><?php echo e(t('Create report')); ?>
+                            <?php echo get_icon('file-text', 'w-3.5 h-3.5'); ?><?php echo e(t('Create client report')); ?>
                         </a>
                         <?php else: ?>
                         <a href="<?php echo url('admin', ['section' => 'reports-list']); ?>"
                             class="btn btn-secondary btn-sm">
-                            <?php echo get_icon('list', 'w-3.5 h-3.5'); ?><?php echo e(t('Client reports')); ?>
+                            <?php echo get_icon('list', 'w-3.5 h-3.5'); ?><?php echo e(t('Report history')); ?>
                         </a>
                         <?php endif; ?>
                     </div>
@@ -1207,9 +1178,9 @@ include BASE_PATH . '/includes/components/page-header.php';
             <section class="report-preview-card report-preview-card--empty" data-report-preview-empty>
                 <div class="report-preview-header">
                     <div>
-                        <p class="report-preview-kicker"><?php echo e(t('Report preview')); ?></p>
-                        <h3><?php echo e(t('Choose a client first')); ?></h3>
-                        <p><?php echo e(t('Pick one client above to preview work, adjust billing, and create a report.')); ?></p>
+                        <p class="report-preview-kicker"><?php echo e(t('Client report preview')); ?></p>
+                        <h3><?php echo e(t('Choose a client')); ?></h3>
+                        <p><?php echo e(t('Select one client and period to review ticket totals before publishing.')); ?></p>
                     </div>
                 </div>
             </section>
@@ -1271,7 +1242,7 @@ include BASE_PATH . '/includes/components/page-header.php';
             <?php endif; ?>
             <div class="card overflow-hidden">
                 <div class="card-header">
-                    <h3 class="font-semibold text-theme-primary"><?php echo e(t('Detailed')); ?></h3>
+                    <h3 class="font-semibold text-theme-primary"><?php echo e(t('Adjust billable items')); ?></h3>
                 </div>
                 <?php if (is_admin()): ?>
                 <form id="bulk-billing-form" method="post" class="report-bulk-billing px-4 py-3 border-b">
@@ -1809,7 +1780,10 @@ include BASE_PATH . '/includes/components/page-header.php';
             </div>
         <?php elseif ($tab === 'published'): ?>
             <div class="card card-body space-y-4">
-                <h3 class="font-semibold text-theme-primary"><?php echo e(t('Share link')); ?></h3>
+                <div>
+                    <h3 class="font-semibold text-theme-primary"><?php echo e(t('Report history')); ?></h3>
+                    <p class="text-sm text-theme-muted"><?php echo e(t('Manage client report links that were already prepared for sharing.')); ?></p>
+                </div>
                 <form method="post" class="space-y-4">
                     <?php echo csrf_field(); ?>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1828,7 +1802,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                         </div>
                     </div>
                     <button type="submit" name="create_report_share" class="btn btn-primary">
-                        <?php echo e(t('Create share link')); ?>
+                        <?php echo e(t('Create report link')); ?>
                     </button>
                 </form>
 

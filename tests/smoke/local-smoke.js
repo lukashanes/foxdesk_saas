@@ -487,8 +487,8 @@ async function expectReportsSurface(page) {
   await page.goto('/index.php?page=admin&section=reports');
   const layout = await page.evaluate(() => {
     const shell = document.querySelector('.admin-legacy-page');
-    const modeSwitch = document.querySelector('.report-mode-switch');
-    const modeLinks = [...document.querySelectorAll('.report-mode-link')].map(link => link.textContent.trim());
+    const unifiedWorkspace = document.querySelector('[data-report-unified-workspace]');
+    const oldModeSwitch = document.querySelector('.report-mode-switch');
     const adminTabs = document.querySelector('.admin-tabs');
     const adminPageNav = document.querySelector('.admin-page-nav');
     const flowCard = document.querySelector('.reporting-flow-card');
@@ -504,9 +504,8 @@ async function expectReportsSurface(page) {
       url: window.location.href,
       heading: document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : '',
       shellRect: shell ? rect(shell) : null,
-      modeSwitchRect: modeSwitch ? rect(modeSwitch) : null,
-      modeSwitchDisplay: modeSwitch ? getComputedStyle(modeSwitch).display : null,
-      modeLinks,
+      unifiedWorkspaceRect: unifiedWorkspace ? rect(unifiedWorkspace) : null,
+      oldModeSwitchCount: oldModeSwitch ? 1 : 0,
       adminTabsCount: adminTabs ? 1 : 0,
       adminPageNavCount: adminPageNav ? 1 : 0,
       flowCardRect: flowCard ? rect(flowCard) : null,
@@ -526,17 +525,17 @@ async function expectReportsSurface(page) {
   if (!layout.shellRect || layout.shellRect.width < 320) {
     throw new Error(`Reports shell is missing or collapsed: ${JSON.stringify(layout)}`);
   }
-  if (!layout.modeSwitchRect || !['flex', 'inline-flex'].includes(layout.modeSwitchDisplay)) {
-    throw new Error(`Reports mode switch is missing or unstyled: ${JSON.stringify(layout)}`);
+  if (!layout.unifiedWorkspaceRect || layout.unifiedWorkspaceRect.width < 320) {
+    throw new Error(`Reports unified workspace is missing or collapsed: ${JSON.stringify(layout)}`);
   }
-  if (!layout.modeLinks.includes('Time overview') || !layout.modeLinks.includes('Billing review') || !layout.modeLinks.includes('Published reports')) {
-    throw new Error(`Reports modes are incomplete: ${JSON.stringify(layout)}`);
+  if (layout.oldModeSwitchCount) {
+    throw new Error(`Reports must not render the old mode switch: ${JSON.stringify(layout)}`);
   }
   if (layout.adminTabsCount || layout.adminPageNavCount) {
     throw new Error(`Reports page must not render duplicate horizontal admin menus: ${JSON.stringify(layout)}`);
   }
-  if (layout.flowCardRect) {
-    throw new Error(`Time overview must not show the billing review flow card: ${JSON.stringify(layout)}`);
+  if (!layout.flowCardRect || layout.flowCardRect.width < 320) {
+    throw new Error(`Reports flow card is missing or collapsed: ${JSON.stringify(layout)}`);
   }
   if (!layout.filterCardRect && !layout.cardBorderStyle) {
     throw new Error(`Reports content cards are missing: ${JSON.stringify(layout)}`);

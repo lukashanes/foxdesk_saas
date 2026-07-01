@@ -333,6 +333,7 @@ $ai_agent_token_default_scope_groups = [];
 $ai_agent_token_group_scopes = [];
 $new_ai_token = null;
 $new_ai_agent_id = null;
+$settings_api_base_url = '';
 $api_organizations = [];
 $organization_names_by_id = [];
 $ai_agent_col_exists = false;
@@ -345,6 +346,16 @@ if ($tab === 'api') {
     $new_profile_api_token = $_SESSION['new_profile_api_token'] ?? null;
     $new_profile_api_token_scopes = $_SESSION['new_profile_api_token_scopes'] ?? [];
     unset($_SESSION['new_profile_api_token'], $_SESSION['new_profile_api_token_scopes']);
+    if (defined('APP_URL') && (string) APP_URL !== '') {
+        $settings_api_base_url = rtrim((string) APP_URL, '/');
+    } elseif ((string) getenv('APP_URL') !== '') {
+        $settings_api_base_url = rtrim((string) getenv('APP_URL'), '/');
+    } else {
+        $settings_api_scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $settings_api_host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
+        $settings_api_path = rtrim(dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php')), '/\\');
+        $settings_api_base_url = $settings_api_scheme . '://' . $settings_api_host . ($settings_api_path === '' || $settings_api_path === '.' ? '' : $settings_api_path);
+    }
 
     $api_user_table_capabilities = function_exists('team_users_table_capabilities') ? team_users_table_capabilities() : [];
     $ai_agent_col_exists = !empty($api_user_table_capabilities['ai_agent']);
@@ -666,6 +677,12 @@ include BASE_PATH . '/includes/components/page-header.php';
 
                 <div class="mb-5 space-y-4" data-api-access-builder>
                     <?php if ($new_profile_api_token): ?>
+                        <?php
+                        $settings_agent_handoff = "FOXDESK_BASE_URL=" . $settings_api_base_url . "\n"
+                            . "FOXDESK_API_TOKEN=" . $new_profile_api_token . "\n\n"
+                            . "curl -fsS \"\$FOXDESK_BASE_URL/index.php?page=api&action=agent-docs\" \\\n"
+                            . "  -H \"Authorization: Bearer \$FOXDESK_API_TOKEN\"";
+                        ?>
                         <div class="p-4 fd-rounded-card border border-green-200 bg-green-50 text-green-900" data-api-key-ready>
                             <div class="fd-section-header">
                                 <div class="fd-section-main">
@@ -685,6 +702,24 @@ include BASE_PATH . '/includes/components/page-header.php';
                             <?php if (!empty($new_profile_api_token_scopes)): ?>
                                 <p class="text-xs mt-2"><?php echo e(t('Scopes')); ?>: <?php echo e(implode(', ', $new_profile_api_token_scopes)); ?></p>
                             <?php endif; ?>
+                            <div class="mt-3 fd-rounded-card bg-white/90 border border-green-200 p-3" data-agent-api-handoff>
+                                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                    <div>
+                                        <div class="font-semibold mb-1"><?php echo e(t('Give this to the agent')); ?></div>
+                                        <p class="text-xs text-green-900">
+                                            <?php echo e(t('The FoxDesk URL is the API host. The agent must not open the login page or wait for a browser session.')); ?>
+                                        </p>
+                                    </div>
+                                    <button type="button" class="btn btn-secondary btn-sm"
+                                        onclick="copyGeneratedApiKey('settings-agent-api-handoff', this)">
+                                        <?php echo get_icon('copy', 'w-4 h-4 mr-1 inline-block'); ?><?php echo e(t('Copy instructions')); ?>
+                                    </button>
+                                </div>
+                                <pre class="mt-2 p-3 fd-rounded-control bg-theme-app border text-xs font-mono overflow-auto"><code id="settings-agent-api-handoff"><?php echo e($settings_agent_handoff); ?></code></pre>
+                                <p class="text-xs mt-2 text-green-900">
+                                    <?php echo e(t('First call agent-docs, then use only the API actions returned for this token.')); ?>
+                                </p>
+                            </div>
                             <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                                 <div class="fd-rounded-control bg-white/80 border border-green-200 p-2">
                                     <div class="font-semibold mb-1"><?php echo e(t('Where to put it')); ?></div>

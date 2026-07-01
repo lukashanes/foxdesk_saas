@@ -106,6 +106,9 @@ foreach ([
     "'available' => \$available",
     "'missing_scope' => \$available ? null : \$scope",
     'Authorization: Bearer $FOXDESK_API_TOKEN',
+    'browser_login_required',
+    'do_not_open_login_page',
+    'Never navigate to /index.php?page=login',
     'Use this endpoint at the start of every agent session',
     'Idempotency-Key',
 ] as $needle) {
@@ -137,6 +140,8 @@ $assert(str_contains($contents['settings'], 'api_token_scope_catalog'), 'Setting
 $assert(str_contains($contents['settings'], 'data-agent-docs-instructions'), 'Settings API & agents must explain the live agent-docs self-check.');
 $assert(str_contains($contents['settings'], 'data-api-access-builder'), 'Settings API & agents must expose one unified access builder.');
 $assert(str_contains($contents['settings'], 'data-api-key-ready'), 'Settings API key creation must render the one-time key inside the access builder.');
+$assert(str_contains($contents['settings'], 'data-agent-api-handoff'), 'Settings API key creation must render copyable agent handoff instructions.');
+$assert(str_contains($contents['settings'], 'settings-agent-api-handoff'), 'Settings API key creation must include a copy target for agent handoff instructions.');
 $assert(str_contains($contents['settings'], 'data-api-key-copy'), 'Settings API key creation must provide a direct copy button for the one-time key.');
 $assert(str_contains($contents['settings'], 'copyGeneratedApiKey('), 'Settings API key creation must copy the one-time key without requiring manual selection.');
 $assert(str_contains($contents['settings'], 'data-api-access-panel="user"'), 'Settings API & agents must keep normal API keys in the unified builder.');

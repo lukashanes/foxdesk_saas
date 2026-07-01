@@ -504,34 +504,67 @@ require_once BASE_PATH . '/includes/header.php';
                         $slot_x = $svg_plot_left + ($svg_slot_width * $day_index);
                         $bar_x = $slot_x + (($svg_slot_width - $svg_bar_width) / 2);
                         $baseline_y = $svg_plot_top + $svg_plot_height;
-                        $segment_y = $baseline_y;
+                        $positive_users_for_day = [];
+                        foreach ($users_for_day as $chart_user) {
+                            if (max(0, (int) ($chart_user['minutes'] ?? 0)) > 0) {
+                                $positive_users_for_day[] = $chart_user;
+                            }
+                        }
+                        $bar_height = $day_minutes > 0
+                            ? max(3.0, min($svg_plot_height, ($day_minutes / max(1, $chart_max_minutes)) * $svg_plot_height))
+                            : 3.0;
+                        $bar_top_y = $baseline_y - $bar_height;
+                        $bar_radius = min(7.0, $svg_bar_width / 2, $bar_height / 2);
+                        $clip_id = 'work-hours-stack-' . (int) $day_index;
+                        $clip_path = implode(' ', [
+                            'M', $svg_format($bar_x), $svg_format($baseline_y),
+                            'V', $svg_format($bar_top_y + $bar_radius),
+                            'Q', $svg_format($bar_x), $svg_format($bar_top_y), $svg_format($bar_x + $bar_radius), $svg_format($bar_top_y),
+                            'H', $svg_format($bar_x + $svg_bar_width - $bar_radius),
+                            'Q', $svg_format($bar_x + $svg_bar_width), $svg_format($bar_top_y), $svg_format($bar_x + $svg_bar_width), $svg_format($bar_top_y + $bar_radius),
+                            'V', $svg_format($baseline_y),
+                            'Z',
+                        ]);
                         ?>
                         <g>
                             <title><?php echo e(trim($day_label . ' ' . format_duration_minutes($day_minutes))); ?></title>
-                            <?php if ($day_minutes > 0 && !empty($users_for_day)): ?>
-                                <?php foreach ($users_for_day as $chart_user): ?>
+                            <?php if ($day_minutes > 0 && !empty($positive_users_for_day)): ?>
+                                <clipPath id="<?php echo e($clip_id); ?>">
+                                    <path d="<?php echo e($clip_path); ?>"></path>
+                                </clipPath>
+                                <g clip-path="url(#<?php echo e($clip_id); ?>)">
+                                <?php
+                                $segment_y = $baseline_y;
+                                $remaining_height = $bar_height;
+                                $segment_count = count($positive_users_for_day);
+                                ?>
+                                <?php foreach ($positive_users_for_day as $segment_index => $chart_user): ?>
                                     <?php
                                     $chart_user_minutes = max(0, (int) ($chart_user['minutes'] ?? 0));
-                                    if ($chart_user_minutes <= 0) {
-                                        continue;
-                                    }
                                     $chart_user_name = trim((string) ($chart_user['name'] ?? t('Agent')));
                                     $chart_user_name = $chart_user_name !== '' ? $chart_user_name : t('Agent');
                                     $chart_user_id = (int) ($chart_user['user_id'] ?? 0);
                                     $chart_user_key = $chart_user_id > 0 ? 'u' . $chart_user_id : 'n' . mb_strtolower($chart_user_name);
                                     $segment_color = $chart_palette[$chart_agent_color_index[$chart_user_key] ?? 0] ?? $chart_palette[0];
-                                    $segment_height = max(2.0, ($chart_user_minutes / max(1, $chart_max_minutes)) * $svg_plot_height);
+                                    if ($segment_index === $segment_count - 1) {
+                                        $segment_height = $remaining_height;
+                                    } else {
+                                        $segment_height = ($chart_user_minutes / max(1, $day_minutes)) * $bar_height;
+                                        $segment_height = max(0.5, min($remaining_height, $segment_height));
+                                    }
                                     $segment_y -= $segment_height;
+                                    $remaining_height = max(0, $remaining_height - $segment_height);
                                     ?>
-                                    <rect x="<?php echo e($svg_format($bar_x)); ?>"
-                                          y="<?php echo e($svg_format(max($svg_plot_top, $segment_y))); ?>"
+                                    <rect class="work-hours-chart__bar-segment"
+                                          x="<?php echo e($svg_format($bar_x)); ?>"
+                                          y="<?php echo e($svg_format($segment_y)); ?>"
                                           width="<?php echo e($svg_format($svg_bar_width)); ?>"
-                                          height="<?php echo e($svg_format(max(2.0, min($svg_plot_top + $svg_plot_height, $segment_y + $segment_height) - max($svg_plot_top, $segment_y)))); ?>"
-                                          rx="4"
+                                          height="<?php echo e($svg_format($segment_height)); ?>"
                                           fill="<?php echo e($segment_color); ?>">
                                         <title><?php echo e($day_label); ?> · <?php echo e($chart_user_name); ?>: <?php echo e(format_duration_minutes($chart_user_minutes)); ?></title>
                                     </rect>
                                 <?php endforeach; ?>
+                                </g>
                             <?php else: ?>
                                 <rect class="work-hours-chart__bar-empty"
                                       x="<?php echo e($svg_format($bar_x)); ?>"
