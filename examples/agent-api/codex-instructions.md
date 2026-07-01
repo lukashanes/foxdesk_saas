@@ -35,6 +35,7 @@ call:
 ```bash
 sh examples/agent-api/create-ticket.sh
 sh examples/agent-api/add-comment.sh
+sh examples/agent-api/comment-with-time.sh
 sh examples/agent-api/log-time.sh
 sh examples/agent-api/prepare-report.sh
 ```
@@ -44,6 +45,9 @@ sh examples/agent-api/prepare-report.sh
 - Read the user's intent first, then set the relevant `FOXDESK_*` variables.
 - Use `FOXDESK_TICKET_ID` or `FOXDESK_TICKET_HASH` before commenting or logging
   time.
+- Prefer `comment-with-time.sh` when a work note and exact worked time belong to
+  the same update; it creates one comment and links the time entry through
+  `comment_id`.
 - Treat 401/403 as permission or token-scope problems, not application bugs.
 - For write actions, keep the default `Idempotency-Key` header or set
   `FOXDESK_IDEMPOTENCY_KEY` when retrying the same action.

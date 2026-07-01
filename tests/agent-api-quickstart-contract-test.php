@@ -28,6 +28,7 @@ foreach ([
     'examples/agent-api/_common.sh',
     'examples/agent-api/create-ticket.sh',
     'examples/agent-api/add-comment.sh',
+    'examples/agent-api/comment-with-time.sh',
     'examples/agent-api/log-time.sh',
     'examples/agent-api/prepare-report.sh',
     'examples/agent-api/codex-instructions.md',
@@ -57,11 +58,14 @@ foreach ([
     'current token scopes',
     'cp examples/agent-api/.env.example examples/agent-api/.env',
     'create-ticket.sh',
+    'comment-with-time.sh',
     'log-time.sh',
     'prepare-report.sh',
     'Codex',
     'Claude',
     'tickets:write',
+    'tickets:read',
+    'comments:write',
     'time:write',
     'reports:read',
     '401',
@@ -92,6 +96,7 @@ foreach ([
 foreach ([
     'examples/agent-api/create-ticket.sh' => 'app-create-ticket',
     'examples/agent-api/add-comment.sh' => 'app-add-comment',
+    'examples/agent-api/comment-with-time.sh' => 'app-add-comment-with-time',
     'examples/agent-api/log-time.sh' => 'app-log-time',
     'examples/agent-api/prepare-report.sh' => 'app-reporting-review',
 ] as $script => $action) {
@@ -115,6 +120,7 @@ foreach ([$codex, $claude] as $agentDoc) {
         '401',
         '403',
         'create-ticket.sh',
+        'comment-with-time.sh',
         'log-time.sh',
         'prepare-report.sh',
     ] as $needle) {

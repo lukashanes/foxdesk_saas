@@ -58,6 +58,18 @@ FOXDESK_TIME_SUMMARY="Diagnosed printer network settings." \
 sh examples/agent-api/log-time.sh
 ```
 
+Add one work record with a visible comment and linked time entry:
+
+```bash
+FOXDESK_TICKET_ID=123 \
+FOXDESK_COMMENT="<p><strong>Network fix</strong></p><p>Updated DNS and verified access.</p>" \
+FOXDESK_MANUAL_DATE=2026-05-25 \
+FOXDESK_MANUAL_START_TIME=21:18 \
+FOXDESK_MANUAL_END_TIME=22:06 \
+FOXDESK_DURATION_MINUTES=48 \
+sh examples/agent-api/comment-with-time.sh
+```
+
 Prepare a report review:
 
 ```bash
@@ -84,6 +96,7 @@ npm run agent:mcp
 - Create ticket: `tickets:write`
 - Add comment: `comments:write`
 - Log time: `time:write`
+- Add comment with linked time: `tickets:read`, `comments:write`, `time:write`
 - Prepare report review: `reports:read`
 - Upload attachment: `attachments:write`
 

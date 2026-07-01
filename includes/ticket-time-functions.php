@@ -477,7 +477,8 @@ function stop_active_ticket_timer($ticket_id, $user_id, ?int $comment_id = null)
  * @param int $ticket_id
  * @param int $user_id
  * @param array $data  Accepts: started_at, ended_at, duration_minutes, summary,
- *                     is_billable, source ('timer'|'manual'|'ai'), billable_rate, cost_rate
+ *                     comment_id, is_billable, source ('timer'|'manual'|'ai'),
+ *                     billable_rate, cost_rate
  */
 function add_manual_time_entry($ticket_id, $user_id, $data) {
     if (!ticket_time_table_exists()) {
@@ -489,6 +490,7 @@ function add_manual_time_entry($ticket_id, $user_id, $data) {
         $insert = [
             'ticket_id' => $ticket_id,
             'user_id' => $user_id,
+            'comment_id' => !empty($data['comment_id']) ? (int) $data['comment_id'] : null,
             'started_at' => $data['started_at'],
             'ended_at' => $data['ended_at'],
             'duration_minutes' => $data['duration_minutes'],

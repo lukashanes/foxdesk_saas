@@ -40,6 +40,19 @@ function api_app_require_timer_functions(): void
     }
 }
 
+function api_app_require_api_token_scope(string $scope): void
+{
+    if (empty($GLOBALS['is_api_token_auth'])) {
+        return;
+    }
+
+    if (function_exists('api_token_has_scope') && api_token_has_scope($scope)) {
+        return;
+    }
+
+    api_error('API token scope is not allowed for this action.', 403);
+}
+
 function api_app_shell()
 {
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -118,6 +131,147 @@ function api_app_resolve_ticket(array $source, array $user)
     }
 
     return $ticket;
+}
+
+function api_app_comment_time_requested(array $input): bool
+{
+    foreach ([
+        'duration_minutes',
+        'manual_duration_minutes',
+        'started_at',
+        'ended_at',
+        'manual_date',
+        'manual_start_time',
+        'manual_end_time',
+    ] as $key) {
+        if (array_key_exists($key, $input) && trim((string) $input[$key]) !== '') {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function api_app_bool(array $input, string $key, bool $default = false): bool
+{
+    if (!array_key_exists($key, $input)) {
+        return $default;
+    }
+
+    $value = $input[$key];
+    if (is_bool($value)) {
+        return $value;
+    }
+    if (is_numeric($value)) {
+        return (int) $value === 1;
+    }
+
+    return in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'on'], true);
+}
+
+function api_app_normalize_datetime_for_time($value, string $field): string
+{
+    if (!function_exists('foxdesk_normalize_backdated_datetime_input')) {
+        api_error('Date normalization is not available.', 500);
+    }
+
+    $normalized = foxdesk_normalize_backdated_datetime_input($value);
+    if ($normalized === false || $normalized === null) {
+        api_error($field . ' is invalid.', 422);
+    }
+
+    return $normalized;
+}
+
+function api_app_resolve_comment_time_input(array $input, array $user, string $fallback_end_at): ?array
+{
+    if (!api_app_comment_time_requested($input)) {
+        return null;
+    }
+
+    if (!is_agent() && !is_admin()) {
+        api_error('Forbidden', 403);
+    }
+
+    api_app_require_api_token_scope('tickets:read');
+    api_app_require_api_token_scope('comments:write');
+    api_app_require_api_token_scope('time:write');
+
+    if (!function_exists('add_manual_time_entry')) {
+        api_error('Time tracking is not available.', 400);
+    }
+
+    $duration = (int) ($input['duration_minutes'] ?? $input['manual_duration_minutes'] ?? 0);
+    $started_raw = trim((string) ($input['started_at'] ?? ''));
+    $ended_raw = trim((string) ($input['ended_at'] ?? ''));
+
+    $manual_start = trim((string) ($input['manual_start_time'] ?? ''));
+    $manual_end = trim((string) ($input['manual_end_time'] ?? ''));
+    if ($manual_start !== '' || $manual_end !== '') {
+        $manual_date = trim((string) ($input['manual_date'] ?? ''));
+        if ($manual_date === '') {
+            api_error('manual_date is required when manual_start_time or manual_end_time is provided.', 422);
+        }
+        if ($manual_start === '' || $manual_end === '') {
+            api_error('manual_start_time and manual_end_time are required together.', 422);
+        }
+
+        $started_raw = $manual_date . 'T' . $manual_start;
+        $end_date = $manual_date;
+        if ($manual_end < $manual_start) {
+            $end_date = date('Y-m-d', strtotime($manual_date . ' +1 day'));
+        }
+        $ended_raw = $end_date . 'T' . $manual_end;
+    }
+
+    if ($started_raw !== '' || $ended_raw !== '') {
+        if ($started_raw === '' || $ended_raw === '') {
+            api_error('started_at and ended_at are required together.', 422);
+        }
+        if (!foxdesk_can_backdate_records($user)) {
+            api_error('Only admins and agents can set historical dates.', 403);
+        }
+
+        $started_at = api_app_normalize_datetime_for_time($started_raw, 'started_at');
+        $ended_at = api_app_normalize_datetime_for_time($ended_raw, 'ended_at');
+        $start_ts = strtotime($started_at);
+        $end_ts = strtotime($ended_at);
+        if (!$start_ts || !$end_ts || $end_ts <= $start_ts) {
+            api_error('ended_at must be after started_at.', 422);
+        }
+
+        $computed_duration = max(1, (int) floor(($end_ts - $start_ts) / 60));
+        if ($duration > 0 && $duration !== $computed_duration) {
+            api_error('duration_minutes must match started_at and ended_at.', 422);
+        }
+        $duration = $computed_duration;
+
+        return [
+            'started_at' => $started_at,
+            'ended_at' => $ended_at,
+            'duration_minutes' => $duration,
+            'is_billable' => api_app_bool($input, 'is_billable', true) ? 1 : 0,
+            'summary' => trim((string) ($input['time_summary'] ?? $input['summary'] ?? '')) ?: null,
+            'source' => 'manual',
+        ];
+    }
+
+    if ($duration < 1 || $duration > 1440) {
+        api_error('duration_minutes must be between 1 and 1440.', 422);
+    }
+
+    $ended_at = api_app_normalize_datetime_for_time($fallback_end_at, 'created_at');
+    $end_dt = new DateTime($ended_at);
+    $start_dt = (clone $end_dt)->modify('-' . $duration . ' minutes');
+
+    return [
+        'started_at' => $start_dt->format('Y-m-d H:i:s'),
+        'ended_at' => $end_dt->format('Y-m-d H:i:s'),
+        'duration_minutes' => $duration,
+        'is_billable' => api_app_bool($input, 'is_billable', true) ? 1 : 0,
+        'summary' => trim((string) ($input['time_summary'] ?? $input['summary'] ?? '')) ?: null,
+        'source' => 'manual',
+    ];
 }
 
 function api_app_ticket_list()
@@ -464,6 +618,8 @@ function api_app_add_comment()
     }
 
     api_app_require_write_auth();
+    api_app_require_api_token_scope('tickets:read');
+    api_app_require_api_token_scope('comments:write');
 
     $user = current_user();
     if (!$user) {
@@ -479,8 +635,19 @@ function api_app_add_comment()
     $ticket = api_app_resolve_ticket($input, $user);
     $ticket_id = (int) $ticket['id'];
     $is_internal = !empty($input['is_internal']) && is_agent();
+    $time_required = !empty($GLOBALS['api_app_comment_time_required']);
+    $time_requested = api_app_comment_time_requested($input);
+    if ($time_required && !$time_requested) {
+        api_error('Time fields are required for this endpoint.', 422);
+    }
+
     $comment_created_at = date('Y-m-d H:i:s');
-    if (array_key_exists('created_at', $input) && trim((string) $input['created_at']) !== '') {
+    $explicit_comment_created_at = array_key_exists('created_at', $input) && trim((string) $input['created_at']) !== '';
+    if (!$explicit_comment_created_at && array_key_exists('comment_created_at', $input) && trim((string) $input['comment_created_at']) !== '') {
+        $input['created_at'] = $input['comment_created_at'];
+        $explicit_comment_created_at = true;
+    }
+    if ($explicit_comment_created_at) {
         if (!foxdesk_can_backdate_records($user)) {
             api_error('Only admins and agents can set historical dates.', 403);
         }
@@ -493,33 +660,71 @@ function api_app_add_comment()
         }
     }
 
-    $comment_id = add_comment($ticket_id, (int) $user['id'], $content, $is_internal ? 1 : 0, [
-        'created_at' => $comment_created_at,
-    ]);
-    if (!$comment_id) {
-        api_error('Failed to add comment.', 500);
+    $time_payload = api_app_resolve_comment_time_input($input, $user, $comment_created_at);
+    if ($time_payload && !$explicit_comment_created_at) {
+        $comment_created_at = (string) $time_payload['ended_at'];
     }
 
-    $response = ['comment_id' => (int) $comment_id];
+    $comment_id = null;
+    $time_entry_id = null;
+    $db = get_db();
+    $started_transaction = false;
 
-    $duration = (int) ($input['duration_minutes'] ?? 0);
-    if ($duration > 0 && is_agent() && function_exists('add_manual_time_entry')) {
-        $end_dt = new DateTime($comment_created_at);
-        $start_dt = (clone $end_dt)->modify('-' . $duration . ' minutes');
-        $time_entry_id = add_manual_time_entry($ticket_id, (int) $user['id'], [
-            'started_at' => $start_dt->format('Y-m-d H:i:s'),
-            'ended_at' => $end_dt->format('Y-m-d H:i:s'),
-            'duration_minutes' => $duration,
-            'summary' => $input['time_summary'] ?? null,
-            'is_billable' => 1,
-            'source' => 'manual',
-        ]);
-        if ($time_entry_id) {
-            $response['time_entry_id'] = (int) $time_entry_id;
+    try {
+        if (!$db->inTransaction()) {
+            $db->beginTransaction();
+            $started_transaction = true;
         }
+
+        $comment_id = add_comment($ticket_id, (int) $user['id'], $content, $is_internal ? 1 : 0, [
+            'created_at' => $comment_created_at,
+            'time_spent' => (int) ($time_payload['duration_minutes'] ?? 0),
+        ]);
+        if (!$comment_id) {
+            throw new RuntimeException('Failed to add comment.');
+        }
+
+        log_activity($ticket_id, (int) $user['id'], 'commented', 'Comment added');
+
+        if ($time_payload) {
+            $time_entry_id = add_manual_time_entry($ticket_id, (int) $user['id'], [
+                'comment_id' => (int) $comment_id,
+                'started_at' => $time_payload['started_at'],
+                'ended_at' => $time_payload['ended_at'],
+                'duration_minutes' => (int) $time_payload['duration_minutes'],
+                'summary' => $time_payload['summary'],
+                'is_billable' => (int) $time_payload['is_billable'],
+                'source' => 'manual',
+            ]);
+            if (!$time_entry_id) {
+                throw new RuntimeException('Failed to log time.');
+            }
+            log_activity($ticket_id, (int) $user['id'], 'time_manual', 'Manual time added (' . (int) $time_payload['duration_minutes'] . ' min)');
+        }
+
+        if ($started_transaction) {
+            $db->commit();
+        }
+    } catch (Throwable $e) {
+        if ($started_transaction && $db->inTransaction()) {
+            $db->rollBack();
+        }
+        api_error($time_payload ? 'Failed to add comment with time.' : 'Failed to add comment.', 500);
     }
 
-    if (!$is_internal && function_exists('ticket_event_dispatch_in_app')) {
+    $response = [
+        'ticket_id' => $ticket_id,
+        'comment_id' => (int) $comment_id,
+    ];
+    if ($time_payload) {
+        $response['time_entry_id'] = (int) $time_entry_id;
+        $response['duration_minutes'] = (int) $time_payload['duration_minutes'];
+        $response['started_at'] = (string) $time_payload['started_at'];
+        $response['ended_at'] = (string) $time_payload['ended_at'];
+    }
+
+    $skip_notification = api_app_bool($input, 'skip_notification', false);
+    if (!$is_internal && !$skip_notification && function_exists('ticket_event_dispatch_in_app')) {
         $preview = mb_strlen($content) > 80 ? mb_substr($content, 0, 77) . '...' : $content;
         ticket_event_dispatch_in_app(ticket_event_comment_name($user, false), $ticket_id, (int) $user['id'], [
             'comment_preview' => strip_tags($preview),
@@ -530,6 +735,12 @@ function api_app_add_comment()
     api_app_contract_success($response, ['resource' => 'ticket_comment'], $response);
 }
 
+function api_app_add_comment_with_time()
+{
+    $GLOBALS['api_app_comment_time_required'] = true;
+    api_app_add_comment();
+}
+
 function api_app_log_time()
 {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -537,6 +748,8 @@ function api_app_log_time()
     }
 
     api_app_require_write_auth();
+    api_app_require_api_token_scope('tickets:read');
+    api_app_require_api_token_scope('time:write');
 
     $user = current_user();
     if (!$user) {
@@ -583,6 +796,121 @@ function api_app_log_time()
     ];
 
     api_app_contract_success($response, ['resource' => 'log_time'], $response);
+}
+
+function api_app_delete_comment()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        api_error('Method not allowed', 405);
+    }
+
+    api_app_require_write_auth();
+    api_app_require_api_token_scope('tickets:read');
+    api_app_require_api_token_scope('comments:write');
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+
+    $input = get_json_input();
+    $comment_id = (int) ($input['comment_id'] ?? $input['id'] ?? 0);
+    if ($comment_id <= 0) {
+        api_error('comment_id is required.', 422);
+    }
+
+    $comment = db_fetch_one("SELECT * FROM comments WHERE id = ? LIMIT 1", [$comment_id]);
+    if (!$comment) {
+        api_error('Comment not found.', 404);
+    }
+
+    $ticket = get_ticket((int) $comment['ticket_id']);
+    if (!$ticket || !can_see_ticket($ticket, $user)) {
+        api_error('Forbidden', 403);
+    }
+    if (!can_manage_comment($comment, $user)) {
+        api_error('Forbidden', 403);
+    }
+
+    try {
+        if (function_exists('log_ticket_history')) {
+            log_ticket_history((int) $comment['ticket_id'], (int) $user['id'], 'comment_deleted', (string) ($comment['content'] ?? ''), null);
+        }
+        db_delete('comments', 'id = ?', [$comment_id]);
+        log_activity((int) $comment['ticket_id'], (int) $user['id'], 'comment_deleted', 'Comment deleted through API');
+    } catch (Throwable $e) {
+        api_error('Failed to delete comment.', 500);
+    }
+
+    api_app_contract_success([
+        'ticket_id' => (int) $comment['ticket_id'],
+        'comment_id' => $comment_id,
+        'deleted' => true,
+    ], ['resource' => 'delete_comment'], [
+        'ticket_id' => (int) $comment['ticket_id'],
+        'comment_id' => $comment_id,
+        'deleted' => true,
+    ]);
+}
+
+function api_app_delete_time_entry()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        api_error('Method not allowed', 405);
+    }
+
+    api_app_require_write_auth();
+    api_app_require_api_token_scope('tickets:read');
+    api_app_require_api_token_scope('time:write');
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+    if (!is_agent() && !is_admin()) {
+        api_error('Forbidden', 403);
+    }
+    if (!ticket_time_table_exists()) {
+        api_error('Time tracking is not available.', 400);
+    }
+
+    $input = get_json_input();
+    $entry_id = (int) ($input['time_entry_id'] ?? $input['entry_id'] ?? $input['id'] ?? 0);
+    if ($entry_id <= 0) {
+        api_error('time_entry_id is required.', 422);
+    }
+
+    $entry = db_fetch_one("SELECT * FROM ticket_time_entries WHERE id = ? LIMIT 1", [$entry_id]);
+    if (!$entry) {
+        api_error('Time entry not found.', 404);
+    }
+
+    $ticket = get_ticket((int) $entry['ticket_id']);
+    if (!$ticket || !can_see_ticket($ticket, $user)) {
+        api_error('Forbidden', 403);
+    }
+    if (!can_manage_time_entry($entry, $user)) {
+        api_error('Forbidden', 403);
+    }
+
+    require_once BASE_PATH . '/includes/ticket-time-functions.php';
+    if (!delete_time_entry($entry_id)) {
+        api_error('Failed to delete time entry.', 500);
+    }
+
+    log_activity((int) $entry['ticket_id'], (int) $user['id'], 'time_deleted', 'Deleted time entry through API (' . format_duration_minutes((int) ($entry['duration_minutes'] ?? 0)) . ')');
+
+    api_app_contract_success([
+        'ticket_id' => (int) $entry['ticket_id'],
+        'time_entry_id' => $entry_id,
+        'comment_id' => !empty($entry['comment_id']) ? (int) $entry['comment_id'] : null,
+        'deleted' => true,
+    ], ['resource' => 'delete_time_entry'], [
+        'ticket_id' => (int) $entry['ticket_id'],
+        'time_entry_id' => $entry_id,
+        'comment_id' => !empty($entry['comment_id']) ? (int) $entry['comment_id'] : null,
+        'deleted' => true,
+    ]);
 }
 
 function api_app_ticket_timer()

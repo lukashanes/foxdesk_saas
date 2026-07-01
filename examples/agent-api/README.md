@@ -37,6 +37,12 @@ curl -fsS "$FOXDESK_BASE_URL/index.php?page=api&action=agent-docs" \
 ```bash
 sh examples/agent-api/create-ticket.sh
 FOXDESK_TICKET_ID=123 sh examples/agent-api/add-comment.sh
+FOXDESK_TICKET_ID=123 \
+FOXDESK_MANUAL_DATE=2026-05-25 \
+FOXDESK_MANUAL_START_TIME=21:18 \
+FOXDESK_MANUAL_END_TIME=22:06 \
+FOXDESK_DURATION_MINUTES=48 \
+sh examples/agent-api/comment-with-time.sh
 FOXDESK_TICKET_ID=123 sh examples/agent-api/log-time.sh
 FOXDESK_ORGANIZATION_ID=1 sh examples/agent-api/prepare-report.sh
 ```

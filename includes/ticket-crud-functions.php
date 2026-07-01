@@ -734,6 +734,7 @@ function add_comment($ticket_id, $user_id, $content, $is_internal = 0, array $op
         'user_id' => $user_id,
         'content' => $content,
         'is_internal' => $is_internal,
+        'time_spent' => max(0, (int) ($options['time_spent'] ?? 0)),
         'created_at' => $created_at
     ]);
 

@@ -232,18 +232,47 @@ function api_agent_docs_tools(): array
         [
             'action' => 'agent-add-comment',
             'method' => 'POST',
-            'scope' => 'comments:write',
+            'scope' => 'tickets:read + comments:write; add time:write when duration/time fields are included',
             'writes' => true,
-            'description' => 'Add a public or internal comment to an accessible ticket.',
+            'description' => 'Add a public or internal comment to an accessible ticket. If time fields are included, the created time entry is linked to the comment.',
             'query' => [],
             'body' => [
                 'ticket_hash' => 'required unless ticket_id is provided',
                 'ticket_id' => 'required unless ticket_hash is provided',
                 'content' => 'required string',
                 'is_internal' => 'optional boolean',
+                'skip_notification' => 'optional boolean',
                 'created_at' => 'optional historical datetime, admin/agent only',
-                'duration_minutes' => 'optional time entry minutes',
+                'duration_minutes' => 'optional time entry minutes; creates linked ticket_time_entries.comment_id',
+                'started_at' => 'optional datetime, requires ended_at',
+                'ended_at' => 'optional datetime, requires started_at',
+                'manual_date' => 'optional YYYY-MM-DD with manual_start_time/manual_end_time',
+                'manual_start_time' => 'optional HH:MM',
+                'manual_end_time' => 'optional HH:MM',
+                'is_billable' => 'optional boolean',
                 'time_summary' => 'optional time entry summary',
+            ],
+        ],
+        [
+            'action' => 'app-add-comment-with-time',
+            'method' => 'POST',
+            'scope' => 'tickets:read + comments:write + time:write',
+            'writes' => true,
+            'description' => 'Create one work record: comment plus linked manual time entry. Use this when a customer-visible note and exact work time belong together.',
+            'query' => [],
+            'body' => [
+                'ticket_hash' => 'required unless ticket_id is provided',
+                'ticket_id' => 'required unless ticket_hash is provided',
+                'content' => 'required HTML/string',
+                'is_internal' => 'optional boolean',
+                'skip_notification' => 'optional boolean',
+                'started_at' => 'required unless manual_date/manual_start_time/manual_end_time are provided',
+                'ended_at' => 'required unless manual_date/manual_start_time/manual_end_time are provided',
+                'duration_minutes' => 'required and must match started_at/ended_at when both are provided',
+                'manual_date' => 'alternative YYYY-MM-DD',
+                'manual_start_time' => 'alternative HH:MM',
+                'manual_end_time' => 'alternative HH:MM',
+                'is_billable' => 'optional boolean, default true',
             ],
         ],
         [
@@ -425,6 +454,25 @@ function api_agent_docs()
                         'ticket_hash' => 'ticket_hash_from_agent_get_ticket',
                         'duration_minutes' => 30,
                         'summary' => 'Investigated and documented the fix.',
+                    ],
+                ],
+                'comment_with_time' => [
+                    'method' => 'POST',
+                    'url' => api_agent_endpoint_url('app-add-comment-with-time'),
+                    'headers' => [
+                        'Authorization' => 'Bearer $FOXDESK_API_TOKEN',
+                        'Content-Type' => 'application/json',
+                        'Idempotency-Key' => 'agent-comment-time-unique-key',
+                    ],
+                    'body' => [
+                        'ticket_hash' => 'ticket_hash_from_agent_get_ticket',
+                        'content' => '<p><strong>Work completed</strong></p><p>Implemented and tested the requested change.</p>',
+                        'is_internal' => false,
+                        'skip_notification' => true,
+                        'started_at' => '2026-05-25 21:18:00',
+                        'ended_at' => '2026-05-25 22:06:00',
+                        'duration_minutes' => 48,
+                        'is_billable' => true,
                     ],
                 ],
             ],
@@ -897,7 +945,12 @@ function api_agent_add_comment()
     $ticket_id = (int) $ticket['id'];
     $is_internal = !empty($input['is_internal']) ? 1 : 0;
     $comment_created_at = date('Y-m-d H:i:s');
-    if (array_key_exists('created_at', $input) && trim((string) $input['created_at']) !== '') {
+    $explicit_comment_created_at = array_key_exists('created_at', $input) && trim((string) $input['created_at']) !== '';
+    if (!$explicit_comment_created_at && array_key_exists('comment_created_at', $input) && trim((string) $input['comment_created_at']) !== '') {
+        $input['created_at'] = $input['comment_created_at'];
+        $explicit_comment_created_at = true;
+    }
+    if ($explicit_comment_created_at) {
         if (!foxdesk_can_backdate_records($user)) {
             api_error('Only admins and agents can set historical dates.', 403);
         }
@@ -910,38 +963,74 @@ function api_agent_add_comment()
         }
     }
 
-    $comment_id = add_comment($ticket_id, $user['id'], $input['content'], $is_internal, [
-        'created_at' => $comment_created_at,
-    ]);
-    if (!$comment_id) {
-        api_error('Failed to add comment', 500);
+    $time_payload = function_exists('api_app_resolve_comment_time_input')
+        ? api_app_resolve_comment_time_input($input, $user, $comment_created_at)
+        : null;
+    if ($time_payload && !$explicit_comment_created_at) {
+        $comment_created_at = (string) $time_payload['ended_at'];
     }
 
-    $response = ['comment_id' => (int) $comment_id];
+    $comment_id = null;
+    $time_entry_id = null;
+    $db = get_db();
+    $started_transaction = false;
 
-    // Auto-log time if duration_minutes provided
-    $duration = (int) ($input['duration_minutes'] ?? 0);
-    if ($duration > 0 && function_exists('add_manual_time_entry')) {
-        $end_dt = new DateTime($comment_created_at);
-        $start_dt = (clone $end_dt)->modify('-' . $duration . ' minutes');
-        $source = (function_exists('is_ai_user') && is_ai_user($user['id'])) ? 'ai' : 'manual';
-        $time_data = [
-            'started_at' => $start_dt->format('Y-m-d H:i:s'),
-            'ended_at' => $end_dt->format('Y-m-d H:i:s'),
-            'duration_minutes' => $duration,
-            'summary' => $input['time_summary'] ?? null,
-            'is_billable' => 1,
-            'source' => $source,
-        ];
-        $time_entry_id = add_manual_time_entry($ticket_id, $user['id'], $time_data);
-        if ($time_entry_id) {
-            $response['time_entry_id'] = (int) $time_entry_id;
-            $response['duration_minutes'] = $duration;
+    try {
+        if (!$db->inTransaction()) {
+            $db->beginTransaction();
+            $started_transaction = true;
         }
+
+        $comment_id = add_comment($ticket_id, $user['id'], $input['content'], $is_internal, [
+            'created_at' => $comment_created_at,
+            'time_spent' => (int) ($time_payload['duration_minutes'] ?? 0),
+        ]);
+        if (!$comment_id) {
+            throw new RuntimeException('Failed to add comment');
+        }
+
+        log_activity($ticket_id, $user['id'], 'commented', 'Comment added');
+
+        if ($time_payload) {
+            $source = (function_exists('is_ai_user') && is_ai_user($user['id'])) ? 'ai' : 'manual';
+            $time_entry_id = add_manual_time_entry($ticket_id, $user['id'], [
+                'comment_id' => (int) $comment_id,
+                'started_at' => $time_payload['started_at'],
+                'ended_at' => $time_payload['ended_at'],
+                'duration_minutes' => (int) $time_payload['duration_minutes'],
+                'summary' => $time_payload['summary'],
+                'is_billable' => (int) $time_payload['is_billable'],
+                'source' => $source,
+            ]);
+            if (!$time_entry_id) {
+                throw new RuntimeException('Failed to log time');
+            }
+            log_activity($ticket_id, $user['id'], 'time_manual', 'Manual time added (' . (int) $time_payload['duration_minutes'] . ' min)');
+        }
+
+        if ($started_transaction) {
+            $db->commit();
+        }
+    } catch (Throwable $e) {
+        if ($started_transaction && $db->inTransaction()) {
+            $db->rollBack();
+        }
+        api_error($time_payload ? 'Failed to add comment with time' : 'Failed to add comment', 500);
+    }
+
+    $response = [
+        'ticket_id' => $ticket_id,
+        'comment_id' => (int) $comment_id,
+    ];
+    if ($time_payload) {
+        $response['time_entry_id'] = (int) $time_entry_id;
+        $response['duration_minutes'] = (int) $time_payload['duration_minutes'];
+        $response['started_at'] = (string) $time_payload['started_at'];
+        $response['ended_at'] = (string) $time_payload['ended_at'];
     }
 
     // In-app notification for new comment (skip internal notes)
-    if (!$is_internal && function_exists('ticket_event_dispatch_in_app')) {
+    if (!$is_internal && empty($input['skip_notification']) && function_exists('ticket_event_dispatch_in_app')) {
         $preview = mb_strlen($input['content']) > 80 ? mb_substr($input['content'], 0, 77) . '...' : $input['content'];
         ticket_event_dispatch_in_app(ticket_event_comment_name($user, false), $ticket_id, $user['id'], [
             'comment_preview' => strip_tags($preview),

@@ -66,7 +66,7 @@
     "test:stripe-hosted-checkout-preflight": "node tests/stripe-hosted-checkout-preflight.test.js",
     "test:profile-password-setup": "./bin/run-php.sh tests/profile-password-setup-contract-test.php",
     "test:web-push": "./bin/run-php.sh tests/web-push-contract-test.php",
-    "test:agent-api-control": "sh -c './bin/run-php.sh tests/agent-api-control-contract-test.php && ./bin/run-php.sh tests/agent-api-quickstart-contract-test.php && ./bin/run-php.sh tests/agent-mcp-wrapper-contract-test.php && ./bin/run-php.sh tests/agent-prod-smoke-contract-test.php && node examples/agent-api/mcp-smoke.js'",
+    "test:agent-api-control": "sh -c './bin/run-php.sh tests/agent-api-control-contract-test.php && ./bin/run-php.sh tests/agent-api-quickstart-contract-test.php && ./bin/run-php.sh tests/app-comment-with-time-contract-test.php && ./bin/run-php.sh tests/agent-mcp-wrapper-contract-test.php && ./bin/run-php.sh tests/agent-prod-smoke-contract-test.php && node examples/agent-api/mcp-smoke.js'",
     "test:agent-api-quickstart": "./bin/run-php.sh tests/agent-api-quickstart-contract-test.php",
     "test:agent-mcp": "sh -c 'node --check examples/agent-api/mcp-server.js && ./bin/run-php.sh tests/agent-mcp-wrapper-contract-test.php && node examples/agent-api/mcp-smoke.js'",
     "test:agent-mcp-smoke": "node examples/agent-api/mcp-smoke.js",
