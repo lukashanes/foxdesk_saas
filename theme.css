@@ -9422,6 +9422,23 @@ display: none;
         border-top: 1px solid var(--border-light);
     }
 
+    .ticket-composer-manual-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+        font-size: var(--type-sm);
+        font-weight: 750;
+    }
+
+    .ticket-composer-manual-hint {
+        color: var(--text-muted);
+        font-size: var(--type-xs);
+        font-weight: 650;
+    }
+
     .ticket-composer-manual-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));

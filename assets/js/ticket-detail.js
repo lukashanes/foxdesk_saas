@@ -33,10 +33,10 @@
         return div.innerHTML;
     }
 
-    function showToast(message, type) {
+    function showToast(message, type, options) {
         type = type || 'success';
         if (typeof window.showAppToast === 'function') {
-            if (window.showAppToast(message, type)) return;
+            if (window.showAppToast(message, type, options || {})) return;
         }
         if (window.appNotificationPrefs && window.appNotificationPrefs.inAppEnabled === false) return;
 
@@ -50,6 +50,46 @@
         }, 3000);
     }
     window.showToastGlobal = showToast;
+
+    function restoreDeletedItem(action, undoToken) {
+        if (!action || !undoToken) return;
+
+        var formData = new FormData();
+        formData.append('undo_token', undoToken);
+        formData.append('csrf_token', csrfToken);
+
+        fetch('index.php?page=api&action=' + encodeURIComponent(action), { method: 'POST', body: formData })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    showToast(data.message || t('restored', 'Restored.'), 'success');
+                    window.setTimeout(function () { window.location.reload(); }, 350);
+                } else {
+                    showToast(data.error || t('undoFailed', 'Undo is no longer available.'), 'error', { force: true });
+                }
+            })
+            .catch(function () {
+                showToast(t('genericError', 'An error occurred.'), 'error', { force: true });
+            });
+    }
+
+    function showUndoToast(message, data) {
+        showToast(message, 'success', {
+            force: true,
+            duration: 8000,
+            actionLabel: data.undo_label || t('undo', 'Undo'),
+            onAction: function () {
+                restoreDeletedItem(data.undo_action, data.undo_token);
+            }
+        });
+    }
+
+    function fadeRemove(node) {
+        if (!node) return;
+        node.style.opacity = '0';
+        node.style.transition = 'opacity 0.2s';
+        setTimeout(function () { node.remove(); }, 220);
+    }
 
     window.quickEditField = function (action, data) {
         var body = new FormData();
@@ -970,7 +1010,6 @@
     };
 
     window.deleteComment = function (commentId) {
-        if (!window.confirm(t('confirmDeleteComment', 'Are you sure you want to delete this comment?'))) return;
         var formData = new FormData();
         formData.append('comment_id', commentId);
         formData.append('csrf_token', csrfToken);
@@ -980,14 +1019,38 @@
             .then(function (data) {
                 if (data.success) {
                     var comment = document.getElementById('comment-' + commentId);
-                    if (comment) {
-                        comment.style.opacity = '0';
-                        comment.style.transition = 'opacity 0.3s';
-                        setTimeout(function () { comment.remove(); }, 300);
+                    fadeRemove(comment);
+                    if (data.undo_token) {
+                        showUndoToast(data.message || t('commentDeleted', 'Comment deleted.'), data);
+                    } else {
+                        showToast(data.message || t('commentDeleted', 'Comment deleted.'), 'success');
                     }
-                    showToast(data.message || t('commentDeleted', 'Comment deleted.'), 'success');
                 } else {
                     window.alert(data.error || t('commentDeleteFailed', 'Failed to delete comment.'));
+                }
+            })
+            .catch(function () {
+                window.alert(t('genericError', 'An error occurred.'));
+            });
+    };
+
+    window.deleteTimeEntry = function (entryId) {
+        var formData = new FormData();
+        formData.append('entry_id', entryId);
+        formData.append('csrf_token', csrfToken);
+
+        fetch('index.php?page=api&action=delete-time-entry', { method: 'POST', body: formData })
+            .then(function (response) { return response.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    document.querySelectorAll('[data-time-entry-id="' + entryId + '"]').forEach(fadeRemove);
+                    if (data.undo_token) {
+                        showUndoToast(data.message || t('timeEntryDeleted', 'Time entry deleted.'), data);
+                    } else {
+                        showToast(data.message || t('timeEntryDeleted', 'Time entry deleted.'), 'success');
+                    }
+                } else {
+                    window.alert(data.error || t('timeEntryDeleteFailed', 'Failed to delete time entry.'));
                 }
             })
             .catch(function () {

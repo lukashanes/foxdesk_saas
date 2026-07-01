@@ -134,10 +134,12 @@ function route_api_request($action) {
         'discard-timer' => 'api_discard_timer',
         'cancel-ticket' => 'api_cancel_ticket',
         'delete-time-entry' => 'api_delete_time_entry',
+        'restore-time-entry' => 'api_restore_time_entry',
         'update-time-inline' => 'api_update_time_inline',
         'quick-log-time' => 'api_quick_log_time',
         'edit-comment' => 'api_edit_comment',
         'delete-comment' => 'api_delete_comment',
+        'restore-comment' => 'api_restore_comment',
         'delete-attachment' => 'api_delete_attachment',
 
         // Quick-edit (AJAX, no page reload)

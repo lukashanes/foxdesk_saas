@@ -126,6 +126,47 @@ function can_view_time($user = null)
 }
 
 /**
+ * Check whether a user can edit/delete a comment they can see.
+ */
+function can_manage_comment($comment, $user = null): bool
+{
+    if ($user === null) {
+        $user = current_user();
+    }
+
+    if (!$user || !is_array($comment)) {
+        return false;
+    }
+
+    if (($user['role'] ?? '') === 'admin') {
+        return true;
+    }
+
+    return (int)($comment['user_id'] ?? 0) === (int)($user['id'] ?? 0);
+}
+
+/**
+ * Check whether a user can edit/delete a time entry they can see.
+ */
+function can_manage_time_entry($entry, $user = null): bool
+{
+    if ($user === null) {
+        $user = current_user();
+    }
+
+    if (!$user || !is_array($entry)) {
+        return false;
+    }
+
+    if (($user['role'] ?? '') === 'admin') {
+        return true;
+    }
+
+    return (int)($entry['user_id'] ?? 0) === (int)($user['id'] ?? 0)
+        && can_view_time($user);
+}
+
+/**
  * Check whether user can view ticket activity timeline.
  * Admin → always true. Agent → true by default. User → opt-in via permissions.
  */

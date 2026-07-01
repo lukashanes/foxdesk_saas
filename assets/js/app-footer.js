@@ -114,6 +114,18 @@ window.showAppToast = function(message, type, options) {
     text.className = 'text-sm';
     text.textContent = String(message);
 
+    var action = null;
+    if (options.actionLabel && typeof options.onAction === 'function') {
+        action = document.createElement('button');
+        action.type = 'button';
+        action.className = 'text-sm font-semibold underline underline-offset-2';
+        action.textContent = String(options.actionLabel);
+        action.addEventListener('click', function() {
+            options.onAction();
+            dismissFlashMessage(wrapper);
+        });
+    }
+
     var close = document.createElement('button');
     close.type = 'button';
     close.className = 'flash-close';
@@ -121,6 +133,7 @@ window.showAppToast = function(message, type, options) {
     close.innerHTML = '&times;';
 
     row.appendChild(text);
+    if (action) row.appendChild(action);
     row.appendChild(close);
     wrapper.appendChild(row);
     stack.appendChild(wrapper);

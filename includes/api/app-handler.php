@@ -415,6 +415,19 @@ function api_app_create_ticket()
         }
         $data['due_date'] = $due_date;
     }
+    if (array_key_exists('created_at', $input) && trim((string) $input['created_at']) !== '') {
+        if (!foxdesk_can_backdate_records($user)) {
+            api_error('Only admins and agents can set historical dates.', 403);
+        }
+        $created_at = foxdesk_normalize_backdated_datetime_input($input['created_at']);
+        if ($created_at === false) {
+            api_error('Created date is invalid.', 422);
+        }
+        if ($created_at !== null) {
+            $data['created_at'] = $created_at;
+            $data['allow_backdated_created_at'] = true;
+        }
+    }
 
     if (!empty($input['tags'])) {
         $data['tags'] = function_exists('normalize_ticket_tags')
@@ -466,8 +479,23 @@ function api_app_add_comment()
     $ticket = api_app_resolve_ticket($input, $user);
     $ticket_id = (int) $ticket['id'];
     $is_internal = !empty($input['is_internal']) && is_agent();
+    $comment_created_at = date('Y-m-d H:i:s');
+    if (array_key_exists('created_at', $input) && trim((string) $input['created_at']) !== '') {
+        if (!foxdesk_can_backdate_records($user)) {
+            api_error('Only admins and agents can set historical dates.', 403);
+        }
+        $created_at = foxdesk_normalize_backdated_datetime_input($input['created_at']);
+        if ($created_at === false) {
+            api_error('Created date is invalid.', 422);
+        }
+        if ($created_at !== null) {
+            $comment_created_at = $created_at;
+        }
+    }
 
-    $comment_id = add_comment($ticket_id, (int) $user['id'], $content, $is_internal ? 1 : 0);
+    $comment_id = add_comment($ticket_id, (int) $user['id'], $content, $is_internal ? 1 : 0, [
+        'created_at' => $comment_created_at,
+    ]);
     if (!$comment_id) {
         api_error('Failed to add comment.', 500);
     }
@@ -476,10 +504,11 @@ function api_app_add_comment()
 
     $duration = (int) ($input['duration_minutes'] ?? 0);
     if ($duration > 0 && is_agent() && function_exists('add_manual_time_entry')) {
-        $started_at = date('Y-m-d H:i:s');
+        $end_dt = new DateTime($comment_created_at);
+        $start_dt = (clone $end_dt)->modify('-' . $duration . ' minutes');
         $time_entry_id = add_manual_time_entry($ticket_id, (int) $user['id'], [
-            'started_at' => $started_at,
-            'ended_at' => date('Y-m-d H:i:s', strtotime($started_at) + ($duration * 60)),
+            'started_at' => $start_dt->format('Y-m-d H:i:s'),
+            'ended_at' => $end_dt->format('Y-m-d H:i:s'),
             'duration_minutes' => $duration,
             'summary' => $input['time_summary'] ?? null,
             'is_billable' => 1,

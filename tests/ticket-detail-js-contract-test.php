@@ -10,6 +10,7 @@ $upload_preview_asset = file_get_contents($root . '/assets/js/upload-preview.js'
 $image_preview_asset = file_get_contents($root . '/assets/js/image-preview.js');
 $attachment_grid = file_get_contents($root . '/includes/components/attachment-grid.php');
 $footer = file_get_contents($root . '/includes/footer.php');
+$app_footer_asset = file_get_contents($root . '/assets/js/app-footer.js');
 $upload_handler = file_get_contents($root . '/includes/api/upload-handler.php');
 $theme = file_get_contents($root . '/theme.css');
 
@@ -29,6 +30,7 @@ $assert($upload_preview_asset !== false, 'Upload preview JS asset must be readab
 $assert($image_preview_asset !== false, 'Image preview JS asset must be readable.');
 $assert($attachment_grid !== false, 'Attachment grid component must be readable.');
 $assert($footer !== false, 'Footer must be readable.');
+$assert($app_footer_asset !== false, 'App footer JS asset must be readable.');
 $assert($upload_handler !== false, 'Upload handler must be readable.');
 $assert($theme !== false, 'Theme CSS must be readable.');
 
@@ -63,7 +65,14 @@ foreach ([
     'window.openEditTicketModal',
     'window.openTicketTimeline',
     'window.deleteAttachment',
+    'window.deleteComment',
+    'window.deleteTimeEntry',
+    'restoreDeletedItem',
+    'showUndoToast',
     'index.php?page=api&action=delete-attachment',
+    "index.php?page=api&action=delete-comment",
+    "index.php?page=api&action=delete-time-entry",
+    "index.php?page=api&action=' + encodeURIComponent(action)",
     'initUploadPreview',
     'FoxDeskAttachmentPasteDrop.bind',
     "targetSelectors: ['#comment-form', '#comment-upload-zone']",
@@ -87,6 +96,12 @@ foreach ([
 ] as $assetNeedle) {
     $assert(str_contains($asset, $assetNeedle), 'Ticket detail JS asset missing behavior: ' . $assetNeedle);
 }
+
+$assert(!str_contains($asset, "confirmDeleteComment"), 'Comment deletion must not show a verification dialog.');
+$assert(!str_contains($page, "Delete this time entry?"), 'Time entry deletion must not show a verification dialog.');
+$assert(str_contains($page, 'data-time-entry-id="<?php echo (int) $entry[\'id\']; ?>"'), 'Time entry rows must be removable after quick delete.');
+$assert(str_contains($app_footer_asset, 'options.actionLabel'), 'App toast must support an action button for Undo.');
+$assert(str_contains($app_footer_asset, 'options.onAction'), 'App toast must execute Undo action callbacks.');
 
 foreach ([
     'window.FoxDeskRichText',

@@ -489,6 +489,19 @@ function create_ticket($data) {
         $organization_id = $candidate_org > 0 ? $candidate_org : null;
     }
 
+    $created_at = date('Y-m-d H:i:s');
+    if (!empty($data['allow_backdated_created_at']) && array_key_exists('created_at', $data)) {
+        $normalized_created_at = function_exists('foxdesk_normalize_backdated_datetime_input')
+            ? foxdesk_normalize_backdated_datetime_input($data['created_at'])
+            : null;
+        if ($normalized_created_at === false) {
+            return false;
+        }
+        if ($normalized_created_at !== null) {
+            $created_at = $normalized_created_at;
+        }
+    }
+
     $ticket_data = [
         'title' => $data['title'],
         'description' => $data['description'] ?? '',
@@ -496,7 +509,8 @@ function create_ticket($data) {
         'user_id' => $data['user_id'],
         'organization_id' => $organization_id,
         'status_id' => $data['status_id'] ?? $default_status['id'],
-        'created_at' => date('Y-m-d H:i:s')
+        'created_at' => $created_at,
+        'updated_at' => $created_at,
     ];
     if (tenant_scoped_table_has_column('tickets')) {
         $ticket_data['tenant_id'] = !empty($user['tenant_id']) ? (int) $user['tenant_id'] : tenant_value_for_insert($data);
@@ -701,17 +715,30 @@ function get_ticket_comment_user_ids(int $ticket_id, ?int $exclude_user_id = nul
 /**
  * Add comment to ticket
  */
-function add_comment($ticket_id, $user_id, $content, $is_internal = 0) {
+function add_comment($ticket_id, $user_id, $content, $is_internal = 0, array $options = []) {
+    $created_at = date('Y-m-d H:i:s');
+    if (array_key_exists('created_at', $options)) {
+        $normalized_created_at = function_exists('foxdesk_normalize_backdated_datetime_input')
+            ? foxdesk_normalize_backdated_datetime_input($options['created_at'])
+            : null;
+        if ($normalized_created_at === false) {
+            return false;
+        }
+        if ($normalized_created_at !== null) {
+            $created_at = $normalized_created_at;
+        }
+    }
+
     $id = db_insert('comments', [
         'ticket_id' => $ticket_id,
         'user_id' => $user_id,
         'content' => $content,
         'is_internal' => $is_internal,
-        'created_at' => date('Y-m-d H:i:s')
+        'created_at' => $created_at
     ]);
 
     // Update ticket's updated_at so "Last updated" sorting works
-    db_update('tickets', ['updated_at' => date('Y-m-d H:i:s')], 'id = ?', [$ticket_id]);
+    db_update('tickets', ['updated_at' => $created_at], 'id = ?', [$ticket_id]);
 
     return $id;
 }

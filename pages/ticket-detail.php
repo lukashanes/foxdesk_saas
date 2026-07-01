@@ -332,7 +332,7 @@ require_once BASE_PATH . '/includes/header.php';
                                 <?php if ($timeline_item['type'] === 'time_entry'): ?>
                                         <?php $entry = $timeline_item['data']; ?>
                                         <?php if (can_view_time($user)): ?>
-                                                <div class="ticket-time-entry-line">
+                                                <div class="ticket-time-entry-line" data-time-entry-id="<?php echo (int) $entry['id']; ?>">
                                                     <div class="time-entry-row ticket-time-entry-chip">
                                                         <?php echo get_icon('clock', 'w-3.5 h-3.5 flex-shrink-0'); ?>
                                                         <span class="ticket-time-entry-chip__duration"><?php
@@ -361,7 +361,7 @@ require_once BASE_PATH . '/includes/header.php';
                                                         <?php endif; ?>
                                                         <span class="ticket-time-entry-chip__dot">·</span>
                                                         <span><?php echo format_date($entry['started_at']); ?></span>
-                                                        <?php $can_edit_this_entry = is_admin() || (is_agent() && (int) $entry['user_id'] === (int) $user['id']); ?>
+                                                        <?php $can_edit_this_entry = can_manage_time_entry($entry, $user); ?>
                                                         <?php if ($can_edit_this_entry): ?>
                                                                 <span class="time-entry-actions">
                                                                     <?php if (!empty($entry['ended_at'])): ?>
@@ -372,16 +372,12 @@ require_once BASE_PATH . '/includes/header.php';
                                                                                 <?php echo get_icon('pencil', 'w-3 h-3'); ?>
                                                                             </button>
                                                                     <?php endif; ?>
-                                                                    <form method="post" class="inline">
-                                                                        <?php echo csrf_field(); ?>
-                                                                        <input type="hidden" name="entry_id" value="<?php echo $entry['id']; ?>">
-                                                                        <button type="submit" name="delete_time_entry"
-                                                                            class="ticket-inline-icon-button ticket-inline-icon-button--danger"
-                                                                            title="<?php echo e(t('Delete')); ?>"
-                                                                            onclick="return confirm('<?php echo e(t('Delete this time entry?')); ?>')">
-                                                                            <?php echo get_icon('trash', 'w-3 h-3'); ?>
-                                                                        </button>
-                                                                    </form>
+                                                                    <button type="button"
+                                                                        class="ticket-inline-icon-button ticket-inline-icon-button--danger"
+                                                                        title="<?php echo e(t('Delete')); ?>"
+                                                                        onclick="deleteTimeEntry(<?php echo (int) $entry['id']; ?>)">
+                                                                        <?php echo get_icon('trash', 'w-3 h-3'); ?>
+                                                                    </button>
                                                                 </span>
                                                         <?php endif; ?>
                                                     </div>
@@ -416,7 +412,7 @@ require_once BASE_PATH . '/includes/header.php';
                                                                 <span class="ticket-comment__edited">(<?php echo e(t('edited')); ?>)</span>
                                                         <?php endif; ?>
                                                         <!-- Edit/Delete actions (visible on hover) -->
-                                                        <?php if (is_admin() || (is_agent() && (int) $comment['user_id'] === (int) $user['id'])): ?>
+                                                        <?php if (can_manage_comment($comment, $user)): ?>
                                                                 <div class="comment-actions">
                                                                     <button type="button"
                                                                         onclick="openEditCommentModal(<?php echo $comment['id']; ?>, <?php echo htmlspecialchars(json_encode($comment['content']), ENT_QUOTES, 'UTF-8'); ?>)"
@@ -457,8 +453,8 @@ require_once BASE_PATH . '/includes/header.php';
                                                     <?php if (!empty($comment_time_entries) && can_view_time($user)): ?>
                                                             <div class="ticket-time-entry-list">
                                                                 <?php foreach ($comment_time_entries as $entry): ?>
-                                                                        <?php $can_edit_this_entry = is_admin() || (is_agent() && (int) $entry['user_id'] === (int) $user['id']); ?>
-                                                                        <div class="time-entry-row ticket-time-entry-chip">
+                                                                        <?php $can_edit_this_entry = can_manage_time_entry($entry, $user); ?>
+                                                                        <div class="time-entry-row ticket-time-entry-chip" data-time-entry-id="<?php echo (int) $entry['id']; ?>">
                                                                             <?php echo get_icon('clock', 'w-3.5 h-3.5 flex-shrink-0'); ?>
                                                                             <span class="ticket-time-entry-chip__duration"><?php
                                                                             if (empty($entry['ended_at'])) {
@@ -490,16 +486,12 @@ require_once BASE_PATH . '/includes/header.php';
                                                                                                     <?php echo get_icon('pencil', 'w-3 h-3'); ?>
                                                                                                 </button>
                                                                                         <?php endif; ?>
-                                                                                        <form method="post" class="inline">
-                                                                                            <?php echo csrf_field(); ?>
-                                                                                            <input type="hidden" name="entry_id" value="<?php echo $entry['id']; ?>">
-                                                                                            <button type="submit" name="delete_time_entry"
+                                                                                            <button type="button"
                                                                                                 class="ticket-inline-icon-button ticket-inline-icon-button--danger"
                                                                                                 title="<?php echo e(t('Delete time')); ?>"
-                                                                                                onclick="return confirm('<?php echo e(t('Delete this time entry?')); ?>')">
+                                                                                                onclick="deleteTimeEntry(<?php echo (int) $entry['id']; ?>)">
                                                                                                 <?php echo get_icon('trash', 'w-3 h-3'); ?>
                                                                                             </button>
-                                                                                        </form>
                                                                                     </span>
                                                                             <?php endif; ?>
                                                                         </div>
@@ -564,9 +556,13 @@ $ticket_detail_js_config = [
         'edited' => t('edited'),
         'commentUpdated' => t('Comment updated.'),
         'commentUpdateFailed' => t('Failed to update comment.'),
-        'confirmDeleteComment' => t('Are you sure you want to delete this comment?'),
         'commentDeleted' => t('Comment deleted.'),
         'commentDeleteFailed' => t('Failed to delete comment.'),
+        'timeEntryDeleted' => t('Time entry deleted.'),
+        'timeEntryDeleteFailed' => t('Failed to delete time entry.'),
+        'undo' => t('Undo'),
+        'undoFailed' => t('Undo is no longer available.'),
+        'restored' => t('Restored.'),
         'confirmDeleteAttachment' => t('Delete this attachment?'),
         'attachmentDeleted' => t('Attachment deleted.'),
         'attachmentDeleteFailed' => t('Failed to delete attachment.'),

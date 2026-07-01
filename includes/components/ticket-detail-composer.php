@@ -72,6 +72,14 @@
                     <?php if (is_agent()): ?>
                             <div class="ticket-composer-tool-grid">
                                 <div>
+                                    <label class="form-label-sm"><?php echo e(t('Created at')); ?></label>
+                                    <input type="datetime-local"
+                                        name="comment_created_at"
+                                        max="<?php echo e(date('Y-m-d\TH:i')); ?>"
+                                        class="form-input ticket-composer-status-select"
+                                        aria-label="<?php echo e(t('Created at')); ?>">
+                                </div>
+                                <div>
                                     <select name="status_id" class="form-select ticket-composer-status-select">
                                         <?php foreach (($composer_statuses ?? $statuses) as $status): ?>
                                                 <option value="<?php echo $status['id']; ?>" <?php echo $status['id'] == $ticket['status_id'] ? 'selected' : ''; ?>>
@@ -125,10 +133,14 @@
                 <?php endif; ?>
 
                 <?php if (is_agent() && $time_tracking_available): ?>
-                        <!-- Manual Time Entry (expandable, between attachments and submit row) -->
-                        <div id="manual-entry-row" class="ticket-composer-manual-entry hidden">
+                        <!-- Optional time entry saved together with the reply. -->
+                        <div id="manual-entry-row" class="ticket-composer-manual-entry">
                             <input type="hidden" name="manual_start_at" id="manual-start-at">
                             <input type="hidden" name="manual_end_at" id="manual-end-at">
+                            <div class="ticket-composer-manual-header">
+                                <span><?php echo e(t('Time spent')); ?></span>
+                                <span class="ticket-composer-manual-hint"><?php echo e(t('Optional')); ?></span>
+                            </div>
                             <div class="ticket-composer-manual-grid">
                                 <div class="ticket-composer-field">
                                     <label class="form-label-sm"><?php echo e(t('Time (min)')); ?></label>
@@ -209,7 +221,7 @@
                                 </div>
                                 <!-- Manual entry toggle -->
                                 <button type="button" id="manual-toggle" class="ticket-composer-icon-button ticket-composer-icon-button--neutral"
-                                    aria-expanded="false"
+                                    aria-expanded="true"
                                     title="<?php echo e(t('Manual entry')); ?>">
                                     <?php echo get_icon('pen', 'w-4 h-4'); ?>
                                 </button>

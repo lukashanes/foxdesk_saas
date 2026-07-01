@@ -47,6 +47,10 @@ $assert(!str_contains($composer, 'style="height: 42px;"'), 'Composer controls mu
 $assert(!str_contains($composer, 'style="border-color: var(--border-light); height: 42px;"'), 'Upload zone must use ticket-composer-upload-zone CSS.');
 $assert(!str_contains($composer, 'manual-duration-chip btn btn-ghost px-2 py-1 text-xs'), 'Manual time chips must use ticket-composer-manual-chip.');
 $assert(!str_contains($composer, 'class="flex items-center text-sm cursor-pointer whitespace-nowrap text-theme-secondary"'), 'Notification toggle must use ticket-composer-skip-notification.');
+$assert(str_contains($composer, 'ticket-composer-manual-header'), 'Agent composer must show the time entry section with a clear label.');
+$assert(str_contains($composer, "t('Time spent')"), 'Visible agent time entry section must use the shared Time spent label.');
+$assert(!str_contains($composer, 'id="manual-entry-row" class="ticket-composer-manual-entry hidden"'), 'Agent time entry must be visible by default so comments can be saved with time.');
+$assert(str_contains($composer, 'aria-expanded="true"'), 'Manual time toggle must match the visible default state.');
 $assert(!str_contains($page, 'btn.style.background'), 'Comment mode JS must use the is-active class instead of inline styles.');
 $assert(!str_contains($page, 'btn.style.color'), 'Comment mode JS must not write inline colors.');
 

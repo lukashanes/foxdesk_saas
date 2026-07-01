@@ -290,6 +290,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $is_internal = $pending_is_internal;
         $content = $pending_content;
+        $comment_created_at_input = trim((string) ($_POST['comment_created_at'] ?? ''));
+        $comment_created_at = date('Y-m-d H:i:s');
+        if ($comment_created_at_input !== '') {
+            if (!foxdesk_can_backdate_records($user)) {
+                flash(t('Only admins and agents can set historical dates.'), 'error');
+                redirect('ticket', ['id' => $ticket_id]);
+            }
+
+            $normalized_comment_created_at = foxdesk_normalize_backdated_datetime_input($comment_created_at_input);
+            if ($normalized_comment_created_at === false) {
+                flash(t('Invalid created date.'), 'error');
+                redirect('ticket', ['id' => $ticket_id]);
+            }
+            if ($normalized_comment_created_at !== null) {
+                $comment_created_at = $normalized_comment_created_at;
+            }
+        }
 
         $cc_users = isset($_POST['cc_users']) ? array_map('intval', $_POST['cc_users']) : [];
         $stop_timer = is_agent() && isset($_POST['stop_timer']);
@@ -341,7 +358,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $manual_start_dt = DateTime::createFromFormat('Y-m-d\\TH:i', $manual_start_at_input);
                 $manual_end_dt = DateTime::createFromFormat('Y-m-d\\TH:i', $manual_end_at_input);
             } elseif ($manual_quick_requested && !$manual_range_requested) {
-                $manual_end_dt = new DateTime();
+                $manual_end_dt = new DateTime($comment_created_at);
                 $manual_start_dt = (clone $manual_end_dt)->modify('-' . $manual_duration_minutes . ' minutes');
             } else {
                 if ($manual_start_input === '' || $manual_end_input === '') {
@@ -391,11 +408,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'content' => $content,
                 'is_internal' => $is_internal,
                 'time_spent' => $comment_time_spent,
-                'created_at' => date('Y-m-d H:i:s')
+                'created_at' => $comment_created_at
             ]);
 
             // Touch ticket so "Last updated" sorting works
-            db_update('tickets', ['updated_at' => date('Y-m-d H:i:s')], 'id = ?', [$ticket_id]);
+            db_update('tickets', ['updated_at' => $comment_created_at], 'id = ?', [$ticket_id]);
 
             log_activity($ticket_id, $user['id'], 'commented', 'Comment added');
         }
@@ -433,7 +450,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'mime_type' => $result['mime_type'],
                         'file_size' => $result['file_size'],
                         'uploaded_by' => $user['id'],
-                        'created_at' => date('Y-m-d H:i:s')
+                        'created_at' => $comment_created_at
                     ], attachment_storage_fields($result)));
 
                     $uploaded_attachments[] = $result;
@@ -732,12 +749,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('ticket', ['id' => $ticket_id]);
     }
 
-    // Delete time entry (admin can delete any, agent can delete own only)
-    if (isset($_POST['delete_time_entry']) && (is_agent() || is_admin())) {
+    // Delete time entry fallback for non-JS form submissions.
+    if (isset($_POST['delete_time_entry'])) {
         $entry_id = (int) $_POST['entry_id'];
         $entry = db_fetch_one("SELECT * FROM ticket_time_entries WHERE id = ?", [$entry_id]);
 
-        if ($entry && ($entry['ticket_id'] == $ticket_id) && (is_admin() || (int) $entry['user_id'] === (int) $user['id'])) {
+        if ($entry && ($entry['ticket_id'] == $ticket_id) && can_manage_time_entry($entry, $user)) {
             // Optional: If linked to a comment, maybe update comment time?
             // For now, just delete the time entry using the function
             require_once BASE_PATH . '/includes/ticket-time-functions.php';
@@ -751,12 +768,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('ticket', ['id' => $ticket_id]);
     }
 
-    // Update time entry (admin can edit any, agent can edit own only)
-    if (isset($_POST['update_time_entry']) && (is_agent() || is_admin())) {
+    // Update time entry fallback for non-JS form submissions.
+    if (isset($_POST['update_time_entry'])) {
         $entry_id = (int) $_POST['entry_id'];
         $entry = db_fetch_one("SELECT * FROM ticket_time_entries WHERE id = ?", [$entry_id]);
 
-        if ($entry && ($entry['ticket_id'] == $ticket_id) && (is_admin() || (int) $entry['user_id'] === (int) $user['id'])) {
+        if ($entry && ($entry['ticket_id'] == $ticket_id) && can_manage_time_entry($entry, $user)) {
             require_once BASE_PATH . '/includes/ticket-time-functions.php';
 
             $started_at = $_POST['started_at'] ?? '';

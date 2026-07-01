@@ -847,16 +847,126 @@ function api_delete_time_entry() {
     if (!$ticket || !can_see_ticket($ticket, $user)) {
         api_error('Forbidden', 403);
     }
-    if (!is_admin() && (int)($entry['user_id'] ?? 0) !== (int)$user['id']) {
+    if (!can_manage_time_entry($entry, $user)) {
         api_error('Forbidden', 403);
     }
 
     require_once BASE_PATH . '/includes/ticket-time-functions.php';
     if (delete_time_entry($entry_id)) {
+        $undo_token = api_ticket_store_undo_action('time_entry', [
+            'entry' => $entry,
+        ], (int) $entry['ticket_id']);
         log_activity($entry['ticket_id'], $user['id'], 'time_deleted', "Deleted time entry (" . format_duration_minutes($entry['duration_minutes'] ?? 0) . ")");
-        api_success(['message' => t('Time entry deleted.')]);
+        api_success([
+            'message' => t('Time entry deleted.'),
+            'undo_token' => $undo_token,
+            'undo_action' => 'restore-time-entry',
+            'undo_label' => t('Undo'),
+        ]);
     } else {
         api_error(t('Failed to delete time entry.'), 500);
+    }
+}
+
+function api_ticket_undo_store(): array
+{
+    if (!isset($_SESSION['ticket_undo_actions']) || !is_array($_SESSION['ticket_undo_actions'])) {
+        $_SESSION['ticket_undo_actions'] = [];
+    }
+
+    $now = time();
+    foreach ($_SESSION['ticket_undo_actions'] as $token => $action) {
+        if (!is_array($action) || (int) ($action['expires_at'] ?? 0) < $now) {
+            unset($_SESSION['ticket_undo_actions'][$token]);
+        }
+    }
+
+    return $_SESSION['ticket_undo_actions'];
+}
+
+function api_ticket_store_undo_action(string $type, array $payload, int $ticket_id): string
+{
+    api_ticket_undo_store();
+
+    $token = bin2hex(random_bytes(16));
+    $_SESSION['ticket_undo_actions'][$token] = [
+        'type' => $type,
+        'ticket_id' => $ticket_id,
+        'payload' => $payload,
+        'created_at' => time(),
+        'expires_at' => time() + 300,
+    ];
+
+    if (count($_SESSION['ticket_undo_actions']) > 12) {
+        uasort($_SESSION['ticket_undo_actions'], static function ($a, $b): int {
+            return (int) ($a['created_at'] ?? 0) <=> (int) ($b['created_at'] ?? 0);
+        });
+        $_SESSION['ticket_undo_actions'] = array_slice($_SESSION['ticket_undo_actions'], -12, null, true);
+    }
+
+    return $token;
+}
+
+function api_ticket_consume_undo_action(string $type, string $token): ?array
+{
+    api_ticket_undo_store();
+    if ($token === '' || empty($_SESSION['ticket_undo_actions'][$token])) {
+        return null;
+    }
+
+    $action = $_SESSION['ticket_undo_actions'][$token];
+    if (($action['type'] ?? '') !== $type || (int) ($action['expires_at'] ?? 0) < time()) {
+        unset($_SESSION['ticket_undo_actions'][$token]);
+        return null;
+    }
+
+    unset($_SESSION['ticket_undo_actions'][$token]);
+    return is_array($action) ? $action : null;
+}
+
+function api_restore_time_entry() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        api_error('Method not allowed', 405);
+    }
+
+    require_csrf_token(true);
+
+    $user = current_user();
+    if (!$user || (!is_agent() && !is_admin())) {
+        api_error('Unauthorized', 401);
+    }
+
+    $token = trim((string) ($_POST['undo_token'] ?? ''));
+    $action = api_ticket_consume_undo_action('time_entry', $token);
+    if (!$action) {
+        api_error(t('Undo is no longer available.'), 410);
+    }
+
+    $entry = $action['payload']['entry'] ?? null;
+    if (!is_array($entry) || empty($entry['id']) || empty($entry['ticket_id'])) {
+        api_error(t('Undo is no longer available.'), 410);
+    }
+
+    $ticket = get_ticket((int) $entry['ticket_id']);
+    if (!$ticket || !can_see_ticket($ticket, $user)) {
+        api_error('Forbidden', 403);
+    }
+    if (!can_manage_time_entry($entry, $user)) {
+        api_error('Forbidden', 403);
+    }
+    if (db_fetch_one("SELECT id FROM ticket_time_entries WHERE id = ?", [(int) $entry['id']])) {
+        api_error(t('This item has already been restored.'), 409);
+    }
+
+    try {
+        db_insert('ticket_time_entries', $entry);
+        log_activity((int) $entry['ticket_id'], (int) $user['id'], 'time_restored', 'Time entry restored');
+        api_success([
+            'message' => t('Time entry restored.'),
+            'ticket_id' => (int) $entry['ticket_id'],
+        ]);
+    } catch (Exception $e) {
+        api_error(t('Failed to restore time entry.'), 500);
     }
 }
 
@@ -873,7 +983,7 @@ function api_quick_log_time() {
     require_csrf_token(true);
 
     $user = current_user();
-    if (!$user || (!is_agent() && !is_admin())) {
+    if (!$user) {
         api_error('Unauthorized', 401);
     }
 
@@ -1154,8 +1264,7 @@ function api_edit_comment() {
         api_error('Forbidden', 403);
     }
 
-    // Agents can only edit their own comments; admins can edit any
-    if (is_agent() && !is_admin() && (int)$comment['user_id'] !== (int)$user['id']) {
+    if (!can_manage_comment($comment, $user)) {
         api_error('Forbidden', 403);
     }
 
@@ -1203,7 +1312,7 @@ function api_delete_comment() {
     require_csrf_token(true);
 
     $user = current_user();
-    if (!$user || (!is_agent() && !is_admin())) {
+    if (!$user) {
         api_error('Unauthorized', 401);
     }
 
@@ -1226,8 +1335,7 @@ function api_delete_comment() {
         api_error('Forbidden', 403);
     }
 
-    // Agents can only delete their own comments; admins can delete any
-    if (is_agent() && !is_admin() && (int)$comment['user_id'] !== (int)$user['id']) {
+    if (!can_manage_comment($comment, $user)) {
         api_error('Forbidden', 403);
     }
 
@@ -1249,6 +1357,9 @@ function api_delete_comment() {
         }
 
         db_delete('comments', 'id = ?', [$comment_id]);
+        $undo_token = api_ticket_store_undo_action('comment', [
+            'comment' => $comment,
+        ], (int) $comment['ticket_id']);
 
         // Log the activity
         log_activity(
@@ -1259,10 +1370,59 @@ function api_delete_comment() {
         );
 
         api_success([
-            'message' => t('Comment deleted.')
+            'message' => t('Comment deleted.'),
+            'undo_token' => $undo_token,
+            'undo_action' => 'restore-comment',
+            'undo_label' => t('Undo'),
         ]);
     } catch (Exception $e) {
         api_error(t('Failed to delete comment.'), 500);
+    }
+}
+
+function api_restore_comment() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        api_error('Method not allowed', 405);
+    }
+
+    require_csrf_token(true);
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+
+    $token = trim((string) ($_POST['undo_token'] ?? ''));
+    $action = api_ticket_consume_undo_action('comment', $token);
+    if (!$action) {
+        api_error(t('Undo is no longer available.'), 410);
+    }
+
+    $comment = $action['payload']['comment'] ?? null;
+    if (!is_array($comment) || empty($comment['id']) || empty($comment['ticket_id'])) {
+        api_error(t('Undo is no longer available.'), 410);
+    }
+
+    $ticket = get_ticket((int) $comment['ticket_id']);
+    if (!$ticket || !can_see_ticket($ticket, $user)) {
+        api_error('Forbidden', 403);
+    }
+    if (!can_manage_comment($comment, $user)) {
+        api_error('Forbidden', 403);
+    }
+    if (db_fetch_one("SELECT id FROM comments WHERE id = ?", [(int) $comment['id']])) {
+        api_error(t('This item has already been restored.'), 409);
+    }
+
+    try {
+        db_insert('comments', $comment);
+        log_activity((int) $comment['ticket_id'], (int) $user['id'], 'comment_restored', 'Comment restored');
+        api_success([
+            'message' => t('Comment restored.'),
+            'ticket_id' => (int) $comment['ticket_id'],
+        ]);
+    } catch (Exception $e) {
+        api_error(t('Failed to restore comment.'), 500);
     }
 }
 

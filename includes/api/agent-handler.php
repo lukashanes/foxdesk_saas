@@ -224,6 +224,7 @@ function api_agent_docs_tools(): array
                 'priority_id' => 'optional priority id',
                 'status_id' => 'optional status id',
                 'due_date' => 'optional YYYY-MM-DD',
+                'created_at' => 'optional historical datetime, admin/agent only',
                 'tags' => 'optional comma-separated tags',
                 'duration_minutes' => 'optional time entry minutes',
             ],
@@ -240,6 +241,7 @@ function api_agent_docs_tools(): array
                 'ticket_id' => 'required unless ticket_hash is provided',
                 'content' => 'required string',
                 'is_internal' => 'optional boolean',
+                'created_at' => 'optional historical datetime, admin/agent only',
                 'duration_minutes' => 'optional time entry minutes',
                 'time_summary' => 'optional time entry summary',
             ],
@@ -610,6 +612,21 @@ function api_agent_create_ticket()
         }
         $data['due_date'] = $normalized_due_date;
     }
+    $ticket_created_at = date('Y-m-d H:i:s');
+    if (array_key_exists('created_at', $input) && trim((string) $input['created_at']) !== '') {
+        if (!foxdesk_can_backdate_records($user)) {
+            api_error('Only admins and agents can set historical dates.', 403);
+        }
+        $normalized_created_at = foxdesk_normalize_backdated_datetime_input($input['created_at']);
+        if ($normalized_created_at === false) {
+            api_error('Field "created_at" is invalid', 422);
+        }
+        if ($normalized_created_at !== null) {
+            $ticket_created_at = $normalized_created_at;
+            $data['created_at'] = $normalized_created_at;
+            $data['allow_backdated_created_at'] = true;
+        }
+    }
     if (!empty($input['tags'])) {
         $data['tags'] = function_exists('normalize_ticket_tags')
             ? normalize_ticket_tags((string) $input['tags'])
@@ -645,11 +662,12 @@ function api_agent_create_ticket()
     // Auto-log time if duration_minutes provided
     $duration = (int) ($input['duration_minutes'] ?? 0);
     if ($duration > 0 && function_exists('add_manual_time_entry')) {
-        $now = date('Y-m-d H:i:s');
+        $end_dt = new DateTime($ticket_created_at);
+        $start_dt = (clone $end_dt)->modify('-' . $duration . ' minutes');
         $source = (function_exists('is_ai_user') && is_ai_user($user['id'])) ? 'ai' : 'manual';
         $time_data = [
-            'started_at' => $now,
-            'ended_at' => date('Y-m-d H:i:s', strtotime($now) + ($duration * 60)),
+            'started_at' => $start_dt->format('Y-m-d H:i:s'),
+            'ended_at' => $end_dt->format('Y-m-d H:i:s'),
             'duration_minutes' => $duration,
             'summary' => $input['time_summary'] ?? t('Ticket creation'),
             'is_billable' => 1,
@@ -878,8 +896,23 @@ function api_agent_add_comment()
     $ticket = api_agent_resolve_ticket($input, $user, 'ticket_hash', 'ticket_id');
     $ticket_id = (int) $ticket['id'];
     $is_internal = !empty($input['is_internal']) ? 1 : 0;
+    $comment_created_at = date('Y-m-d H:i:s');
+    if (array_key_exists('created_at', $input) && trim((string) $input['created_at']) !== '') {
+        if (!foxdesk_can_backdate_records($user)) {
+            api_error('Only admins and agents can set historical dates.', 403);
+        }
+        $normalized_created_at = foxdesk_normalize_backdated_datetime_input($input['created_at']);
+        if ($normalized_created_at === false) {
+            api_error('Field "created_at" is invalid', 422);
+        }
+        if ($normalized_created_at !== null) {
+            $comment_created_at = $normalized_created_at;
+        }
+    }
 
-    $comment_id = add_comment($ticket_id, $user['id'], $input['content'], $is_internal);
+    $comment_id = add_comment($ticket_id, $user['id'], $input['content'], $is_internal, [
+        'created_at' => $comment_created_at,
+    ]);
     if (!$comment_id) {
         api_error('Failed to add comment', 500);
     }
@@ -889,11 +922,12 @@ function api_agent_add_comment()
     // Auto-log time if duration_minutes provided
     $duration = (int) ($input['duration_minutes'] ?? 0);
     if ($duration > 0 && function_exists('add_manual_time_entry')) {
-        $now = date('Y-m-d H:i:s');
+        $end_dt = new DateTime($comment_created_at);
+        $start_dt = (clone $end_dt)->modify('-' . $duration . ' minutes');
         $source = (function_exists('is_ai_user') && is_ai_user($user['id'])) ? 'ai' : 'manual';
         $time_data = [
-            'started_at' => $now,
-            'ended_at' => date('Y-m-d H:i:s', strtotime($now) + ($duration * 60)),
+            'started_at' => $start_dt->format('Y-m-d H:i:s'),
+            'ended_at' => $end_dt->format('Y-m-d H:i:s'),
             'duration_minutes' => $duration,
             'summary' => $input['time_summary'] ?? null,
             'is_billable' => 1,

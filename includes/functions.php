@@ -967,6 +967,65 @@ function format_date($date, $format = 'd.m.Y H:i')
 }
 
 /**
+ * Admins and agents can enter historical ticket/comment timestamps for data
+ * cleanup and migration-like backfill work. Regular clients cannot.
+ */
+function foxdesk_can_backdate_records($user = null): bool
+{
+    if ($user === null && function_exists('current_user')) {
+        $user = current_user();
+    }
+
+    $role = is_array($user) ? (string) ($user['role'] ?? '') : '';
+    return in_array($role, ['admin', 'agent'], true);
+}
+
+/**
+ * Normalize a datetime-local value for backdated records.
+ *
+ * Returns a MySQL DATETIME string, null for an empty value, or false for an
+ * invalid/future value.
+ */
+function foxdesk_normalize_backdated_datetime_input($value)
+{
+    $raw = trim((string) $value);
+    if ($raw === '') {
+        return null;
+    }
+
+    $formats = [
+        'Y-m-d\TH:i:s',
+        'Y-m-d\TH:i',
+        'Y-m-d H:i:s',
+        'Y-m-d H:i',
+    ];
+
+    foreach ($formats as $format) {
+        $dt = DateTime::createFromFormat($format, $raw);
+        if (!$dt) {
+            continue;
+        }
+
+        $errors = DateTime::getLastErrors();
+        if (is_array($errors) && (($errors['warning_count'] ?? 0) > 0 || ($errors['error_count'] ?? 0) > 0)) {
+            continue;
+        }
+
+        if ($format === 'Y-m-d\TH:i' || $format === 'Y-m-d H:i') {
+            $dt->setTime((int) $dt->format('H'), (int) $dt->format('i'), 0);
+        }
+
+        if ($dt->getTimestamp() > time() + 60) {
+            return false;
+        }
+
+        return $dt->format('Y-m-d H:i:s');
+    }
+
+    return false;
+}
+
+/**
  * Get localized month names (short and full) for the current language.
  */
 function get_localized_months()

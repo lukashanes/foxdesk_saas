@@ -63,6 +63,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $assignee_id = (is_admin() || is_agent()) && !empty($_POST['assignee_id']) ? (int) $_POST['assignee_id'] : null;
         $on_behalf_of = (is_admin() || is_agent()) && !empty($_POST['on_behalf_of']) ? (int) $_POST['on_behalf_of'] : null;
         $status_id = (is_admin() || is_agent()) && !empty($_POST['status_id']) ? (int) $_POST['status_id'] : null;
+        $created_at_input = trim((string) ($_POST['created_at'] ?? ''));
+        $created_at = null;
         // Manual time entry (quick minutes or exact start/end range)
         $manual_duration_input = trim((string) ($_POST['manual_duration_minutes'] ?? ''));
         $manual_duration_minutes = $manual_duration_input !== '' ? (int) $manual_duration_input : 0;
@@ -95,6 +97,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        if ($created_at_input !== '') {
+            if (!foxdesk_can_backdate_records($user)) {
+                $error = t('Only admins and agents can set historical dates.');
+            } else {
+                $created_at = foxdesk_normalize_backdated_datetime_input($created_at_input);
+                if ($created_at === false) {
+                    $error = t('Invalid created date.');
+                }
+            }
+        }
+
         if (!empty($error)) {
             // Keep the validation error raised above.
         } elseif (empty($title)) {
@@ -122,6 +135,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'tags' => $tags,
                 'assignee_id' => $assignee_id
             ];
+            if ($created_at !== null) {
+                $create_data['created_at'] = $created_at;
+                $create_data['allow_backdated_created_at'] = true;
+            }
             if ($status_id) {
                 $create_data['status_id'] = $status_id;
             }
@@ -160,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 if (!$manual_time_logged && $manual_duration_input !== '' && $manual_duration_minutes > 0 && function_exists('add_manual_time_entry')) {
-                    $end_dt = new DateTime();
+                    $end_dt = $created_at !== null ? new DateTime($created_at) : new DateTime();
                     $start_dt = (clone $end_dt)->modify('-' . $manual_duration_minutes . ' minutes');
                     add_manual_time_entry($ticket_id, $user['id'], [
                         'started_at' => $start_dt->format('Y-m-d H:i:s'),
@@ -233,7 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'mime_type' => $result['mime_type'],
                             'file_size' => $result['file_size'],
                             'uploaded_by' => $user['id'],
-                            'created_at' => date('Y-m-d H:i:s')
+                            'created_at' => $created_at ?? date('Y-m-d H:i:s')
                         ], attachment_storage_fields($result)));
                     } catch (Exception $e) {
                         $upload_errors[] = $files['name'][$i] . ': ' . $e->getMessage();
@@ -480,6 +497,18 @@ include BASE_PATH . '/includes/components/page-header.php';
                             <input type="datetime-local" name="due_date" value="<?php echo e($_POST['due_date'] ?? ''); ?>"
                                 class="form-input">
                         </div>
+
+                        <?php if (is_admin() || is_agent()): ?>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-theme-secondary"><?php echo e(t('Created at')); ?></label>
+                            <input type="datetime-local"
+                                name="created_at"
+                                value="<?php echo e($_POST['created_at'] ?? ''); ?>"
+                                max="<?php echo e(date('Y-m-d\TH:i')); ?>"
+                                class="form-input">
+                            <p class="mt-1 text-xs text-theme-muted"><?php echo e(t('Leave empty to use now.')); ?></p>
+                        </div>
+                        <?php endif; ?>
 
                         <!-- Assign To (admin/agent only) -->
                         <?php if (is_admin() || is_agent()): ?>
