@@ -1181,7 +1181,7 @@ function get_time_range_bounds($range, $from_date = '', $to_date = '')
         $end = new DateTime('last day of last month');
         $end->setTime(23, 59, 59);
     } elseif ($range === 'last_30_days') {
-        $start = new DateTime('-30 days');
+        $start = new DateTime('-29 days');
         $start->setTime(0, 0, 0);
         $end = new DateTime('now');
     } elseif ($range === 'last_7_days') {

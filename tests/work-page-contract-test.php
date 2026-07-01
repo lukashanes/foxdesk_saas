@@ -24,6 +24,9 @@ assert_work_page(strpos($work, 'data-work-time-overview') !== false, 'work page 
 assert_work_page(strpos($work, 'work-range-controls') !== false, 'work page must group preset and custom date range controls together.');
 assert_work_page(strpos($work, 'class="work-custom-period"') < strpos($work, 'class="work-time-grid"'), 'custom date range controls must stay above KPI cards.');
 assert_work_page(strpos($work, 'data-work-period-chart') !== false, 'work page must render the selected-period activity chart.');
+assert_work_page(strpos($timeModel, "'last_30_days' => t('Last 30 days')") !== false, 'work time period switch must include the last-30-days graph preset.');
+assert_work_page(strpos($timeModel, "\$request['period'] ?? 'last_30_days'") !== false, 'work dashboard must default the graph to the last 30 days.');
+assert_work_page(strpos($timeModel, "\$period = 'last_30_days';") !== false, 'invalid work graph periods must fall back to the last 30 days.');
 assert_work_page(strpos($work, '$chart_agents') !== false, 'work chart must build a visible agent legend.');
 assert_work_page(strpos($work, 'data-work-hours-chart-canvas') !== false, 'work chart must render a real chart canvas, not a calendar-like manual grid.');
 assert_work_page(strpos($work, 'data-work-hours-chart-payload') !== false, 'work chart must pass per-agent data to the chart renderer.');

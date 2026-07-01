@@ -790,6 +790,7 @@ return [
     'Today' => 'Dnes',
     'Past 7 days' => 'Posledních 7 dní',
     'Past 30 days' => 'Posledních 30 dní',
+    'Last 30 days' => 'Posledních 30 dní',
     'Add access' => 'Přidat přístup',
     'Add user...' => 'Přidat uživatele...',
     'Create link' => 'Vytvořit odkaz',

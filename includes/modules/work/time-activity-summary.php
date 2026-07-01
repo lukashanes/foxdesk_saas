@@ -11,6 +11,7 @@ function time_activity_period_options(): array
     return [
         'today' => t('Today'),
         'this_week' => t('This week'),
+        'last_30_days' => t('Last 30 days'),
         'this_month' => t('This month'),
         'last_month' => t('Last month'),
         'custom' => t('Custom month'),
@@ -19,20 +20,20 @@ function time_activity_period_options(): array
 
 function time_activity_period_from_request(array $request): array
 {
-    $period = (string) ($request['period'] ?? 'this_month');
+    $period = (string) ($request['period'] ?? 'last_30_days');
     if (!array_key_exists($period, time_activity_period_options())) {
-        $period = 'this_month';
+        $period = 'last_30_days';
     }
 
     $from_date = trim((string) ($request['from_date'] ?? ''));
     $to_date = trim((string) ($request['to_date'] ?? ''));
     $bounds = function_exists('get_time_range_bounds')
         ? get_time_range_bounds($period, $from_date, $to_date)
-        : ['range' => $period, 'start' => date('Y-m-01 00:00:00'), 'end' => date('Y-m-t 23:59:59')];
+        : ['range' => $period, 'start' => date('Y-m-d 00:00:00', strtotime('-29 days')), 'end' => date('Y-m-d 23:59:59')];
 
     return [
         'period' => (string) ($bounds['range'] ?? $period),
-        'label' => time_activity_period_options()[$period] ?? t('This month'),
+        'label' => time_activity_period_options()[$period] ?? t('Last 30 days'),
         'start' => $bounds['start'] ?? null,
         'end' => $bounds['end'] ?? null,
         'from_date' => $from_date,

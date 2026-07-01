@@ -139,6 +139,9 @@
         var textColor = cssVar('--text-secondary', '#475569');
         var mutedColor = cssVar('--text-muted', '#64748b');
         var gridColor = cssVar('--border-light', 'rgba(148, 163, 184, 0.28)');
+        var tooltipBg = cssVar('--surface-primary', '#ffffff');
+        var tooltipBorder = cssVar('--border-color', 'rgba(148, 163, 184, 0.35)');
+        var denseChart = labels.length > 21;
 
         var chartDatasets = datasets
             .filter(function (dataset) {
@@ -151,11 +154,11 @@
                     backgroundColor: dataset.backgroundColor || '#3b5bdb',
                     borderColor: dataset.borderColor || dataset.backgroundColor || '#3b5bdb',
                     borderWidth: 0,
-                    borderRadius: 5,
+                    borderRadius: denseChart ? 6 : 8,
                     borderSkipped: false,
-                    barPercentage: 0.72,
-                    categoryPercentage: 0.74,
-                    maxBarThickness: 42
+                    barPercentage: denseChart ? 0.86 : 0.78,
+                    categoryPercentage: denseChart ? 0.82 : 0.74,
+                    maxBarThickness: denseChart ? 26 : 34
                 };
             });
 
@@ -200,6 +203,18 @@
                         }
                     },
                     tooltip: {
+                        backgroundColor: tooltipBg,
+                        borderColor: tooltipBorder,
+                        borderWidth: 1,
+                        titleColor: cssVar('--text-primary', '#0f172a'),
+                        bodyColor: textColor,
+                        footerColor: cssVar('--text-primary', '#0f172a'),
+                        padding: 12,
+                        cornerRadius: 10,
+                        displayColors: true,
+                        boxWidth: 8,
+                        boxHeight: 8,
+                        usePointStyle: true,
                         callbacks: {
                             title: function (items) {
                                 var index = items && items[0] ? items[0].dataIndex : 0;
@@ -227,7 +242,8 @@
                             color: mutedColor,
                             maxRotation: 0,
                             autoSkip: true,
-                            autoSkipPadding: 14,
+                            autoSkipPadding: denseChart ? 18 : 14,
+                            maxTicksLimit: denseChart ? 10 : 14,
                             font: {
                                 size: 11,
                                 weight: '700'
@@ -247,7 +263,7 @@
                             color: mutedColor,
                             precision: 0,
                             callback: function (value) {
-                                return Math.round(Number(value) / 60) + 'h';
+                                return formatMinutes(value);
                             },
                             font: {
                                 size: 11,

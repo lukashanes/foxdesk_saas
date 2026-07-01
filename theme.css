@@ -12509,12 +12509,10 @@ background: var(--primary-soft);
 .work-week-chart {
 display: grid;
 gap: 0.75rem;
-padding: 0.85rem;
+padding: 0.9rem;
 border: 1px solid var(--border-light);
 border-radius: var(--fd-radius-card);
-background:
-linear-gradient(180deg, rgba(59, 91, 219, 0.045), rgba(59, 91, 219, 0)),
-var(--surface-secondary);
+background: var(--surface-primary);
 }
 .work-week-chart__header {
 display: flex;
@@ -12539,9 +12537,13 @@ white-space: nowrap;
 .work-hours-chart__canvas-wrap {
 position: relative;
 display: block;
-min-height: 278px;
-height: clamp(240px, 32vh, 340px);
+min-height: 292px;
+height: clamp(260px, 34vh, 360px);
 width: 100%;
+padding: 0.75rem 0.8rem 0.35rem;
+border: 1px solid var(--border-light);
+border-radius: var(--fd-radius-control);
+background: var(--surface-secondary);
 }
 .work-hours-chart.is-chart-ready .work-hours-chart__canvas-wrap {
 display: block;
@@ -12570,7 +12572,7 @@ min-height: 230px;
 overflow: hidden;
 border: 1px solid var(--border-light);
 border-radius: var(--fd-radius-control);
-background: var(--surface-primary);
+background: var(--surface-secondary);
 }
 .work-hours-chart__svg {
 display: block;
@@ -13001,12 +13003,41 @@ min-height: 96px;
 .settings-section-nav {
 grid-template-columns: 1fr;
 }
+.work-period-switch,
+.work-activity-switch {
+display: grid;
+grid-template-columns: repeat(2, minmax(0, 1fr));
+gap: 0.125rem;
+width: 100%;
+}
+.work-period-link {
+width: 100%;
+min-width: 0;
+padding-inline: 0.5rem;
+}
 .work-custom-period {
+display: grid;
+grid-template-columns: repeat(2, minmax(0, 1fr));
 width: 100%;
 }
 .work-custom-period label {
 min-width: 0;
-flex: 1 1 9rem;
+width: 100%;
+}
+.work-custom-period .btn {
+grid-column: 1 / -1;
+}
+.workspace-queue-rail {
+display: grid;
+grid-template-columns: repeat(2, minmax(0, 1fr));
+margin-right: 0;
+border-right: 1px solid var(--border-light);
+border-radius: var(--fd-radius-card);
+overflow: visible;
+scroll-snap-type: none;
+}
+.workspace-queue-link {
+min-width: 0;
 }
 .work-time-grid {
 grid-template-columns: 1fr;

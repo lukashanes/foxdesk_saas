@@ -673,6 +673,7 @@ return [
     'Last week' => 'Settimana scorsa',
     'Past 7 days' => 'Ultimi 7 giorni',
     'Past 30 days' => 'Ultimi 30 giorni',
+    'Last 30 days' => 'Ultimi 30 giorni',
     'Time report' => 'Report tempo',
     'Time Reports' => 'Report tempo',
     'My time' => 'Il mio tempo',

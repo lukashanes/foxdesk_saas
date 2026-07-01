@@ -787,6 +787,7 @@ return [
     'Today' => 'Today',
     'Past 7 days' => 'Past 7 days',
     'Past 30 days' => 'Past 30 days',
+    'Last 30 days' => 'Last 30 days',
 
     // Password validation messages
     'Password must be at least 12 characters long.' => 'Password must be at least 12 characters long.',
