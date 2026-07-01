@@ -61,6 +61,7 @@ foreach ([
     "ALTER TABLE api_tokens ADD INDEX idx_tenant_id",
     "column_exists_uncached('api_tokens', 'scopes_json')",
     "column_exists_uncached('api_tokens', 'tenant_id')",
+    'WHERE expires_at IS NULL',
 ] as $needle) {
     $assert(str_contains($contents['auth'], $needle), 'API token schema self-healing missing: ' . $needle);
 }

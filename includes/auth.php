@@ -635,6 +635,7 @@ function ensure_api_token_schema(): void
         if (function_exists('index_exists') && !index_exists('api_tokens', 'idx_active')) {
             db_query('ALTER TABLE api_tokens ADD INDEX idx_active (is_active)');
         }
+        db_query("UPDATE api_tokens SET expires_at = DATE_ADD(NOW(), INTERVAL 90 DAY) WHERE expires_at IS NULL");
     } catch (Throwable $e) {
         error_log('API token schema check failed: ' . $e->getMessage());
     }
