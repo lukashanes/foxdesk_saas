@@ -35,6 +35,9 @@ assert_work_page(strpos($work, 'work-hours-chart__svg') !== false, 'work chart f
 assert_work_page(strpos($work, 'work-week-chart__bars') === false, 'work chart must not render the old calendar-like manual day grid.');
 assert_work_page(strpos($work, 'assets/vendor/chartjs/4.4.0/chart.umd.js') !== false, 'work chart must load Chart.js.');
 assert_work_page(strpos($work, "t('Active now')") !== false, 'work page must show active timer time as the fourth KPI.');
+assert_work_page(strpos($work, 'data-work-selected-period-metric') !== false, 'work page must render a KPI for the selected graph period.');
+assert_work_page(strpos($work, "\$period_chart['total_minutes']") !== false, 'selected-period KPI must use the same total as the graph period.');
+assert_work_page(strpos($work, "\$work_report_url(\$selected_period_key") !== false, 'selected-period KPI must link to the matching report period.');
 assert_work_page(strpos($work, "t('Worked hours')") !== false, 'work page must use a concise worked-hours chart title.');
 assert_work_page(strpos($work, '$work_report_url') !== false, 'worked-time metrics must link to the underlying report log.');
 assert_work_page(strpos($work, 'calculate_timer_elapsed') !== false, 'active timer KPI must account for paused timers.');

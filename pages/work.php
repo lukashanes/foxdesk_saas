@@ -73,6 +73,7 @@ foreach ($current_work_timers as $timer) {
     }
 }
 $selected_period_key = (string) ($time_period['period'] ?? 'this_month');
+$selected_period_label = (string) ($time_period['label'] ?? t('This month'));
 $show_selected_period_metric = !in_array($selected_period_key, ['today', 'this_week', 'this_month'], true);
 
 $work_queue_url = static function (string $key): string {
@@ -373,11 +374,13 @@ require_once BASE_PATH . '/includes/header.php';
             <span><?php echo e(t('This week')); ?></span>
             <strong><?php echo e(format_duration_minutes((int) ($my_time_totals['week'] ?? 0))); ?></strong>
         </a>
-        <a class="work-time-metric" href="<?php echo e($work_report_url('this_month', (int) ($user['id'] ?? 0))); ?>">
-            <span><?php echo e(t('This month')); ?></span>
-            <strong><?php echo e(format_duration_minutes((int) ($my_time_totals['month'] ?? 0))); ?></strong>
+        <a class="work-time-metric work-time-metric--selected"
+           href="<?php echo e($work_report_url($selected_period_key, (int) ($user['id'] ?? 0))); ?>"
+           data-work-selected-period-metric>
+            <span><?php echo e($selected_period_label); ?></span>
+            <strong><?php echo e(format_duration_minutes((int) ($period_chart['total_minutes'] ?? $my_time_totals['selected'] ?? 0))); ?></strong>
         </a>
-        <div class="work-time-metric work-time-metric--selected">
+        <div class="work-time-metric">
             <span><?php echo e(t('Active now')); ?></span>
             <strong><?php echo e(format_duration_minutes($active_timer_minutes)); ?></strong>
         </div>
