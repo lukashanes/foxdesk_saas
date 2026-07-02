@@ -117,9 +117,13 @@ $assert(str_contains($public_query, 'c.content as comment_content'), 'Public rep
 $assert(str_contains($public_page, 'data-report-ticket-row'), 'Public report must render ticket summary rows.');
 $assert(str_contains($public_page, 'data-report-ticket-details'), 'Public report must render expandable ticket details.');
 $assert(str_contains($public_page, 'data-report-comment-row'), 'Public report must render comment detail rows.');
+$assert(str_contains($public_page, 'fd-report-ticket-summary'), 'Public report ticket summary must use the hardened formatted summary layout.');
+$assert(str_contains($public_page, 'fd-report-ticket-totals'), 'Public report ticket summary must align time and amount totals.');
 $assert(str_contains($export, "'ticket_summary'"), 'CSV export must include ticket_summary rows.');
 $assert(str_contains($export, "'comment_detail'"), 'CSV export must include comment_detail rows.');
 $assert(str_contains($theme, '.report-ticket-summary'), 'Ticket summary styling is missing.');
+$assert(str_contains($theme, '.fd-report-ticket-summary') && str_contains($theme, 'grid-template-columns: minmax(0, 1fr) auto;'), 'Ticket summary must have a robust two-column layout before details are opened.');
+$assert(str_contains($theme, '.fd-report-ticket-title') && str_contains($theme, 'overflow-wrap: anywhere;'), 'Long ticket titles must not break the public report layout.');
 $assert(str_contains($theme, '.report-ticket-details') && str_contains($theme, 'display: block !important;'), 'Print CSS must expand report ticket details.');
 
 echo "Report ticket detail model contract OK\n";

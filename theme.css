@@ -11895,6 +11895,13 @@ body.report-public-page {
     background: var(--surface-primary);
 }
 
+.fd-report-ticket-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
 .report-ticket-summary {
     display: flex;
     width: 100%;
@@ -11909,8 +11916,29 @@ body.report-public-page {
     cursor: pointer;
 }
 
+.fd-report-ticket-summary {
+    appearance: none;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 18px;
+    width: 100%;
+    min-height: 72px;
+    padding: 16px 18px;
+    border: 0;
+    border-radius: 0;
+    background: #f8fafc;
+    color: #0f172a;
+    text-align: left;
+    cursor: pointer;
+}
+
 .report-ticket-summary:hover {
     background: var(--surface-tertiary);
+}
+
+.fd-report-ticket-summary:hover {
+    background: #f1f5f9;
 }
 
 .report-ticket-summary[aria-expanded="true"] .report-ticket-summary__icon {
@@ -11924,12 +11952,39 @@ body.report-public-page {
     min-width: 0;
 }
 
+.fd-report-ticket-main {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+    min-width: 0;
+}
+
 .report-ticket-summary__icon {
     display: inline-flex;
     flex: 0 0 auto;
     margin-top: 2px;
     color: var(--text-muted);
     transition: transform var(--transition-fast);
+}
+
+.fd-report-ticket-icon {
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+    color: #64748b;
+}
+
+.fd-report-ticket-icon svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
+.fd-report-ticket-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
 }
 
 .report-ticket-summary__title {
@@ -11939,11 +11994,26 @@ body.report-public-page {
     line-height: 1.35;
 }
 
+.fd-report-ticket-title {
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
 .report-ticket-summary__meta {
     display: block;
     margin-top: var(--space-1);
     color: var(--text-muted);
     font-size: var(--type-sm);
+}
+
+.fd-report-ticket-meta {
+    margin: 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.35;
 }
 
 .report-ticket-summary__totals {
@@ -11955,9 +12025,30 @@ body.report-public-page {
     text-align: right;
 }
 
+.fd-report-ticket-totals {
+    display: grid;
+    gap: 3px;
+    min-width: max-content;
+    color: #475569;
+    font-size: 13px;
+    line-height: 1.3;
+    text-align: right;
+}
+
 .report-ticket-summary__totals strong {
     color: var(--text-primary);
     font-size: var(--type-base);
+}
+
+.fd-report-ticket-totals strong {
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.fd-report-ticket-totals span {
+    white-space: nowrap;
 }
 
 .report-ticket-details {
@@ -11999,6 +12090,20 @@ body.report-public-page {
 .report-ticket-preview__details {
     border-top: 1px solid var(--border-light);
     background: var(--surface-primary);
+}
+
+@media (max-width: 640px) {
+    .fd-report-ticket-summary {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+        padding: 14px;
+    }
+
+    .fd-report-ticket-totals {
+        grid-auto-flow: column;
+        justify-content: start;
+        text-align: left;
+    }
 }
 
 .report-public-error-page {

@@ -1107,23 +1107,23 @@ include BASE_PATH . '/includes/components/page-header.php';
                 <div class="report-ticket-preview" data-report-ticket-preview>
                     <?php foreach ($billing_ticket_details['tickets'] as $ticket): ?>
                         <?php $preview_detail_id = 'billing-ticket-' . (int) $ticket['id']; ?>
-                        <div class="report-ticket-card">
+                        <div class="report-ticket-card fd-report-ticket-card">
                             <button type="button"
-                                class="report-ticket-summary"
+                                class="report-ticket-summary fd-report-ticket-summary"
                                 data-report-ticket-row
                                 aria-expanded="false"
                                 aria-controls="<?php echo e($preview_detail_id); ?>"
                                 onclick="toggleReportTicketPreview('<?php echo e($preview_detail_id); ?>', this)">
-                                <span class="report-ticket-summary__main">
-                                    <span class="report-ticket-summary__icon" aria-hidden="true"><?php echo get_icon('chevron-right'); ?></span>
-                                    <span>
-                                        <span class="report-ticket-summary__title"><?php echo e($ticket['title']); ?></span>
-                                        <span class="report-ticket-summary__meta">
+                                <span class="report-ticket-summary__main fd-report-ticket-main">
+                                    <span class="report-ticket-summary__icon fd-report-ticket-icon" aria-hidden="true"><?php echo get_icon('chevron-right'); ?></span>
+                                    <span class="fd-report-ticket-copy">
+                                        <span class="report-ticket-summary__title fd-report-ticket-title"><?php echo e($ticket['title']); ?></span>
+                                        <span class="report-ticket-summary__meta fd-report-ticket-meta">
                                             <?php echo e($ticket['code']); ?> · <?php echo e((string) $ticket['entries_count']); ?> <?php echo e(t('work records')); ?>
                                         </span>
                                     </span>
                                 </span>
-                                <span class="report-ticket-summary__totals">
+                                <span class="report-ticket-summary__totals fd-report-ticket-totals">
                                     <strong><?php echo e(format_duration_minutes($ticket['minutes'])); ?></strong>
                                     <?php if ($show_money): ?>
                                         <span><?php echo e(format_money($ticket['amount'])); ?></span>
