@@ -586,9 +586,9 @@ require_once BASE_PATH . '/includes/header.php';
                 <?php if (!empty($chart_agents)): ?>
                     <div class="work-week-chart__legend" aria-label="<?php echo e(t('Agent')); ?>">
                         <?php foreach ($chart_agents as $chart_agent_key => $chart_agent): ?>
-                            <?php $legend_color = $chart_palette[$chart_agent_color_index[$chart_agent_key] ?? 0] ?? $chart_palette[0]; ?>
+                            <?php $legend_color_index = (int) ($chart_agent_color_index[$chart_agent_key] ?? 0); ?>
                             <span class="work-week-chart__legend-item">
-                                <span class="work-week-chart__legend-dot" style="background: <?php echo e($legend_color); ?>;"></span>
+                                <span class="work-week-chart__legend-dot work-week-chart__legend-dot--<?php echo $legend_color_index; ?>"></span>
                                 <?php echo e((string) ($chart_agent['name'] ?? t('Agent'))); ?>
                             </span>
                         <?php endforeach; ?>

@@ -13168,6 +13168,14 @@ height: 0.65rem;
 border-radius: var(--radius-full);
 box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 12%, transparent);
 }
+.work-week-chart__legend-dot--0 { background: #3b5bdb; }
+.work-week-chart__legend-dot--1 { background: #0ca678; }
+.work-week-chart__legend-dot--2 { background: #f59f00; }
+.work-week-chart__legend-dot--3 { background: #9c36b5; }
+.work-week-chart__legend-dot--4 { background: #e03131; }
+.work-week-chart__legend-dot--5 { background: #1971c2; }
+.work-week-chart__legend-dot--6 { background: #2b8a3e; }
+.work-week-chart__legend-dot--7 { background: #e8590c; }
 .work-time-link,
 .report-time-drilldown,
 .report-metric__link {
