@@ -13,12 +13,12 @@ $assert = static function (bool $condition, string $message): void {
 };
 
 $statuses = [
-    ['id' => 1, 'name' => 'Open', 'is_closed' => 0],
-    ['id' => 2, 'name' => 'Done', 'is_closed' => 1],
+    ['id' => 1, 'name' => 'Open', 'color' => '#112233', 'is_closed' => 0],
+    ['id' => 2, 'name' => 'Done', 'color' => '#44aa55', 'is_closed' => 1],
 ];
 $tickets = [
-    ['id' => 10, 'status_id' => 1, 'is_closed' => 0, 'priority_name' => 'High'],
-    ['id' => 11, 'status_id' => 2, 'is_closed' => 1, 'priority_name' => 'Low'],
+    ['id' => 10, 'status_id' => 1, 'status_color' => '#112233', 'is_closed' => 0, 'priority_name' => 'High'],
+    ['id' => 11, 'status_id' => 2, 'status_color' => '#44aa55', 'is_closed' => 1, 'priority_name' => 'Low'],
 ];
 
 $open_model = ticket_registry_split_model($statuses, $tickets, null, 'open');
@@ -48,6 +48,8 @@ $assert(count($kanban['main_statuses']) >= 1, 'Kanban model must expose main sta
 $assert(ticket_registry_status_group_from_status($statuses[1]) === 'done', 'Closed status must map to done group.');
 $assert(str_contains(ticket_registry_status_accent_class($tickets[1], $statuses), 'ticket-status-accent--done'), 'Closed ticket accent class must use done group.');
 $assert(ticket_registry_status_dot_class('waiting', 'kanban-dot') === 'kanban-dot kanban-dot--waiting', 'Status dot helper must compose base and group.');
+$assert(ticket_status_visual_color(['name' => 'Waiting for customer', 'color' => '#ff9f0a']) === '#ff9f0a', 'Status visual color must use the configured status color, not the inferred group color.');
+$assert(str_contains(ticket_status_color_dot_svg(['name' => 'Done', 'color' => '#44aa55']), 'fill="#44aa55"'), 'Status color dot must render the configured color without inline style attributes.');
 $assert(ticket_registry_priority_badge_class('Urgent') === 'badge-inline ticket-priority-inline ticket-priority-inline--medium', 'Priority helper must compose fallback priority badge class.');
 
 $page = file_get_contents($root . '/pages/tickets.php');

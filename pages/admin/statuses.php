@@ -142,7 +142,9 @@ include BASE_PATH . '/includes/components/page-header.php';
                             </div>
 
                             <!-- Color indicator -->
-                            <div class="w-8 h-8 fd-rounded-card flex-shrink-0" style="background-color: <?php echo e($status['color']); ?>"></div>
+                            <?php echo function_exists('ticket_status_color_swatch_svg')
+                                ? ticket_status_color_swatch_svg($status, 'color-swatch color-swatch--large')
+                                : '<span class="color-swatch color-swatch--large"></span>'; ?>
 
                             <!-- Status info -->
                             <div>

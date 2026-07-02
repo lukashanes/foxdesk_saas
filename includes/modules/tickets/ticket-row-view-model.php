@@ -251,16 +251,26 @@ function ticket_registry_status_group_from_status(array $status): string
     return !empty($status['is_closed']) ? 'done' : 'active';
 }
 
-function ticket_registry_status_label_from_ticket(array $ticket, array $statuses): string
+function ticket_registry_status_from_ticket(array $ticket, array $statuses): array
 {
     $statuses_by_id = ticket_registry_statuses_by_id($statuses);
     $status = $statuses_by_id[(int) ($ticket['status_id'] ?? 0)] ?? [];
     if (!empty($ticket['status_name'])) {
         $status['name'] = (string) $ticket['status_name'];
     }
+    if (!empty($ticket['status_color'])) {
+        $status['color'] = (string) $ticket['status_color'];
+    }
     if (array_key_exists('is_closed', $ticket)) {
         $status['is_closed'] = $ticket['is_closed'];
     }
+
+    return $status;
+}
+
+function ticket_registry_status_label_from_ticket(array $ticket, array $statuses): string
+{
+    $status = ticket_registry_status_from_ticket($ticket, $statuses);
 
     if (function_exists('ticket_status_group_display_name')) {
         return ticket_status_group_display_name($status);

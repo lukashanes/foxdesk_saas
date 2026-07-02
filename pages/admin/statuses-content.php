@@ -182,7 +182,9 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
                     </span>
 
                     <!-- Color Swatch -->
-                    <div class="color-swatch" style="--swatch-color: <?php echo e($status['color']); ?>"></div>
+                    <?php echo function_exists('ticket_status_color_swatch_svg')
+                        ? ticket_status_color_swatch_svg($status)
+                        : '<span class="color-swatch"></span>'; ?>
 
                     <!-- Name and Status -->
                     <div class="flex-1 min-w-0">

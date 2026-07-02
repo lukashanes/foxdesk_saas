@@ -23,10 +23,55 @@ function ticket_status_group_default_labels(): array
     ];
 }
 
+function ticket_status_group_default_colors(): array
+{
+    return [
+        'new' => '#2563eb',
+        'active' => '#4f46e5',
+        'waiting' => '#d97706',
+        'done' => '#059669',
+        'archived' => '#64748b',
+    ];
+}
+
 function ticket_status_group_normalize(?string $group): string
 {
     $group = strtolower(trim((string) $group));
     return in_array($group, ticket_status_group_keys(), true) ? $group : 'active';
+}
+
+function ticket_status_color_normalize(?string $color, ?string $group = null): string
+{
+    $color = trim((string) $color);
+    if (preg_match('/^#[0-9a-fA-F]{6}$/', $color)) {
+        return strtolower($color);
+    }
+
+    $group = ticket_status_group_normalize($group);
+    $colors = ticket_status_group_default_colors();
+    return $colors[$group] ?? $colors['active'];
+}
+
+function ticket_status_visual_color(array $status): string
+{
+    $group = ticket_status_group_from_status($status);
+    return ticket_status_color_normalize($status['color'] ?? null, $group);
+}
+
+function ticket_status_color_dot_svg(array $status, string $class = 'ticket-status-color-dot'): string
+{
+    $color = htmlspecialchars(ticket_status_visual_color($status), ENT_QUOTES, 'UTF-8');
+    $class = htmlspecialchars(trim(preg_replace('/[^a-zA-Z0-9_\-\s]/', '', $class)) ?: 'ticket-status-color-dot', ENT_QUOTES, 'UTF-8');
+
+    return '<svg class="' . $class . '" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><circle cx="5" cy="5" r="5" fill="' . $color . '"/></svg>';
+}
+
+function ticket_status_color_swatch_svg(array $status, string $class = 'color-swatch'): string
+{
+    $color = htmlspecialchars(ticket_status_visual_color($status), ENT_QUOTES, 'UTF-8');
+    $class = htmlspecialchars(trim(preg_replace('/[^a-zA-Z0-9_\-\s]/', '', $class)) ?: 'color-swatch', ENT_QUOTES, 'UTF-8');
+
+    return '<svg class="' . $class . '" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="1" y="1" width="30" height="30" rx="8" fill="' . $color . '"/></svg>';
 }
 
 function ticket_status_group_search_text(?string $text): string

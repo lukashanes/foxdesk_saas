@@ -5,6 +5,7 @@ $functions = file_get_contents($root . '/includes/functions.php');
 $component = file_get_contents($root . '/includes/components/ticket-registry-surface.php');
 $page = file_get_contents($root . '/pages/tickets.php');
 $theme = file_get_contents($root . '/theme.css');
+$js = file_get_contents($root . '/assets/js/ticket-list.js');
 
 $assert = static function (bool $condition, string $message): void {
     if (!$condition) {
@@ -13,7 +14,7 @@ $assert = static function (bool $condition, string $message): void {
     }
 };
 
-$assert($functions !== false && $component !== false && $page !== false && $theme !== false, 'Ticket registry surface files must be readable.');
+$assert($functions !== false && $component !== false && $page !== false && $theme !== false && $js !== false, 'Ticket registry surface files must be readable.');
 $assert(str_contains($functions, '/includes/components/ticket-registry-surface.php'), 'Ticket registry component must be loaded globally.');
 
 foreach ([
@@ -83,7 +84,8 @@ $assert(!str_contains($page, "btn.querySelector('.rounded-full')?.style.backgrou
 $assert(str_contains($page, 'data-tone-class="ticket-status-inline--'), 'Status dropdown items must expose target CSS class.');
 $assert(str_contains($page, 'data-row-accent-class="ticket-status-accent--'), 'Status dropdown items must expose row accent CSS class.');
 $assert(str_contains($page, 'data-tone-class="ticket-priority-inline--'), 'Priority dropdown items must expose target CSS class.');
-$assert(str_contains($page, 'replaceModifierClass(container'), 'Inline ticket updates must swap CSS modifier classes.');
+$assert(str_contains($js, 'replaceModifierClass(trigger'), 'Inline ticket updates must swap badge CSS modifier classes.');
+$assert(str_contains($js, "replaceModifierClass(row, 'ticket-status-accent'"), 'Inline ticket updates must swap row accent CSS modifier classes.');
 $assert(str_contains($theme, '.ticket-status-option--active'), 'theme.css must define status option classes.');
 $assert(str_contains($theme, '.ticket-priority-option--urgent'), 'theme.css must define priority option classes.');
 $assert(str_contains($theme, '.ticket-priority-dot--urgent'), 'theme.css must define priority dot classes.');

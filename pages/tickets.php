@@ -488,7 +488,9 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                          data-is-closed="<?php echo !empty($status['is_closed']) ? '1' : '0'; ?>"
                          data-kanban-scope="main">
                         <div class="kanban-column-header">
-                            <span class="<?php echo e(ticket_registry_status_dot_class(ticket_registry_status_group_from_status($status), 'kanban-dot')); ?>"></span>
+                            <?php echo function_exists('ticket_status_color_dot_svg')
+                                ? ticket_status_color_dot_svg($status, 'kanban-dot-svg')
+                                : '<span class="' . e(ticket_registry_status_dot_class(ticket_registry_status_group_from_status($status), 'kanban-dot')) . '"></span>'; ?>
                             <span class="kanban-status-name"><?php echo e($status_display_name($status)); ?></span>
                             <span class="kanban-count"><?php echo count($status_tickets); ?></span>
                         </div>
@@ -571,7 +573,9 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                                  data-is-closed="1"
                                  data-kanban-scope="archived">
                                 <div class="kanban-column-header">
-                                    <span class="<?php echo e(ticket_registry_status_dot_class(ticket_registry_status_group_from_status($status), 'kanban-dot')); ?>"></span>
+                                    <?php echo function_exists('ticket_status_color_dot_svg')
+                                        ? ticket_status_color_dot_svg($status, 'kanban-dot-svg')
+                                        : '<span class="' . e(ticket_registry_status_dot_class(ticket_registry_status_group_from_status($status), 'kanban-dot')) . '"></span>'; ?>
                                     <span class="kanban-status-name"><?php echo e($status_display_name($status)); ?></span>
                                     <span class="kanban-count"><?php echo count($status_tickets); ?></span>
                                 </div>
@@ -752,7 +756,9 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                         <?php endif; ?>
                             <a href="<?php echo ticket_url($ticket); ?>" class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2 text-xs mb-1 text-theme-muted">
-                                    <span class="<?php echo e(ticket_registry_status_dot_class(ticket_registry_status_group_from_ticket($ticket, $statuses))); ?>"></span>
+                                    <?php echo function_exists('ticket_status_color_dot_svg')
+                                        ? ticket_status_color_dot_svg(ticket_registry_status_from_ticket($ticket, $statuses))
+                                        : '<span class="' . e(ticket_registry_status_dot_class(ticket_registry_status_group_from_ticket($ticket, $statuses))) . '"></span>'; ?>
                                     <span data-ticket-field="status"><?php echo e($ticket_status_display_name($ticket)); ?></span>
                                     <span class="ticket-code-pill" data-ticket-field="code" title="<?php echo e('#' . (int) $ticket['id']); ?>">
                                         <?php echo e(get_ticket_code($ticket['id'])); ?>
@@ -1135,7 +1141,9 @@ $kanban_archived_closed_statuses = $ticket_kanban_model['archived_closed_statuse
                                             data-tone-class="ticket-status-inline--<?php echo e($status_group); ?>"
                                             data-row-accent-class="ticket-status-accent--<?php echo e($status_group); ?>"
                                             onclick="inlineUpdate(<?php echo (int)$ticket['id']; ?>, 'status', <?php echo (int)$st['id']; ?>, this)">
-                                            <span class="<?php echo e(ticket_registry_status_dot_class($status_group)); ?> mr-1.5"></span>
+                                            <?php echo function_exists('ticket_status_color_dot_svg')
+                                                ? ticket_status_color_dot_svg($st, 'ticket-status-color-dot ticket-status-color-dot--spaced')
+                                                : '<span class="' . e(ticket_registry_status_dot_class($status_group)) . ' mr-1.5"></span>'; ?>
                                             <?php echo e($status_display_name($st)); ?>
                                         </button>
                                         <?php endforeach; ?>

@@ -2,6 +2,7 @@
 
 $root = dirname(__DIR__);
 $page = file_get_contents($root . '/pages/dashboard.php');
+$module = file_get_contents($root . '/includes/modules/app/dashboard-compat.php');
 $theme = file_get_contents($root . '/theme.css');
 
 $assert = static function (bool $condition, string $message): void {
@@ -11,7 +12,7 @@ $assert = static function (bool $condition, string $message): void {
     }
 };
 
-$assert($page !== false && $theme !== false, 'Dashboard files must be readable.');
+$assert($page !== false && $module !== false && $theme !== false, 'Dashboard files must be readable.');
 
 foreach ([
     'function dashboard_width_class',
@@ -20,6 +21,11 @@ foreach ([
     'function dashboard_status_dot_class',
     'function dashboard_priority_badge_class',
     'function dashboard_notification_type_class',
+] as $needle) {
+    $assert(str_contains($module, $needle), 'Dashboard compatibility module missing surface contract: ' . $needle);
+}
+
+foreach ([
     'dashboard_width_class($get_started',
     'dashboard_avatar_class($n_actor_name)',
     'dashboard_notification_type_class((string) $notif',
