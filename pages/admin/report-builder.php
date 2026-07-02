@@ -50,6 +50,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $custom_billable_rate = $custom_billable_rate_raw !== ''
         ? max(0, (float) str_replace(',', '.', $custom_billable_rate_raw))
         : null;
+    $agent_ids = function_exists('report_normalize_agent_ids')
+        ? report_normalize_agent_ids($_POST['agent_ids'] ?? $_POST['agents'] ?? '')
+        : '';
+    $tags = function_exists('normalize_ticket_tags')
+        ? normalize_ticket_tags($_POST['tags'] ?? '')
+        : trim((string) ($_POST['tags'] ?? ''));
     $theme_color = trim((string) ($_POST['theme_color'] ?? ''));
     if ($theme_color !== '' && !preg_match('/^#[0-9a-fA-F]{6}$/', $theme_color)) {
         $theme_color = '';
@@ -74,6 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'show_team_attribution' => isset($_POST['show_team_attribution']) ? 1 : 0,
         'show_cost_breakdown' => isset($_POST['show_cost_breakdown']) ? 1 : 0,
         'custom_billable_rate' => $custom_billable_rate,
+        'agent_ids' => $agent_ids !== '' ? $agent_ids : null,
+        'tags' => $tags !== '' ? $tags : null,
         'group_by' => $group_by,
         'rounding_minutes' => $rounding_minutes,
         'theme_color' => $theme_color !== '' ? $theme_color : null,
@@ -194,6 +202,8 @@ if ($editing && $_SERVER['REQUEST_METHOD'] !== 'POST') {
         'custom_billable_rate' => isset($edit_report['custom_billable_rate']) && $edit_report['custom_billable_rate'] !== null
             ? (float) $edit_report['custom_billable_rate']
             : null,
+        'agent_ids' => function_exists('report_normalize_agent_ids') ? report_normalize_agent_ids($edit_report['agent_ids'] ?? '') : (string) ($edit_report['agent_ids'] ?? ''),
+        'tags' => function_exists('normalize_ticket_tags') ? normalize_ticket_tags($edit_report['tags'] ?? '') : (string) ($edit_report['tags'] ?? ''),
         'hide_branding' => !empty($edit_report['hide_branding']),
         'schedule_enabled' => !empty($edit_report['schedule_enabled']),
         'schedule_interval' => trim((string) ($edit_report['schedule_interval'] ?? 'monthly')),
@@ -217,6 +227,8 @@ if ($editing && $_SERVER['REQUEST_METHOD'] !== 'POST') {
         'custom_billable_rate' => ($_POST['custom_billable_rate'] ?? '') !== ''
             ? max(0, (float) str_replace(',', '.', (string) $_POST['custom_billable_rate']))
             : null,
+        'agent_ids' => function_exists('report_normalize_agent_ids') ? report_normalize_agent_ids($_POST['agent_ids'] ?? $_POST['agents'] ?? '') : '',
+        'tags' => function_exists('normalize_ticket_tags') ? normalize_ticket_tags($_POST['tags'] ?? '') : trim((string) ($_POST['tags'] ?? '')),
         'hide_branding' => $_SERVER['REQUEST_METHOD'] === 'POST' ? isset($_POST['hide_branding']) : false,
         'schedule_enabled' => $_SERVER['REQUEST_METHOD'] === 'POST' ? isset($_POST['schedule_enabled']) : false,
         'schedule_interval' => isset($schedule_interval) ? $schedule_interval : trim((string) ($_POST['schedule_interval'] ?? 'monthly')),
@@ -228,6 +240,12 @@ if (!$editing && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     $prefill_org_id = (int) ($_GET['organization_id'] ?? 0);
     $prefill_date_from = trim((string) ($_GET['date_from'] ?? ''));
     $prefill_date_to = trim((string) ($_GET['date_to'] ?? ''));
+    $prefill_agent_ids = function_exists('report_normalize_agent_ids')
+        ? report_normalize_agent_ids($_GET['agent_ids'] ?? $_GET['agents'] ?? '')
+        : '';
+    $prefill_tags = function_exists('normalize_ticket_tags')
+        ? normalize_ticket_tags($_GET['tags'] ?? '')
+        : trim((string) ($_GET['tags'] ?? ''));
 
     if ($prefill_org_id > 0) {
         $form_values['organization_id'] = $prefill_org_id;
@@ -237,6 +255,12 @@ if (!$editing && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     }
     if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $prefill_date_to)) {
         $form_values['date_to'] = $prefill_date_to;
+    }
+    if ($prefill_agent_ids !== '') {
+        $form_values['agent_ids'] = $prefill_agent_ids;
+    }
+    if ($prefill_tags !== '') {
+        $form_values['tags'] = $prefill_tags;
     }
 }
 if (!in_array($form_values['report_language'], $allowed_report_languages, true)) {
@@ -339,6 +363,8 @@ include BASE_PATH . '/includes/header.php';
         <?php if ($editing): ?>
             <input type="hidden" name="edit_id" value="<?php echo (int) $edit_report['id']; ?>">
         <?php endif; ?>
+        <input type="hidden" name="agent_ids" value="<?php echo e((string) ($form_values['agent_ids'] ?? '')); ?>">
+        <input type="hidden" name="tags" value="<?php echo e((string) ($form_values['tags'] ?? '')); ?>">
 
         <!-- Step 1: Basic Information -->
         <div class="card card-body">

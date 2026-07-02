@@ -146,6 +146,7 @@ if (is_admin()) {
 $is_report_history_view = $tab === 'published';
 $is_client_report_review = is_admin() && $selected_flow_org !== null && !$is_report_history_view;
 $billable_time_notice = $is_client_report_review ? report_billable_time_notice($totals, $rounding) : null;
+$report_builder_url = reporting_flow_builder_url_from_filter_state($report_filter_state);
 
 require_once BASE_PATH . '/includes/header.php';
 ?>
@@ -163,14 +164,14 @@ include BASE_PATH . '/includes/components/page-header.php';
                 <p><?php echo e(t('Choose the data once, review ticket details, then share or export.')); ?></p>
             </div>
             <?php if (is_admin()): ?>
-            <form method="GET" action="index.php" class="reporting-flow-form">
+            <form method="GET" action="index.php" class="reporting-flow-form" data-report-create-form>
                 <input type="hidden" name="page" value="admin">
                 <input type="hidden" name="section" value="reports">
                 <input type="hidden" name="tab" value="billing">
                 <input type="hidden" name="show_money" value="1">
                 <label>
                     <span><?php echo e(t('Client')); ?></span>
-                    <select name="organizations[]" class="form-select" required>
+                    <select name="organizations[]" class="form-select" required data-report-client-select>
                         <option value="" disabled <?php echo empty($selected_orgs) ? 'selected' : ''; ?>>
                             <?php echo e(t('Choose client')); ?>
                         </option>
@@ -184,7 +185,7 @@ include BASE_PATH . '/includes/components/page-header.php';
                 </label>
                 <label>
                     <span><?php echo e(t('Period')); ?></span>
-                    <select name="time_range" class="form-select">
+                    <select name="time_range" class="form-select" data-report-period-select>
                         <?php foreach (reporting_flow_time_presets() as $preset => $label): ?>
                             <option value="<?php echo e($preset); ?>" <?php echo $time_range === $preset ? 'selected' : ''; ?>>
                                 <?php echo e($label); ?>
@@ -196,8 +197,9 @@ include BASE_PATH . '/includes/components/page-header.php';
                     <?php echo get_icon('search', 'w-3.5 h-3.5'); ?><?php echo e(t('Update preview')); ?>
                 </button>
                 <?php if ($selected_flow_org !== null && !empty($entries)): ?>
-                <a href="<?php echo reporting_flow_builder_url($selected_flow_org, $time_range); ?>"
-                    class="btn btn-secondary btn-sm">
+                <a href="<?php echo e($report_builder_url); ?>"
+                    class="btn btn-secondary btn-sm"
+                    data-report-create-link>
                     <?php echo get_icon('file-text', 'w-3.5 h-3.5'); ?><?php echo e(t('Create client report')); ?>
                 </a>
                 <?php endif; ?>
@@ -1071,8 +1073,9 @@ include BASE_PATH . '/includes/components/page-header.php';
                             title="<?php echo e(t('Print')); ?>">
                             <?php echo get_icon('print', 'w-3 h-3 inline-block'); ?><?php echo e(t('Print')); ?>
                         </button>
-                        <a href="<?php echo reporting_flow_builder_url($selected_flow_org, $time_range); ?>"
-                            class="btn btn-primary btn-sm">
+                        <a href="<?php echo e($report_builder_url); ?>"
+                            class="btn btn-primary btn-sm"
+                            data-report-create-link>
                             <?php echo get_icon('file-text', 'w-3.5 h-3.5'); ?><?php echo e(t('Create client report')); ?>
                         </a>
                         <?php else: ?>
@@ -1970,6 +1973,91 @@ include BASE_PATH . '/includes/components/page-header.php';
             sel.dispatchEvent(new Event('change'));
         }
     };
+
+    (function () {
+        var createForm = document.querySelector('[data-report-create-form]');
+        var createLinks = Array.prototype.slice.call(document.querySelectorAll('[data-report-create-link]'));
+        if (!createForm || !createLinks.length) return;
+
+        var initialUrls = createLinks.map(function (link) {
+            return link.getAttribute('href') || 'index.php?page=admin&section=report-builder';
+        });
+        var clientSelect = createForm.querySelector('[data-report-client-select]');
+        var periodSelect = createForm.querySelector('[data-report-period-select]');
+
+        function pad(number) {
+            return String(number).padStart(2, '0');
+        }
+
+        function dateValue(date) {
+            return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate());
+        }
+
+        function addDays(date, days) {
+            var copy = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            copy.setDate(copy.getDate() + days);
+            return copy;
+        }
+
+        function rangeBounds(range) {
+            var now = new Date();
+            var month = now.getMonth();
+            var year = now.getFullYear();
+            if (range === 'last_month') {
+                return {
+                    from: dateValue(new Date(year, month - 1, 1)),
+                    to: dateValue(new Date(year, month, 0))
+                };
+            }
+            if (range === 'last_30_days') {
+                return {
+                    from: dateValue(addDays(now, -29)),
+                    to: dateValue(now)
+                };
+            }
+            if (range === 'this_quarter') {
+                return {
+                    from: dateValue(new Date(year, Math.floor(month / 3) * 3, 1)),
+                    to: dateValue(now)
+                };
+            }
+            return {
+                from: dateValue(new Date(year, month, 1)),
+                to: dateValue(now)
+            };
+        }
+
+        function relativeHref(url) {
+            return url.pathname.split('/').pop() + '?' + url.searchParams.toString();
+        }
+
+        function updateCreateLinks() {
+            var organizationId = clientSelect ? clientSelect.value : '';
+            var range = periodSelect ? periodSelect.value : 'this_month';
+            var bounds = rangeBounds(range);
+
+            createLinks.forEach(function (link, index) {
+                var url = new URL(initialUrls[index] || initialUrls[0], window.location.href);
+                url.searchParams.set('page', 'admin');
+                url.searchParams.set('section', 'report-builder');
+                url.searchParams.set('time_range', range);
+                url.searchParams.set('date_from', bounds.from);
+                url.searchParams.set('date_to', bounds.to);
+
+                if (organizationId) {
+                    url.searchParams.set('organization_id', organizationId);
+                } else {
+                    url.searchParams.delete('organization_id');
+                }
+
+                link.setAttribute('href', relativeHref(url));
+            });
+        }
+
+        if (clientSelect) clientSelect.addEventListener('change', updateCreateLinks);
+        if (periodSelect) periodSelect.addEventListener('change', updateCreateLinks);
+        updateCreateLinks();
+    })();
 
     /* ── Collapsible filter panel toggle (RP5) ── */
     window.toggleReportFilters = function() {

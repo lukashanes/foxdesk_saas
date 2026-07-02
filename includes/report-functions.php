@@ -14,6 +14,7 @@
  */
 function create_report_template($data) {
     ensure_report_custom_billable_rate_column();
+    ensure_report_filter_columns();
     ensure_report_expiration_column();
     if (
         array_key_exists('schedule_enabled', $data) ||
@@ -40,6 +41,8 @@ function create_report_template($data) {
         'show_team_attribution' => $data['show_team_attribution'] ?? 1,
         'show_cost_breakdown' => $data['show_cost_breakdown'] ?? 0,
         'custom_billable_rate' => $data['custom_billable_rate'] ?? null,
+        'agent_ids' => $data['agent_ids'] ?? null,
+        'tags' => $data['tags'] ?? null,
         'group_by' => $data['group_by'] ?? 'none',
         'rounding_minutes' => $data['rounding_minutes'] ?? 15,
         'theme_color' => $data['theme_color'] ?? null,
@@ -82,6 +85,9 @@ function report_template_column_exists($column_name) {
     if ($column_name === '') {
         return false;
     }
+    if (function_exists('column_exists_uncached')) {
+        return column_exists_uncached('report_templates', $column_name);
+    }
     return column_exists('report_templates', $column_name);
 }
 
@@ -105,6 +111,49 @@ function ensure_report_custom_billable_rate_column(): void
     } catch (Throwable $e) {
         // Ignore duplicate/unsupported migrations.
     }
+}
+
+function ensure_report_filter_columns(): void
+{
+    static $checked = false;
+    if ($checked) {
+        return;
+    }
+    $checked = true;
+
+    $columns = [
+        'tags' => "ALTER TABLE report_templates ADD COLUMN tags TEXT NULL DEFAULT NULL AFTER custom_billable_rate",
+        'agent_ids' => "ALTER TABLE report_templates ADD COLUMN agent_ids TEXT NULL DEFAULT NULL AFTER tags",
+    ];
+
+    foreach ($columns as $column => $sql) {
+        if (report_template_column_exists($column)) {
+            continue;
+        }
+        try {
+            db_query($sql);
+        } catch (Throwable $e) {
+            // Ignore duplicate/unsupported migrations.
+        }
+    }
+}
+
+function report_normalize_agent_ids($value, bool $as_array = false)
+{
+    if (is_string($value)) {
+        $value = preg_split('/[,\s]+/', $value, -1, PREG_SPLIT_NO_EMPTY);
+    }
+
+    $ids = [];
+    foreach ((array) $value as $id) {
+        $id = (int) $id;
+        if ($id <= 0 || in_array($id, $ids, true)) {
+            continue;
+        }
+        $ids[] = $id;
+    }
+
+    return $as_array ? $ids : implode(',', $ids);
 }
 
 /**
@@ -219,6 +268,7 @@ function get_report_template_by_public_token($token) {
 function update_report_template($id, $data) {
     $update_data = [];
     ensure_report_custom_billable_rate_column();
+    ensure_report_filter_columns();
     ensure_report_expiration_column();
 
     if (
@@ -234,7 +284,7 @@ function update_report_template($id, $data) {
     $allowed_fields = [
         'organization_id', 'title', 'report_language', 'date_from', 'date_to',
         'executive_summary', 'show_financials', 'show_team_attribution',
-        'show_cost_breakdown', 'custom_billable_rate', 'group_by', 'rounding_minutes',
+        'show_cost_breakdown', 'custom_billable_rate', 'agent_ids', 'tags', 'group_by', 'rounding_minutes',
         'theme_color', 'hide_branding', 'is_draft', 'is_archived', 'expires_at',
         'schedule_enabled', 'schedule_interval', 'schedule_day', 'schedule_recipients', 'schedule_next_due'
     ];
@@ -301,6 +351,7 @@ function delete_report_template($id) {
  */
 function get_report_time_entries($template) {
     ensure_report_custom_billable_rate_column();
+    ensure_report_filter_columns();
     $has_ticket_tags = report_ticket_tags_column_exists();
     $ticket_tags_select = $has_ticket_tags
         ? 't.tags as ticket_tags,'
@@ -368,6 +419,14 @@ function get_report_time_entries($template) {
                 $params[] = $tag;
             }
             $sql .= ' AND (' . implode(' OR ', $conditions) . ')';
+        }
+    }
+
+    $agent_ids = report_normalize_agent_ids($template['agent_ids'] ?? '', true);
+    if (!empty($agent_ids)) {
+        $sql .= " AND te.user_id IN (" . implode(',', array_fill(0, count($agent_ids), '?')) . ")";
+        foreach ($agent_ids as $agent_id) {
+            $params[] = $agent_id;
         }
     }
 

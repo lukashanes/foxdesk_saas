@@ -508,6 +508,8 @@ CREATE TABLE IF NOT EXISTS report_templates (
     show_team_attribution TINYINT(1) DEFAULT 1,
     show_cost_breakdown TINYINT(1) DEFAULT 0,
     custom_billable_rate DECIMAL(10,2) NULL DEFAULT NULL,
+    tags TEXT NULL DEFAULT NULL,
+    agent_ids TEXT NULL DEFAULT NULL,
     group_by VARCHAR(50) DEFAULT 'none',
     rounding_minutes INT DEFAULT 15,
     theme_color VARCHAR(50),

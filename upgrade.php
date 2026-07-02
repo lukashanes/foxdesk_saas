@@ -838,6 +838,8 @@ if (!$check) {
                 show_team_attribution TINYINT(1) DEFAULT 1,
                 show_cost_breakdown TINYINT(1) DEFAULT 0,
                 custom_billable_rate DECIMAL(10,2) NULL DEFAULT NULL,
+                tags TEXT NULL DEFAULT NULL,
+                agent_ids TEXT NULL DEFAULT NULL,
                 group_by VARCHAR(50) DEFAULT 'none',
                 rounding_minutes INT DEFAULT 15,
                 theme_color VARCHAR(50),
@@ -866,6 +868,26 @@ if (!$check) {
         $messages[] = "OK: Added column `custom_billable_rate` to `report_templates`";
     } catch (Exception $e) {
         $messages[] = "ERROR: Failed to add column `custom_billable_rate` to `report_templates`: " . $e->getMessage();
+    }
+}
+
+$check = db_fetch_one("SHOW COLUMNS FROM report_templates LIKE 'tags'");
+if (!$check) {
+    try {
+        db_query("ALTER TABLE report_templates ADD COLUMN tags TEXT NULL DEFAULT NULL AFTER custom_billable_rate");
+        $messages[] = "OK: Added column `tags` to `report_templates`";
+    } catch (Exception $e) {
+        $messages[] = "ERROR: Failed to add column `tags` to `report_templates`: " . $e->getMessage();
+    }
+}
+
+$check = db_fetch_one("SHOW COLUMNS FROM report_templates LIKE 'agent_ids'");
+if (!$check) {
+    try {
+        db_query("ALTER TABLE report_templates ADD COLUMN agent_ids TEXT NULL DEFAULT NULL AFTER tags");
+        $messages[] = "OK: Added column `agent_ids` to `report_templates`";
+    } catch (Exception $e) {
+        $messages[] = "ERROR: Failed to add column `agent_ids` to `report_templates`: " . $e->getMessage();
     }
 }
 

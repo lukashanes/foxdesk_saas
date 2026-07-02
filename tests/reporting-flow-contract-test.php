@@ -27,6 +27,9 @@ $assert(str_contains($bootstrap, '/reports/billing-review.php'), 'Module bootstr
 $assert(str_contains($module, 'function reporting_flow_steps'), 'Reporting flow steps helper is missing.');
 $assert(str_contains($module, 'function reporting_flow_time_presets'), 'Reporting flow time presets helper is missing.');
 $assert(str_contains($module, 'function reporting_flow_builder_url'), 'Reporting flow builder URL helper is missing.');
+$assert(str_contains($module, 'function reporting_flow_builder_url_from_filter_state'), 'Reporting flow must build report links from the full selected filter state.');
+$assert(str_contains($module, '$filter_state[\'selected_agents\']'), 'Report builder URL must preserve selected agents.');
+$assert(str_contains($module, '$filter_state[\'selected_tags\']'), 'Report builder URL must preserve selected tags.');
 $assert(str_contains($billing, 'function billing_review_adjusted_rate'), 'Billing review adjustment helper is missing.');
 $assert(str_contains($billing, 'function billing_review_rate_from_target_amount'), 'Billing review target total helper is missing.');
 $assert(str_contains($billing, 'function billing_review_total_labels'), 'Billing review API total labels are missing.');
@@ -42,7 +45,11 @@ $assert(str_contains($reports, 'name="organizations[]"'), 'Billing review must s
 $assert(str_contains($reports, 'name="tab" value="billing"'), 'Billing review must open the billing review mode.');
 $assert(str_contains($reports, 'name="show_money" value="1"'), 'Billing review must show money columns.');
 $assert(!str_contains($reports, 'reporting_flow_steps() as'), 'Reports page must not render a scattered side-step checklist.');
-$assert(str_contains($reports, 'reporting_flow_builder_url('), 'Create report link must preserve selected client and period.');
+$assert(str_contains($reports, '$report_builder_url = reporting_flow_builder_url_from_filter_state($report_filter_state);'), 'Create report link must use the current report filter state.');
+$assert(str_contains($reports, 'data-report-create-form'), 'Create report controls must expose a live report form binding.');
+$assert(str_contains($reports, 'data-report-create-link'), 'Create report links must update from the current selected report filters.');
+$assert(str_contains($reports, 'data-report-client-select'), 'Create report link must observe the selected client.');
+$assert(str_contains($reports, 'data-report-period-select'), 'Create report link must observe the selected period.');
 $assert(str_contains($reports, 'class="report-preview-actions"'), 'Billing review actions must be aligned inside the report preview.');
 $assert(str_contains($reports, 'class="report-preview-metrics"'), 'Billing review preview must show report metrics before publishing.');
 $assert(str_contains($reports, 'billing_review_adjustment_actions()'), 'Detailed rows must use shared item adjustment actions.');
@@ -81,6 +88,10 @@ $assert(str_contains($reports, "cell.classList.toggle('is-hidden', !visible)"), 
 $assert(str_contains($builder, '$_GET[\'organization_id\']'), 'Report builder must accept a prefilled organization.');
 $assert(str_contains($builder, '$_GET[\'date_from\']'), 'Report builder must accept a prefilled start date.');
 $assert(str_contains($builder, '$_GET[\'date_to\']'), 'Report builder must accept a prefilled end date.');
+$assert(str_contains($builder, '$_GET[\'agents\']'), 'Report builder must accept prefilled agent filters.');
+$assert(str_contains($builder, '$_GET[\'tags\']'), 'Report builder must accept prefilled tag filters.');
+$assert(str_contains($builder, '\'agent_ids\' => $agent_ids !== \'\' ? $agent_ids : null'), 'Report builder must persist selected agent filters.');
+$assert(str_contains($builder, '\'tags\' => $tags !== \'\' ? $tags : null'), 'Report builder must persist selected tag filters.');
 $assert(str_contains($theme, '.reporting-flow-card'), 'Reporting flow styling is missing.');
 $assert(str_contains($theme, '.report-preview-card'), 'Report preview styling is missing.');
 $assert(str_contains($theme, '.report-preview-actions'), 'Report preview action styling is missing.');

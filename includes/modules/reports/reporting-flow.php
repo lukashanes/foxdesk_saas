@@ -86,3 +86,53 @@ function reporting_flow_builder_url(?int $organization_id = null, string $time_r
 
     return url('admin', $params);
 }
+
+function reporting_flow_builder_url_from_filter_state(array $filter_state): string
+{
+    $selected_orgs = array_values(array_filter(
+        array_map('intval', (array) ($filter_state['selected_orgs'] ?? [])),
+        static fn (int $id): bool => $id > 0
+    ));
+    $organization_id = count($selected_orgs) === 1 ? (int) $selected_orgs[0] : null;
+
+    $from = !empty($filter_state['range_start'])
+        ? substr((string) $filter_state['range_start'], 0, 10)
+        : '';
+    $to = !empty($filter_state['range_end'])
+        ? substr((string) $filter_state['range_end'], 0, 10)
+        : '';
+
+    if ($from === '' || $to === '') {
+        $bounds = reporting_flow_bounds((string) ($filter_state['time_range'] ?? 'this_month'));
+        $from = $from !== '' ? $from : $bounds['from'];
+        $to = $to !== '' ? $to : $bounds['to'];
+    }
+
+    $params = [
+        'section' => 'report-builder',
+        'date_from' => $from,
+        'date_to' => $to,
+        'time_range' => (string) ($filter_state['time_range'] ?? 'this_month'),
+    ];
+
+    if ($organization_id !== null && $organization_id > 0) {
+        $params['organization_id'] = $organization_id;
+    }
+
+    $query = url('admin', $params);
+
+    $selected_agents = array_values(array_filter(
+        array_map('intval', (array) ($filter_state['selected_agents'] ?? [])),
+        static fn (int $id): bool => $id > 0
+    ));
+    if (!empty($selected_agents)) {
+        $query .= '&' . http_build_query(['agents' => $selected_agents]);
+    }
+
+    $selected_tags = (array) ($filter_state['selected_tags'] ?? []);
+    if (!empty($selected_tags)) {
+        $query .= '&tags=' . rawurlencode(implode(', ', $selected_tags));
+    }
+
+    return $query;
+}

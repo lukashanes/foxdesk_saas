@@ -114,6 +114,12 @@ $theme = file_get_contents($root . '/theme.css');
 
 $assert(str_contains($query, 'c.content as comment_content'), 'Admin report query must select comment content.');
 $assert(str_contains($public_query, 'c.content as comment_content'), 'Public report query must select comment content.');
+$assert(str_contains($public_query, 'function ensure_report_filter_columns'), 'Report templates must self-heal selected filter columns.');
+$assert(str_contains($public_query, "'agent_ids' => \$data['agent_ids'] ?? null"), 'Report templates must store selected agent filters.');
+$assert(str_contains($public_query, "'tags' => \$data['tags'] ?? null"), 'Report templates must store selected tag filters.');
+$assert(str_contains($public_query, "'custom_billable_rate', 'agent_ids', 'tags'"), 'Report template updates must preserve selected filter fields.');
+$assert(str_contains($public_query, 'te.user_id IN'), 'Public report query must filter selected agents.');
+$assert(str_contains($public_query, 'FIND_IN_SET(?, REPLACE(IFNULL(t.tags'), 'Public report query must filter selected tags.');
 $assert(str_contains($public_page, 'data-report-ticket-row'), 'Public report must render ticket summary rows.');
 $assert(str_contains($public_page, 'data-report-ticket-details'), 'Public report must render expandable ticket details.');
 $assert(str_contains($public_page, 'data-report-comment-row'), 'Public report must render comment detail rows.');
