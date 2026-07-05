@@ -26,9 +26,31 @@ npm run deploy
 1. Enable Email Routing for `foxdesk.net`.
 2. Enable subaddressing.
 3. Create a custom address route for the base mailbox `tickets@foxdesk.net`.
-4. Route either the catch-all address or each visible workspace alias to the same Worker.
+4. Route each visible workspace alias to the same Worker.
 5. Set the destination action to Worker.
 6. Select `foxdesk-email-router`.
+
+Cloudflare Email Routing catch-all rules only support forward/drop actions, so
+FoxDesk cannot route `*@foxdesk.net` directly to the Worker. Friendly workspace
+aliases such as `aenze-helpdesk@foxdesk.net` need explicit per-address routing
+rules.
+
+For automatic provisioning, configure the app with a Cloudflare token that can
+manage Email Routing rules:
+
+```env
+CLOUDFLARE_EMAIL_ROUTING_API_TOKEN=...
+CLOUDFLARE_ZONE_ID=...
+FOXDESK_EMAIL_ROUTER_WORKER=foxdesk-email-router
+```
+
+New workspaces then create their friendly route during provisioning. Existing
+workspaces can be reconciled with:
+
+```bash
+php bin/sync-cloudflare-email-routes.php --dry-run --json
+php bin/sync-cloudflare-email-routes.php --json
+```
 
 FoxDesk never assigns the base mailbox to a workspace by itself. Each workspace
 gets a friendly public support address such as:

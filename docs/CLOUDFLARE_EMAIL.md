@@ -51,12 +51,13 @@ CLOUDFLARE_EMAIL_REPLY_TO=support@foxdesk.net
 ## Inbound Ticket Replies
 
 Enable Cloudflare Email Routing subaddressing, then route inbound support mail
-to the Worker. Production should use a catch-all route, or create a route for
-each visible workspace alias. Keep the base ticket route for signed replies:
+to the Worker. Cloudflare catch-all rules cannot target Workers, so each visible
+workspace alias needs its own Email Routing rule. Keep the base ticket route for
+signed replies:
 
 ```text
 tickets@foxdesk.net -> Worker foxdesk-email-router
-*@foxdesk.net -> Worker foxdesk-email-router
+aenze-helpdesk@foxdesk.net -> Worker foxdesk-email-router
 ```
 
 Backend values:
@@ -66,6 +67,8 @@ FOXDESK_TICKET_EMAIL_DOMAIN=foxdesk.net
 FOXDESK_TICKET_EMAIL_LOCAL_PART=tickets
 FOXDESK_EMAIL_ROUTE_SECRET=<openssl rand -hex 32>
 FOXDESK_EMAIL_ALLOW_UNKNOWN_SENDERS=false
+CLOUDFLARE_EMAIL_ROUTING_API_TOKEN=<token with Email Routing Rules edit>
+CLOUDFLARE_ZONE_ID=<foxdesk.net zone id>
 ```
 
 Use the same `FOXDESK_EMAIL_ROUTE_SECRET` value as the Worker secret `FOXDESK_EMAIL_WEBHOOK_SECRET`.
@@ -87,6 +90,16 @@ tickets+aenze-helpdesk-3-<token>@foxdesk.net
 Show the friendly address to customers and workspace admins. Keep the signed
 route out of normal workspace UI; it is only for routing diagnostics and
 regression testing.
+
+New SaaS workspaces call the Cloudflare API during provisioning to create their
+friendly alias route. If the token is not configured, workspace creation still
+succeeds, but inbound email for that alias will bounce until the route exists.
+Reconcile existing workspaces with:
+
+```bash
+php bin/sync-cloudflare-email-routes.php --dry-run --json
+php bin/sync-cloudflare-email-routes.php --json
+```
 
 ## Worker Deploy
 

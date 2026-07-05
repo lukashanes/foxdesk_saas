@@ -7,6 +7,8 @@
  * stricter tenant-aware flows incrementally.
  */
 
+require_once __DIR__ . '/cloudflare-email-route-provisioning.php';
+
 function tenant_owned_tables(): array
 {
     return [
@@ -461,7 +463,28 @@ function create_tenant_workspace(array $data): array
         ]);
 
         $db->commit();
-        return ['tenant_id' => $tenant_id, 'user_id' => $admin_id, 'slug' => $slug];
+
+        $email_route = ['ok' => true, 'status' => 'skipped', 'reason' => 'not_available'];
+        try {
+            $email_route = cloudflare_email_routing_provision_workspace_alias([
+                'id' => $tenant_id,
+                'name' => $workspace_name,
+                'slug' => $slug,
+                'status' => $data['status'] ?? 'trialing',
+            ]);
+            if (empty($email_route['ok'])) {
+                error_log('FoxDesk workspace email route provisioning warning: ' . json_encode($email_route));
+            }
+        } catch (Throwable $e) {
+            $email_route = [
+                'ok' => false,
+                'status' => 'failed',
+                'message' => $e->getMessage(),
+            ];
+            error_log('FoxDesk workspace email route provisioning failed: ' . $e->getMessage());
+        }
+
+        return ['tenant_id' => $tenant_id, 'user_id' => $admin_id, 'slug' => $slug, 'email_route' => $email_route];
     } catch (Throwable $e) {
         $db->rollBack();
         throw $e;

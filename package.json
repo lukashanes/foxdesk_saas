@@ -28,6 +28,8 @@
     "prod:smoke": "node tests/smoke/production-smoke.js",
     "prod:deploy:evidence": "node bin/deployment-evidence.js",
     "docs:check": "node bin/check-doc-links.js",
+    "email:routes:sync": "./bin/run-php.sh bin/sync-cloudflare-email-routes.php --json",
+    "email:routes:dry-run": "./bin/run-php.sh bin/sync-cloudflare-email-routes.php --dry-run --json",
     "stories:status": "node bin/feature-story-status.js",
     "launch:go-no-go": "node bin/launch-go-no-go.js",
     "beta:gate": "node bin/public-beta-gate.js",
@@ -96,7 +98,8 @@
     "test:ticket-share-state": "./bin/run-php.sh tests/ticket-share-state-contract-test.php",
     "test:ticket-detail-context": "./bin/run-php.sh tests/ticket-detail-context-contract-test.php",
     "test:module-extraction": "./bin/run-php.sh tests/module-extraction-contract-test.php",
-    "test:email-policy": "sh -c './bin/run-php.sh tests/notification-policy-test.php && ./bin/run-php.sh tests/email-notification-contract-test.php && ./bin/run-php.sh tests/email-format-test.php && ./bin/run-php.sh tests/pseudo-cron-email-test.php && ./bin/run-php.sh tests/mailer-managed-notifications-test.php'"
+    "test:email-policy": "sh -c './bin/run-php.sh tests/notification-policy-test.php && ./bin/run-php.sh tests/email-notification-contract-test.php && ./bin/run-php.sh tests/email-format-test.php && ./bin/run-php.sh tests/pseudo-cron-email-test.php && ./bin/run-php.sh tests/mailer-managed-notifications-test.php'",
+    "test:cloudflare-email-routes": "./bin/run-php.sh tests/cloudflare-email-route-provisioning-contract-test.php"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0"

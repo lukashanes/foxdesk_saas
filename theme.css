@@ -9567,17 +9567,20 @@ display: none;
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0.75rem;
+        align-items: end;
     }
 
     .ticket-composer-status-select,
     .ticket-composer-upload-zone {
         min-height: 2.625rem;
+        width: 100%;
     }
 
     .ticket-composer-upload-zone {
         display: flex;
         align-items: center;
         justify-content: center;
+        grid-column: 1 / -1;
         border: 2px dashed var(--border-light);
         border-radius: var(--fd-radius-control);
         text-align: center;
@@ -9619,18 +9622,21 @@ display: none;
 
     .ticket-composer-manual-grid {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 0.5rem;
+        grid-template-columns: minmax(8rem, 1fr) minmax(10rem, 1fr) minmax(8rem, 1fr) minmax(8rem, 1fr);
+        gap: 0.75rem;
+        align-items: end;
     }
 
     .ticket-composer-field {
         display: grid;
         gap: 0.25rem;
+        min-width: 0;
     }
 
     .ticket-composer-compact-input {
         min-height: 2.25rem;
         font-size: var(--type-sm);
+        width: 100%;
     }
 
     .ticket-composer-manual-presets {
@@ -9663,7 +9669,7 @@ display: none;
 
     .ticket-composer-submit-row {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
         gap: 0.75rem;
         margin-top: 0.75rem;
@@ -9678,11 +9684,13 @@ display: none;
 
     .ticket-composer-submit-left {
         min-width: 0;
+        flex: 1 1 auto;
         flex-wrap: wrap;
     }
 
     .ticket-composer-submit-right {
         flex: 0 0 auto;
+        justify-content: flex-end;
     }
 
     .ticket-composer-timer-controls {
@@ -9812,10 +9820,20 @@ display: none;
         white-space: nowrap;
     }
 
+    @media (max-width: 1024px) {
+        .ticket-composer-manual-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
     @media (max-width: 640px) {
         .ticket-composer-tool-grid,
         .ticket-composer-manual-grid {
             grid-template-columns: 1fr;
+        }
+
+        .ticket-composer-upload-zone {
+            grid-column: auto;
         }
 
         .ticket-composer-submit-row,
