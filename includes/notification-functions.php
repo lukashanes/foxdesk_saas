@@ -449,6 +449,14 @@ function notification_is_visible_to_user(array $notification, array $user): bool
         return false;
     }
 
+    $data = get_notification_data_payload($notification);
+    if (($user['role'] ?? '') === 'agent'
+        && ($notification['type'] ?? '') === 'new_ticket'
+        && ($data['source'] ?? '') === 'email'
+        && empty($ticket['assignee_id'])) {
+        return true;
+    }
+
     if (function_exists('can_user_access_ticket_in_listing_scope')) {
         if (!can_user_access_ticket_in_listing_scope($ticket_id, $user)) {
             return false;
@@ -789,9 +797,13 @@ function get_ticket_participants(int $ticket_id, ?int $exclude_user_id = null): 
  */
 function get_staff_user_ids(?int $exclude = null): array
 {
-    $rows = db_fetch_all(
-        "SELECT id FROM users WHERE role IN ('admin','agent') AND is_active = 1"
-    );
+    $params = [];
+    $sql = "SELECT id FROM users WHERE role IN ('admin','agent') AND is_active = 1";
+    if (function_exists('tenant_sql_filter')) {
+        $sql .= tenant_sql_filter('users', '', $params);
+    }
+
+    $rows = db_fetch_all($sql, $params);
     $ids = array_map(fn($r) => (int) $r['id'], $rows);
 
     if ($exclude) {

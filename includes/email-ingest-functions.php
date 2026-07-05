@@ -546,9 +546,17 @@ function email_ingest_process_uid($imap, $uid, $cfg, $dry_run = false)
 
     if (!$dry_run) {
         try {
+            email_ingest_dispatch_ticket_notifications(
+                $ticket_id,
+                $ticket_created,
+                $requester_user_id,
+                $body_text,
+                $comment_id,
+                count($message_payload['attachments'] ?? [])
+            );
             email_ingest_send_requester_notifications($ticket_id, $ticket_created, $requester);
         } catch (Throwable $e) {
-            error_log('email_ingest_send_requester_notifications failed: ' . $e->getMessage());
+            error_log('email_ingest post-processing failed: ' . $e->getMessage());
         }
     }
 
@@ -960,9 +968,17 @@ function email_ingest_process_cloudflare_payload_for_route(array $payload, array
     ]);
 
     try {
+        email_ingest_dispatch_ticket_notifications(
+            $ticket_id,
+            $ticket_created,
+            $requester_user_id,
+            $body_text,
+            $comment_id,
+            (int) ($attachment_meta['stored'] ?? 0)
+        );
         email_ingest_send_requester_notifications($ticket_id, $ticket_created, $requester);
     } catch (Throwable $e) {
-        error_log('email_ingest_send_requester_notifications failed: ' . $e->getMessage());
+        error_log('email_ingest post-processing failed: ' . $e->getMessage());
     }
 
     return [
@@ -1667,6 +1683,68 @@ function email_ingest_require_mailer_dependencies()
     require_once BASE_PATH . '/includes/settings-functions.php';
     require_once BASE_PATH . '/includes/mailer.php';
     $loaded = true;
+}
+
+/**
+ * Dispatch in-app notifications after an inbound email creates or updates a ticket.
+ */
+function email_ingest_dispatch_ticket_notifications($ticket_id, $ticket_created, $requester_user_id, $body_text = '', $comment_id = null, $attachment_count = 0)
+{
+    $ticket_id = (int) $ticket_id;
+    $requester_user_id = (int) $requester_user_id;
+    if ($ticket_id <= 0 || $requester_user_id <= 0) {
+        return;
+    }
+
+    if (!function_exists('t')) {
+        $functions_file = BASE_PATH . '/includes/functions.php';
+        if (is_file($functions_file)) {
+            require_once $functions_file;
+        }
+    }
+
+    if (!function_exists('get_user')) {
+        $auth_file = BASE_PATH . '/includes/auth.php';
+        if (is_file($auth_file)) {
+            require_once $auth_file;
+        }
+    }
+
+    if (!function_exists('dispatch_ticket_notifications')) {
+        $notification_file = BASE_PATH . '/includes/notification-functions.php';
+        if (is_file($notification_file)) {
+            require_once $notification_file;
+        }
+    }
+
+    if (!function_exists('dispatch_ticket_notifications')) {
+        return;
+    }
+
+    $preview = trim(strip_tags((string) $body_text));
+    if ($preview !== '' && mb_strlen($preview) > 160) {
+        $preview = mb_substr($preview, 0, 157) . '...';
+    }
+
+    $extra = [
+        'source' => 'email',
+        'comment_preview' => $preview,
+        'attachment_count' => max(0, (int) $attachment_count),
+    ];
+    if ($comment_id !== null) {
+        $extra['comment_id'] = (int) $comment_id;
+    }
+
+    try {
+        dispatch_ticket_notifications(
+            $ticket_created ? 'new_ticket' : 'new_comment',
+            $ticket_id,
+            $requester_user_id,
+            $extra
+        );
+    } catch (Throwable $e) {
+        error_log('email_ingest_dispatch_ticket_notifications failed: ' . $e->getMessage());
+    }
 }
 
 /**
