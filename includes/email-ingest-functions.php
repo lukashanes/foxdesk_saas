@@ -410,13 +410,14 @@ function email_ingest_process_uid($imap, $uid, $cfg, $dry_run = false)
     }
 
     $message_payload = email_ingest_extract_message_payload($imap, $uid);
-    $body_text = email_ingest_normalize_plain_text((string) $message_payload['text']);
-    $body_html_raw = trim($message_payload['html']);
-    $body_html = email_ingest_sanitize_html($body_html_raw);
-    $body_text = email_ingest_select_display_body($body_text, $body_html);
-    if ($body_text === '') {
-        $body_text = '(No content)';
-    }
+    $body_content = email_ingest_prepare_body_content(
+        (string) ($message_payload['text'] ?? ''),
+        (string) ($message_payload['html'] ?? '')
+    );
+    $body_text = $body_content['text'];
+    $body_html_raw = $body_content['html_raw'];
+    $body_html = $body_content['html'];
+    $display_body = $body_content['display'];
 
     $in_reply_to = email_ingest_normalize_message_id(
         email_ingest_header_value($parsed_headers, 'in_reply_to', '')
@@ -456,10 +457,10 @@ function email_ingest_process_uid($imap, $uid, $cfg, $dry_run = false)
 
         $ticket_id = email_ingest_resolve_ticket_id($subject, $in_reply_to, $reference_ids);
         if ($ticket_id <= 0) {
-            $ticket_id = email_ingest_create_ticket_from_email($requester_user_id, $subject, $body_text);
+            $ticket_id = email_ingest_create_ticket_from_email($requester_user_id, $subject, $display_body);
             $ticket_created = true;
         } else {
-            $comment_id = email_ingest_add_inbound_comment($ticket_id, $requester_user_id, $body_text);
+            $comment_id = email_ingest_add_inbound_comment($ticket_id, $requester_user_id, $display_body);
         }
 
         if ($ticket_id <= 0) {
@@ -550,7 +551,7 @@ function email_ingest_process_uid($imap, $uid, $cfg, $dry_run = false)
                 $ticket_id,
                 $ticket_created,
                 $requester_user_id,
-                $body_text,
+                $display_body,
                 $comment_id,
                 count($message_payload['attachments'] ?? [])
             );
@@ -880,13 +881,14 @@ function email_ingest_process_cloudflare_payload_for_route(array $payload, array
         ];
     }
 
-    $body_text = email_ingest_normalize_plain_text((string) ($payload['text'] ?? ''));
-    $body_html_raw = trim((string) ($payload['html'] ?? ''));
-    $body_html = email_ingest_sanitize_html($body_html_raw);
-    $body_text = email_ingest_select_display_body($body_text, $body_html);
-    if ($body_text === '') {
-        $body_text = '(No content)';
-    }
+    $body_content = email_ingest_prepare_body_content(
+        (string) ($payload['text'] ?? ''),
+        (string) ($payload['html'] ?? '')
+    );
+    $body_text = $body_content['text'];
+    $body_html_raw = $body_content['html_raw'];
+    $body_html = $body_content['html'];
+    $display_body = $body_content['display'];
 
     $in_reply_to = email_ingest_normalize_message_id($payload['in_reply_to'] ?? ($headers['in-reply-to'] ?? ''));
     $references = trim((string) ($payload['references'] ?? ($headers['references'] ?? '')));
@@ -907,14 +909,14 @@ function email_ingest_process_cloudflare_payload_for_route(array $payload, array
             if (!email_ingest_cloudflare_ticket_exists($ticket_id)) {
                 throw new RuntimeException('Routed ticket does not exist in this tenant.');
             }
-            $comment_id = email_ingest_add_inbound_comment($ticket_id, $requester_user_id, $body_text);
+            $comment_id = email_ingest_add_inbound_comment($ticket_id, $requester_user_id, $display_body);
         } else {
             $ticket_id = email_ingest_resolve_ticket_id($subject, $in_reply_to, $reference_ids);
             if ($ticket_id <= 0) {
-                $ticket_id = email_ingest_create_ticket_from_email($requester_user_id, $subject, $body_text);
+                $ticket_id = email_ingest_create_ticket_from_email($requester_user_id, $subject, $display_body);
                 $ticket_created = true;
             } else {
-                $comment_id = email_ingest_add_inbound_comment($ticket_id, $requester_user_id, $body_text);
+                $comment_id = email_ingest_add_inbound_comment($ticket_id, $requester_user_id, $display_body);
             }
         }
 
@@ -972,7 +974,7 @@ function email_ingest_process_cloudflare_payload_for_route(array $payload, array
             $ticket_id,
             $ticket_created,
             $requester_user_id,
-            $body_text,
+            $display_body,
             $comment_id,
             (int) ($attachment_meta['stored'] ?? 0)
         );
@@ -2256,7 +2258,7 @@ function email_ingest_sanitize_html($html)
     $clean = preg_replace('/<' . 'style\b[^>]*>(.*?)<\/' . 'style>/is', '', $clean);
     $clean = preg_replace('/\s*on\w+\s*=\s*(".*?"|\'.*?\'|[^\s>]+)/i', '', $clean);
     $clean = preg_replace('/\s*javascript:/i', '', $clean);
-    $allowed_tags = '<p><br><strong><b><em><i><u><s><ul><ol><li><a><blockquote><pre><code><div><span><h1><h2><h3><h4><h5><h6><table><thead><tbody><tfoot><tr><td><th>';
+    $allowed_tags = '<p><br><strong><b><em><i><u><s><ul><ol><li><a><img><blockquote><pre><code><div><span><h1><h2><h3><h4><h5><h6><table><thead><tbody><tfoot><tr><td><th><hr>';
     $clean = strip_tags($clean, $allowed_tags);
 
     return trim($clean);
@@ -2424,6 +2426,75 @@ function email_ingest_select_display_body($plain_text, $html)
     }
 
     return email_ingest_cleanup_display_body($plain_text);
+}
+
+/**
+ * Decide whether a sanitized HTML body should be used for ticket display.
+ *
+ * Plain-text alternatives generated by mail clients often flatten newsletters
+ * into one long paragraph and expand every link as "label (url)". For ticket
+ * descriptions/comments we keep the rich email when it carries real structure
+ * such as images, lists, tables, headings, or emphasized copy.
+ */
+function email_ingest_should_display_html($plain_text, $html): bool
+{
+    $html = trim((string) $html);
+    if ($html === '') {
+        return false;
+    }
+
+    $html_text = email_ingest_html_to_text($html);
+    if ($html_text === '' && !preg_match('/<img\b/i', $html)) {
+        return false;
+    }
+
+    if (preg_match('/<(img|table|ul|ol|h[1-6]|hr)\b/i', $html)) {
+        return true;
+    }
+
+    if (preg_match('/<(strong|b|em|i)\b/i', $html)) {
+        $plain = email_ingest_cleanup_display_body($plain_text);
+        $plain_breaks = substr_count($plain, "\n");
+        $html_breaks = substr_count($html_text, "\n");
+        return $html_breaks > $plain_breaks || mb_strlen($html_text) >= max(80, (int) (mb_strlen($plain) * 0.75));
+    }
+
+    return false;
+}
+
+/**
+ * Prepare all body variants used by ingest.
+ *
+ * `text` is a clean plain-text fallback for search/previews. `display` is the
+ * safe content persisted to tickets/comments and may be sanitized HTML.
+ *
+ * @return array{text:string,html_raw:string,html:string,display:string}
+ */
+function email_ingest_prepare_body_content($plain_text, $html_raw): array
+{
+    $body_text_raw = email_ingest_normalize_plain_text((string) $plain_text);
+    $body_html_raw = trim((string) $html_raw);
+    $body_html = email_ingest_sanitize_html($body_html_raw);
+    $body_text = email_ingest_select_display_body($body_text_raw, $body_html);
+
+    $display_body = email_ingest_should_display_html($body_text_raw, $body_html)
+        ? $body_html
+        : $body_text;
+
+    if (trim(strip_tags((string) $display_body)) === '' && !preg_match('/<img\b/i', (string) $display_body)) {
+        $display_body = '(No content)';
+    }
+    if ($body_text === '') {
+        $body_text = trim(strip_tags((string) $display_body));
+        $body_text = $body_text !== '' ? email_ingest_cleanup_display_body($body_text) : '(No content)';
+    }
+
+    return [
+        'text' => $body_text,
+        'html_raw' => $body_html_raw,
+        'html' => $body_html,
+        'display' => $display_body,
+    ];
 }
 
 /**

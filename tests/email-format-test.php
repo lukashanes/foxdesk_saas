@@ -33,6 +33,27 @@ $selected = email_ingest_select_display_body('Hello Alex, we need these items: f
 assert_email_format_contains($selected, "Hello Alex,\n\nwe need these items:");
 assert_email_format_contains($selected, "- first task");
 
+$newsletter = '
+    <html><body>
+        <p style="text-align:right"><a href="https://example.com/view">Zobrazit v prohlížeči</a></p>
+        <img src="https://example.com/newsletter/hero.jpg" alt="Podcast guests">
+        <p>Hezký den, Lukáši,</p>
+        <p><strong><em>dlouho jsme se neozvali – jen jsme měli plnou hlavu práce.</em></strong></p>
+        <p>Posílám tip do uší: <a href="https://example.com/podcast">Marketing v souvislostech</a>.</p>
+    </body></html>
+';
+$prepared = email_ingest_prepare_body_content(
+    'Begin forwarded message: From: Eva Subject: Proč budeme měnit jméno? Zobrazit v prohlížeči Marketing v souvislostech (https://example.com/podcast)',
+    $newsletter
+);
+assert_email_format_contains($prepared['display'], '<img');
+assert_email_format_contains($prepared['display'], '<strong><em>dlouho jsme se neozvali');
+assert_email_format_contains($prepared['display'], '<a href="https://example.com/podcast">Marketing v souvislostech</a>');
+if (strpos($prepared['display'], 'Marketing v souvislostech (https://example.com/podcast)') !== false) {
+    fwrite(STDERR, "Newsletter display body must keep HTML links instead of expanded plain text:\n{$prepared['display']}\n");
+    exit(1);
+}
+
 $reply = "Thanks, this works now.\n\nOn Mon, Jun 1, 2026 at 10:00 AM Support wrote:\n> Old message\n> Old footer";
 $clean_reply = email_ingest_cleanup_display_body($reply);
 assert_email_format_contains($clean_reply, 'Thanks, this works now.');
