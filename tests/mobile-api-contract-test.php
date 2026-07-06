@@ -573,6 +573,8 @@ $assert(str_contains($iosReleaseEnvExample, 'FOXDESK_IOS_DEMO_EMAIL='), 'iOS rel
 $assert(str_contains($iosReleaseEnvExample, 'FOXDESK_IOS_SMOKE_BASE_URL=https://app.foxdesk.net/api/mobile/v1'), 'iOS release env template must include the production mobile API base.');
 $assert(str_contains($iosReleaseEnvExample, 'FOXDESK_IOS_SMOKE_WRITE=0'), 'iOS release env template must keep write smoke disabled by default.');
 $assert(str_contains($iosReleaseEnvExample, 'APNS_TEST_DEVICE_TOKEN='), 'iOS release env template must include the physical-device APNs token.');
+$assert(str_contains($iosReleaseEnvExample, 'Account -> Push diagnostics'), 'iOS release env template must point APNs testers to Account, not the old Settings screen.');
+$assert(!str_contains($iosReleaseEnvExample, 'Settings -> Push diagnostics'), 'iOS release env template must not mention the old Settings screen for APNs diagnostics.');
 $assert(str_contains($iosHandoff, 'npm run ios:release:packet'), 'iOS handoff must document the release packet command.');
 $assert(str_contains($iosTestFlightRunbook, 'npm run ios:release:packet'), 'iOS TestFlight runbook must document the release packet command.');
 $assert(str_contains($iosOperatorChecklist, 'npm run ios:release:packet'), 'iOS operator checklist must document the release packet command.');
