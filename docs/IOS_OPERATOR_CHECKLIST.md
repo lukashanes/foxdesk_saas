@@ -8,15 +8,16 @@ on the web.
 
 ## Current Local State
 
-As of 2026-07-06:
+As of 2026-07-06 22:45 UTC:
 
 - `npm run ios:mvp:audit` passes.
 - `npm run ios:beta:gate` passes locally.
-- Xcode simulator tests pass: 47/47.
+- Xcode simulator tests pass, including the regression that clears the local
+  session even when APNs unregister or server logout fails.
 - App Store screenshots exist in `tmp/ios-app-store-screenshots`.
 - External gate evidence is written to `tmp/ios-external-gates/latest.md`.
 - Apple Business organization verification is done for `Aenze s.r.o.`
-  (reported by the operator on 2026-07-06).
+  (reported by the operator from Apple Business email confirmation).
 
 Apple Business verification is useful for company identity and Apple Business
 features, but it does not replace the App Store Connect app record, Apple

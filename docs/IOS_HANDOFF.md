@@ -33,8 +33,9 @@ settings stay on the web for the first release.
 
 ## Latest Verified State
 
-As of 2026-07-06 22:01 UTC, commit `1ec1ff8` is the current iOS handoff
-baseline. The local beta gate passed end-to-end earlier in this release run:
+As of 2026-07-06 22:45 UTC, commit `9add7cc` is the current iOS code
+baseline; a later docs-only handoff commit may sit on top of it. The local beta
+gate passed end-to-end in this release run:
 
 - `npm run ios:beta:gate`
 - `npm run ios:release:env`
@@ -44,6 +45,11 @@ The beta gate verified the iOS MVP gate, Xcode tests, Production build, Release
 compatibility build, Staging build, simulator launch smoke, TestFlight
 preflight, mobile API safe smoke preflight, and APNs dry-run. Evidence:
 `tmp/ios-beta-readiness/latest.md`.
+
+The latest iOS test addition proves that sign-out clears the local session,
+tokens, user state, and token store even if APNs device unregister and server
+logout both fail. This keeps the native app from leaving stale local access on
+the device after a network/server failure.
 
 For a requirement-by-requirement completion audit that separates local MVP
 evidence from Apple/live-service release evidence, run:
@@ -56,11 +62,12 @@ It writes `tmp/ios-completion-audit/latest.md` and must still report incomplete
 until live smoke, physical APNs, App Store Connect, Apple Developer, and privacy
 review gates are ready.
 
-Apple Business verification for `Aenze s.r.o.` is ready. The remaining release
-gates are operator/live-service gates: App Store Connect app record, Apple
-Developer bundle + Push Notifications, demo reviewer credentials, live mobile
-API smoke credentials, opt-in write smoke, physical iPhone APNs token, and App
-Store privacy review. Evidence and ordered steps: `tmp/ios-next-actions/latest.md`.
+Apple Business verification for `Aenze s.r.o.` is ready from Apple Business
+email confirmation. The remaining release gates are operator/live-service
+gates: App Store Connect app record, Apple Developer bundle + Push
+Notifications, demo reviewer credentials, live mobile API smoke credentials,
+opt-in write smoke, physical iPhone APNs token, and App Store privacy review.
+Evidence and ordered steps: `tmp/ios-next-actions/latest.md`.
 
 ## Key Paths
 
