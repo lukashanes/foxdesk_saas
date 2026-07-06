@@ -33,8 +33,8 @@ settings stay on the web for the first release.
 
 ## Latest Verified State
 
-As of 2026-07-06 21:44 UTC, commit `b47f2de` is the current iOS handoff
-baseline. The local beta gate passed end-to-end:
+As of 2026-07-06 22:01 UTC, commit `1ec1ff8` is the current iOS handoff
+baseline. The local beta gate passed end-to-end earlier in this release run:
 
 - `npm run ios:beta:gate`
 - `npm run ios:release:env`
@@ -156,8 +156,8 @@ gate command, archive command, and human blockers, run:
 npm run ios:release:packet
 ```
 
-This refreshes `ios:external:gates` and `ios:next`, then writes
-`tmp/ios-release-packet/latest.md`.
+This refreshes `ios:external:gates`, `ios:next`, and `ios:completion:audit`,
+then writes `tmp/ios-release-packet/latest.md`.
 
 ## Human Gates Still Needed
 
@@ -454,6 +454,12 @@ re-running the native simulator suite:
   - `npm run ios:release:env`
   - `npm run ios:mvp:audit`
   - `npm run ios:release:packet`
+- As of 2026-07-06 22:01 UTC, the release packet refreshes and links the iOS
+  completion audit so a handoff recipient can see local MVP evidence and
+  Apple/live-service blockers from one packet. Verified commands:
+  - `npm run ios:release:packet`
+  - `./bin/run-php.sh tests/mobile-api-contract-test.php`
+  - `./bin/run-php.sh tests/ios-mvp-traceability-contract-test.php`
 
 The native activity surface should now render time entries created together
 with comments inline under that comment. Time entries without `comment_id`
