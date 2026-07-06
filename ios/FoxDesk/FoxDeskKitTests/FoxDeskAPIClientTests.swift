@@ -384,6 +384,131 @@ final class FoxDeskAPIClientTests: XCTestCase {
         XCTAssertEqual(requestIndex, 4)
     }
 
+    @MainActor
+    func testSignOutClearsLocalSessionEvenWhenServerLogoutFails() async throws {
+        let storedTokens = MobileSessionTokens(
+            tokenType: "Bearer",
+            accessToken: "access_to_clear",
+            refreshToken: "refresh_to_clear",
+            expiresIn: 3600,
+            refreshExpiresIn: 5_184_000
+        )
+        let tokenStore = InMemoryTokenStore(tokens: storedTokens)
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        let appSession = AppSession(
+            client: client,
+            tokenStore: tokenStore,
+            device: DeviceContext(deviceId: "device", deviceName: "iPhone", appVersion: "0.1")
+        )
+
+        var requestIndex = 0
+        var requestedPaths: [String] = []
+        URLProtocolStub.requestHandler = { request in
+            defer { requestIndex += 1 }
+            requestedPaths.append(request.url?.path ?? "")
+
+            switch requestIndex {
+            case 0:
+                Self.assertAPIPath(request.url, "/api/mobile/v1/login")
+                let response = HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!
+                let data = """
+                {
+                  "success": true,
+                  "requires_2fa": false,
+                  "session": {
+                    "token_type": "Bearer",
+                    "access_token": "access_to_clear",
+                    "refresh_token": "refresh_to_clear",
+                    "expires_in": 3600,
+                    "refresh_expires_in": 5184000
+                  },
+                  "user": {
+                    "id": 7,
+                    "email": "agent@example.com",
+                    "first_name": "Emma",
+                    "last_name": "Carter",
+                    "name": "Emma Carter",
+                    "role": "agent",
+                    "language": "en",
+                    "tenant_id": 3
+                  }
+                }
+                """.data(using: .utf8)!
+                return (response, data)
+
+            case 1:
+                Self.assertAPIPath(request.url, "/api/mobile/v1/tenant-state")
+                let response = HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!
+                let data = """
+                {
+                  "success": true,
+                  "data": {
+                    "tenant": {"id": 3, "name": "Aenze"},
+                    "access": {"allowed": true, "state": "active", "reason": null, "message": null},
+                    "billing_actions": null,
+                    "usage": null,
+                    "capabilities": {"manage_billing": false, "platform_admin": false},
+                    "links": null
+                  },
+                  "meta": {"schema_version": 1, "resource": "tenant_state"},
+                  "errors": []
+                }
+                """.data(using: .utf8)!
+                return (response, data)
+
+            case 2:
+                Self.assertAPIPath(request.url, "/api/mobile/v1/device-token/unregister")
+                let response = HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 500,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!
+                return (response, Data(#"{"success":false,"message":"temporary unregister failure"}"#.utf8))
+
+            case 3:
+                Self.assertAPIPath(request.url, "/api/mobile/v1/logout")
+                let response = HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 500,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!
+                return (response, Data(#"{"success":false,"message":"temporary logout failure"}"#.utf8))
+
+            default:
+                XCTFail("Unexpected request: \(request.url?.absoluteString ?? "<missing url>")")
+                throw URLError(.badServerResponse)
+            }
+        }
+
+        await appSession.signIn(email: "agent@example.com", password: "secret")
+        XCTAssertEqual(appSession.state, .signedIn)
+        await appSession.signOut()
+
+        XCTAssertEqual(appSession.state, .signedOut)
+        XCTAssertNil(appSession.tokens)
+        XCTAssertNil(appSession.user)
+        let clearedTokens = try await tokenStore.loadTokens()
+        XCTAssertNil(clearedTokens)
+        XCTAssertTrue(requestedPaths.contains("/api/mobile/v1/device-token/unregister"))
+        XCTAssertTrue(requestedPaths.contains("/api/mobile/v1/logout"))
+        XCTAssertEqual(requestIndex, 4)
+    }
+
     func testTicketListSendsViewSearchAndDecodesRows() async throws {
         let client = FoxDeskAPIClient(
             environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
