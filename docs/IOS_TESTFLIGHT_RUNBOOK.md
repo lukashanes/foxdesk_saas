@@ -204,7 +204,7 @@ variables, and the exact condition for calling the iOS release ready.
    - Image attachments show thumbnails in ticket detail.
    - Attachment preview/download works.
    - Search finds tickets and clients.
-   - Settings shows workspace state, support, legal, deletion request, logout.
+   - Account shows workspace state, support, legal, deletion request, logout.
 
 7. Confirm real-device smoke:
    - Production/TestFlight build installs on a physical iPhone.
@@ -213,7 +213,7 @@ variables, and the exact condition for calling the iOS release ready.
    - File attachment from Files reaches the web app.
    - If a photo/file upload fails, the ticket detail keeps the failed item and
      shows `Retry upload` without requiring a new picker selection.
-   - In an internal debug/staging build, open Settings → Push diagnostics,
+   - In an internal debug/staging build, open Account → Push diagnostics,
      confirm the API row points to the backend being tested, and tap `Copy APNs token`
      after enabling notifications. Use that token for the live APNs smoke
      command below. Production/App Store builds must not show the diagnostics

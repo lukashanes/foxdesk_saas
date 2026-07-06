@@ -143,7 +143,7 @@ Out of scope for first release:
   previews/downloads in-app without exposing R2 keys. Backend APNs delivery is
   prepared; the remaining release gate is
   production APNs credentials plus real-device smoke testing. Internal
-  debug/staging builds expose Settings → Push diagnostics so testers can verify
+  debug/staging builds expose Account → Push diagnostics so testers can verify
   the active API base URL and copy the physical-device APNs token for the smoke
   command; this diagnostic surface is excluded from Release UI.
 - Production SaaS evidence currently verifies deployment evidence, R2 storage,
@@ -175,7 +175,7 @@ Out of scope for first release:
    - Search
    - Client context
    - Workspace access state
-   - Settings
+   - Account
 7. Build write flows:
    - New ticket
    - Public reply
@@ -242,7 +242,7 @@ Goal: prove notifications work on hardware, not only as a dry-run payload.
 Done when:
 
 - A debug/staging build is installed on a physical iPhone.
-- Settings -> Push diagnostics shows the intended backend.
+- Account -> Push diagnostics shows the intended backend.
 - The device token is copied from the app and supplied as
   `APNS_TEST_DEVICE_TOKEN`.
 - `npm run ios:apns:smoke -- --send --environment=production` reaches the
@@ -342,7 +342,7 @@ IOS_DESTINATION='platform=iOS Simulator,name=iPhone 16 Pro' npm run ios:gate
 ```
 
 For physical-device APNs verification, first run the dry-run payload/config
-check. In an internal debug/staging build, open Settings → Push diagnostics,
+check. In an internal debug/staging build, open Account → Push diagnostics,
 confirm that the API row points to the backend you intend to test, enable
 notifications, and copy the device token. Then pass it to the live-send command:
 
@@ -483,7 +483,7 @@ Apple billing setup:
   internal-note and time-entry choices, and clears the draft after a successful
   send.
 
-### Settings
+### Account
 
 - Show signed-in user, workspace name, access state, subscription state, and
   server notice copy.

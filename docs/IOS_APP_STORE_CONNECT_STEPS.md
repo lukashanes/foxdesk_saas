@@ -198,7 +198,7 @@ Install a debug or staging build on a physical iPhone.
 In the app:
 
 1. Sign in.
-2. Open Settings.
+2. Open Account.
 3. Enable notifications.
 4. Open Push diagnostics.
 5. Copy APNs token.

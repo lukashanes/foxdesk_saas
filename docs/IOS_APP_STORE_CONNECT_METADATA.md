@@ -122,7 +122,7 @@ Required first-release screenshots:
 - Search
 - Client context
 - Notifications
-- Settings
+- Account
 
 Do not upload screenshots containing private customer data, API tokens,
 provider internals, billing, platform admin, or self-hosted setup screens.

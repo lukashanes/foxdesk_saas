@@ -81,9 +81,9 @@ struct SignedInShellView: View {
                 SettingsView()
             }
             .tabItem {
-                Label("Settings", systemImage: "gearshape")
+                Label("Account", systemImage: "person.crop.circle")
             }
-            .tag(AppTab.settings)
+            .tag(AppTab.account)
         }
         .task {
             openPendingTicketIfNeeded()
@@ -106,7 +106,7 @@ private enum AppTab: Hashable {
     case tickets
     case search
     case notifications
-    case settings
+    case account
 }
 
 private struct TicketNotificationRoute: Hashable {

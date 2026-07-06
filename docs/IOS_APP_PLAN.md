@@ -214,7 +214,7 @@ the first MVP from scratch.
 
 2. **Physical iPhone APNs smoke**
    - Install a debug/staging build on a real iPhone.
-   - Copy the APNs token from Settings -> Push diagnostics.
+   - Copy the APNs token from Account -> Push diagnostics.
    - Send one test push and verify tapping it opens the correct ticket.
 
 3. **Screenshot and App Store packet**

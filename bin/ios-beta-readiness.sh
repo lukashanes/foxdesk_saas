@@ -88,7 +88,7 @@ fi
 if [[ -n "${APNS_TEST_DEVICE_TOKEN:-}" ]]; then
   run_step "APNs live-send smoke with provided device token" npm run ios:apns:smoke -- --send "--environment=${APNS_TEST_ENVIRONMENT:-production}" --json
 else
-  log "Skipped APNs live-send smoke: copy a physical-device token from Settings → Push diagnostics and set APNS_TEST_DEVICE_TOKEN."
+  log "Skipped APNs live-send smoke: copy a physical-device token from Account → Push diagnostics and set APNS_TEST_DEVICE_TOKEN."
   printf -- '  - Result: skipped\n' >> "$EVIDENCE_REPORT"
 fi
 
@@ -139,7 +139,7 @@ fi
 if [[ -n "${APNS_TEST_DEVICE_TOKEN:-}" ]]; then
   mark_human_gate "Real-device APNs smoke" "ready" "APNS_TEST_DEVICE_TOKEN is set"
 else
-  mark_human_gate "Real-device APNs smoke" "missing" "copy a token from Settings → Push diagnostics on a physical iPhone"
+  mark_human_gate "Real-device APNs smoke" "missing" "copy a token from Account → Push diagnostics on a physical iPhone"
 fi
 
 screenshot_count=0

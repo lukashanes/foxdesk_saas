@@ -63,11 +63,12 @@ until live smoke, physical APNs, App Store Connect, Apple Developer, and privacy
 review gates are ready.
 
 Apple Business verification for `Aenze s.r.o.` is ready from Apple Business
-email confirmation. The remaining release gates are operator/live-service
-gates: App Store Connect app record, Apple Developer bundle + Push
-Notifications, demo reviewer credentials, live mobile API smoke credentials,
-opt-in write smoke, physical iPhone APNs token, and App Store privacy review.
-Evidence and ordered steps: `tmp/ios-next-actions/latest.md`.
+email confirmation. The operator re-confirmed the verified organization status
+on 2026-07-07 from the Apple Business email. The remaining release gates are
+operator/live-service gates: App Store Connect app record, Apple Developer
+bundle + Push Notifications, demo reviewer credentials, live mobile API smoke
+credentials, opt-in write smoke, physical iPhone APNs token, and App Store
+privacy review. Evidence and ordered steps: `tmp/ios-next-actions/latest.md`.
 
 ## Key Paths
 

@@ -134,7 +134,7 @@ if evidence_ready "$APNS_SEND_EVIDENCE" "send" && [[ "$(json_field "$APNS_SEND_E
 elif [[ -n "${APNS_TEST_DEVICE_TOKEN:-}" ]]; then
   gate_status "Physical iPhone APNs token" "needs verification" "APNS_TEST_DEVICE_TOKEN is set, but tmp/ios-apns-smoke/latest-send.json is not passing; run npm run ios:apns:smoke -- --send --environment=production."
 else
-  gate_status "Physical iPhone APNs token" "missing" "Install a debug/staging build on a physical iPhone, open Settings -> Push diagnostics, copy the token, and set APNS_TEST_DEVICE_TOKEN."
+  gate_status "Physical iPhone APNs token" "missing" "Install a debug/staging build on a physical iPhone, open Account -> Push diagnostics, copy the token, and set APNS_TEST_DEVICE_TOKEN."
 fi
 
 if [[ -f "$SCREENSHOT_MANIFEST" && "$screenshot_count" -ge 8 ]]; then

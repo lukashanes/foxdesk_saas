@@ -98,7 +98,7 @@ Use a real iPhone. The simulator cannot validate production APNs delivery.
 
 1. Install a Debug or Staging build.
 2. Allow notifications.
-3. Open Settings -> Push diagnostics.
+3. Open Account -> Push diagnostics.
 4. Copy the APNs device token into `APNS_TEST_DEVICE_TOKEN` in the ignored
    `.env.ios-release` file.
 5. Run:

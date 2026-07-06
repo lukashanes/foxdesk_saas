@@ -22,7 +22,8 @@ from leaking into the app.
 ## Apple Account Status
 
 - Organization: `Aenze s.r.o.`
-- Apple Business verification: done, reported by the operator on 2026-07-06.
+- Apple Business verification: done, reported by the operator and re-confirmed
+  from Apple Business email on 2026-07-07.
 
 This confirms the organization for Apple Business features. It does not by
 itself create the App Store Connect app record or enable Developer Program
@@ -150,7 +151,7 @@ Capture screenshots from a populated workspace:
 - Search
 - Client context
 - Notifications
-- Settings
+- Account
 
 Avoid screenshots with internal provider details, tokens, private customer
 data, or billing/admin-only surfaces.

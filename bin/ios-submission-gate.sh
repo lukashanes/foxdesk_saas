@@ -50,7 +50,7 @@ require_env_value "FOXDESK_IOS_DEMO_PASSWORD" "Set FOXDESK_IOS_DEMO_PASSWORD for
 require_env_value "FOXDESK_IOS_SMOKE_EMAIL" "Set FOXDESK_IOS_SMOKE_EMAIL for the live mobile API smoke."
 require_env_value "FOXDESK_IOS_SMOKE_PASSWORD" "Set FOXDESK_IOS_SMOKE_PASSWORD for the live mobile API smoke."
 require_env_flag "FOXDESK_IOS_SMOKE_WRITE" "Set FOXDESK_IOS_SMOKE_WRITE=1 and run the write smoke against staging or a disposable workspace."
-require_env_value "APNS_TEST_DEVICE_TOKEN" "Set APNS_TEST_DEVICE_TOKEN from Settings → Push diagnostics on a physical iPhone."
+require_env_value "APNS_TEST_DEVICE_TOKEN" "Set APNS_TEST_DEVICE_TOKEN from Account → Push diagnostics on a physical iPhone."
 
 if ! grep -Fq 'Demo reviewer account:' "$SUBMISSION_PACKET" || ! grep -Fq 'docs/IOS_DEMO_REVIEWER_ACCOUNT.md' "$SUBMISSION_PACKET"; then
   failures+=("Keep demo reviewer account instructions and docs/IOS_DEMO_REVIEWER_ACCOUNT.md linked in docs/IOS_APP_STORE_SUBMISSION.md.")

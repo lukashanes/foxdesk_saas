@@ -163,7 +163,7 @@ MD
 if value_present APNS_TEST_DEVICE_TOKEN; then
   mark 1 "APNs test device token"
 else
-  mark 0 "APNs test device token" "copy from iOS app Settings -> Push diagnostics"
+  mark 0 "APNs test device token" "copy from iOS app Account -> Push diagnostics"
 fi
 
 if [[ "${APNS_TEST_ENVIRONMENT:-}" == "production" || "${APNS_TEST_ENVIRONMENT:-}" == "sandbox" ]]; then

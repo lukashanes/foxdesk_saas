@@ -97,7 +97,7 @@ $assert(str_contains($settingsView, 'Contact support'), 'iOS Settings must keep 
 $assert(str_contains($settingsView, 'Privacy Policy'), 'iOS Settings must keep privacy policy available.');
 $assert(str_contains($settingsView, 'Request account deletion'), 'iOS Settings must keep account deletion available.');
 $assert(str_contains($settingsView, '#if DEBUG'), 'Push diagnostics must stay debug-only.');
-$assert(str_contains($settingsView, 'Copy APNs token'), 'Debug/staging Settings must still let testers copy the APNs token.');
+$assert(str_contains($settingsView, 'Copy APNs token'), 'Debug/staging Account must still let testers copy the APNs token.');
 
 $assert(str_contains($tenantModels, 'TenantBillingActions'), 'Tenant state model must keep billing notice fields for access-state messages.');
 $assert(str_contains($tenantModels, 'showCheckout'), 'Tenant state model must decode checkout flags from the backend even though iOS does not render them.');

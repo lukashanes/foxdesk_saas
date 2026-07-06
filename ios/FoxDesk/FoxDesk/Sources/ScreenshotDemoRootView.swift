@@ -12,7 +12,11 @@ enum ScreenshotDemoConfiguration {
               arguments.indices.contains(index + 1) else {
             return .dashboard
         }
-        return ScreenshotDemoScreen(rawValue: arguments[index + 1]) ?? .dashboard
+        let requestedScreen = arguments[index + 1]
+        if requestedScreen == "settings" {
+            return .account
+        }
+        return ScreenshotDemoScreen(rawValue: requestedScreen) ?? .dashboard
     }
 }
 
@@ -26,7 +30,7 @@ enum ScreenshotDemoScreen: String, CaseIterable {
     case search
     case client
     case notifications
-    case settings
+    case account
 }
 
 struct ScreenshotDemoRootView: View {
@@ -53,7 +57,7 @@ struct ScreenshotDemoRootView: View {
                 ScreenshotClientView()
             case .notifications:
                 ScreenshotNotificationsView()
-            case .settings:
+            case .account:
                 ScreenshotSettingsView()
             }
         }
@@ -326,7 +330,7 @@ private struct ScreenshotSettingsView: View {
                 Label("Request account deletion", systemImage: "person.crop.circle.badge.xmark")
             }
         }
-        .navigationTitle("Settings")
+        .navigationTitle("Account")
     }
 }
 

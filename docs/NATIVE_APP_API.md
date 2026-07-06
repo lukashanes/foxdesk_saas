@@ -594,7 +594,7 @@ credentials without sending. The dry-run reports `validated_types` and
 `validated_payloads` for every first-release ticket push type. The second
 command sends one real push for the selected `--type` and must use a token
 captured from a physical device. In an internal debug/staging build, enable
-notifications, open FoxDesk Settings → Push diagnostics, and use
+notifications, open FoxDesk Account → Push diagnostics, and use
 `Copy APNs token`. That diagnostics section is guarded behind debug builds and
 must not appear in the Release UI.
 

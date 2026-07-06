@@ -17,7 +17,8 @@ As of 2026-07-06 22:45 UTC:
 - App Store screenshots exist in `tmp/ios-app-store-screenshots`.
 - External gate evidence is written to `tmp/ios-external-gates/latest.md`.
 - Apple Business organization verification is done for `Aenze s.r.o.`
-  (reported by the operator from Apple Business email confirmation).
+  (reported by the operator from Apple Business email confirmation and
+  re-confirmed on 2026-07-07).
 
 Apple Business verification is useful for company identity and Apple Business
 features, but it does not replace the App Store Connect app record, Apple
@@ -143,7 +144,7 @@ Install a debug or staging build on a physical iPhone.
 In the app:
 
 1. Sign in.
-2. Open Settings.
+2. Open Account.
 3. Enable notifications.
 4. Open Push diagnostics.
 5. Copy the APNs token.

@@ -18,7 +18,7 @@ SCREENS=(
   search
   client
   notifications
-  settings
+  account
 )
 
 log() {

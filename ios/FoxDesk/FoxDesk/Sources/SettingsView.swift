@@ -95,7 +95,7 @@ struct SettingsView: View {
                 }
             }
         }
-        .navigationTitle("Settings")
+        .navigationTitle("Account")
         .task {
             if session.tenantState == nil && !session.isLoadingTenantState {
                 await session.refreshTenantState()
