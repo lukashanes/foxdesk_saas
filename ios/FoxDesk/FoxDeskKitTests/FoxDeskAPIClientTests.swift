@@ -1333,6 +1333,50 @@ final class FoxDeskAPIClientTests: XCTestCase {
         XCTAssertEqual(result.data.timeEntryId, 200)
     }
 
+    func testTicketActionsLoadsActionSurfaceWithoutFullDetail() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        URLProtocolStub.requestHandler = { request in
+            XCTAssertEqual(request.httpMethod, "GET")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer fdm_at_test")
+            Self.assertAPIPath(request.url, "/api/mobile/v1/tickets/42/actions")
+
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            let data = """
+            {
+              "success": true,
+              "data": {
+                "ticket": {"id": 42, "title": "VPN access stopped working", "code": "TK-10042"},
+                "actions": {
+                  "primary": [{"key": "reply", "label": "Reply", "variant": "primary"}],
+                  "statuses": [{"id": 2, "name": "In progress", "group": "open", "is_closed": false}],
+                  "priorities": [{"id": 1, "name": "High"}],
+                  "assignees": [{"id": 7, "name": "Emma Carter", "email": "emma@example.test", "role": "agent"}],
+                  "timer": {"state": "stopped", "elapsed_minutes": 0, "elapsed_label": "0 min"}
+                }
+              },
+              "meta": {"schema_version": 1, "resource": "ticket_actions"},
+              "errors": []
+            }
+            """.data(using: .utf8)!
+            return (response, data)
+        }
+
+        let result = try await client.ticketActions(accessToken: "fdm_at_test", ticketId: 42)
+
+        XCTAssertEqual(result.data.ticket.code, "TK-10042")
+        XCTAssertEqual(result.data.actions.primary?.first?.key, "reply")
+        XCTAssertEqual(result.data.actions.statuses?.first?.name, "In progress")
+        XCTAssertEqual(result.data.actions.assignees?.first?.name, "Emma Carter")
+    }
+
     func testUpdateTicketPostsWorkflowFieldsAndExplicitNullAssignee() async throws {
         let client = FoxDeskAPIClient(
             environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),

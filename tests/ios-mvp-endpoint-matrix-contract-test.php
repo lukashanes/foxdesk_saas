@@ -28,6 +28,7 @@ $endpointMatrix = [
     ['create ticket options', 'GET', '/api/mobile/v1/tickets/create-options', 'app-ticket-create-options', 'GET /api/mobile/v1/tickets/create-options', ['public func createTicketOptions(', 'path: "tickets/create-options"']],
     ['create ticket', 'POST', '/api/mobile/v1/tickets', 'app-create-ticket', 'POST /api/mobile/v1/tickets', ['public func createTicket(', 'path: "tickets"']],
     ['ticket detail', 'GET', '/api/mobile/v1/tickets/745', 'app-ticket-detail', 'GET /api/mobile/v1/tickets/{id}', ['public func ticketDetail(', 'path: "tickets/\\(ticketId)"']],
+    ['ticket actions', 'GET', '/api/mobile/v1/tickets/745/actions', 'app-ticket-actions', 'GET /api/mobile/v1/tickets/{id}/actions', ['public func ticketActions(', 'path: "tickets/\\(ticketId)/actions"']],
     ['update ticket', 'POST', '/api/mobile/v1/tickets/745', 'app-update-ticket', 'POST /api/mobile/v1/tickets/{id}', ['public func updateTicket(', 'path: "tickets/\\(request.ticketId)"']],
     ['add comment', 'POST', '/api/mobile/v1/tickets/745/comments', 'app-add-comment', 'POST /api/mobile/v1/tickets/{id}/comments', ['public func addComment(', '"tickets/\\(request.ticketId)/comments"']],
     ['add comment with time', 'POST', '/api/mobile/v1/tickets/745/comment-with-time', 'app-add-comment-with-time', 'POST /api/mobile/v1/tickets/{id}/comment-with-time', ['public func addComment(', '"tickets/\\(request.ticketId)/comment-with-time"']],

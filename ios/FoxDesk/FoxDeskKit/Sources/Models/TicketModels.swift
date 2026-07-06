@@ -17,6 +17,11 @@ public struct TicketDetailPayload: Codable, Sendable, Equatable {
     public let actions: TicketActionsPayload?
 }
 
+public struct TicketActionsResponse: Codable, Sendable, Equatable {
+    public let ticket: TicketSummary
+    public let actions: TicketActionsPayload
+}
+
 public struct Pagination: Decodable, Sendable, Equatable {
     public let limit: Int?
     public let offset: Int?
