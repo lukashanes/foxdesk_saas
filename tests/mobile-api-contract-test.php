@@ -86,6 +86,11 @@ $assert(str_contains($apns, "'mobile_devices'"), 'APNs dispatch must read regist
 $assert(str_contains($apns, "tenant_sql_filter('notifications', 'n', \$params)"), 'APNs notification lookup must be tenant-scoped.');
 $assert(str_contains($notifications, "require_once BASE_PATH . '/includes/apns-push.php'"), 'Notification creation must load APNs dispatcher.');
 $assert(str_contains($notifications, 'dispatch_apns_notifications($notified_user_ids, $notification_ids_by_user)'), 'Notification creation must dispatch APNs with exact notification ids.');
+$assert(str_contains($notifications, 'in_app_notifications_enabled IS NULL OR in_app_notifications_enabled = 1'), 'APNs must inherit the in-app notification master preference by dispatching only after allowed notification creation.');
+$assert(str_contains($notifications, "user_wants_notification((int) \$u['id'], \$type)"), 'APNs must inherit per-type notification preferences from the in-app notification dispatcher.');
+$assert(str_contains($notifications, 'notification_is_visible_to_user'), 'APNs must inherit ticket visibility checks from the in-app notification dispatcher.');
+$assert(str_contains($apns, 'apns_notifications_for_users($user_ids, $notification_ids_by_user)'), 'APNs dispatch must load only the notification ids created for the current event.');
+$assert(str_contains($apns, 'filter_notifications_for_user($rows, $user_id)'), 'APNs notification lookup must keep the same visibility filtering as the notification center.');
 
 $appHandler = file_get_contents($root . '/includes/api/app-handler.php');
 $assert($appHandler !== false, 'Unable to read app handler.');
