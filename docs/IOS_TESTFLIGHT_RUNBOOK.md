@@ -79,6 +79,15 @@ variables, and the exact condition for calling the iOS release ready.
    state without rerunning builds, run `npm run ios:external:gates`; it writes
    `tmp/ios-external-gates/latest.md`.
 
+   Live-service gates are evidence-based, not env-presence based. The external
+   gate report marks demo/API/APNs work as ready only after these redacted
+   evidence files exist and pass:
+
+   - `tmp/ios-demo-account-check/latest-live-demo-account.json`
+   - `tmp/ios-api-smoke/latest-live-read-only.json`
+   - `tmp/ios-api-smoke/latest-live-write.json`
+   - `tmp/ios-apns-smoke/latest-send.json`
+
    For a short operator-facing checklist of the remaining actions, run:
 
    ```bash

@@ -147,6 +147,15 @@ Connect app record, Apple Developer bundle/push capability, demo reviewer
 account, live smoke credentials, opt-in write smoke, physical iPhone APNs
 token, screenshots, and privacy review status.
 
+Demo/API/APNs gates are not considered ready merely because `.env.ios-release`
+contains credentials or a device token. They require passing redacted smoke
+evidence at:
+
+- `tmp/ios-demo-account-check/latest-live-demo-account.json`
+- `tmp/ios-api-smoke/latest-live-read-only.json`
+- `tmp/ios-api-smoke/latest-live-write.json`
+- `tmp/ios-apns-smoke/latest-send.json`
+
 For a shorter operator-facing checklist that turns those gates into ordered
 actions, run:
 

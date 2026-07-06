@@ -104,6 +104,10 @@ npm run ios:release:env
 npm run ios:demo:check -- --require-credentials --json
 ```
 
+The check writes redacted proof to
+`tmp/ios-demo-account-check/latest-live-demo-account.json`. The external gate
+stays `needs verification` until that file exists and is passing.
+
 Put `FOXDESK_IOS_DEMO_EMAIL` and `FOXDESK_IOS_DEMO_PASSWORD` in the ignored
 local `.env.ios-release` file. If the account uses 2FA, also set
 `FOXDESK_IOS_DEMO_2FA_CODE`.
@@ -120,6 +124,8 @@ Run read-only smoke first:
 npm run ios:api:smoke -- --require-credentials --json
 ```
 
+This writes `tmp/ios-api-smoke/latest-live-read-only.json`.
+
 Then run exactly one write smoke on a safe workspace:
 
 ```bash
@@ -128,7 +134,7 @@ FOXDESK_IOS_SMOKE_WRITE=1 npm run ios:api:smoke -- --require-credentials --json
 
 The write smoke must create one internal smoke ticket, add one timed internal
 comment, upload one small attachment, reload ticket detail, and suppress
-notifications.
+notifications. It writes `tmp/ios-api-smoke/latest-live-write.json`.
 
 ### 5. Physical iPhone APNs Smoke
 
@@ -150,6 +156,7 @@ npm run ios:apns:smoke -- --send --environment=production
 ```
 
 Put `APNS_TEST_DEVICE_TOKEN` in the ignored local `.env.ios-release` file.
+The live send writes `tmp/ios-apns-smoke/latest-send.json`.
 
 Pass criteria:
 

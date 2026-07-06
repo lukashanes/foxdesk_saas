@@ -5,6 +5,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/bin/ios-release-env.sh"
 EVIDENCE_DIR="$ROOT_DIR/tmp/ios-external-gates"
 EVIDENCE_REPORT="$EVIDENCE_DIR/latest.md"
+DEMO_EVIDENCE="$ROOT_DIR/tmp/ios-demo-account-check/latest-live-demo-account.json"
+API_READ_EVIDENCE="$ROOT_DIR/tmp/ios-api-smoke/latest-live-read-only.json"
+API_WRITE_EVIDENCE="$ROOT_DIR/tmp/ios-api-smoke/latest-live-write.json"
+APNS_SEND_EVIDENCE="$ROOT_DIR/tmp/ios-apns-smoke/latest-send.json"
 SUBMISSION_PACKET="$ROOT_DIR/docs/IOS_APP_STORE_SUBMISSION.md"
 OPERATOR_CHECKLIST="$ROOT_DIR/docs/IOS_OPERATOR_CHECKLIST.md"
 SCREENSHOT_DIR="$ROOT_DIR/tmp/ios-app-store-screenshots"
@@ -23,6 +27,40 @@ gate_status() {
 
   printf '| %s | %s | %s |\n' "$label" "$status" "$detail" >> "$EVIDENCE_REPORT"
   printf '[ios:external:gates] %s: %s — %s\n' "$label" "$status" "$detail"
+}
+
+json_field() {
+  local file="$1"
+  local path="$2"
+
+  [[ -f "$file" ]] || return 1
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    let value = data;
+    for (const key of process.argv[2].split(".")) {
+      if (!value || typeof value !== "object" || !(key in value)) {
+        process.exit(3);
+      }
+      value = value[key];
+    }
+    if (typeof value === "boolean") {
+      process.stdout.write(value ? "true" : "false");
+    } else if (value === null || value === undefined) {
+      process.stdout.write("");
+    } else {
+      process.stdout.write(String(value));
+    }
+  ' "$file" "$path"
+}
+
+evidence_ready() {
+  local file="$1"
+  local mode="$2"
+
+  [[ -f "$file" ]] || return 1
+  [[ "$(json_field "$file" ok 2>/dev/null || true)" == "true" ]] || return 1
+  [[ "$(json_field "$file" mode 2>/dev/null || true)" == "$mode" ]] || return 1
 }
 
 screenshot_count=0
@@ -67,26 +105,34 @@ else
   gate_status "App Review notes template" "missing" "Add the demo account section and docs/IOS_DEMO_REVIEWER_ACCOUNT.md link to docs/IOS_APP_STORE_SUBMISSION.md."
 fi
 
-if [[ -n "${FOXDESK_IOS_DEMO_EMAIL:-}" && -n "${FOXDESK_IOS_DEMO_PASSWORD:-}" ]]; then
-  gate_status "Demo reviewer account credentials" "ready" "FOXDESK_IOS_DEMO_EMAIL and FOXDESK_IOS_DEMO_PASSWORD are set; run npm run ios:demo:check -- --require-credentials --json."
+if evidence_ready "$DEMO_EVIDENCE" "live-demo-account"; then
+  gate_status "Demo reviewer account credentials" "ready" "Passing live demo check evidence exists at tmp/ios-demo-account-check/latest-live-demo-account.json."
+elif [[ -n "${FOXDESK_IOS_DEMO_EMAIL:-}" && -n "${FOXDESK_IOS_DEMO_PASSWORD:-}" ]]; then
+  gate_status "Demo reviewer account credentials" "needs verification" "FOXDESK_IOS_DEMO_EMAIL and FOXDESK_IOS_DEMO_PASSWORD are set, but tmp/ios-demo-account-check/latest-live-demo-account.json is not passing; run npm run ios:demo:check -- --require-credentials --json."
 else
   gate_status "Demo reviewer account credentials" "missing" "Set FOXDESK_IOS_DEMO_EMAIL and FOXDESK_IOS_DEMO_PASSWORD, then run npm run ios:demo:check -- --require-credentials --json."
 fi
 
-if [[ -n "${FOXDESK_IOS_SMOKE_EMAIL:-}" && -n "${FOXDESK_IOS_SMOKE_PASSWORD:-}" ]]; then
-  gate_status "Live mobile API smoke credentials" "ready" "FOXDESK_IOS_SMOKE_EMAIL and FOXDESK_IOS_SMOKE_PASSWORD are set."
+if evidence_ready "$API_READ_EVIDENCE" "live-read-only"; then
+  gate_status "Live mobile API smoke credentials" "ready" "Passing read-only live API smoke evidence exists at tmp/ios-api-smoke/latest-live-read-only.json."
+elif [[ -n "${FOXDESK_IOS_SMOKE_EMAIL:-}" && -n "${FOXDESK_IOS_SMOKE_PASSWORD:-}" ]]; then
+  gate_status "Live mobile API smoke credentials" "needs verification" "FOXDESK_IOS_SMOKE_EMAIL and FOXDESK_IOS_SMOKE_PASSWORD are set, but tmp/ios-api-smoke/latest-live-read-only.json is not passing; run npm run ios:api:smoke -- --require-credentials --json."
 else
   gate_status "Live mobile API smoke credentials" "missing" "Set FOXDESK_IOS_SMOKE_EMAIL and FOXDESK_IOS_SMOKE_PASSWORD for a staging or disposable workspace agent."
 fi
 
-if [[ "${FOXDESK_IOS_SMOKE_WRITE:-}" == "1" ]]; then
-  gate_status "Opt-in write smoke" "ready" "FOXDESK_IOS_SMOKE_WRITE=1 is set."
+if evidence_ready "$API_WRITE_EVIDENCE" "live-write"; then
+  gate_status "Opt-in write smoke" "ready" "Passing write smoke evidence exists at tmp/ios-api-smoke/latest-live-write.json."
+elif [[ "${FOXDESK_IOS_SMOKE_WRITE:-}" == "1" ]]; then
+  gate_status "Opt-in write smoke" "needs verification" "FOXDESK_IOS_SMOKE_WRITE=1 is set, but tmp/ios-api-smoke/latest-live-write.json is not passing; rerun npm run ios:api:smoke -- --require-credentials --json."
 else
   gate_status "Opt-in write smoke" "missing" "Run the write smoke once with FOXDESK_IOS_SMOKE_WRITE=1 on staging or a disposable workspace."
 fi
 
-if [[ -n "${APNS_TEST_DEVICE_TOKEN:-}" ]]; then
-  gate_status "Physical iPhone APNs token" "ready" "APNS_TEST_DEVICE_TOKEN is set."
+if evidence_ready "$APNS_SEND_EVIDENCE" "send" && [[ "$(json_field "$APNS_SEND_EVIDENCE" sent 2>/dev/null || true)" == "true" ]]; then
+  gate_status "Physical iPhone APNs token" "ready" "Passing live APNs send evidence exists at tmp/ios-apns-smoke/latest-send.json."
+elif [[ -n "${APNS_TEST_DEVICE_TOKEN:-}" ]]; then
+  gate_status "Physical iPhone APNs token" "needs verification" "APNS_TEST_DEVICE_TOKEN is set, but tmp/ios-apns-smoke/latest-send.json is not passing; run npm run ios:apns:smoke -- --send --environment=production."
 else
   gate_status "Physical iPhone APNs token" "missing" "Install a debug/staging build on a physical iPhone, open Settings -> Push diagnostics, copy the token, and set APNS_TEST_DEVICE_TOKEN."
 fi

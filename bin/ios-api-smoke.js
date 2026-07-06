@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 
+const fs = require('node:fs');
+const path = require('node:path');
+
 const DEFAULT_BASE_URL = 'https://app.foxdesk.net/api/mobile/v1';
+const ROOT_DIR = path.resolve(__dirname, '..');
+const EVIDENCE_DIR = path.join(ROOT_DIR, 'tmp', 'ios-api-smoke');
 
 const args = new Set(process.argv.slice(2));
 const jsonMode = args.has('--json');
@@ -36,6 +41,7 @@ const config = {
 const result = {
   ok: false,
   mode: config.email && config.password ? (config.writeEnabled ? 'live-write' : 'live-read-only') : 'preflight',
+  generated_at: null,
   base_url: config.baseURL,
   steps: [],
   missing: [],
@@ -46,6 +52,7 @@ function record(name, ok, details = {}) {
 }
 
 function outputAndExit(code) {
+  writeEvidence();
   if (jsonMode) {
     console.log(JSON.stringify(result, null, 2));
   } else {
@@ -64,6 +71,14 @@ function outputAndExit(code) {
     }
   }
   process.exit(code);
+}
+
+function writeEvidence() {
+  result.generated_at = new Date().toISOString();
+  fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
+  const json = JSON.stringify(result, null, 2) + '\n';
+  fs.writeFileSync(path.join(EVIDENCE_DIR, 'latest.json'), json);
+  fs.writeFileSync(path.join(EVIDENCE_DIR, `latest-${result.mode}.json`), json);
 }
 
 async function request(path, { method = 'GET', token = '', body = undefined, query = undefined } = {}) {
@@ -346,7 +361,7 @@ async function main() {
 
   try {
     const me = dataOf(await request('me', { token: accessToken }));
-    record('me', !!me?.user?.email, { user: me?.user?.email || 'unknown' });
+    record('me', !!me?.user?.email, { user: me?.user?.email ? 'present' : 'unknown' });
 
     const work = dataOf(await request('work', { token: accessToken, query: { limit: 5 } }));
     record('work', !!work?.home || !!work?.work || !!work?.time, {

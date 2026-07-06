@@ -4,6 +4,8 @@
 $root = dirname(__DIR__);
 require_once $root . '/includes/apns-push.php';
 
+$evidence_dir = $root . '/tmp/ios-apns-smoke';
+
 $args = array_slice($argv, 1);
 $send = in_array('--send', $args, true);
 $json = in_array('--json', $args, true);
@@ -90,6 +92,7 @@ $jwt = $config['enabled'] ? apns_create_jwt($config) : null;
 $result = [
     'ok' => true,
     'mode' => $send ? 'send' : 'dry-run',
+    'generated_at' => gmdate('c'),
     'config' => [
         'enabled' => (bool) ($config['enabled'] ?? false),
         'curl' => extension_loaded('curl'),
@@ -109,27 +112,38 @@ $result = [
     'payload' => $payload,
 ];
 
+function write_apns_evidence(string $evidence_dir, array $result): void
+{
+    if (!is_dir($evidence_dir)) {
+        mkdir($evidence_dir, 0775, true);
+    }
+    $json = json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
+    file_put_contents($evidence_dir . '/latest.json', $json);
+    file_put_contents($evidence_dir . '/latest-' . $result['mode'] . '.json', $json);
+}
+
 if ($send) {
     if (empty($config['enabled']) || $jwt === null) {
-        fwrite(STDERR, "APNs config is incomplete or invalid. Check APNS_TEAM_ID, APNS_KEY_ID, APNS_AUTH_KEY/APNS_AUTH_KEY_PATH, and APNS_BUNDLE_ID.\n");
-        exit(1);
-    }
-    if ($token === '') {
-        fwrite(STDERR, "Missing APNS_TEST_DEVICE_TOKEN or --token for live send.\n");
-        exit(1);
-    }
-
-    $device = [
-        'id' => 0,
-        'apns_environment' => $environment,
-        'apns_token' => $token,
-    ];
-    $sent = apns_send_notification($device, $notification);
-    $result['sent'] = $sent;
-    if (!$sent) {
         $result['ok'] = false;
+        $result['error'] = 'APNs config is incomplete or invalid. Check APNS_TEAM_ID, APNS_KEY_ID, APNS_AUTH_KEY/APNS_AUTH_KEY_PATH, and APNS_BUNDLE_ID.';
+    } elseif ($token === '') {
+        $result['ok'] = false;
+        $result['error'] = 'Missing APNS_TEST_DEVICE_TOKEN or --token for live send.';
+    } else {
+        $device = [
+            'id' => 0,
+            'apns_environment' => $environment,
+            'apns_token' => $token,
+        ];
+        $sent = apns_send_notification($device, $notification);
+        $result['sent'] = $sent;
+        if (!$sent) {
+            $result['ok'] = false;
+        }
     }
 }
+
+write_apns_evidence($evidence_dir, $result);
 
 if ($json) {
     echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";

@@ -499,6 +499,14 @@ $assert(str_contains($iosCompletionAudit, 'Physical iPhone APNs token'), 'iOS co
 $assert(str_contains($iosCompletionAudit, 'App Store Connect app record'), 'iOS completion audit must track App Store Connect proof.');
 $assert(str_contains($iosCompletionAudit, 'Apple Developer explicit App ID'), 'iOS completion audit must track Apple Developer App ID proof.');
 $assert(str_contains($iosExternalGates, 'tmp/ios-external-gates/latest.md'), 'iOS external gate status script must write a durable evidence report.');
+$assert(str_contains($iosDemoAccountCheck, 'ios-demo-account-check'), 'iOS demo account check must write durable redacted evidence.');
+$assert(str_contains($iosAPISmoke, 'ios-api-smoke'), 'iOS API smoke must write durable redacted evidence.');
+$assert(str_contains($iosAPNsSmoke, 'tmp/ios-apns-smoke'), 'iOS APNs smoke must write durable redacted evidence.');
+$assert(str_contains($iosExternalGates, 'latest-live-demo-account.json'), 'iOS external gates must require passing demo account evidence, not only env values.');
+$assert(str_contains($iosExternalGates, 'latest-live-read-only.json'), 'iOS external gates must require passing read-only live API smoke evidence.');
+$assert(str_contains($iosExternalGates, 'latest-live-write.json'), 'iOS external gates must require passing write smoke evidence.');
+$assert(str_contains($iosExternalGates, 'latest-send.json'), 'iOS external gates must require passing physical-device APNs send evidence.');
+$assert(str_contains($iosExternalGates, 'needs verification'), 'iOS external gates must distinguish configured credentials from verified passing evidence.');
 $assert(str_contains($iosExternalGates, 'APP_STORE_CONNECT_APP_RECORD_READY'), 'iOS external gate status script must report the App Store Connect gate.');
 $assert(str_contains($iosExternalGates, 'APPLE_DEVELOPER_BUNDLE_READY'), 'iOS external gate status script must report the Apple Developer bundle/push gate.');
 $assert(str_contains($iosExternalGates, 'APPLE_BUSINESS_VERIFIED'), 'iOS external gate status script must report Apple Business verification as operator evidence.');
