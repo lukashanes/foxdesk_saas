@@ -37,6 +37,12 @@ mark() {
   fi
 }
 
+note() {
+  local label="$1"
+  local detail="${2:-}"
+  printf -- "- INFO: %s%s\n" "$label" "${detail:+ — $detail}" >> "$OUT"
+}
+
 value_is_one() {
   local name="$1"
   [[ "${!name:-}" == "1" ]]
@@ -97,7 +103,6 @@ MD
 for flag in \
   APP_STORE_CONNECT_APP_RECORD_READY \
   APPLE_DEVELOPER_BUNDLE_READY \
-  APPLE_BUSINESS_VERIFIED \
   APP_STORE_PRIVACY_REVIEWED; do
   if value_is_one "$flag"; then
     mark 1 "$flag"
@@ -105,6 +110,12 @@ for flag in \
     mark 0 "$flag" "set to 1 only after the operator step is complete"
   fi
 done
+
+if value_is_one APPLE_BUSINESS_VERIFIED; then
+  note "APPLE_BUSINESS_VERIFIED" "ready; identity context only, not a substitute for App Store Connect or Developer signing"
+else
+  note "APPLE_BUSINESS_VERIFIED" "not recorded; App Store Connect and Developer signing remain the release gates"
+fi
 
 cat >> "$OUT" <<MD
 
