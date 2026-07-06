@@ -151,8 +151,8 @@ variables, and the exact condition for calling the iOS release ready.
    - Bundle ID `net.foxdesk.ios` exists.
    - Push Notifications capability is enabled.
    - Automatic signing is available for the selected team.
-  - Production archive configuration can use production APNs entitlement.
-  - Release compatibility build can still use production APNs entitlement.
+   - Production archive configuration can use production APNs entitlement.
+   - Release compatibility build can still use production APNs entitlement.
 
 4. Confirm backend production config:
    - `APNS_TEAM_ID`
@@ -173,6 +173,9 @@ variables, and the exact condition for calling the iOS release ready.
    - If 2FA is enabled, provide a stable backup code in App Review notes.
    - `npm run ios:demo:check -- --require-credentials --json` passes with the
      demo account credentials.
+   - Do not treat the account as ready until the command above passes against
+     the same credentials that will be pasted into App Store Connect review
+     notes.
 
 6. Confirm internal smoke on simulator:
    - App launches to sign-in screen.

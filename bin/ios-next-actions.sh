@@ -109,13 +109,15 @@ values. The iOS gate scripts auto-load \`.env.ios-release\` when present.
    - After this is done, set \`APPLE_DEVELOPER_BUNDLE_READY=1\` in
      \`.env.ios-release\` and run \`npm run ios:release:env\`.
 
-3. **Prepare App Review demo account** ($(bool_status "$app_review_notes_status"))
+3. **Prepare App Review demo account** ($(bool_status "$demo_creds_status"))
    - Use a disposable or curated FoxDesk Cloud workspace.
    - Role: agent or workspace admin.
    - It must include open, waiting, done, comment, attachment, and client-context data.
    - Follow \`docs/IOS_DEMO_REVIEWER_ACCOUNT.md\`.
    - Keep committed docs generic; paste real credentials only into App Store
      Connect review notes or the local ignored \`.env.ios-release\` file.
+   - This is not ready until the credentials are present and
+     \`npm run ios:demo:check -- --require-credentials --json\` passes.
 
 4. **Verify demo account credentials** ($(bool_status "$demo_creds_status"))
    - Do not commit real passwords.
