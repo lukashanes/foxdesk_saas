@@ -31,6 +31,26 @@ The iOS MVP covers:
 Billing, pricing, Stripe, platform administration, reports, and full workspace
 settings stay on the web for the first release.
 
+## Latest Verified State
+
+As of 2026-07-06 21:44 UTC, commit `b47f2de` is the current iOS handoff
+baseline. The local beta gate passed end-to-end:
+
+- `npm run ios:beta:gate`
+- `npm run ios:release:env`
+- `npm run ios:next`
+
+The beta gate verified the iOS MVP gate, Xcode tests, Production build, Release
+compatibility build, Staging build, simulator launch smoke, TestFlight
+preflight, mobile API safe smoke preflight, and APNs dry-run. Evidence:
+`tmp/ios-beta-readiness/latest.md`.
+
+Apple Business verification for `Aenze s.r.o.` is ready. The remaining release
+gates are operator/live-service gates: App Store Connect app record, Apple
+Developer bundle + Push Notifications, demo reviewer credentials, live mobile
+API smoke credentials, opt-in write smoke, physical iPhone APNs token, and App
+Store privacy review. Evidence and ordered steps: `tmp/ios-next-actions/latest.md`.
+
 ## Key Paths
 
 - iOS project: `ios/FoxDesk`
