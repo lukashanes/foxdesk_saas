@@ -341,6 +341,24 @@ function api_app_ticket_actions()
     ], ['resource' => 'ticket_actions']);
 }
 
+function api_app_ticket_create_options()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        api_error('Method not allowed', 405);
+    }
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+
+    if (!function_exists('app_contract_ticket_create_options')) {
+        api_error('Ticket create options are not available.', 500);
+    }
+
+    api_app_contract_success(app_contract_ticket_create_options($user), ['resource' => 'ticket_create_options']);
+}
+
 function api_app_ticket_comments(int $ticket_id, bool $include_internal): array
 {
     $comments = [];
@@ -462,6 +480,7 @@ function api_app_ticket_time_entries(int $ticket_id): array
     foreach (get_ticket_time_entries($ticket_id) as $entry) {
         $entries[] = [
             'id' => (int) ($entry['id'] ?? 0),
+            'comment_id' => !empty($entry['comment_id']) ? (int) $entry['comment_id'] : null,
             'user_name' => trim((string) (($entry['first_name'] ?? '') . ' ' . ($entry['last_name'] ?? ''))),
             'started_at' => $entry['started_at'] ?? null,
             'ended_at' => $entry['ended_at'] ?? null,
@@ -498,6 +517,189 @@ function api_app_ticket_detail()
     ];
 
     api_app_contract_success($payload, ['resource' => 'ticket_detail'], $payload);
+}
+
+function api_app_update_ticket()
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        api_error('Method not allowed', 405);
+    }
+
+    api_app_require_write_auth();
+    api_app_require_api_token_scope('tickets:read');
+    api_app_require_api_token_scope('tickets:write');
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+
+    if (!is_agent() && !is_admin()) {
+        api_error('Forbidden', 403);
+    }
+
+    $input = get_json_input();
+    $ticket = api_app_resolve_ticket($input, $user);
+    if (!can_edit_ticket($ticket, $user)) {
+        api_error('Forbidden', 403);
+    }
+
+    $ticket_id = (int) $ticket['id'];
+    $updates = [];
+    $updated_fields = [];
+    $events = [];
+
+    if (array_key_exists('status_id', $input)) {
+        $status_id = (int) ($input['status_id'] ?? 0);
+        if ($status_id <= 0) {
+            api_error('Status is required.', 422);
+        }
+        $new_status = get_status($status_id);
+        if (!$new_status) {
+            api_error('Status not found.', 404);
+        }
+        if ((int) ($ticket['status_id'] ?? 0) !== $status_id) {
+            $updates['status_id'] = $status_id;
+            $old_status = get_status((int) ($ticket['status_id'] ?? 0));
+            $updated_fields[] = 'status_id';
+            $events[] = [
+                'name' => 'ticket.status_changed',
+                'extra' => [
+                    'old_status' => $old_status['name'] ?? '',
+                    'new_status' => $new_status['name'] ?? '',
+                ],
+                'activity' => 'status_changed',
+                'message' => 'Status changed from "' . ($old_status['name'] ?? 'Unknown') . '" to "' . ($new_status['name'] ?? 'Unknown') . '"',
+                'history_field' => 'status_id',
+                'old_value' => (int) ($ticket['status_id'] ?? 0),
+                'new_value' => $status_id,
+            ];
+        }
+    }
+
+    if (array_key_exists('priority_id', $input)) {
+        $priority_raw = $input['priority_id'];
+        $priority_id = $priority_raw === null || $priority_raw === '' ? null : (int) $priority_raw;
+        $priority = null;
+        if ($priority_id !== null) {
+            $priority = get_priority($priority_id);
+            if (!$priority) {
+                api_error('Priority not found.', 404);
+            }
+        }
+        $old_priority_id = isset($ticket['priority_id']) ? (int) $ticket['priority_id'] : null;
+        if ($old_priority_id !== $priority_id) {
+            $updates['priority_id'] = $priority_id;
+            $updated_fields[] = 'priority_id';
+            $events[] = [
+                'name' => 'ticket.priority_changed',
+                'extra' => [
+                    'priority' => $priority['name'] ?? '',
+                ],
+                'activity' => 'ticket_edited',
+                'message' => 'Priority changed' . (!empty($priority['name']) ? ' to ' . $priority['name'] : ''),
+                'history_field' => 'priority_id',
+                'old_value' => $old_priority_id,
+                'new_value' => $priority_id,
+            ];
+        }
+    }
+
+    if (array_key_exists('assignee_id', $input)) {
+        $assignee_raw = $input['assignee_id'];
+        $assignee_id = $assignee_raw === null || $assignee_raw === '' ? null : (int) $assignee_raw;
+        $assignee = null;
+        if ($assignee_id !== null) {
+            $assignee = function_exists('api_get_active_staff_user_by_id')
+                ? api_get_active_staff_user_by_id($assignee_id)
+                : get_user($assignee_id);
+            if (!$assignee || !can_user_assign_to_staff($assignee, $user)) {
+                api_error('Forbidden', 403);
+            }
+        }
+        $old_assignee_id = isset($ticket['assignee_id']) ? (int) $ticket['assignee_id'] : null;
+        if ($old_assignee_id !== $assignee_id) {
+            $updates['assignee_id'] = $assignee_id;
+            $updated_fields[] = 'assignee_id';
+            $assignee_name = $assignee ? trim((string) (($assignee['first_name'] ?? '') . ' ' . ($assignee['last_name'] ?? ''))) : '';
+            $events[] = [
+                'name' => $assignee_id ? 'ticket.assigned' : 'ticket.updated',
+                'extra' => [
+                    'assignee_id' => $assignee_id,
+                    'assignee_name' => $assignee_name,
+                    'field' => 'assignee',
+                ],
+                'activity' => $assignee_id ? 'assigned' : 'unassigned',
+                'message' => $assignee_id ? 'Ticket assigned to ' . ($assignee_name !== '' ? $assignee_name : ('#' . $assignee_id)) : 'Assignment removed',
+                'history_field' => 'assignee_id',
+                'old_value' => $old_assignee_id,
+                'new_value' => $assignee_id,
+            ];
+        }
+    }
+
+    if (array_key_exists('due_date', $input)) {
+        $due_date_input = trim((string) ($input['due_date'] ?? ''));
+        $due_date = normalize_due_date_input($due_date_input);
+        if ($due_date_input !== '' && $due_date === false) {
+            api_error('Due date is invalid.', 422);
+        }
+        $old_due_date = $ticket['due_date'] ?? null;
+        if ((string) ($old_due_date ?? '') !== (string) ($due_date ?? '')) {
+            $updates['due_date'] = $due_date;
+            $updated_fields[] = 'due_date';
+            $events[] = [
+                'name' => 'ticket.updated',
+                'extra' => [
+                    'field' => 'due_date',
+                    'detail' => $due_date ? (function_exists('format_date') ? format_date($due_date) : $due_date) : '',
+                ],
+                'activity' => $due_date ? 'due_date_updated' : 'due_date_removed',
+                'message' => $due_date ? 'Due date set to ' . (function_exists('format_date') ? format_date($due_date) : $due_date) : 'Due date removed',
+                'history_field' => 'due_date',
+                'old_value' => $old_due_date,
+                'new_value' => $due_date,
+            ];
+        }
+    }
+
+    if (empty($updates)) {
+        $fresh_ticket = get_ticket($ticket_id) ?: $ticket;
+        api_app_contract_success([
+            'ticket' => app_contract_ticket_payload($fresh_ticket),
+            'actions' => app_contract_ticket_actions($fresh_ticket, $user),
+            'updated_fields' => [],
+        ], ['resource' => 'update_ticket']);
+    }
+
+    if (!update_ticket($ticket_id, $updates)) {
+        api_error('Failed to update ticket.', 500);
+    }
+
+    foreach ($events as $event) {
+        if (function_exists('log_ticket_history') && isset($event['history_field'])) {
+            log_ticket_history($ticket_id, (int) $user['id'], (string) $event['history_field'], $event['old_value'], $event['new_value']);
+        }
+        if (function_exists('log_activity')) {
+            log_activity($ticket_id, (int) $user['id'], (string) $event['activity'], (string) $event['message']);
+        }
+        if ($event['history_field'] === 'assignee_id' && !empty($event['new_value']) && function_exists('add_ticket_access')) {
+            add_ticket_access($ticket_id, (int) $event['new_value'], (int) $user['id']);
+        }
+        if ($event['history_field'] === 'assignee_id' && !empty($event['old_value']) && function_exists('resolve_action_notifications')) {
+            resolve_action_notifications($ticket_id, (int) $event['old_value']);
+        }
+        if (function_exists('ticket_event_dispatch_in_app')) {
+            ticket_event_dispatch_in_app((string) $event['name'], $ticket_id, (int) $user['id'], (array) $event['extra']);
+        }
+    }
+
+    $fresh_ticket = get_ticket($ticket_id) ?: $ticket;
+    api_app_contract_success([
+        'ticket' => app_contract_ticket_payload($fresh_ticket),
+        'actions' => app_contract_ticket_actions($fresh_ticket, $user),
+        'updated_fields' => $updated_fields,
+    ], ['resource' => 'update_ticket']);
 }
 
 function api_app_create_ticket()

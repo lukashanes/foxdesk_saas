@@ -34,19 +34,27 @@ function app_contract_frozen_response_keys(): array
             'work',
             'inbox',
             'timers',
+            'time',
             'notifications',
         ],
+        'ticket_list' => ['tickets', 'view', 'views', 'counts', 'pagination', 'filters'],
         'ticket_detail' => ['ticket', 'comments', 'attachments', 'time_entries', 'actions'],
+        'ticket_actions' => ['ticket', 'actions'],
+        'ticket_create_options' => ['clients', 'statuses', 'priorities', 'assignees', 'defaults'],
+        'update_ticket' => ['ticket', 'actions', 'updated_fields'],
         'create_ticket' => ['ticket_id', 'ticket_hash', 'ticket_code', 'ticket'],
         'add_comment' => ['comment_id', 'time_entry_id'],
         'attachment_metadata' => ['attachment'],
         'ticket_timer' => ['ticket', 'timer'],
         'timer_action' => ['ticket', 'timer', 'action', 'result'],
         'log_time' => ['ticket', 'time_entry_id', 'duration_minutes'],
+        'client_overview' => ['client', 'view', 'counts', 'tickets', 'contacts', 'time', 'links'],
+        'reporting_review' => ['filters', 'range', 'entries', 'totals', 'total_labels', 'actions', 'bulk_actions', 'pagination'],
         'notifications' => ['unread_count', 'items', 'pagination'],
         'notification_read_state' => ['unread_count', 'updated'],
         'tenant_state' => ['tenant', 'access', 'billing_actions', 'usage', 'capabilities', 'links'],
         'mobile_session' => ['token_type', 'access_token', 'refresh_token', 'expires_in', 'refresh_expires_in'],
+        'upload' => ['file'],
     ];
 }
 
@@ -208,6 +216,131 @@ function app_contract_ticket_timer(int $ticket_id, array $user): array
     ];
 }
 
+function app_contract_ticket_status_options(): array
+{
+    $status_options = [];
+    foreach (function_exists('get_statuses') ? get_statuses() : [] as $status) {
+        $status_options[] = [
+            'id' => (int) ($status['id'] ?? 0),
+            'name' => (string) ($status['name'] ?? ''),
+            'color' => $status['color'] ?? null,
+            'group' => function_exists('ticket_status_group_from_status') ? ticket_status_group_from_status($status) : (!empty($status['is_closed']) ? 'done' : 'active'),
+            'is_closed' => !empty($status['is_closed']),
+            'is_canceled' => function_exists('ticket_detail_status_is_canceled') ? ticket_detail_status_is_canceled($status) : false,
+            'is_default' => !empty($status['is_default']),
+        ];
+    }
+
+    return $status_options;
+}
+
+function app_contract_ticket_priority_options(): array
+{
+    $priority_options = [];
+    foreach (function_exists('get_priorities') ? get_priorities() : [] as $priority) {
+        $priority_options[] = [
+            'id' => (int) ($priority['id'] ?? 0),
+            'name' => (string) ($priority['name'] ?? ''),
+            'color' => $priority['color'] ?? null,
+            'is_default' => !empty($priority['is_default']),
+        ];
+    }
+
+    return $priority_options;
+}
+
+function app_contract_ticket_assignee_options(array $user): array
+{
+    $assignee_options = [];
+    if (!function_exists('db_fetch_all')) {
+        return $assignee_options;
+    }
+
+    try {
+        $params = [];
+        $sql = "SELECT id, first_name, last_name, email, role FROM users WHERE role IN ('admin', 'agent') AND is_active = 1";
+        if (function_exists('users_deleted_at_column_exists') && users_deleted_at_column_exists()) {
+            $sql .= " AND deleted_at IS NULL";
+        }
+        if (function_exists('tenant_sql_filter')) {
+            $sql .= tenant_sql_filter('users', '', $params);
+        }
+        $sql .= " ORDER BY first_name ASC, last_name ASC, email ASC";
+        foreach (db_fetch_all($sql, $params) as $staff) {
+            if (function_exists('can_user_assign_to_staff') && !can_user_assign_to_staff($staff, $user)) {
+                continue;
+            }
+            $name = trim((string) (($staff['first_name'] ?? '') . ' ' . ($staff['last_name'] ?? '')));
+            $assignee_options[] = [
+                'id' => (int) ($staff['id'] ?? 0),
+                'name' => $name !== '' ? $name : (string) ($staff['email'] ?? ''),
+                'email' => (string) ($staff['email'] ?? ''),
+                'role' => (string) ($staff['role'] ?? ''),
+            ];
+        }
+    } catch (Throwable $e) {
+        return [];
+    }
+
+    return $assignee_options;
+}
+
+function app_contract_ticket_client_options(array $user): array
+{
+    $client_options = [];
+    foreach (function_exists('get_organizations') ? get_organizations(false) : [] as $organization) {
+        $organization_id = (int) ($organization['id'] ?? 0);
+        if ($organization_id <= 0) {
+            continue;
+        }
+        if (function_exists('can_user_use_organization') && !can_user_use_organization($organization_id, $user)) {
+            continue;
+        }
+        $client_options[] = [
+            'id' => $organization_id,
+            'name' => (string) ($organization['name'] ?? ''),
+            'email' => (string) ($organization['contact_email'] ?? $organization['email'] ?? ''),
+            'is_active' => !empty($organization['is_active']),
+        ];
+    }
+
+    return $client_options;
+}
+
+function app_contract_ticket_create_options(array $user): array
+{
+    $statuses = app_contract_ticket_status_options();
+    $priorities = app_contract_ticket_priority_options();
+
+    $default_status_id = null;
+    foreach ($statuses as $status) {
+        if (!empty($status['is_default'])) {
+            $default_status_id = (int) $status['id'];
+            break;
+        }
+    }
+
+    $default_priority_id = null;
+    foreach ($priorities as $priority) {
+        if (!empty($priority['is_default'])) {
+            $default_priority_id = (int) $priority['id'];
+            break;
+        }
+    }
+
+    return [
+        'clients' => app_contract_ticket_client_options($user),
+        'statuses' => $statuses,
+        'priorities' => $priorities,
+        'assignees' => app_contract_ticket_assignee_options($user),
+        'defaults' => [
+            'status_id' => $default_status_id,
+            'priority_id' => $default_priority_id,
+            'assignee_id' => (int) ($user['id'] ?? 0),
+        ],
+    ];
+}
+
 function app_contract_attachment_can_preview(array $attachment): bool
 {
     $mime_type = strtolower(trim((string) ($attachment['mime_type'] ?? '')));
@@ -264,21 +397,11 @@ function app_contract_ticket_actions(array $ticket, array $user): array
         return $action;
     }, $actions);
 
-    $status_options = [];
-    foreach ($statuses as $status) {
-        $status_options[] = [
-            'id' => (int) ($status['id'] ?? 0),
-            'name' => (string) ($status['name'] ?? ''),
-            'color' => $status['color'] ?? null,
-            'group' => function_exists('ticket_status_group_from_status') ? ticket_status_group_from_status($status) : (!empty($status['is_closed']) ? 'done' : 'active'),
-            'is_closed' => !empty($status['is_closed']),
-            'is_canceled' => function_exists('ticket_detail_status_is_canceled') ? ticket_detail_status_is_canceled($status) : false,
-        ];
-    }
-
     return [
         'primary' => $actions,
-        'statuses' => $status_options,
+        'statuses' => app_contract_ticket_status_options(),
+        'priorities' => app_contract_ticket_priority_options(),
+        'assignees' => app_contract_ticket_assignee_options($user),
         'timer' => $timer,
     ];
 }

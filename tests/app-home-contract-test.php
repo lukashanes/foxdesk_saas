@@ -29,7 +29,15 @@ $assert(str_contains($feed, 'function app_feed_payload'), 'App feed payload help
 $assert(str_contains($feed, 'function app_feed_ticket_card'), 'Ticket card formatter is missing.');
 $assert(str_contains($feed, 'function app_feed_queue_sections'), 'Queue section formatter is missing.');
 $assert(str_contains($feed, 'function app_feed_active_timers'), 'Active timer formatter is missing.');
+$assert(str_contains($feed, 'function app_feed_time_activity'), 'Worked-time formatter is missing.');
+$assert(str_contains($feed, 'function app_feed_team_time_member'), 'Team time member formatter is missing.');
+$assert(str_contains($feed, 'time_activity_work_model($user'), 'App home must reuse the shared Work time model.');
+$assert(str_contains($feed, "\$model['team']"), 'App home worked-time feed must expose team activity from the shared Work model.');
+$assert(str_contains($feed, "'team' => \$team"), 'App home worked-time payload must include team activity.');
 $assert(str_contains($feed, 'function app_feed_notifications'), 'Notification formatter is missing.');
+$assert(str_contains($feed, 'get_user_notifications((int) ($user[\'id\'] ?? 0), 3, 0, true)'), 'App home must expose a compact recent-notification feed.');
+$assert(str_contains($feed, "'items' => array_map("), 'App home notifications must include recent update items.');
+$assert(str_contains($feed, 'app_contract_notification_summary_item($notification)'), 'App home notification items must reuse the native notification contract.');
 $assert(str_contains($feed, 'work_queue_summary($user, $limit)'), 'App home must reuse Work queue module.');
 $assert(str_contains($feed, 'inbox_summary($user, $limit)'), 'App home must reuse Inbox module.');
 $assert(str_contains($feed, 'app_contract_schema_version()'), 'App home payload must use the shared schema version helper.');

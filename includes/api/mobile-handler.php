@@ -104,6 +104,7 @@ function mobile_api_user_payload(array $user): array
         'role' => (string) ($user['role'] ?? ''),
         'language' => (string) ($user['language'] ?? 'en'),
         'tenant_id' => isset($user['tenant_id']) ? (int) $user['tenant_id'] : null,
+        'avatar' => $user['avatar'] ?? null,
     ];
 }
 

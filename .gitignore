@@ -8,6 +8,7 @@ examples/agent-api/.env
 .DS_Store
 config.php
 .env.production
+.env.ios-release
 .stripe.generated.env
 cloudflare/email-router/worker-configuration.d.ts
 deploy/hetzner/.env.prod

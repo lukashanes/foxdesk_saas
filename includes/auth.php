@@ -795,6 +795,8 @@ function api_token_required_scope_for_action(string $action): ?string
         'app-ticket-list' => 'tickets:read',
         'app-ticket-detail' => 'tickets:read',
         'app-ticket-actions' => 'tickets:read',
+        'app-ticket-create-options' => 'tickets:read',
+        'app-update-ticket' => 'tickets:write',
         'app-create-ticket' => 'tickets:write',
         'app-add-comment' => 'comments:write',
         'app-add-comment-with-time' => 'comments:write',

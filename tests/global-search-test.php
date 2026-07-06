@@ -15,6 +15,11 @@ foreach (['open_tickets', 'done_tickets', 'archived_tickets', 'clients', 'contac
     assert_global_search(isset($sections[$key]), "Missing search section: {$key}");
 }
 
+$search_source = file_get_contents(BASE_PATH . '/includes/modules/search/global-search.php');
+assert_global_search(strpos($search_source, 'u.organization_id') !== false, 'Contact search must select organization_id for native client drill-in.');
+assert_global_search(strpos($search_source, "'organization_id' => !empty") !== false, 'Contact search payload must include organization_id.');
+assert_global_search(strpos($search_source, "'client' => (string) (\$contact['organization_name']") !== false, 'Contact search payload must expose the client name separately from the email subtitle.');
+
 assert_global_search(global_search_normalize_query("  Aenze   faktura  ") === 'Aenze faktura', 'Search query should normalize whitespace.');
 
 $agent = ['id' => 7, 'role' => 'agent'];

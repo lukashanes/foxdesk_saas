@@ -301,5 +301,16 @@ function require_admin_post() {
  */
 function get_json_input() {
     $input = json_decode(file_get_contents('php://input'), true);
-    return is_array($input) ? $input : [];
+    $input = is_array($input) ? $input : [];
+
+    $route_defaults = $GLOBALS['api_mobile_v1_input_defaults'] ?? [];
+    if (is_array($route_defaults) && $route_defaults !== []) {
+        foreach ($route_defaults as $key => $value) {
+            if (!array_key_exists($key, $input)) {
+                $input[$key] = $value;
+            }
+        }
+    }
+
+    return $input;
 }

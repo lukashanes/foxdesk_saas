@@ -53,6 +53,7 @@ translation files or customer-facing localized content.
 - [Agent MCP server](AGENT_MCP_SERVER.md): local stdio MCP wrapper.
 - [Agent API milestones](AGENT_API_MILESTONES.md): assistant/API roadmap.
 - [Native app API](NATIVE_APP_API.md): stable mobile endpoints for future iOS/Android apps.
+- [iOS app plan](IOS_APP_PLAN.md): native iOS MVP scope, milestones, and gates.
 - [iOS app launch plan](IOS_APP_LAUNCH_PLAN.md): native iOS planning.
 
 ## Current Production Snapshot

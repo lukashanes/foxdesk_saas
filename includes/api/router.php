@@ -176,6 +176,8 @@ function route_api_request($action) {
         'app-ticket-list' => 'api_app_ticket_list',
         'app-ticket-detail' => 'api_app_ticket_detail',
         'app-ticket-actions' => 'api_app_ticket_actions',
+        'app-ticket-create-options' => 'api_app_ticket_create_options',
+        'app-update-ticket' => 'api_app_update_ticket',
         'app-create-ticket' => 'api_app_create_ticket',
         'app-add-comment' => 'api_app_add_comment',
         'app-add-comment-with-time' => 'api_app_add_comment_with_time',

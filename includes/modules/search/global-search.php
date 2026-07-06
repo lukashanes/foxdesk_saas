@@ -121,7 +121,7 @@ function global_search_contacts(string $query, array $user, int $limit): array
 
     $term = '%' . $query . '%';
     $params = [$term, $term, $term];
-    $sql = "SELECT u.id, u.first_name, u.last_name, u.email, u.role, o.name AS organization_name
+    $sql = "SELECT u.id, u.first_name, u.last_name, u.email, u.role, u.organization_id, o.name AS organization_name
             FROM users u
             LEFT JOIN organizations o ON u.organization_id = o.id
             WHERE u.email NOT LIKE 'deleted-user-%@invalid.local'
@@ -140,8 +140,10 @@ function global_search_contacts(string $query, array $user, int $limit): array
         $items[] = [
             'type' => 'contact',
             'id' => (int) ($contact['id'] ?? 0),
+            'organization_id' => !empty($contact['organization_id']) ? (int) $contact['organization_id'] : null,
             'title' => $name !== '' ? $name : (string) ($contact['email'] ?? ''),
-            'subtitle' => trim((string) (($contact['email'] ?? '') . (!empty($contact['organization_name']) ? ' · ' . $contact['organization_name'] : ''))),
+            'client' => (string) ($contact['organization_name'] ?? ''),
+            'subtitle' => (string) ($contact['email'] ?? ''),
             'role' => (string) ($contact['role'] ?? ''),
             'url' => function_exists('url')
                 ? url('user-profile', ['id' => (int) ($contact['id'] ?? 0)])

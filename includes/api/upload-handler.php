@@ -16,7 +16,7 @@ function api_upload() {
         api_error('Method not allowed', 405);
     }
 
-    if (empty($GLOBALS['is_api_token_auth'])) {
+    if (empty($GLOBALS['is_api_token_auth']) && empty($GLOBALS['is_mobile_token_auth'])) {
         require_csrf_token(true);
     }
     $user = current_user();

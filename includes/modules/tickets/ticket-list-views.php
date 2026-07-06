@@ -8,7 +8,7 @@
 
 function ticket_list_view_keys(bool $include_archive = true): array
 {
-    $keys = ['open', 'waiting', 'done', 'all'];
+    $keys = ['new', 'open', 'waiting', 'done', 'all'];
     if ($include_archive) {
         $keys[] = 'archived';
     }
@@ -69,6 +69,12 @@ function ticket_list_view_definitions(bool $include_archive = true): array
             'label' => 'Open',
             'description' => 'New and active tickets',
             'filters' => ['status_group_not' => ['done']],
+        ],
+        'new' => [
+            'key' => 'new',
+            'label' => 'New',
+            'description' => 'Tickets that still need triage',
+            'filters' => ['status_group' => 'new'],
         ],
         'waiting' => [
             'key' => 'waiting',

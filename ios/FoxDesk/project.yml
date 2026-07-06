@@ -1,0 +1,99 @@
+name: FoxDesk
+options:
+  minimumXcodeGenVersion: 2.41.0
+  deploymentTarget:
+    iOS: "17.0"
+configs:
+  Debug: debug
+  Staging: debug
+  Production: release
+  Release: release
+settings:
+  base:
+    SWIFT_VERSION: 5.0
+    IPHONEOS_DEPLOYMENT_TARGET: 17.0
+    CODE_SIGN_STYLE: Automatic
+targets:
+  FoxDeskKit:
+    type: framework
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - FoxDeskKit/Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: net.foxdesk.ios.kit
+        GENERATE_INFOPLIST_FILE: YES
+  FoxDesk:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - FoxDesk/Sources
+      - path: FoxDesk/Assets.xcassets
+        buildPhase: resources
+      - path: FoxDesk/PrivacyInfo.xcprivacy
+        buildPhase: resources
+    dependencies:
+      - target: FoxDeskKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: net.foxdesk.ios
+        MARKETING_VERSION: 0.1.0
+        CURRENT_PROJECT_VERSION: 1
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_ENTITLEMENTS: FoxDesk/FoxDesk.entitlements
+        INFOPLIST_KEY_CFBundleDisplayName: FoxDesk
+        INFOPLIST_KEY_FOXDESK_API_BASE_URL: $(FOXDESK_API_BASE_URL)
+        INFOPLIST_KEY_NSCameraUsageDescription: Take photos and attach them to FoxDesk tickets.
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      configs:
+        Debug:
+          FOXDESK_API_BASE_URL: https://app.foxdesk.net/index.php
+          APS_ENVIRONMENT: development
+        Staging:
+          FOXDESK_API_BASE_URL: https://staging.app.foxdesk.net/index.php
+          APS_ENVIRONMENT: development
+        Production:
+          FOXDESK_API_BASE_URL: https://app.foxdesk.net/index.php
+          APS_ENVIRONMENT: production
+        Release:
+          FOXDESK_API_BASE_URL: https://app.foxdesk.net/index.php
+          APS_ENVIRONMENT: production
+  FoxDeskKitTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - FoxDeskKitTests
+    dependencies:
+      - target: FoxDeskKit
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+  FoxDeskTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - FoxDeskTests
+    dependencies:
+      - target: FoxDesk
+    hostApplication: FoxDesk
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  FoxDesk:
+    build:
+      targets:
+        FoxDesk: all
+        FoxDeskKit: all
+        FoxDeskKitTests: [test]
+    test:
+      targets:
+        - FoxDeskKitTests
+        - FoxDeskTests
+    archive:
+      config: Production

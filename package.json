@@ -99,7 +99,27 @@
     "test:ticket-detail-context": "./bin/run-php.sh tests/ticket-detail-context-contract-test.php",
     "test:module-extraction": "./bin/run-php.sh tests/module-extraction-contract-test.php",
     "test:email-policy": "sh -c './bin/run-php.sh tests/notification-policy-test.php && ./bin/run-php.sh tests/email-notification-contract-test.php && ./bin/run-php.sh tests/email-format-test.php && ./bin/run-php.sh tests/pseudo-cron-email-test.php && ./bin/run-php.sh tests/mailer-managed-notifications-test.php'",
-    "test:cloudflare-email-routes": "./bin/run-php.sh tests/cloudflare-email-route-provisioning-contract-test.php"
+    "test:cloudflare-email-routes": "./bin/run-php.sh tests/cloudflare-email-route-provisioning-contract-test.php",
+    "ios:gate": "./bin/ios-mvp-gate.sh",
+    "ios:next": "./bin/ios-next-actions.sh",
+    "ios:mvp:audit": "./bin/ios-mvp-local-audit.sh",
+    "ios:beta:gate": "./bin/ios-beta-readiness.sh",
+    "ios:external:gates": "./bin/ios-external-gates.sh",
+    "ios:release:init": "./bin/ios-release-env-init.sh",
+    "ios:release:env": "./bin/ios-release-env-check.sh",
+    "ios:release:packet": "./bin/ios-release-packet.sh",
+    "ios:submission:gate": "./bin/ios-submission-gate.sh",
+    "ios:metadata:check": "./bin/ios-app-store-metadata-check.sh",
+    "ios:archive:preflight": "./bin/ios-archive-preflight.sh",
+    "ios:production:check": "./bin/ios-production-build-check.sh",
+    "ios:release:check": "./bin/ios-release-build-check.sh",
+    "ios:staging:check": "./bin/ios-staging-build-check.sh",
+    "ios:sim:smoke": "./bin/ios-simulator-smoke.sh",
+    "ios:screenshots": "./bin/ios-app-store-screenshots.sh",
+    "ios:testflight:preflight": "./bin/ios-testflight-preflight.sh",
+    "ios:api:smoke": "node bin/ios-api-smoke.js",
+    "ios:demo:check": "node bin/ios-demo-account-check.js",
+    "ios:apns:smoke": "./bin/run-php.sh bin/test-apns-push.php"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0"

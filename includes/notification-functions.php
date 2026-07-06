@@ -155,6 +155,7 @@ function create_notifications_for_users(array $user_ids, string $type, ?int $tic
     $json = json_encode($data, JSON_UNESCAPED_UNICODE);
 
     $notified_user_ids = [];
+    $notification_ids_by_user = [];
 
     foreach ($users as $u) {
         if ($ticket && !notification_is_visible_to_user([
@@ -172,7 +173,7 @@ function create_notifications_for_users(array $user_ids, string $type, ?int $tic
         }
 
         try {
-            db_insert('notifications', [
+            $notification_id = (int) db_insert('notifications', [
                 'user_id'    => (int) $u['id'],
                 'ticket_id'  => $ticket_id,
                 'type'       => $type,
@@ -182,6 +183,9 @@ function create_notifications_for_users(array $user_ids, string $type, ?int $tic
                 'created_at' => $now,
             ]);
             $notified_user_ids[] = (int) $u['id'];
+            if ($notification_id > 0) {
+                $notification_ids_by_user[(int) $u['id']][] = $notification_id;
+            }
         } catch (Throwable $e) {
             // Silently skip — don't break the main flow
         }
@@ -198,6 +202,17 @@ function create_notifications_for_users(array $user_ids, string $type, ?int $tic
             }
         } catch (Throwable $e) {
             // Push failures should never break in-app notifications
+        }
+
+        try {
+            if (file_exists(BASE_PATH . '/includes/apns-push.php')) {
+                require_once BASE_PATH . '/includes/apns-push.php';
+                if (function_exists('dispatch_apns_notifications')) {
+                    dispatch_apns_notifications($notified_user_ids, $notification_ids_by_user);
+                }
+            }
+        } catch (Throwable $e) {
+            // APNs failures should never break in-app notifications
         }
     }
 }

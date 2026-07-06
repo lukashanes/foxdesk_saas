@@ -224,13 +224,14 @@ if (!headers_sent()) {
 
     </main>
 
-    <footer class="fd-footer">
+    <footer class="fd-footer" id="support">
         <div class="fd-footer-inner">
             <div class="fd-footer-brand">
                 <img src="assets/public/logo.png" alt="" width="28" height="28" loading="lazy" decoding="async">
                 <strong>FoxDesk</strong>
             </div>
             <div class="fd-footer-links">
+                <a href="mailto:support@foxdesk.net">Support</a>
                 <a href="<?php echo e(url('legal', ['type' => 'privacy'])); ?>">Privacy</a>
                 <a href="<?php echo e(url('legal', ['type' => 'terms'])); ?>">Terms</a>
                 <a href="<?php echo e(url('legal', ['type' => 'dpa'])); ?>">DPA</a>

@@ -23,6 +23,11 @@ Options -Indexes
   RewriteEngine On
   RewriteCond %{HTTP:Authorization} .+
   RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+  # Native/mobile API v1 readable paths. PHP still dispatches through
+  # index.php?page=api&action=... after includes/api/mobile-v1-router.php maps
+  # the route to the existing handlers.
+  RewriteRule ^api/mobile/v1(?:/.*)?$ index.php [QSA,L]
 </IfModule>
 
 # Fallback for CGI/FastCGI setups

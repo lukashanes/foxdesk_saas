@@ -105,6 +105,7 @@ if (defined('DB_HOST')) {
 require_once BASE_PATH . '/includes/functions.php';
 require_once BASE_PATH . '/includes/admin-crud-helper.php';
 require_once BASE_PATH . '/includes/auth.php';
+require_once BASE_PATH . '/includes/api/mobile-v1-router.php';
 send_security_headers();
 
 function foxdesk_is_app_host(): bool
@@ -120,6 +121,8 @@ function foxdesk_authenticated_home_page(): string
 
     return 'work';
 }
+
+foxdesk_apply_mobile_v1_route_from_request();
 
 // Get current page
 $page = isset($_GET['page']) ? $_GET['page'] : (foxdesk_is_app_host() ? 'login' : 'cloud');
