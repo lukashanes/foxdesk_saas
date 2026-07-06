@@ -36,6 +36,9 @@ log "Running local MVP audit first"
 log "Running local beta readiness gate"
 (cd "$ROOT_DIR" && npm run ios:beta:gate)
 
+log "Running completion audit"
+(cd "$ROOT_DIR" && npm run ios:completion:audit)
+
 log "Checking final human and live-smoke gates"
 
 require_env_flag "APP_STORE_CONNECT_APP_RECORD_READY" "Set APP_STORE_CONNECT_APP_RECORD_READY=1 after creating the App Store Connect app record for net.foxdesk.ios."

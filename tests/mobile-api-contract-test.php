@@ -530,6 +530,7 @@ $assert(str_contains($iosNextActions, 'ios-release-env.sh'), 'iOS next-actions m
 $assert(str_contains($iosReleasePacket, 'ios-release-env.sh') || str_contains($iosReleasePacket, 'auto-load'), 'iOS release packet must document auto-loading the release env.');
 $assert(str_contains($iosBetaGate, 'ios-release-env.sh'), 'iOS beta readiness gate must auto-load the local release env.');
 $assert(str_contains($iosSubmissionGate, 'ios-release-env.sh'), 'iOS submission gate must auto-load the local release env.');
+$assert(str_contains($iosSubmissionGate, 'npm run ios:completion:audit'), 'iOS submission gate must run the completion audit before final checks.');
 $assert(str_contains($iosOperatorChecklist, '.env.ios-release.example'), 'iOS operator checklist must document the local env template.');
 $assert(str_contains($iosAppStoreSubmission, '.env.ios-release.example'), 'iOS App Store submission packet must document the local env template.');
 $assert(str_contains($iosHandoff, '.env.ios-release.example'), 'iOS handoff must document the local env template.');

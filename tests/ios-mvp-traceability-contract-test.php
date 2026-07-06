@@ -71,6 +71,7 @@ $assert(str_contains($launch, 'IOS_MVP_TRACEABILITY.md'), 'iOS launch plan must 
 $assert(str_contains($trace, 'npm run ios:mvp:audit'), 'Traceability must start release evidence with the fast MVP audit.');
 $assert(str_contains($trace, 'tmp/ios-mvp-local-audit/latest.md'), 'Traceability must document the MVP audit evidence report.');
 $assert(str_contains($submissionGate, 'npm run ios:mvp:audit'), 'Submission gate must run the fast MVP audit before final checks.');
+$assert(str_contains($submissionGate, 'npm run ios:completion:audit'), 'Submission gate must run the completion audit before final checks.');
 $assert(str_contains($scopeTest, 'Forbidden iOS MVP visible term'), 'Scope contract must keep forbidden product surfaces out of iOS.');
 $assert(str_contains($gate, 'tests/ios-mvp-traceability-contract-test.php'), 'iOS MVP gate must run the traceability contract.');
 
