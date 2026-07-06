@@ -162,6 +162,7 @@ $iosAppStoreMetadataCheck = file_get_contents($root . '/bin/ios-app-store-metada
 $iosAPNsSmoke = file_get_contents($root . '/bin/test-apns-push.php');
 $iosAPISmoke = file_get_contents($root . '/bin/ios-api-smoke.js');
 $iosMVPLocalAudit = file_get_contents($root . '/bin/ios-mvp-local-audit.sh');
+$iosCompletionAudit = file_get_contents($root . '/bin/ios-completion-audit.sh');
 $iosExternalGates = file_get_contents($root . '/bin/ios-external-gates.sh');
 $iosNextActions = file_get_contents($root . '/bin/ios-next-actions.sh');
 $iosReleasePacket = file_get_contents($root . '/bin/ios-release-packet.sh');
@@ -237,6 +238,7 @@ $assert($iosAppPrivacyAnswers !== false, 'iOS App Privacy answers runbook is mis
 $assert($iosDemoReviewerAccount !== false, 'iOS demo reviewer account runbook is missing.');
 $assert($iosOperatorChecklist !== false, 'iOS operator checklist is missing.');
 $assert($iosTestFlightPreflight !== false, 'iOS TestFlight preflight script is missing.');
+$assert($iosCompletionAudit !== false, 'iOS completion audit script is missing.');
 $assert($iosAppStoreMetadataCheck !== false, 'iOS App Store metadata check script is missing.');
 $assert($iosAPNsSmoke !== false, 'iOS APNs smoke script is missing.');
 $assert($iosAPISmoke !== false, 'iOS mobile API smoke script is missing.');
@@ -481,6 +483,14 @@ $assert(str_contains($iosMVPLocalAudit, 'Photos, files, previews'), 'iOS MVP aud
 $assert(str_contains($iosMVPLocalAudit, 'Push notifications'), 'iOS MVP audit must map the push requirement.');
 $assert(str_contains($iosMVPLocalAudit, 'Client context'), 'iOS MVP audit must map the client context requirement.');
 $assert(str_contains($iosMVPLocalAudit, 'Offline and speed fallback'), 'iOS MVP audit must map the offline/speed fallback requirement.');
+$assert(str_contains($packageJson, '"ios:completion:audit": "./bin/ios-completion-audit.sh"'), 'package.json must expose the iOS completion audit.');
+$assert(str_contains($iosCompletionAudit, 'tmp/ios-completion-audit/latest.md'), 'iOS completion audit must write a durable report.');
+$assert(str_contains($iosCompletionAudit, 'Strict conclusion'), 'iOS completion audit must state whether the full release objective is complete.');
+$assert(str_contains($iosCompletionAudit, 'not complete for TestFlight/App Store'), 'iOS completion audit must avoid false completion while live gates are missing.');
+$assert(str_contains($iosCompletionAudit, 'Opt-in write smoke'), 'iOS completion audit must track comment/time/attachment write proof.');
+$assert(str_contains($iosCompletionAudit, 'Physical iPhone APNs token'), 'iOS completion audit must track physical APNs proof.');
+$assert(str_contains($iosCompletionAudit, 'App Store Connect app record'), 'iOS completion audit must track App Store Connect proof.');
+$assert(str_contains($iosCompletionAudit, 'Apple Developer explicit App ID'), 'iOS completion audit must track Apple Developer App ID proof.');
 $assert(str_contains($iosExternalGates, 'tmp/ios-external-gates/latest.md'), 'iOS external gate status script must write a durable evidence report.');
 $assert(str_contains($iosExternalGates, 'APP_STORE_CONNECT_APP_RECORD_READY'), 'iOS external gate status script must report the App Store Connect gate.');
 $assert(str_contains($iosExternalGates, 'APPLE_DEVELOPER_BUNDLE_READY'), 'iOS external gate status script must report the Apple Developer bundle/push gate.');

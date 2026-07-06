@@ -101,6 +101,7 @@
     "test:email-policy": "sh -c './bin/run-php.sh tests/notification-policy-test.php && ./bin/run-php.sh tests/email-notification-contract-test.php && ./bin/run-php.sh tests/email-format-test.php && ./bin/run-php.sh tests/pseudo-cron-email-test.php && ./bin/run-php.sh tests/mailer-managed-notifications-test.php'",
     "test:cloudflare-email-routes": "./bin/run-php.sh tests/cloudflare-email-route-provisioning-contract-test.php",
     "ios:gate": "./bin/ios-mvp-gate.sh",
+    "ios:completion:audit": "./bin/ios-completion-audit.sh",
     "ios:next": "./bin/ios-next-actions.sh",
     "ios:mvp:audit": "./bin/ios-mvp-local-audit.sh",
     "ios:beta:gate": "./bin/ios-beta-readiness.sh",

@@ -45,6 +45,17 @@ compatibility build, Staging build, simulator launch smoke, TestFlight
 preflight, mobile API safe smoke preflight, and APNs dry-run. Evidence:
 `tmp/ios-beta-readiness/latest.md`.
 
+For a requirement-by-requirement completion audit that separates local MVP
+evidence from Apple/live-service release evidence, run:
+
+```bash
+npm run ios:completion:audit
+```
+
+It writes `tmp/ios-completion-audit/latest.md` and must still report incomplete
+until live smoke, physical APNs, App Store Connect, Apple Developer, and privacy
+review gates are ready.
+
 Apple Business verification for `Aenze s.r.o.` is ready. The remaining release
 gates are operator/live-service gates: App Store Connect app record, Apple
 Developer bundle + Push Notifications, demo reviewer credentials, live mobile
@@ -74,6 +85,7 @@ Store privacy review. Evidence and ordered steps: `tmp/ios-next-actions/latest.m
 - beta evidence report: `tmp/ios-beta-readiness/latest.md`
 - external gate report: `tmp/ios-external-gates/latest.md`
 - next-actions report: `tmp/ios-next-actions/latest.md`
+- completion audit report: `tmp/ios-completion-audit/latest.md`
 - release packet: `tmp/ios-release-packet/latest.md`
 - simulator screenshot evidence: `tmp/ios-smoke/foxdesk-login.png`
 - App Store screenshot folder: `tmp/ios-app-store-screenshots`
@@ -87,6 +99,7 @@ Run the local beta readiness gate first:
 ```bash
 npm run ios:mvp:audit
 npm run ios:beta:gate
+npm run ios:completion:audit
 ```
 
 The quick MVP audit checks the mobile API contracts, iOS scope contract,

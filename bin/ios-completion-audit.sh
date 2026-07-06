@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/bin/ios-release-env.sh"
+
+OUT_DIR="$ROOT_DIR/tmp/ios-completion-audit"
+REPORT="$OUT_DIR/latest.md"
+mkdir -p "$OUT_DIR"
+
+git_rev="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || printf 'unknown')"
+beta_report="$ROOT_DIR/tmp/ios-beta-readiness/latest.md"
+next_report="$ROOT_DIR/tmp/ios-next-actions/latest.md"
+release_env_report="$ROOT_DIR/tmp/ios-release-env/latest.md"
+
+status_from_env_flag() {
+  local name="$1"
+  if [[ "${!name:-}" == "1" ]]; then
+    printf 'ready'
+  else
+    printf 'missing'
+  fi
+}
+
+status_from_env_value() {
+  local name="$1"
+  if [[ -n "${!name:-}" ]]; then
+    printf 'ready'
+  else
+    printf 'missing'
+  fi
+}
+
+live_smoke_status="missing"
+if [[ -n "${FOXDESK_IOS_SMOKE_EMAIL:-}" && -n "${FOXDESK_IOS_SMOKE_PASSWORD:-}" ]]; then
+  live_smoke_status="ready"
+fi
+
+write_smoke_status="missing"
+if [[ "${FOXDESK_IOS_SMOKE_WRITE:-}" == "1" && "$live_smoke_status" == "ready" ]]; then
+  write_smoke_status="ready"
+fi
+
+demo_status="missing"
+if [[ -n "${FOXDESK_IOS_DEMO_EMAIL:-}" && -n "${FOXDESK_IOS_DEMO_PASSWORD:-}" ]]; then
+  demo_status="ready"
+fi
+
+apns_status="$(status_from_env_value APNS_TEST_DEVICE_TOKEN)"
+app_record_status="$(status_from_env_flag APP_STORE_CONNECT_APP_RECORD_READY)"
+developer_status="$(status_from_env_flag APPLE_DEVELOPER_BUNDLE_READY)"
+privacy_status="$(status_from_env_flag APP_STORE_PRIVACY_REVIEWED)"
+
+screenshots_status="missing"
+if [[ -f "$ROOT_DIR/tmp/ios-app-store-screenshots/manifest.md" ]]; then
+  screenshot_count="$(find "$ROOT_DIR/tmp/ios-app-store-screenshots" -maxdepth 1 -type f \( -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' \) | wc -l | tr -d ' ')"
+  if [[ "$screenshot_count" -ge 8 ]]; then
+    screenshots_status="ready"
+  fi
+fi
+
+cat > "$REPORT" <<REPORT
+# FoxDesk iOS Completion Audit
+
+- Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+- Git revision: $git_rev
+- Product scope: native SwiftUI agent/admin work app for FoxDesk Cloud
+- Report path: \`tmp/ios-completion-audit/latest.md\`
+- Strict conclusion: **not complete for TestFlight/App Store until live and Apple gates are ready**
+
+This audit separates locally proven MVP implementation from release evidence
+that requires Apple systems, a live workspace account, or a physical iPhone.
+
+## MVP Requirement Status
+
+| Requirement | Local implementation evidence | Release evidence still needed |
+| --- | --- | --- |
+| 1. Sign in to \`app.foxdesk.net\` | Mobile login/refresh/me contracts, \`LoginView\`, \`AppSession\`, Keychain storage, Xcode tests | Demo reviewer and live smoke credentials: $demo_status / $live_smoke_status |
+| 2. Work dashboard | \`GET /api/mobile/v1/work\`, \`DashboardView\`, worked-time, queues, recent updates, beta gate | Live smoke against real workspace: $live_smoke_status |
+| 3. My tickets | \`TicketsView\`, Mine/New/Waiting/Done/All tabs, mobile tickets contract | Live smoke against real workspace: $live_smoke_status |
+| 4. Ticket detail | \`TicketDetailView\`, activity/timer/attachments/actions, mobile ticket detail contract | Live smoke against real workspace: $live_smoke_status |
+| 5. Reply / internal note | Mobile comments endpoint and native composer are implemented | Opt-in write smoke: $write_smoke_status |
+| 6. Comment with time | \`comment-with-time\` endpoint, exact/manual time controls, linked time-entry contracts | Opt-in write smoke: $write_smoke_status |
+| 7. Attachments and photos | Camera/file picker, upload, preview/download, attachment contracts | Real-device or live smoke attachment upload: $write_smoke_status |
+| 8. Push notifications | Device-token endpoints, APNs payload dry-run, native routing tests | Apple Developer Push capability: $developer_status; physical iPhone APNs token: $apns_status |
+| 9. Global search | \`SearchView\`, mobile search contract, global search tests | Live smoke against real workspace: $live_smoke_status |
+| 10. Client context | \`ClientContextView\`, mobile client endpoint, demo-account contract expectations | Demo reviewer account populated with client context: $demo_status |
+| 11. Offline/speed fallback | dashboard/list/detail caches, reply drafts, attachment retry state, Xcode tests | No external gate; validate again after live smoke if API payloads change |
+
+## Apple And Submission Gates
+
+| Gate | Status |
+| --- | --- |
+| Apple Business verification | $(status_from_env_flag APPLE_BUSINESS_VERIFIED) |
+| App Store Connect app record | $app_record_status |
+| Apple Developer bundle id + Push Notifications | $developer_status |
+| App Review demo credentials | $demo_status |
+| Live mobile API smoke credentials | $live_smoke_status |
+| Opt-in write smoke | $write_smoke_status |
+| Physical iPhone APNs token | $apns_status |
+| Populated screenshots | $screenshots_status |
+| App Store privacy review | $privacy_status |
+
+## Current Evidence Files
+
+- Beta readiness: $(if [[ -f "$beta_report" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-beta-readiness/latest.md\`
+- Next actions: $(if [[ -f "$next_report" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-next-actions/latest.md\`
+- Release env check: $(if [[ -f "$release_env_report" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-release-env/latest.md\`
+- MVP traceability: \`docs/IOS_MVP_TRACEABILITY.md\`
+- Handoff: \`docs/IOS_HANDOFF.md\`
+
+## Required Before Calling The Goal Complete
+
+1. Create App Store Connect app record for \`net.foxdesk.ios\`.
+2. Confirm Apple Developer explicit App ID \`net.foxdesk.ios\` and enable Push Notifications.
+3. Verify App Review demo account with \`npm run ios:demo:check -- --require-credentials --json\`.
+4. Run live mobile API read smoke with \`npm run ios:api:smoke -- --require-credentials --json\`.
+5. Run one opt-in write smoke with \`FOXDESK_IOS_SMOKE_WRITE=1\`.
+6. Run physical-device APNs smoke with \`APNS_TEST_DEVICE_TOKEN\`.
+7. Human-review App Store screenshots and privacy answers.
+8. Run \`npm run ios:submission:gate\` and require it to pass.
+
+REPORT
+
+printf '[ios:completion:audit] Wrote %s\n' "$REPORT"
+
+if [[ "$app_record_status" == "ready" \
+  && "$developer_status" == "ready" \
+  && "$privacy_status" == "ready" \
+  && "$demo_status" == "ready" \
+  && "$live_smoke_status" == "ready" \
+  && "$write_smoke_status" == "ready" \
+  && "$apns_status" == "ready" \
+  && "$screenshots_status" == "ready" ]]; then
+  printf '[ios:completion:audit] Completion evidence is ready for strict submission gate.\n'
+else
+  printf '[ios:completion:audit] Completion evidence is incomplete; see report for remaining gates.\n'
+fi
