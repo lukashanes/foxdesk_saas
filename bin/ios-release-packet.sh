@@ -20,6 +20,7 @@ refresh_report() {
 
 refresh_report "external gate snapshot" "npm run ios:external:gates"
 refresh_report "next-action checklist" "npm run ios:next"
+refresh_report "completion audit" "npm run ios:completion:audit"
 
 timestamp="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 
@@ -50,6 +51,7 @@ and the human actions still needed.
 - Archive preflight: \`tmp/ios-archive-preflight/latest.md\`
 - External gates: \`tmp/ios-external-gates/latest.md\`
 - Next actions: \`tmp/ios-next-actions/latest.md\`
+- Completion audit: \`tmp/ios-completion-audit/latest.md\`
 - App Store screenshots: \`tmp/ios-app-store-screenshots/manifest.md\`
 - App Store submission packet: \`docs/IOS_APP_STORE_SUBMISSION.md\`
 - App Store Connect runbook: \`docs/IOS_APP_STORE_CONNECT_STEPS.md\`
@@ -77,6 +79,7 @@ auto-load it when present. To use a different local path, set
 npm run ios:release:env
 npm run ios:mvp:audit
 npm run ios:beta:gate
+npm run ios:completion:audit
 npm run ios:metadata:check
 npm run ios:archive:preflight
 \`\`\`

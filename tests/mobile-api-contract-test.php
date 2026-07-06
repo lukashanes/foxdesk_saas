@@ -507,6 +507,8 @@ $assert(str_contains($iosReleasePacket, 'npm run ios:external:gates'), 'iOS rele
 $assert(str_contains($iosReleasePacket, 'npm run ios:next'), 'iOS release packet must refresh the next-action checklist.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-beta-readiness/latest.md'), 'iOS release packet must link beta readiness evidence.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-archive-preflight/latest.md'), 'iOS release packet must link archive preflight evidence.');
+$assert(str_contains($iosReleasePacket, 'npm run ios:completion:audit'), 'iOS release packet must refresh the completion audit.');
+$assert(str_contains($iosReleasePacket, 'tmp/ios-completion-audit/latest.md'), 'iOS release packet must link completion audit evidence.');
 $assert(str_contains($iosReleasePacket, 'docs/IOS_APP_STORE_CONNECT_STEPS.md'), 'iOS release packet must link App Store Connect steps.');
 $assert(str_contains($iosReleasePacket, 'docs/IOS_APPLE_DEVELOPER_STEPS.md'), 'iOS release packet must link Apple Developer steps.');
 $assert(str_contains($iosReleasePacket, 'npm run ios:release:env'), 'iOS release packet must document the redacted release env check.');
