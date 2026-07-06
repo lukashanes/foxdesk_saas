@@ -623,6 +623,7 @@ $assert(str_contains($iosSubmissionGate, 'npm run ios:mvp:audit'), 'iOS submissi
 $assert(str_contains($iosSubmissionGate, 'npm run ios:beta:gate'), 'iOS submission gate must run the beta readiness gate.');
 $assert(str_contains($iosSubmissionGate, 'APP_STORE_CONNECT_APP_RECORD_READY'), 'iOS submission gate must require the App Store Connect readiness flag.');
 $assert(str_contains($iosSubmissionGate, 'APPLE_DEVELOPER_BUNDLE_READY'), 'iOS submission gate must require Apple Developer bundle/push readiness.');
+$assert(str_contains($iosSubmissionGate, 'APPLE_BUSINESS_VERIFIED'), 'iOS submission gate must require the Apple Business organization verification flag.');
 $assert(str_contains($iosSubmissionGate, 'APP_STORE_PRIVACY_REVIEWED'), 'iOS submission gate must require human privacy review.');
 $assert(str_contains($iosSubmissionGate, 'FOXDESK_IOS_DEMO_EMAIL'), 'iOS submission gate must require demo reviewer account email.');
 $assert(str_contains($iosSubmissionGate, 'FOXDESK_IOS_DEMO_PASSWORD'), 'iOS submission gate must require demo reviewer account password.');

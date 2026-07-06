@@ -43,6 +43,7 @@ log "Checking final human and live-smoke gates"
 
 require_env_flag "APP_STORE_CONNECT_APP_RECORD_READY" "Set APP_STORE_CONNECT_APP_RECORD_READY=1 after creating the App Store Connect app record for net.foxdesk.ios."
 require_env_flag "APPLE_DEVELOPER_BUNDLE_READY" "Set APPLE_DEVELOPER_BUNDLE_READY=1 after confirming bundle id net.foxdesk.ios exists under Aenze s.r.o. in Apple Developer and Push Notifications are enabled."
+require_env_flag "APPLE_BUSINESS_VERIFIED" "Set APPLE_BUSINESS_VERIFIED=1 after confirming Aenze s.r.o. is verified in Apple Business. This records brand/organization readiness but does not replace App Store Connect or Developer signing."
 require_env_flag "APP_STORE_PRIVACY_REVIEWED" "Set APP_STORE_PRIVACY_REVIEWED=1 after a human reviews App Store privacy answers."
 require_env_value "FOXDESK_IOS_DEMO_EMAIL" "Set FOXDESK_IOS_DEMO_EMAIL for the App Review demo account verification."
 require_env_value "FOXDESK_IOS_DEMO_PASSWORD" "Set FOXDESK_IOS_DEMO_PASSWORD for the App Review demo account verification."
