@@ -89,6 +89,6 @@ Before setting `APP_STORE_PRIVACY_REVIEWED=1`, verify:
 ## Related Files
 
 - `ios/FoxDesk/FoxDesk/PrivacyInfo.xcprivacy`
-- `ios/FoxDesk/FoxDesk/Sources/SettingsView.swift`
+- `ios/FoxDesk/FoxDesk/Sources/AccountView.swift`
 - `docs/IOS_APP_STORE_SUBMISSION.md`
 - `docs/IOS_APP_STORE_CONNECT_METADATA.md`

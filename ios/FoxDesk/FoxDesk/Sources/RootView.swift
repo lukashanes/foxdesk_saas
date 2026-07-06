@@ -78,7 +78,7 @@ struct SignedInShellView: View {
             .tag(AppTab.notifications)
 
             NavigationStack {
-                SettingsView()
+                AccountView()
             }
             .tabItem {
                 Label("Account", systemImage: "person.crop.circle")

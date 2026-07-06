@@ -23,7 +23,7 @@ customer portal, or full workspace settings app.
 | Global search | `GET /api/mobile/v1/search` | `SearchView` | `FoxDeskAPIClientTests`, `tests/global-search-test.php`, `tests/mobile-api-contract-test.php` |
 | Client context | `GET /api/mobile/v1/clients/{id}` | `ClientContextView`, search/client drill-ins, ticket header drill-in | `FoxDeskAPIClientTests`, `tests/client-overview-contract-test.php`, `tests/mobile-api-contract-test.php` |
 | Offline and speed fallback | cached API payloads and local-only draft state | `DashboardView`, `TicketsView`, `TicketDetailView`, `TicketComposerView`, `NewTicketView`, `TicketAttachmentsView` using `HomeFeedCacheStore`, `TicketListCacheStore`, `TicketDetailCacheStore`, `TicketCommentDraftStore`, and `StagedAttachmentUploadState` | `FoxDeskAPIClientTests`, `tests/mobile-api-contract-test.php`, `npm run ios:mvp:audit` |
-| Lightweight account/settings/logout | `GET /api/mobile/v1/me`, `POST /api/mobile/v1/logout`, account links | `SettingsView` | `tests/ios-mvp-scope-contract-test.php`, `npm run ios:gate` |
+| Lightweight account/logout | `GET /api/mobile/v1/me`, `POST /api/mobile/v1/logout`, account links | `AccountView` | `tests/ios-mvp-scope-contract-test.php`, `npm run ios:gate` |
 
 ## Explicitly Out Of Scope
 

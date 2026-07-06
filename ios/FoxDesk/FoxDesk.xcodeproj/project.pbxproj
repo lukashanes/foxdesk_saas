@@ -32,6 +32,7 @@
 		60D832C435D85D32D6261C1E /* TokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7557548900FBA2053AA2D24 /* TokenStore.swift */; };
 		636828DA9CB679AB422A246B /* FoxDeskKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 389BC991F1584CC6C1002DA4 /* FoxDeskKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		66CD141A38AC52A0A9BC43F2 /* DashboardWorkedTimeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AD0219E37FD6D62CD4B9902 /* DashboardWorkedTimeView.swift */; };
+		8D16D025EE95A9A9F9A2CE0B /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9456F5B85787F870AF0A0BEA /* AccountView.swift */; };
 		8E0E600548E6B9753B34BA56 /* PushNavigationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B9D296BBB448455F0C22B4 /* PushNavigationRouter.swift */; };
 		8F389A586FC7259973FC382F /* TicketListCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35B65A8C227B2FF613FB866 /* TicketListCache.swift */; };
 		907253D364EE987E91C781AA /* FoxDeskAPIClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17ED2C789D3D650419DDE160 /* FoxDeskAPIClientTests.swift */; };
@@ -45,7 +46,6 @@
 		B2C1884776AB05BB930B7A5D /* MobileRichTextFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D5307F31481372E1FACEF9B /* MobileRichTextFormatter.swift */; };
 		BC4A26F902F4116BB3AAA888 /* FoxDeskAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17C80F641D509DAED66D45C1 /* FoxDeskAPIClient.swift */; };
 		C7AA881EF59B8ECA2A466137 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 6ACB4F73AEA0847916FA690D /* PrivacyInfo.xcprivacy */; };
-		C81EB5654C4A3A712A90B6AE /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77891D82DA7AA68E7B438A05 /* SettingsView.swift */; };
 		CB79F1E38367FB3394EA1524 /* ScreenshotDemoRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46943E9AF58268A44A2A02CA /* ScreenshotDemoRootView.swift */; };
 		CC00B581F6D83ADD2AB643E6 /* NotificationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE8B555C2BBA53E11C132323 /* NotificationModels.swift */; };
 		CDB26BA851A2E7FC7FD88B8D /* StagedAttachmentUploadState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8D10A59DC2545594A248C9B /* StagedAttachmentUploadState.swift */; };
@@ -141,7 +141,6 @@
 		71DA31D23FF41DE8EB87ADD7 /* TicketRowsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TicketRowsView.swift; sourceTree = "<group>"; };
 		76E2262587BD261E8D50D163 /* HomeFeedCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeFeedCache.swift; sourceTree = "<group>"; };
 		7775754E0D5DDBE9E88CA816 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
-		77891D82DA7AA68E7B438A05 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		811791BCF658B9EB20463265 /* TicketDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TicketDetailView.swift; sourceTree = "<group>"; };
 		8176455E9A47EA70AAD5768D /* TenantModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TenantModels.swift; sourceTree = "<group>"; };
 		82D695B4E0E24C7C3FFA2E1C /* NotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsView.swift; sourceTree = "<group>"; };
@@ -150,6 +149,7 @@
 		897D59F23AB6289F0ED6EDA7 /* TicketCommentDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TicketCommentDraft.swift; sourceTree = "<group>"; };
 		92A5BBF545C7A6D97A394A62 /* TicketsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TicketsView.swift; sourceTree = "<group>"; };
 		9374BB176A78C902E91AC541 /* PushRegistrationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushRegistrationService.swift; sourceTree = "<group>"; };
+		9456F5B85787F870AF0A0BEA /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		9D5307F31481372E1FACEF9B /* MobileRichTextFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileRichTextFormatter.swift; sourceTree = "<group>"; };
 		AA08CDCC5C4CC2B492910C18 /* TicketManageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TicketManageView.swift; sourceTree = "<group>"; };
 		AE8B555C2BBA53E11C132323 /* NotificationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationModels.swift; sourceTree = "<group>"; };
@@ -289,6 +289,7 @@
 		7D766F751A7BF5F04F09E0DD /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				9456F5B85787F870AF0A0BEA /* AccountView.swift */,
 				F7E765102DE973B97B1CEAF1 /* AttachmentPreviewView.swift */,
 				3DF2B4A07CB3CF5DA6E831C4 /* CameraCaptureView.swift */,
 				48569663834E9DE4F968848C /* ClientContextView.swift */,
@@ -306,7 +307,6 @@
 				7775754E0D5DDBE9E88CA816 /* RootView.swift */,
 				46943E9AF58268A44A2A02CA /* ScreenshotDemoRootView.swift */,
 				F348E2BE818ADECB1B544AEF /* SearchView.swift */,
-				77891D82DA7AA68E7B438A05 /* SettingsView.swift */,
 				EA009E62E4E4E719AAB906CB /* TicketActivityView.swift */,
 				086EF095203B483E2CBFE99D /* TicketAttachmentsView.swift */,
 				4CECF31AE29E4AEAED99FB1B /* TicketComposerView.swift */,
@@ -486,6 +486,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8D16D025EE95A9A9F9A2CE0B /* AccountView.swift in Sources */,
 				B2BFC7BA991C3C8C02D6B22C /* AttachmentPreviewView.swift in Sources */,
 				0C6B3668BA05778459CDA8BB /* CameraCaptureView.swift in Sources */,
 				D596C516E2AFD555D20B9E9E /* ClientContextView.swift in Sources */,
@@ -503,7 +504,6 @@
 				204B8AE31623A96D79CB21B3 /* RootView.swift in Sources */,
 				CB79F1E38367FB3394EA1524 /* ScreenshotDemoRootView.swift in Sources */,
 				F53A08E05476605149351B11 /* SearchView.swift in Sources */,
-				C81EB5654C4A3A712A90B6AE /* SettingsView.swift in Sources */,
 				F610D3911C20D3B91419A5BF /* TicketActivityView.swift in Sources */,
 				E1BE561E2298CB818C9970F8 /* TicketAttachmentsView.swift in Sources */,
 				E8084DD98728BF584129519F /* TicketComposerView.swift in Sources */,

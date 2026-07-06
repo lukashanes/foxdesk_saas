@@ -78,7 +78,7 @@ foreach ($swiftFiles as $path) {
 }
 
 $rootView = $readFile($iosSources . '/RootView.swift');
-$settingsView = $readFile($iosSources . '/SettingsView.swift');
+$accountView = $readFile($iosSources . '/AccountView.swift');
 $searchView = $readFile($iosSources . '/SearchView.swift');
 $tenantModels = $readFile($kitSources . '/Models/TenantModels.swift');
 
@@ -86,18 +86,20 @@ $assert(str_contains($rootView, 'WorkspaceAccessBlockedView'), 'iOS app must sho
 $assert(str_contains($rootView, 'session.tenantState?.billingActions?.noticeTitle'), 'iOS app may read billing notice title only as a workspace access message.');
 $assert(!str_contains($rootView, 'showCheckout'), 'iOS root UI must not branch into checkout.');
 $assert(!str_contains($rootView, 'showPortal'), 'iOS root UI must not branch into a billing portal.');
-$assert(!str_contains($settingsView, 'showCheckout'), 'iOS Settings must not expose checkout actions.');
-$assert(!str_contains($settingsView, 'showPortal'), 'iOS Settings must not expose billing portal actions.');
-$assert(!str_contains($settingsView, 'checkoutLabel'), 'iOS Settings must not expose checkout labels.');
-$assert(!str_contains($settingsView, 'portalLabel'), 'iOS Settings must not expose portal labels.');
+$assert(str_contains($rootView, 'AccountView()'), 'iOS shell must use the lightweight Account view.');
+$assert(!file_exists($iosSources . '/SettingsView.swift'), 'iOS must not keep a web-admin-style SettingsView surface.');
+$assert(!str_contains($accountView, 'showCheckout'), 'iOS Account must not expose checkout actions.');
+$assert(!str_contains($accountView, 'showPortal'), 'iOS Account must not expose billing portal actions.');
+$assert(!str_contains($accountView, 'checkoutLabel'), 'iOS Account must not expose checkout labels.');
+$assert(!str_contains($accountView, 'portalLabel'), 'iOS Account must not expose portal labels.');
 $assert(!str_contains($searchView, '"reports"'), 'iOS Search must not show report sections in the first agent/admin MVP.');
 $assert(!str_contains($searchView, 'case "report"'), 'iOS Search must not render report result rows in the first agent/admin MVP.');
 
-$assert(str_contains($settingsView, 'Contact support'), 'iOS Settings must keep support available.');
-$assert(str_contains($settingsView, 'Privacy Policy'), 'iOS Settings must keep privacy policy available.');
-$assert(str_contains($settingsView, 'Request account deletion'), 'iOS Settings must keep account deletion available.');
-$assert(str_contains($settingsView, '#if DEBUG'), 'Push diagnostics must stay debug-only.');
-$assert(str_contains($settingsView, 'Copy APNs token'), 'Debug/staging Account must still let testers copy the APNs token.');
+$assert(str_contains($accountView, 'Contact support'), 'iOS Account must keep support available.');
+$assert(str_contains($accountView, 'Privacy Policy'), 'iOS Account must keep privacy policy available.');
+$assert(str_contains($accountView, 'Request account deletion'), 'iOS Account must keep account deletion available.');
+$assert(str_contains($accountView, '#if DEBUG'), 'Push diagnostics must stay debug-only.');
+$assert(str_contains($accountView, 'Copy APNs token'), 'Debug/staging Account must still let testers copy the APNs token.');
 
 $assert(str_contains($tenantModels, 'TenantBillingActions'), 'Tenant state model must keep billing notice fields for access-state messages.');
 $assert(str_contains($tenantModels, 'showCheckout'), 'Tenant state model must decode checkout flags from the backend even though iOS does not render them.');

@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 import FoxDeskKit
 
-struct SettingsView: View {
+struct AccountView: View {
     @Environment(AppSession.self) private var session
     @Environment(PushRegistrationService.self) private var pushRegistration
     @State private var didCopyAPNsToken = false

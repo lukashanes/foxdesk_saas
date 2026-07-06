@@ -58,7 +58,7 @@ struct ScreenshotDemoRootView: View {
             case .notifications:
                 ScreenshotNotificationsView()
             case .account:
-                ScreenshotSettingsView()
+                ScreenshotAccountView()
             }
         }
     }
@@ -305,7 +305,7 @@ private struct ScreenshotNotificationsView: View {
     }
 }
 
-private struct ScreenshotSettingsView: View {
+private struct ScreenshotAccountView: View {
     var body: some View {
         List {
             Section("Workspace") {

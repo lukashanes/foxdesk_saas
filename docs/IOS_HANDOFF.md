@@ -26,7 +26,7 @@ The iOS MVP covers:
 - APNs registration and ticket deep links
 - global search
 - basic client context
-- lightweight account/settings/logout
+- lightweight account/logout
 
 Billing, pricing, Stripe, platform administration, reports, and full workspace
 settings stay on the web for the first release.
@@ -310,7 +310,7 @@ re-running the native simulator suite:
   - Result bundle:
     `/Users/mac/Library/Developer/XcodeBuildMCP/workspaces/FoxDesk-a94a2094071c/result-bundles/test_sim_2026-07-06T17-08-19-637Z_pid79619_d849e3b6.xcresult`
 - As of 2026-07-06 17:15 UTC, after adding Terms and Request account deletion
-  to the debug-only App Store screenshot Settings fixture, Xcode simulator
+  to the debug-only App Store screenshot Account fixture, Xcode simulator
   tests passed: 47/47.
   - Build log:
     `/Users/mac/Library/Developer/XcodeBuildMCP/workspaces/FoxDesk-a94a2094071c/logs/test_sim_2026-07-06T17-15-01-942Z_pid79619_5c6417e0.log`

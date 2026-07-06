@@ -39,7 +39,7 @@ $requiredRows = [
     'Global search' => ['SearchView'],
     'Client context' => ['ClientContextView'],
     'Offline and speed fallback' => ['HomeFeedCacheStore', 'TicketListCacheStore', 'TicketDetailCacheStore', 'TicketCommentDraftStore', 'StagedAttachmentUploadState'],
-    'Lightweight account/settings/logout' => ['SettingsView'],
+    'Lightweight account/logout' => ['AccountView'],
 ];
 
 foreach ($requiredRows as $label => $needles) {
