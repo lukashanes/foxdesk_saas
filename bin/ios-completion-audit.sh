@@ -12,6 +12,10 @@ git_rev="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || printf 'unkn
 beta_report="$ROOT_DIR/tmp/ios-beta-readiness/latest.md"
 next_report="$ROOT_DIR/tmp/ios-next-actions/latest.md"
 release_env_report="$ROOT_DIR/tmp/ios-release-env/latest.md"
+demo_evidence="$ROOT_DIR/tmp/ios-demo-account-check/latest-live-demo-account.json"
+api_read_evidence="$ROOT_DIR/tmp/ios-api-smoke/latest-live-read-only.json"
+api_write_evidence="$ROOT_DIR/tmp/ios-api-smoke/latest-live-write.json"
+apns_send_evidence="$ROOT_DIR/tmp/ios-apns-smoke/latest-send.json"
 
 status_from_env_flag() {
   local name="$1"
@@ -31,22 +35,68 @@ status_from_env_value() {
   fi
 }
 
+json_field() {
+  local file="$1"
+  local path="$2"
+
+  [[ -f "$file" ]] || return 1
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    let value = data;
+    for (const key of process.argv[2].split(".")) {
+      if (!value || typeof value !== "object" || !(key in value)) {
+        process.exit(3);
+      }
+      value = value[key];
+    }
+    if (typeof value === "boolean") {
+      process.stdout.write(value ? "true" : "false");
+    } else if (value === null || value === undefined) {
+      process.stdout.write("");
+    } else {
+      process.stdout.write(String(value));
+    }
+  ' "$file" "$path"
+}
+
+evidence_ready() {
+  local file="$1"
+  local mode="$2"
+
+  [[ -f "$file" ]] || return 1
+  [[ "$(json_field "$file" ok 2>/dev/null || true)" == "true" ]] || return 1
+  [[ "$(json_field "$file" mode 2>/dev/null || true)" == "$mode" ]] || return 1
+}
+
 live_smoke_status="missing"
-if [[ -n "${FOXDESK_IOS_SMOKE_EMAIL:-}" && -n "${FOXDESK_IOS_SMOKE_PASSWORD:-}" ]]; then
+if evidence_ready "$api_read_evidence" "live-read-only"; then
   live_smoke_status="ready"
+elif [[ -n "${FOXDESK_IOS_SMOKE_EMAIL:-}" && -n "${FOXDESK_IOS_SMOKE_PASSWORD:-}" ]]; then
+  live_smoke_status="needs verification"
 fi
 
 write_smoke_status="missing"
-if [[ "${FOXDESK_IOS_SMOKE_WRITE:-}" == "1" && "$live_smoke_status" == "ready" ]]; then
+if evidence_ready "$api_write_evidence" "live-write"; then
   write_smoke_status="ready"
+elif [[ "${FOXDESK_IOS_SMOKE_WRITE:-}" == "1" && "$live_smoke_status" != "missing" ]]; then
+  write_smoke_status="needs verification"
 fi
 
 demo_status="missing"
-if [[ -n "${FOXDESK_IOS_DEMO_EMAIL:-}" && -n "${FOXDESK_IOS_DEMO_PASSWORD:-}" ]]; then
+if evidence_ready "$demo_evidence" "live-demo-account"; then
   demo_status="ready"
+elif [[ -n "${FOXDESK_IOS_DEMO_EMAIL:-}" && -n "${FOXDESK_IOS_DEMO_PASSWORD:-}" ]]; then
+  demo_status="needs verification"
 fi
 
-apns_status="$(status_from_env_value APNS_TEST_DEVICE_TOKEN)"
+apns_status="missing"
+if evidence_ready "$apns_send_evidence" "send" && [[ "$(json_field "$apns_send_evidence" sent 2>/dev/null || true)" == "true" ]]; then
+  apns_status="ready"
+elif [[ -n "${APNS_TEST_DEVICE_TOKEN:-}" ]]; then
+  apns_status="needs verification"
+fi
+
 app_record_status="$(status_from_env_flag APP_STORE_CONNECT_APP_RECORD_READY)"
 developer_status="$(status_from_env_flag APPLE_DEVELOPER_BUNDLE_READY)"
 privacy_status="$(status_from_env_flag APP_STORE_PRIVACY_REVIEWED)"
@@ -106,6 +156,10 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 - Beta readiness: $(if [[ -f "$beta_report" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-beta-readiness/latest.md\`
 - Next actions: $(if [[ -f "$next_report" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-next-actions/latest.md\`
 - Release env check: $(if [[ -f "$release_env_report" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-release-env/latest.md\`
+- Demo account live evidence: $(if [[ -f "$demo_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-demo-account-check/latest-live-demo-account.json\`
+- API read live evidence: $(if [[ -f "$api_read_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-api-smoke/latest-live-read-only.json\`
+- API write live evidence: $(if [[ -f "$api_write_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-api-smoke/latest-live-write.json\`
+- APNs live-send evidence: $(if [[ -f "$apns_send_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-apns-smoke/latest-send.json\`
 - MVP traceability: \`docs/IOS_MVP_TRACEABILITY.md\`
 - Handoff: \`docs/IOS_HANDOFF.md\`
 

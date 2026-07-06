@@ -498,6 +498,11 @@ $assert(str_contains($iosCompletionAudit, 'Opt-in write smoke'), 'iOS completion
 $assert(str_contains($iosCompletionAudit, 'Physical iPhone APNs token'), 'iOS completion audit must track physical APNs proof.');
 $assert(str_contains($iosCompletionAudit, 'App Store Connect app record'), 'iOS completion audit must track App Store Connect proof.');
 $assert(str_contains($iosCompletionAudit, 'Apple Developer explicit App ID'), 'iOS completion audit must track Apple Developer App ID proof.');
+$assert(str_contains($iosCompletionAudit, 'latest-live-demo-account.json'), 'iOS completion audit must require live demo account evidence.');
+$assert(str_contains($iosCompletionAudit, 'latest-live-read-only.json'), 'iOS completion audit must require read-only live API smoke evidence.');
+$assert(str_contains($iosCompletionAudit, 'latest-live-write.json'), 'iOS completion audit must require write live API smoke evidence.');
+$assert(str_contains($iosCompletionAudit, 'latest-send.json'), 'iOS completion audit must require APNs live-send evidence.');
+$assert(str_contains($iosCompletionAudit, 'needs verification'), 'iOS completion audit must distinguish configured env from verified live evidence.');
 $assert(str_contains($iosExternalGates, 'tmp/ios-external-gates/latest.md'), 'iOS external gate status script must write a durable evidence report.');
 $assert(str_contains($iosDemoAccountCheck, 'ios-demo-account-check'), 'iOS demo account check must write durable redacted evidence.');
 $assert(str_contains($iosAPISmoke, 'ios-api-smoke'), 'iOS API smoke must write durable redacted evidence.');
