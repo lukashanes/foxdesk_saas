@@ -483,6 +483,8 @@ $assert(str_contains($iosMVPLocalAudit, 'Photos, files, previews'), 'iOS MVP aud
 $assert(str_contains($iosMVPLocalAudit, 'Push notifications'), 'iOS MVP audit must map the push requirement.');
 $assert(str_contains($iosMVPLocalAudit, 'Client context'), 'iOS MVP audit must map the client context requirement.');
 $assert(str_contains($iosMVPLocalAudit, 'Offline and speed fallback'), 'iOS MVP audit must map the offline/speed fallback requirement.');
+$assert(str_contains($iosMVPLocalAudit, 'Apple Developer explicit App ID') && str_contains($iosMVPLocalAudit, 'Push Notifications enabled'), 'iOS MVP audit must call out the Apple Developer bundle/push human gate.');
+$assert(str_contains($iosMVPLocalAudit, 'npm run ios:demo:check -- --require-credentials --json'), 'iOS MVP audit must require live demo reviewer credential verification.');
 $assert(str_contains($packageJson, '"ios:completion:audit": "./bin/ios-completion-audit.sh"'), 'package.json must expose the iOS completion audit.');
 $assert(str_contains($iosCompletionAudit, 'tmp/ios-completion-audit/latest.md'), 'iOS completion audit must write a durable report.');
 $assert(str_contains($iosCompletionAudit, 'Strict conclusion'), 'iOS completion audit must state whether the full release objective is complete.');

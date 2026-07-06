@@ -105,7 +105,8 @@ cat >> "$EVIDENCE_REPORT" <<'REPORT'
 ## Next External Gates
 
 - App Store Connect app record for `net.foxdesk.ios`
-- demo reviewer account in `docs/IOS_APP_STORE_SUBMISSION.md`
+- Apple Developer explicit App ID `net.foxdesk.ios` with Push Notifications enabled
+- demo reviewer account credentials verified with `npm run ios:demo:check -- --require-credentials --json`
 - live mobile API smoke credentials
 - opt-in write smoke on staging or disposable workspace
 - physical iPhone APNs smoke with `APNS_TEST_DEVICE_TOKEN`
