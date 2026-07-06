@@ -29,7 +29,7 @@ The requirement-to-code evidence is maintained in `docs/IOS_MVP_TRACEABILITY.md`
    previews/downloads; never expose R2 keys.
 9. Show client context for a ticket or selected client.
 10. Push notifications for actionable ticket events.
-11. Account/settings screen with workspace status, logout, privacy, support, and
+11. Account screen with workspace status, logout, privacy, support, and
     data/deletion request links.
 
 Out of scope for first release:
@@ -211,7 +211,7 @@ Done when:
 - `npm run ios:screenshots` has produced a populated screenshot set and
   `tmp/ios-app-store-screenshots/manifest.md`.
 - The generated screenshots show login, dashboard/work, tickets, ticket detail,
-  reply/time entry, attachment, search, client, notifications, and settings.
+  reply/time entry, attachment, search, client, notifications, and account.
 
 Current state: implemented locally. Screenshots still need human review before
 they are uploaded to App Store Connect.

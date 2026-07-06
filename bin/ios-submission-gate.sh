@@ -6,6 +6,7 @@ source "$ROOT_DIR/bin/ios-release-env.sh"
 SUBMISSION_PACKET="$ROOT_DIR/docs/IOS_APP_STORE_SUBMISSION.md"
 SCREENSHOT_DIR="$ROOT_DIR/tmp/ios-app-store-screenshots"
 SCREENSHOT_MANIFEST="$SCREENSHOT_DIR/manifest.md"
+SCREENSHOT_ACCOUNT="$SCREENSHOT_DIR/account.png"
 SCREENSHOT_SCRIPT="$ROOT_DIR/bin/ios-app-store-screenshots.sh"
 
 log() {
@@ -65,6 +66,11 @@ else
   fi
   if [[ ! -f "$SCREENSHOT_MANIFEST" ]]; then
     failures+=("Missing screenshot manifest. Run npm run ios:screenshots and review tmp/ios-app-store-screenshots/manifest.md.")
+  fi
+  if [[ ! -f "$SCREENSHOT_ACCOUNT" ]]; then
+    failures+=("Run npm run ios:screenshots again so the App Store screenshot set includes account.png instead of the old settings.png.")
+  elif ! grep -Fq '`account.png`' "$SCREENSHOT_MANIFEST"; then
+    failures+=("Screenshot manifest must list account.png. Regenerate with npm run ios:screenshots.")
   fi
 fi
 

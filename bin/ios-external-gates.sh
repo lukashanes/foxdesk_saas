@@ -13,6 +13,7 @@ SUBMISSION_PACKET="$ROOT_DIR/docs/IOS_APP_STORE_SUBMISSION.md"
 OPERATOR_CHECKLIST="$ROOT_DIR/docs/IOS_OPERATOR_CHECKLIST.md"
 SCREENSHOT_DIR="$ROOT_DIR/tmp/ios-app-store-screenshots"
 SCREENSHOT_MANIFEST="$SCREENSHOT_DIR/manifest.md"
+SCREENSHOT_ACCOUNT="$SCREENSHOT_DIR/account.png"
 
 mkdir -p "$EVIDENCE_DIR"
 
@@ -137,10 +138,10 @@ else
   gate_status "Physical iPhone APNs token" "missing" "Install a debug/staging build on a physical iPhone, open Account -> Push diagnostics, copy the token, and set APNS_TEST_DEVICE_TOKEN."
 fi
 
-if [[ -f "$SCREENSHOT_MANIFEST" && "$screenshot_count" -ge 8 ]]; then
-  gate_status "Populated App Store screenshots" "ready" "Found $screenshot_count screenshots and manifest.md in tmp/ios-app-store-screenshots."
+if [[ -f "$SCREENSHOT_MANIFEST" && -f "$SCREENSHOT_ACCOUNT" && "$screenshot_count" -ge 8 ]] && grep -Fq '`account.png`' "$SCREENSHOT_MANIFEST"; then
+  gate_status "Populated App Store screenshots" "ready" "Found $screenshot_count screenshots, account.png, and manifest.md in tmp/ios-app-store-screenshots."
 else
-  gate_status "Populated App Store screenshots" "missing" "Run npm run ios:screenshots and review at least 8 populated screenshots plus manifest.md."
+  gate_status "Populated App Store screenshots" "missing" "Run npm run ios:screenshots and review at least 8 populated screenshots plus manifest.md, including account.png."
 fi
 
 if [[ "${APP_STORE_PRIVACY_REVIEWED:-}" == "1" ]]; then

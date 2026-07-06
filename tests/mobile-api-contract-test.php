@@ -648,6 +648,7 @@ $assert(str_contains($iosSubmissionGate, 'FOXDESK_IOS_SMOKE_WRITE'), 'iOS submis
 $assert(str_contains($iosSubmissionGate, 'APNS_TEST_DEVICE_TOKEN'), 'iOS submission gate must require a physical-device APNs token.');
 $assert(str_contains($iosSubmissionGate, 'tmp/ios-app-store-screenshots'), 'iOS submission gate must require populated screenshot evidence.');
 $assert(str_contains($iosSubmissionGate, 'manifest.md'), 'iOS submission gate must require a screenshot manifest.');
+$assert(str_contains($iosSubmissionGate, 'account.png'), 'iOS submission gate must require the Account screenshot.');
 $assert(str_contains($iosSubmissionGate, 'npm run ios:screenshots'), 'iOS submission gate must tell operators how to generate screenshots.');
 $assert(str_contains($iosSubmissionGate, 'docs/IOS_DEMO_REVIEWER_ACCOUNT.md'), 'iOS submission gate must require demo reviewer account instructions without committing credentials.');
 $assert(!str_contains($iosSubmissionGate, 'Replace demo reviewer account placeholders'), 'iOS submission gate must not require committing demo reviewer credentials into docs.');
@@ -697,6 +698,9 @@ $assert(str_contains($iosSimulatorSmoke, 'CODE_SIGNING_ALLOWED=NO'), 'iOS simula
 $assert(str_contains($iosAppStoreScreenshots, '--foxdesk-screenshot-mode'), 'iOS screenshot generator must launch the debug-only populated fixture.');
 $assert(str_contains($iosAppStoreScreenshots, 'tmp/ios-app-store-screenshots'), 'iOS screenshot generator must write App Store screenshots to the expected folder.');
 $assert(str_contains($iosAppStoreScreenshots, 'manifest.md'), 'iOS screenshot generator must write a screenshot evidence manifest.');
+$assert(str_contains($iosAppStoreScreenshots, 'account'), 'iOS screenshot generator must include the Account screen.');
+$assert(!str_contains($iosAppStoreScreenshots, "\n  settings\n"), 'iOS screenshot generator must not capture the old Settings screen name.');
+$assert(str_contains($iosAppStoreScreenshots, "*.launch.log"), 'iOS screenshot generator must clear stale launch logs before capture.');
 $assert(str_contains($iosAppStoreScreenshots, 'CODE_SIGNING_ALLOWED=NO'), 'iOS screenshot generator must be runnable locally without signing.');
 $assert(str_contains($iosAPISmoke, 'FOXDESK_IOS_SMOKE_PASSWORD'), 'iOS API smoke script must accept a smoke account password.');
 $assert(str_contains($iosAPISmoke, 'FOXDESK_IOS_SMOKE_2FA_CODE'), 'iOS API smoke script must support 2FA test accounts.');

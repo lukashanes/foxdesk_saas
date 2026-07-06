@@ -68,7 +68,7 @@ PY
 
 mkdir -p "$OUT_DIR"
 rm -rf "$DERIVED_DATA"
-find "$OUT_DIR" -maxdepth 1 -type f \( -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' \) -delete
+find "$OUT_DIR" -maxdepth 1 -type f \( -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.launch.log' \) -delete
 
 SIMULATOR_UDID="$(select_simulator_udid)"
 DESTINATION="id=$SIMULATOR_UDID"
