@@ -507,6 +507,8 @@ $assert(str_contains($iosNextActions, 'npm run ios:external:gates'), 'iOS next-a
 $assert(str_contains($iosNextActions, 'Ordered Actions'), 'iOS next-actions report must provide ordered operator actions.');
 $assert(str_contains($iosNextActions, 'Safe Local Release Env'), 'iOS next-actions report must lead with the safe local release env workflow.');
 $assert(str_contains($iosNextActions, 'npm run ios:release:env'), 'iOS next-actions report must document the redacted release env check.');
+$assert(str_contains($iosNextActions, '**Prepare App Review demo account** ($(bool_status "$demo_creds_status"))'), 'iOS next-actions must not mark the demo account ready from the App Review notes template alone.');
+$assert(str_contains($iosNextActions, 'This is not ready until the credentials are present'), 'iOS next-actions must explain that the demo account requires live credential verification.');
 $assert(!str_contains($iosNextActions, 'FOXDESK_IOS_DEMO_PASSWORD=<password>'), 'iOS next-actions report must not encourage pasting demo passwords into shell history.');
 $assert(str_contains($iosNextActions, 'npm run ios:submission:gate'), 'iOS next-actions report must end with the strict final gate.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-release-packet/latest.md'), 'iOS release packet script must write a durable handoff packet.');
