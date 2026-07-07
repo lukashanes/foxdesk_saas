@@ -519,6 +519,7 @@ $assert(str_contains($iosCompletionAudit, 'authorized download'), 'iOS completio
 $assert(str_contains($iosCompletionAudit, 'Demo reviewer write proof'), 'iOS completion audit must track App Review demo account write proof separately from credentials.');
 $assert(str_contains($iosCompletionAudit, 'FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check'), 'iOS completion audit must document the demo reviewer write proof command.');
 $assert(str_contains($iosCompletionAudit, 'demo-write-comment-with-time'), 'iOS completion audit must inspect demo write proof evidence, not just env flags.');
+$assert(str_contains($iosCompletionAudit, 'manual_date') && str_contains($iosCompletionAudit, 'manual_start_time') && str_contains($iosCompletionAudit, 'manual_end_time'), 'iOS completion audit must require manual date/start/end in demo write proof evidence.');
 $assert(str_contains($iosCompletionAudit, 'demo-write-create-ticket'), 'iOS completion audit must require demo write proof to create a ticket.');
 $assert(str_contains($iosCompletionAudit, 'demo-write-detail-reload'), 'iOS completion audit must require demo write proof to reload the created ticket detail.');
 $assert(str_contains($iosCompletionAudit, 'Basic reply formatting'), 'iOS completion audit must track rich-text reply formatting proof.');
@@ -557,6 +558,7 @@ $assert(str_contains($iosAPNsSmoke, 'tmp/ios-apns-smoke'), 'iOS APNs smoke must 
 $assert(str_contains($iosExternalGates, 'latest-live-demo-account.json'), 'iOS external gates must require passing demo account evidence, not only env values.');
 $assert(str_contains($iosExternalGates, 'Demo reviewer write proof'), 'iOS external gates must report the App Review demo account write proof separately.');
 $assert(str_contains($iosExternalGates, 'demo-write-comment-with-time'), 'iOS external gates must inspect demo write proof evidence, not only credentials.');
+$assert(str_contains($iosExternalGates, 'manual_date') && str_contains($iosExternalGates, 'manual_start_time') && str_contains($iosExternalGates, 'manual_end_time'), 'iOS external gates must require manual date/start/end in demo write proof evidence.');
 $assert(str_contains($iosExternalGates, 'demo-write-create-ticket'), 'iOS external gates must require demo write proof to create a ticket.');
 $assert(str_contains($iosExternalGates, 'demo-write-detail-reload'), 'iOS external gates must require demo write proof to reload linked detail evidence.');
 $assert(str_contains($iosExternalGates, 'latest-live-read-only.json'), 'iOS external gates must require passing read-only live API smoke evidence.');
@@ -649,6 +651,7 @@ $assert(str_contains($iosSubmissionGate, 'npm run ios:completion:audit'), 'iOS s
 $assert(str_contains($iosSubmissionGate, 'api_read_ready'), 'iOS submission gate must verify read-only live API evidence after running the live smoke.');
 $assert(str_contains($iosSubmissionGate, 'api_write_ready'), 'iOS submission gate must verify write-smoke evidence after running the write smoke.');
 $assert(str_contains($iosSubmissionGate, 'demo_write_ready'), 'iOS submission gate must verify demo write evidence after running the demo account check.');
+$assert(str_contains($iosSubmissionGate, 'manual_date') && str_contains($iosSubmissionGate, 'manual_start_time') && str_contains($iosSubmissionGate, 'manual_end_time'), 'iOS submission gate must require manual date/start/end in demo write proof evidence.');
 $assert(str_contains($iosSubmissionGate, 'apns_send_ready'), 'iOS submission gate must verify APNs send evidence after running the live APNs smoke.');
 $assert(str_contains($iosSubmissionGate, 'assert_evidence'), 'iOS submission gate must fail if a live command does not leave passing evidence.');
 $assert(str_contains($iosSubmissionGate, 'attachment-download'), 'iOS submission gate must require authorized attachment download proof in write-smoke evidence.');

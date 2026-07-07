@@ -48,6 +48,9 @@ foreach ([
 $assert($contains('Number(download.bytes) <= 0'), 'Attachment download proof must include a positive byte count.');
 $assert($contains('comment_visible !== true'), 'Demo account proof must require the timed comment to be visible after reload.');
 $assert($contains('linked_time_visible !== true'), 'Demo account proof must require linked time to be visible after reload.');
+$assert($contains('manual_date'), 'Demo account proof must require manual_date in the timed comment evidence.');
+$assert($contains('manual_start_time'), 'Demo account proof must require manual_start_time in the timed comment evidence.');
+$assert($contains('manual_end_time'), 'Demo account proof must require manual_end_time in the timed comment evidence.');
 $assert($contains('sent 2>/dev/null || true)" == "true"'), 'APNs proof must require sent=true, not only environment flags.');
 $assert($contains('"due_date_reminder"'), 'APNs dry-run proof must cover due date reminders.');
 $assert($contains('validated_payloads'), 'APNs dry-run proof must inspect validated payload content, not only command success.');

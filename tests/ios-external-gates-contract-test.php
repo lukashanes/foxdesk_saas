@@ -63,5 +63,9 @@ $assert(
     str_contains($reportBody, '| Apple Business organization verification | ready |'),
     'External gate report must record Apple Business verification as ready.'
 );
+$assert(
+    str_contains($reportBody, 'manual date/start/end'),
+    'External gate report must require manual date/start/end for the demo reviewer write proof.'
+);
 
 echo "iOS external gates contract OK\n";

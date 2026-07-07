@@ -103,9 +103,12 @@ demo_write_ready() {
     const comment = steps.find((row) => row && row.name === "demo-write-comment-with-time");
     const reload = steps.find((row) => row && row.name === "demo-write-detail-reload");
     const hasId = (value) => Number.isInteger(Number(value)) && Number(value) > 0;
+    const hasText = (value) => typeof value === "string" && value.trim().length > 0;
+    const hasManualTimes = comment && hasText(comment.manual_date) && hasText(comment.manual_start_time) && hasText(comment.manual_end_time);
     if (
       !create || create.ok !== true || !hasId(create.ticket_id) ||
       !comment || comment.ok !== true || !hasId(comment.comment_id) || !hasId(comment.time_entry_id) ||
+      !hasManualTimes ||
       !reload || reload.ok !== true || !hasId(reload.ticket_id) || reload.comment_visible !== true || reload.linked_time_visible !== true
     ) {
       process.exit(1);
@@ -164,11 +167,11 @@ else
 fi
 
 if demo_write_ready "$DEMO_EVIDENCE"; then
-  gate_status "Demo reviewer write proof" "ready" "Passing demo evidence includes ticket creation plus an internal comment-with-time reload check."
+  gate_status "Demo reviewer write proof" "ready" "Passing demo evidence includes ticket creation plus an internal comment-with-time reload check with manual date/start/end."
 elif [[ "${FOXDESK_IOS_DEMO_WRITE:-}" == "1" ]]; then
-  gate_status "Demo reviewer write proof" "needs verification" "FOXDESK_IOS_DEMO_WRITE=1 is set, but demo evidence does not include created ticket plus linked comment/time reload proof; rerun npm run ios:demo:check -- --require-credentials --json."
+  gate_status "Demo reviewer write proof" "needs verification" "FOXDESK_IOS_DEMO_WRITE=1 is set, but demo evidence does not include created ticket plus linked comment/time reload proof with manual date/start/end; rerun npm run ios:demo:check -- --require-credentials --json."
 else
-  gate_status "Demo reviewer write proof" "missing" "Run once with FOXDESK_IOS_DEMO_WRITE=1 to prove the App Review account can create a ticket and add an internal timed comment."
+  gate_status "Demo reviewer write proof" "missing" "Run once with FOXDESK_IOS_DEMO_WRITE=1 to prove the App Review account can create a ticket and add an internal timed comment with manual date/start/end."
 fi
 
 if evidence_ready "$API_READ_EVIDENCE" "live-read-only"; then

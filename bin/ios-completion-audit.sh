@@ -151,9 +151,12 @@ demo_write_ready() {
     const comment = steps.find((row) => row && row.name === "demo-write-comment-with-time");
     const reload = steps.find((row) => row && row.name === "demo-write-detail-reload");
     const hasId = (value) => Number.isInteger(Number(value)) && Number(value) > 0;
+    const hasText = (value) => typeof value === "string" && value.trim().length > 0;
+    const hasManualTimes = comment && hasText(comment.manual_date) && hasText(comment.manual_start_time) && hasText(comment.manual_end_time);
     if (
       !create || create.ok !== true || !hasId(create.ticket_id) ||
       !comment || comment.ok !== true || !hasId(comment.comment_id) || !hasId(comment.time_entry_id) ||
+      !hasManualTimes ||
       !reload || reload.ok !== true || !hasId(reload.ticket_id) || reload.comment_visible !== true || reload.linked_time_visible !== true
     ) {
       process.exit(1);
@@ -280,7 +283,7 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 1. Create App Store Connect app record for \`net.foxdesk.ios\`.
 2. Confirm Apple Developer explicit App ID \`net.foxdesk.ios\` and enable Push Notifications.
 3. Verify App Review demo account with \`npm run ios:demo:check -- --require-credentials --json\`.
-4. Prove App Review demo write permission by creating a demo ticket and linked timed internal comment with \`FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json\`.
+4. Prove App Review demo write permission by creating a demo ticket and linked timed internal comment with manual date/start/end using \`FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json\`.
 5. Run live mobile API read smoke with \`npm run ios:api:smoke -- --require-credentials --json\`.
 6. Run one opt-in write smoke with \`FOXDESK_IOS_SMOKE_WRITE=1\`; it must prove ticket creation, timed comment, attachment upload, and authorized attachment download.
 7. Run physical-device APNs smoke with \`APNS_TEST_DEVICE_TOKEN\`.

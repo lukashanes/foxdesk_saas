@@ -113,9 +113,12 @@ demo_write_ready() {
     const comment = steps.find((row) => row && row.name === "demo-write-comment-with-time");
     const reload = steps.find((row) => row && row.name === "demo-write-detail-reload");
     const hasId = (value) => Number.isInteger(Number(value)) && Number(value) > 0;
+    const hasText = (value) => typeof value === "string" && value.trim().length > 0;
+    const hasManualTimes = comment && hasText(comment.manual_date) && hasText(comment.manual_start_time) && hasText(comment.manual_end_time);
     if (
       !create || create.ok !== true || !hasId(create.ticket_id) ||
       !comment || comment.ok !== true || !hasId(comment.comment_id) || !hasId(comment.time_entry_id) ||
+      !hasManualTimes ||
       !reload || reload.ok !== true || !hasId(reload.ticket_id) || reload.comment_visible !== true || reload.linked_time_visible !== true
     ) {
       process.exit(1);
@@ -235,7 +238,7 @@ fi
 
 log "Running required App Review demo account check"
 (cd "$ROOT_DIR" && FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json)
-assert_evidence "App Review demo account" demo_write_ready "$DEMO_EVIDENCE" "expected live-demo-account JSON with created ticket, linked timed comment, and detail reload proof."
+assert_evidence "App Review demo account" demo_write_ready "$DEMO_EVIDENCE" "expected live-demo-account JSON with created ticket, linked timed comment, manual date/start/end, and detail reload proof."
 
 log "Running required live mobile API smoke"
 (cd "$ROOT_DIR" && npm run ios:api:smoke -- --require-credentials --json)
