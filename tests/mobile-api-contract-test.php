@@ -530,6 +530,8 @@ $assert(!str_contains($iosNextActions, 'FOXDESK_IOS_DEMO_PASSWORD=<password>'), 
 $assert(str_contains($iosNextActions, 'npm run ios:submission:gate'), 'iOS next-actions report must end with the strict final gate.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-release-packet/latest.md'), 'iOS release packet script must write a durable handoff packet.');
 $assert(str_contains($iosReleasePacket, 'npm run ios:external:gates'), 'iOS release packet must refresh external gate evidence.');
+$assert(str_contains($iosReleasePacket, '## Current Gate Snapshot'), 'iOS release packet must include the current external gate snapshot.');
+$assert(str_contains($iosReleasePacket, 'tmp/ios-external-gates/latest.md'), 'iOS release packet must read the current external gate report.');
 $assert(str_contains($iosReleasePacket, 'npm run ios:next'), 'iOS release packet must refresh the next-action checklist.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-beta-readiness/latest.md'), 'iOS release packet must link beta readiness evidence.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-smoke/latest.md'), 'iOS release packet must link simulator launch smoke evidence.');

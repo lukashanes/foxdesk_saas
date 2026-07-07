@@ -23,6 +23,12 @@ refresh_report "next-action checklist" "npm run ios:next"
 refresh_report "completion audit" "npm run ios:completion:audit"
 
 timestamp="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+external_gates="$ROOT/tmp/ios-external-gates/latest.md"
+gate_snapshot="$(awk '
+  /^\| Gate \| Status \| Next action \|/ { in_table = 1 }
+  in_table { print }
+  in_table && /^$/ { exit }
+' "$external_gates" 2>/dev/null || true)"
 
 cat > "$OUT" <<MD
 # FoxDesk iOS Release Packet
@@ -43,6 +49,10 @@ and the human actions still needed.
   notifications, and basic client context.
 - Billing, platform admin, reports, self-hosted setup, and public pricing stay
   on the web.
+
+## Current Gate Snapshot
+
+${gate_snapshot:-See \`tmp/ios-external-gates/latest.md\` for the current external gate status.}
 
 ## Local Evidence Files
 
