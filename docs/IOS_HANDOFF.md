@@ -33,19 +33,22 @@ settings stay on the web for the first release.
 
 ## Latest Verified State
 
-As of 2026-07-07 04:35 UTC, commit `080b441` is the current iOS code
-baseline; a later docs-only handoff commit may sit on top of it. The local beta
-gate and the focused iOS gate have passed in this release run:
+As of 2026-07-07 05:45 UTC, commit `df2a31f` is the latest verified iOS
+handoff baseline. The local TestFlight preflight and focused iOS gate have
+passed in this release run:
 
-- `npm run ios:beta:gate`
+- `./bin/run-php.sh tests/mobile-api-contract-test.php`
+- `npm run ios:testflight:preflight`
 - `npm run ios:gate`
 - `npm run ios:release:env`
 - `npm run ios:next`
 
-The beta gate verified the iOS MVP gate, Xcode tests, Production build, Release
-compatibility build, Staging build, simulator launch smoke, TestFlight
-preflight, mobile API safe smoke preflight, and APNs dry-run. Evidence:
-`tmp/ios-beta-readiness/latest.md`.
+The latest local evidence verifies the iOS MVP gate, Xcode tests, TestFlight
+preflight, archive preflight, mobile API contracts, and APNs dry-run payload
+validation. TestFlight APNs instructions now separate the safe dry-run that
+validates every first-release push payload type from the one live physical
+iPhone send that proves Apple delivery. Evidence:
+`tmp/ios-archive-preflight/latest.md` and `tmp/ios-external-gates/latest.md`.
 
 The latest iOS test additions prove that sign-out clears local session tokens,
 user state, token store, APNs registration preview state, and pending
@@ -66,11 +69,13 @@ review gates are ready.
 
 Apple Business verification for `Aenze s.r.o.` is ready from Apple Business
 email confirmation. The operator re-confirmed the verified organization status
-on 2026-07-07 from the Apple Business email. The remaining release gates are
-operator/live-service gates: App Store Connect app record, Apple Developer
-bundle + Push Notifications, demo reviewer credentials, live mobile API smoke
-credentials, opt-in write smoke, physical iPhone APNs token, and App Store
-privacy review. Evidence and ordered steps: `tmp/ios-next-actions/latest.md`.
+on 2026-07-07 from the Apple Business email. Treat it as company identity
+evidence only. The remaining release gates are still operator/live-service
+gates: App Store Connect app record, Apple Developer bundle + Push
+Notifications, demo reviewer credentials, demo write proof, live mobile API
+smoke credentials, opt-in write smoke, physical iPhone APNs token/live send,
+and App Store privacy review. Evidence and ordered steps:
+`tmp/ios-next-actions/latest.md`.
 
 ## Key Paths
 

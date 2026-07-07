@@ -773,6 +773,9 @@ $assert(str_contains($iosHandoff, 'npm run ios:external:gates'), 'iOS handoff mu
 $assert(str_contains($iosHandoff, 'tmp/ios-external-gates/latest.md'), 'iOS handoff must document the external gate evidence report.');
 $assert(str_contains($iosHandoff, 'npm run ios:submission:gate'), 'iOS handoff must document the strict submission gate.');
 $assert(str_contains($iosHandoff, 'tmp/ios-beta-readiness/latest.md'), 'iOS handoff must document the beta readiness evidence report.');
+$assert(str_contains($iosHandoff, 'TestFlight APNs instructions now separate the safe dry-run'), 'iOS handoff must document the APNs dry-run vs live-send split.');
+$assert(str_contains($iosHandoff, 'one live physical') && str_contains($iosHandoff, 'iPhone send'), 'iOS handoff must keep APNs live smoke scoped to one physical-device send.');
+$assert(str_contains($iosHandoff, 'Treat it as company identity') && str_contains($iosHandoff, 'evidence only'), 'iOS handoff must not imply Apple Business verification replaces App Store Connect or Developer setup.');
 $assert(str_contains($iosHandoff, 'APP_STORE_CONNECT_APP_RECORD_READY'), 'iOS handoff must list the App Store Connect human gate.');
 $assert(str_contains($iosHandoff, 'APPLE_DEVELOPER_BUNDLE_READY'), 'iOS handoff must list the Apple Developer bundle/push human gate.');
 $assert(str_contains($iosHandoff, 'APNS_TEST_DEVICE_TOKEN'), 'iOS handoff must document the physical-device APNs smoke gate.');
