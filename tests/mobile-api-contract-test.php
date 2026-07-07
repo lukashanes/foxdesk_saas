@@ -498,6 +498,7 @@ $assert(str_contains($iosCompletionAudit, 'Opt-in write smoke'), 'iOS completion
 $assert(str_contains($iosCompletionAudit, 'Physical iPhone APNs token'), 'iOS completion audit must track physical APNs proof.');
 $assert(str_contains($iosCompletionAudit, 'App Store Connect app record'), 'iOS completion audit must track App Store Connect proof.');
 $assert(str_contains($iosCompletionAudit, 'Apple Developer explicit App ID'), 'iOS completion audit must track Apple Developer App ID proof.');
+$assert(str_contains($iosCompletionAudit, 'latest-preflight.json'), 'iOS completion audit must report preflight evidence for no-secret demo/API smoke readiness.');
 $assert(str_contains($iosCompletionAudit, 'latest-live-demo-account.json'), 'iOS completion audit must require live demo account evidence.');
 $assert(str_contains($iosCompletionAudit, 'latest-live-read-only.json'), 'iOS completion audit must require read-only live API smoke evidence.');
 $assert(str_contains($iosCompletionAudit, 'latest-live-write.json'), 'iOS completion audit must require write live API smoke evidence.');

@@ -13,8 +13,10 @@ beta_report="$ROOT_DIR/tmp/ios-beta-readiness/latest.md"
 next_report="$ROOT_DIR/tmp/ios-next-actions/latest.md"
 release_env_report="$ROOT_DIR/tmp/ios-release-env/latest.md"
 demo_evidence="$ROOT_DIR/tmp/ios-demo-account-check/latest-live-demo-account.json"
+demo_preflight_evidence="$ROOT_DIR/tmp/ios-demo-account-check/latest-preflight.json"
 api_read_evidence="$ROOT_DIR/tmp/ios-api-smoke/latest-live-read-only.json"
 api_write_evidence="$ROOT_DIR/tmp/ios-api-smoke/latest-live-write.json"
+api_preflight_evidence="$ROOT_DIR/tmp/ios-api-smoke/latest-preflight.json"
 apns_send_evidence="$ROOT_DIR/tmp/ios-apns-smoke/latest-send.json"
 
 status_from_env_flag() {
@@ -156,7 +158,9 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 - Beta readiness: $(if [[ -f "$beta_report" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-beta-readiness/latest.md\`
 - Next actions: $(if [[ -f "$next_report" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-next-actions/latest.md\`
 - Release env check: $(if [[ -f "$release_env_report" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-release-env/latest.md\`
+- Demo account preflight evidence: $(if [[ -f "$demo_preflight_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-demo-account-check/latest-preflight.json\`
 - Demo account live evidence: $(if [[ -f "$demo_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-demo-account-check/latest-live-demo-account.json\`
+- API smoke preflight evidence: $(if [[ -f "$api_preflight_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-api-smoke/latest-preflight.json\`
 - API read live evidence: $(if [[ -f "$api_read_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-api-smoke/latest-live-read-only.json\`
 - API write live evidence: $(if [[ -f "$api_write_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-api-smoke/latest-live-write.json\`
 - APNs live-send evidence: $(if [[ -f "$apns_send_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-apns-smoke/latest-send.json\`
