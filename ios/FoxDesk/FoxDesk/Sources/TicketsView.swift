@@ -63,7 +63,7 @@ struct TicketsView: View {
                 }
             } else if tickets.isEmpty {
                 Section {
-                    ContentUnavailableView("No tickets here", systemImage: "tray", description: Text("Try another view or search."))
+                    ContentUnavailableView("No tickets here", systemImage: "tray", description: Text(emptyStateDescription))
                 }
             } else {
                 Section(totalCountLabel) {
@@ -153,6 +153,33 @@ struct TicketsView: View {
             return "\(totalCount) tickets"
         }
         return "Tickets"
+    }
+
+    private var emptyStateDescription: String {
+        let workspace = session.tenantState?.tenant.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let email = session.user?.email.trimmingCharacters(in: .whitespacesAndNewlines)
+        let account = [workspace, email]
+            .compactMap { value -> String? in
+                guard let value, !value.isEmpty else { return nil }
+                return value
+            }
+            .joined(separator: " · ")
+
+        if selectedView == "mine" {
+            return account.isEmpty
+                ? "Mine only shows tickets assigned to you. Switch to Open to see workspace tickets."
+                : "Mine only shows tickets assigned to you. \(account). Switch to Open to see workspace tickets."
+        }
+
+        let view = currentViewTitle.lowercased()
+        if account.isEmpty {
+            return "No \(view) tickets were returned. Pull to refresh or try Search."
+        }
+        return "No \(view) tickets were returned for \(account). Pull to refresh or try Search."
+    }
+
+    private var currentViewTitle: String {
+        viewOptions.first { $0.id == selectedView }?.title ?? "Selected"
     }
 
     private func updateSubmittedSearch() async {
