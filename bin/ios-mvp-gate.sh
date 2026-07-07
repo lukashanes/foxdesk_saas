@@ -95,6 +95,7 @@ log "Running mobile API contracts"
 (cd "$ROOT" && ./bin/run-php.sh tests/app-home-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/ios-mvp-scope-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/ios-dashboard-contract-test.php)
+(cd "$ROOT" && ./bin/run-php.sh tests/ios-ticket-detail-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/ios-mvp-traceability-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/ios-external-gates-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/ios-submission-gate-contract-test.php)
