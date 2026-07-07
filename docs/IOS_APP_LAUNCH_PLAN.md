@@ -259,7 +259,9 @@ Goal: make the app uploadable and reviewable by Apple.
 Done when:
 
 - App Store Connect app record exists for `net.foxdesk.ios`.
-- Demo reviewer account fields in `docs/IOS_APP_STORE_SUBMISSION.md` are filled.
+- Demo reviewer account requirements are documented in
+  `docs/IOS_APP_STORE_SUBMISSION.md`; real credentials are present only in App
+  Store Connect review fields and the ignored local `.env.ios-release`.
 - Demo reviewer account passes `npm run ios:demo:check -- --require-credentials --json`.
 - App Store privacy answers are reviewed by a human/operator.
 - Generated populated screenshots are reviewed and uploaded.

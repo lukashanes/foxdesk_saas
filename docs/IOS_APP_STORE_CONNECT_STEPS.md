@@ -126,14 +126,15 @@ Requirements:
 - has at least one ticket with comments and attachment
 - can add replies, internal notes, time entries, and attachments
 
-Fill the account in:
+Keep committed files generic. Use this packet only for non-secret review
+wording and demo-account requirements:
 
 ```text
 docs/IOS_APP_STORE_SUBMISSION.md
 ```
 
-Do not commit real passwords to the repo. Use App Store Connect fields for the
-actual secret.
+Paste the real demo email/password only into App Store Connect review fields
+and the ignored local `.env.ios-release` file for verification. Do not commit real demo credentials to any Markdown file.
 
 Verify the account before submitting:
 

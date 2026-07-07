@@ -934,6 +934,9 @@ $assert(str_contains($iosAppStoreSteps, 'npm run ios:apns:smoke -- --json'), 'iO
 $assert(str_contains($iosAppleDeveloperSteps, 'npm run ios:apns:smoke -- --json'), 'iOS Apple Developer steps must run APNs dry-run before live send.');
 $assert(str_contains($iosAppleDeveloperSteps, 'validates every first-release ticket push payload type'), 'iOS Apple Developer steps must explain what APNs dry-run proves.');
 $assert(!str_contains($iosAppStoreSteps, 'FOXDESK_IOS_DEMO_PASSWORD=<password>'), 'iOS App Store Connect steps must not encourage pasting demo passwords into shell history.');
+$assert(!str_contains($iosAppStoreSteps, 'Fill the account in:'), 'iOS App Store Connect steps must not tell operators to fill demo credentials into committed docs.');
+$assert(str_contains($iosAppStoreSteps, 'Keep committed files generic'), 'iOS App Store Connect steps must keep committed demo-account docs generic.');
+$assert(str_contains($iosAppStoreSteps, 'Do not commit real demo credentials to any Markdown file'), 'iOS App Store Connect steps must keep real demo credentials out of Markdown.');
 $assert(str_contains($iosAppStoreSteps, 'npm run ios:submission:gate'), 'iOS App Store Connect steps must end with the strict submission gate.');
 $assert(str_contains($iosAppleDeveloperSteps, 'Bundle ID: `net.foxdesk.ios`'), 'iOS Apple Developer steps must include the production bundle id.');
 $assert(str_contains($iosAppleDeveloperSteps, 'Push Notifications'), 'iOS Apple Developer steps must include the Push Notifications capability.');
@@ -1005,6 +1008,8 @@ $assert(str_contains($iosMVPPlan, 'APNS_TEST_DEVICE_TOKEN'), 'iOS app plan must 
 $assert(str_contains($iosMVPPlan, 'npm run ios:apns:smoke -- --json'), 'iOS app plan must require APNs dry-run before live iPhone smoke.');
 $assert(str_contains($iosMVPPlan, 'dry-run must pass first'), 'iOS app plan must explain dry-run comes before live APNs send.');
 $assert(str_contains($iosMVPPlan, 'npm run ios:submission:gate'), 'iOS app plan must document the strict submission gate.');
+$assert(str_contains($iosPlan, 'real credentials are present only in App'), 'iOS launch plan must keep real demo reviewer credentials out of committed docs.');
+$assert(!str_contains($iosPlan, 'Demo reviewer account fields in `docs/IOS_APP_STORE_SUBMISSION.md` are filled'), 'iOS launch plan must not require filling secrets into the submission packet.');
 $assert(str_contains($nativeDocs, 'Account → Push diagnostics'), 'Native API docs must document the iOS APNs token capture path.');
 $assert(str_contains($nativeDocs, 'Copy APNs token'), 'Native API docs must document the iOS APNs token copy action.');
 $assert(str_contains($iosProject, 'CODE_SIGN_ENTITLEMENTS: FoxDesk/FoxDesk.entitlements'), 'iOS app target must include push entitlements.');
