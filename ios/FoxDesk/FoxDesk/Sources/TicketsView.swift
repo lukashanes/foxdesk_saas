@@ -5,7 +5,7 @@ struct TicketsView: View {
     @Environment(AppSession.self) private var session
     private let ticketCache = TicketListCacheStore()
 
-    @State private var selectedView = "mine"
+    @State private var selectedView = "open"
     @State private var searchText = ""
     @State private var submittedSearch = ""
     @State private var tickets: [TicketSummary] = []
@@ -22,6 +22,7 @@ struct TicketsView: View {
     private let pageSize = 25
 
     private let viewOptions: [(id: String, title: String)] = [
+        ("open", "Open"),
         ("mine", "Mine"),
         ("new", "New"),
         ("waiting", "Waiting"),
