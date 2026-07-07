@@ -285,6 +285,7 @@ struct NewTicketView: View {
             }
 
             try await uploadPendingAttachments(to: ticketID)
+            resetForm()
             dismiss()
             await onCreated(ticketID)
         } catch {
@@ -363,6 +364,23 @@ struct NewTicketView: View {
 
         pendingAttachments.removeAll()
         attachmentMessage = nil
+    }
+
+    private func resetForm() {
+        title = ""
+        details = ""
+        tags = ""
+        selectedClientID = nil
+        selectedAssigneeID = nil
+        selectedPriorityID = createOptions?.defaults?.priorityId
+        selectedStatusID = createOptions?.defaults?.statusId
+        hasDueDate = false
+        dueDate = Date()
+        selectedPhoto = nil
+        pendingAttachments.removeAll()
+        attachmentMessage = nil
+        errorMessage = nil
+        createdTicketID = nil
     }
 
     private static let apiDateFormatter: DateFormatter = {

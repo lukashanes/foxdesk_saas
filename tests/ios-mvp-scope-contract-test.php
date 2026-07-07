@@ -81,9 +81,33 @@ foreach ($swiftFiles as $path) {
 $rootView = $readFile($iosSources . '/RootView.swift');
 $accountView = $readFile($iosSources . '/AccountView.swift');
 $searchView = $readFile($iosSources . '/SearchView.swift');
+$newTicketView = $readFile($iosSources . '/NewTicketView.swift');
 $screenshotDemo = $readFile($iosSources . '/ScreenshotDemoRootView.swift');
 $tenantModels = $readFile($kitSources . '/Models/TenantModels.swift');
 
+$requiredTabs = [
+    'Label("Dashboard", systemImage: "house")',
+    'Label("Tickets", systemImage: "tray.full")',
+    'Label("New ticket", systemImage: "plus.circle")',
+    'Label("Search", systemImage: "magnifyingglass")',
+    'Label("Account", systemImage: "person.crop.circle")',
+    'case newTicket',
+    '.tag(AppTab.newTicket)',
+];
+
+foreach ($requiredTabs as $needle) {
+    $assert(str_contains($rootView, $needle), "iOS shell missing MVP tab contract: {$needle}");
+}
+
+foreach (['Label("Reports"', 'Label("Settings"', 'Label("Billing"', 'Label("Platform"', 'case reports', 'case settings', 'case billing', 'case platform'] as $needle) {
+    $assert(!str_contains($rootView, $needle), "iOS shell must not expose out-of-scope tab: {$needle}");
+}
+
+$assert(str_contains($rootView, 'NewTicketView { ticketID in'), 'iOS New ticket tab must open the created ticket after save.');
+$assert(str_contains($rootView, 'private func openTicket(_ ticketID: Int)'), 'iOS shell must centralize created-ticket navigation.');
+$assert(str_contains($newTicketView, 'private func resetForm()'), 'New ticket form must reset after successful create when used as a primary tab.');
+$assert(str_contains($newTicketView, 'selectedPriorityID = createOptions?.defaults?.priorityId'), 'New ticket reset must preserve default priority for the next ticket.');
+$assert(str_contains($newTicketView, 'selectedStatusID = createOptions?.defaults?.statusId'), 'New ticket reset must preserve default status for the next ticket.');
 $assert(str_contains($rootView, 'WorkspaceAccessBlockedView'), 'iOS app must show a workspace-access state instead of billing or platform screens.');
 $assert(str_contains($rootView, 'session.tenantState?.billingActions?.noticeTitle'), 'iOS app may read billing notice title only as a workspace access message.');
 $assert(!str_contains($rootView, 'showCheckout'), 'iOS root UI must not branch into checkout.');

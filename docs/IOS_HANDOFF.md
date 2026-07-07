@@ -496,6 +496,17 @@ re-running the native simulator suite:
   Notifications, demo reviewer credentials/write proof, live mobile API
   read/write smoke, physical iPhone APNs token/send smoke, and App Store
   privacy review.
+- As of 2026-07-07 05:12 UTC, the iOS shell promotes `New ticket` into the
+  primary five-tab agent workspace: Dashboard, Tickets, New ticket, Search, and
+  Account. Notifications remain available through Dashboard recent updates,
+  Dashboard quick actions, and push deep links, but they no longer consume a
+  primary tab. The new ticket form now resets after a successful create so the
+  tab can be reused safely for the next ticket. The scope contract now locks
+  this tab set and continues to forbid Reports, Settings, Billing, and Platform
+  tabs in the MVP. Verified commands:
+  - `./bin/run-php.sh tests/ios-mvp-scope-contract-test.php`
+  - `npm run ios:gate`
+  - `npm run ios:mvp:audit`
 
 The native activity surface should now render time entries created together
 with comments inline under that comment. Time entries without `comment_id`

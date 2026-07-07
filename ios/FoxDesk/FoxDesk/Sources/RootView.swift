@@ -57,6 +57,16 @@ struct SignedInShellView: View {
             }
             .tag(AppTab.tickets)
 
+            WorkspaceAccessGate {
+                NewTicketView { ticketID in
+                    openTicket(ticketID)
+                }
+            }
+            .tabItem {
+                Label("New ticket", systemImage: "plus.circle")
+            }
+            .tag(AppTab.newTicket)
+
             NavigationStack {
                 WorkspaceAccessGate {
                     SearchView()
@@ -66,16 +76,6 @@ struct SignedInShellView: View {
                 Label("Search", systemImage: "magnifyingglass")
             }
             .tag(AppTab.search)
-
-            NavigationStack {
-                WorkspaceAccessGate {
-                    NotificationsView()
-                }
-            }
-            .tabItem {
-                Label("Notifications", systemImage: "bell")
-            }
-            .tag(AppTab.notifications)
 
             NavigationStack {
                 AccountView()
@@ -99,13 +99,19 @@ struct SignedInShellView: View {
         selectedTab = .tickets
         ticketNotificationPath = [TicketNotificationRoute(ticketID: ticketID)]
     }
+
+    @MainActor
+    private func openTicket(_ ticketID: Int) {
+        selectedTab = .tickets
+        ticketNotificationPath = [TicketNotificationRoute(ticketID: ticketID)]
+    }
 }
 
 private enum AppTab: Hashable {
     case dashboard
     case tickets
+    case newTicket
     case search
-    case notifications
     case account
 }
 
