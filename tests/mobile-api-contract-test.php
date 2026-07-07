@@ -701,6 +701,9 @@ $assert(str_contains($iosBetaGate, 'human_gate_status'), 'iOS beta readiness gat
 $assert(str_contains($iosBetaGate, 'missing_human_gates'), 'iOS beta readiness gate must print only missing human gates.');
 $assert(str_contains($iosBetaGate, 'api_write_ready'), 'iOS beta readiness gate must inspect write-smoke evidence quality, not just env flags.');
 $assert(str_contains($iosBetaGate, 'attachment-download'), 'iOS beta readiness gate must require uploaded attachment download proof.');
+$assert(str_contains($iosBetaGate, 'apns_send_ready'), 'iOS beta readiness gate must inspect live APNs send evidence, not just APNS_TEST_DEVICE_TOKEN.');
+$assert(str_contains($iosBetaGate, 'latest-send.json'), 'iOS beta readiness gate must require APNs live-send evidence.');
+$assert(str_contains($iosBetaGate, 'no passing live APNs send evidence exists'), 'iOS beta readiness gate must distinguish an APNs token from a proven live send.');
 $assert(str_contains($iosBetaGate, 'APP_STORE_CONNECT_APP_RECORD_READY'), 'iOS beta readiness gate must let operators mark App Store Connect app record readiness.');
 $assert(str_contains($iosBetaGate, 'APPLE_DEVELOPER_BUNDLE_READY'), 'iOS beta readiness gate must let operators mark Apple Developer bundle/push readiness.');
 $assert(str_contains($iosBetaGate, 'Apple Business organization verification'), 'iOS beta readiness gate must report Apple Business verification as informational operator evidence.');

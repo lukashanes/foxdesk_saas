@@ -8,6 +8,7 @@ EVIDENCE_REPORT="$EVIDENCE_DIR/latest.md"
 DEMO_EVIDENCE="$ROOT_DIR/tmp/ios-demo-account-check/latest-live-demo-account.json"
 API_READ_EVIDENCE="$ROOT_DIR/tmp/ios-api-smoke/latest-live-read-only.json"
 API_WRITE_EVIDENCE="$ROOT_DIR/tmp/ios-api-smoke/latest-live-write.json"
+APNS_SEND_EVIDENCE="$ROOT_DIR/tmp/ios-apns-smoke/latest-send.json"
 
 mkdir -p "$EVIDENCE_DIR"
 cat > "$EVIDENCE_REPORT" <<REPORT
@@ -132,6 +133,13 @@ demo_write_ready() {
   ' "$file"
 }
 
+apns_send_ready() {
+  local file="$1"
+
+  evidence_ready "$file" "send" || return 1
+  [[ "$(json_field "$file" sent 2>/dev/null || true)" == "true" ]] || return 1
+}
+
 mark_human_gate() {
   local label="$1"
   local status="$2"
@@ -253,8 +261,10 @@ else
   mark_human_gate "Opt-in write smoke" "missing" "run once with FOXDESK_IOS_SMOKE_WRITE=1 on staging or a disposable workspace; it must prove attachment download after upload"
 fi
 
-if [[ -n "${APNS_TEST_DEVICE_TOKEN:-}" ]]; then
-  mark_human_gate "Real-device APNs smoke" "ready" "APNS_TEST_DEVICE_TOKEN is set"
+if apns_send_ready "$APNS_SEND_EVIDENCE"; then
+  mark_human_gate "Real-device APNs smoke" "ready" "passing live APNs send evidence exists at tmp/ios-apns-smoke/latest-send.json"
+elif [[ -n "${APNS_TEST_DEVICE_TOKEN:-}" ]]; then
+  mark_human_gate "Real-device APNs smoke" "missing" "APNS_TEST_DEVICE_TOKEN is set, but no passing live APNs send evidence exists; run npm run ios:apns:smoke -- --send --environment=production --json"
 else
   mark_human_gate "Real-device APNs smoke" "missing" "copy a token from Account → Push diagnostics on a physical iPhone"
 fi
