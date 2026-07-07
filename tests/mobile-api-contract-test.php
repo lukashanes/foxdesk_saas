@@ -453,8 +453,11 @@ $assert(str_contains($packageJson, '"ios:apns:smoke": "./bin/run-php.sh bin/test
 $assert(str_contains($iosTestFlightRunbook, 'Internal TestFlight checklist'), 'iOS TestFlight runbook must include an internal checklist.');
 $assert(str_contains($iosTestFlightRunbook, 'Demo reviewer account'), 'iOS TestFlight runbook must cover the reviewer/demo account.');
 $assert(str_contains($iosTestFlightRunbook, 'No billing or upgrade flow inside iOS'), 'iOS TestFlight runbook must document the no-billing app boundary.');
-$assert(str_contains($iosTestFlightRunbook, 'APNs real-device smoke'), 'iOS TestFlight runbook must keep APNs real-device smoke as a gate.');
+$assert(str_contains($iosTestFlightRunbook, 'Confirm real-device smoke'), 'iOS TestFlight runbook must keep APNs real-device smoke as a gate.');
 $assert(str_contains($iosTestFlightRunbook, 'npm run ios:apns:smoke'), 'iOS TestFlight runbook must document the APNs smoke command.');
+$assert(str_contains($iosTestFlightRunbook, 'APNs dry-run validates every first-release ticket push payload type'), 'iOS TestFlight runbook must separate APNs payload validation from live device delivery.');
+$assert(str_contains($iosTestFlightRunbook, 'APNs live send sends one selected notification type to the physical iPhone'), 'iOS TestFlight runbook must keep live APNs smoke to one selected notification.');
+$assert(str_contains($iosTestFlightRunbook, 'Do not send every type during the live smoke'), 'iOS TestFlight runbook must avoid asking operators to spam every notification type.');
 $assert(str_contains($iosTestFlightRunbook, 'npm run ios:mvp:audit'), 'iOS TestFlight runbook must document the fast MVP audit command.');
 $assert(str_contains($iosTestFlightRunbook, 'npm run ios:beta:gate'), 'iOS TestFlight runbook must document the beta readiness gate.');
 $assert(str_contains($iosTestFlightRunbook, 'npm run ios:submission:gate'), 'iOS TestFlight runbook must document the strict submission gate.');
@@ -669,7 +672,9 @@ $assert(str_contains($iosExternalGates, 'APP_STORE_PRIVACY_REVIEWED'), 'iOS exte
 $assert(str_contains($iosTestFlightPreflight, 'https://app.foxdesk.net/index.php'), 'iOS TestFlight preflight must check production API URL config.');
 $assert(str_contains($iosTestFlightPreflight, 'APS_ENVIRONMENT: production'), 'iOS TestFlight preflight must check production APNs entitlement config.');
 $assert(str_contains($iosTestFlightPreflight, 'PrivacyInfo.xcprivacy'), 'iOS TestFlight preflight must check the privacy manifest.');
-$assert(str_contains($iosTestFlightPreflight, 'APNs real-device smoke'), 'iOS TestFlight preflight must check real-device APNs smoke documentation.');
+$assert(str_contains($iosTestFlightPreflight, 'Confirm real-device smoke'), 'iOS TestFlight preflight must check real-device APNs smoke documentation.');
+$assert(str_contains($iosTestFlightPreflight, 'APNs dry-run validates every first-release ticket push payload type'), 'iOS TestFlight preflight must check APNs dry-run payload validation documentation.');
+$assert(str_contains($iosTestFlightPreflight, 'Do not send every type during the live smoke'), 'iOS TestFlight preflight must keep live APNs smoke to one notification.');
 $assert(str_contains($iosTestFlightPreflight, 'test-apns-push.php'), 'iOS TestFlight preflight must require the APNs smoke script.');
 $assert(str_contains($iosTestFlightPreflight, 'ios-api-smoke.js'), 'iOS TestFlight preflight must require the mobile API smoke script.');
 $assert(str_contains($iosTestFlightPreflight, 'ios-demo-account-check.js'), 'iOS TestFlight preflight must require the demo account check script.');

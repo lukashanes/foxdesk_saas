@@ -231,9 +231,14 @@ variables, and the exact condition for calling the iOS release ready.
      npm run ios:apns:smoke -- --send --environment=production
      ```
 
-   - APNs real-device smoke: new ticket, customer reply, assignment, and
-     important update push notifications arrive.
-   - Tapping push notification opens the matching ticket.
+   - APNs dry-run validates every first-release ticket push payload type:
+     `new_ticket`, `new_comment`, `assigned_to_you`, `mentioned`,
+     `ticket_updated`, `status_changed`, `priority_changed`, and
+     `due_date_reminder`.
+   - APNs live send sends one selected notification type to the physical iPhone.
+     Do not send every type during the live smoke; the dry-run proves payload
+     shape for the event set, while the physical iPhone proves Apple delivery.
+   - Tapping the push notification opens the matching ticket.
 
 8. Archive and upload:
    - Run the archive preflight:
