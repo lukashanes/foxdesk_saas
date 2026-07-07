@@ -64,6 +64,31 @@ evidence_ready() {
   [[ "$(json_field "$file" mode 2>/dev/null || true)" == "$mode" ]] || return 1
 }
 
+api_write_ready() {
+  local file="$1"
+
+  evidence_ready "$file" "live-write" || return 1
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const steps = Array.isArray(data.steps) ? data.steps : [];
+    const required = [
+      "create-ticket",
+      "comment-with-time",
+      "attachment-upload",
+      "attachment-metadata",
+      "attachment-download",
+      "created-ticket-detail",
+    ];
+    for (const name of required) {
+      const step = steps.find((row) => row && row.name === name);
+      if (!step || step.ok !== true) process.exit(1);
+    }
+    const download = steps.find((row) => row && row.name === "attachment-download");
+    if (!Number.isInteger(Number(download.bytes)) || Number(download.bytes) <= 0) process.exit(1);
+  ' "$file"
+}
+
 demo_write_ready() {
   local file="$1"
 
@@ -154,12 +179,12 @@ else
   gate_status "Live mobile API smoke credentials" "missing" "Set FOXDESK_IOS_SMOKE_EMAIL and FOXDESK_IOS_SMOKE_PASSWORD for a staging or disposable workspace agent."
 fi
 
-if evidence_ready "$API_WRITE_EVIDENCE" "live-write"; then
-  gate_status "Opt-in write smoke" "ready" "Passing write smoke evidence exists at tmp/ios-api-smoke/latest-live-write.json."
+if api_write_ready "$API_WRITE_EVIDENCE"; then
+  gate_status "Opt-in write smoke" "ready" "Passing write smoke evidence includes ticket creation, timed comment, attachment upload, and authorized attachment download."
 elif [[ "${FOXDESK_IOS_SMOKE_WRITE:-}" == "1" ]]; then
-  gate_status "Opt-in write smoke" "needs verification" "FOXDESK_IOS_SMOKE_WRITE=1 is set, but tmp/ios-api-smoke/latest-live-write.json is not passing; rerun npm run ios:api:smoke -- --require-credentials --json."
+  gate_status "Opt-in write smoke" "needs verification" "FOXDESK_IOS_SMOKE_WRITE=1 is set, but write evidence does not include ticket/comment/attachment upload plus authorized download proof; rerun npm run ios:api:smoke -- --require-credentials --json."
 else
-  gate_status "Opt-in write smoke" "missing" "Run the write smoke once with FOXDESK_IOS_SMOKE_WRITE=1 on staging or a disposable workspace."
+  gate_status "Opt-in write smoke" "missing" "Run the write smoke once with FOXDESK_IOS_SMOKE_WRITE=1 on staging or a disposable workspace; it must prove attachment download after upload."
 fi
 
 if evidence_ready "$APNS_SEND_EVIDENCE" "send" && [[ "$(json_field "$APNS_SEND_EVIDENCE" sent 2>/dev/null || true)" == "true" ]]; then

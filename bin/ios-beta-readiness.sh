@@ -6,6 +6,8 @@ source "$ROOT_DIR/bin/ios-release-env.sh"
 EVIDENCE_DIR="$ROOT_DIR/tmp/ios-beta-readiness"
 EVIDENCE_REPORT="$EVIDENCE_DIR/latest.md"
 DEMO_EVIDENCE="$ROOT_DIR/tmp/ios-demo-account-check/latest-live-demo-account.json"
+API_READ_EVIDENCE="$ROOT_DIR/tmp/ios-api-smoke/latest-live-read-only.json"
+API_WRITE_EVIDENCE="$ROOT_DIR/tmp/ios-api-smoke/latest-live-write.json"
 
 mkdir -p "$EVIDENCE_DIR"
 cat > "$EVIDENCE_REPORT" <<REPORT
@@ -79,6 +81,31 @@ evidence_ready() {
   [[ -f "$file" ]] || return 1
   [[ "$(json_field "$file" ok 2>/dev/null || true)" == "true" ]] || return 1
   [[ "$(json_field "$file" mode 2>/dev/null || true)" == "$mode" ]] || return 1
+}
+
+api_write_ready() {
+  local file="$1"
+
+  evidence_ready "$file" "live-write" || return 1
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const steps = Array.isArray(data.steps) ? data.steps : [];
+    const required = [
+      "create-ticket",
+      "comment-with-time",
+      "attachment-upload",
+      "attachment-metadata",
+      "attachment-download",
+      "created-ticket-detail",
+    ];
+    for (const name of required) {
+      const step = steps.find((row) => row && row.name === name);
+      if (!step || step.ok !== true) process.exit(1);
+    }
+    const download = steps.find((row) => row && row.name === "attachment-download");
+    if (!Number.isInteger(Number(download.bytes)) || Number(download.bytes) <= 0) process.exit(1);
+  ' "$file"
 }
 
 demo_write_ready() {
@@ -210,16 +237,20 @@ else
   mark_human_gate "Demo reviewer write proof" "missing" "run once with FOXDESK_IOS_DEMO_WRITE=1 to prove the App Review account can create a ticket and add an internal timed comment"
 fi
 
-if [[ -n "${FOXDESK_IOS_SMOKE_EMAIL:-}" && -n "${FOXDESK_IOS_SMOKE_PASSWORD:-}" ]]; then
-  mark_human_gate "Live mobile API smoke credentials" "ready" "FOXDESK_IOS_SMOKE_EMAIL and FOXDESK_IOS_SMOKE_PASSWORD are set"
+if evidence_ready "$API_READ_EVIDENCE" "live-read-only"; then
+  mark_human_gate "Live mobile API smoke credentials" "ready" "passing read-only live API smoke evidence exists at tmp/ios-api-smoke/latest-live-read-only.json"
+elif [[ -n "${FOXDESK_IOS_SMOKE_EMAIL:-}" && -n "${FOXDESK_IOS_SMOKE_PASSWORD:-}" ]]; then
+  mark_human_gate "Live mobile API smoke credentials" "missing" "smoke credentials are set, but no passing read-only live API evidence exists; run npm run ios:api:smoke -- --require-credentials --json"
 else
   mark_human_gate "Live mobile API smoke credentials" "missing" "set FOXDESK_IOS_SMOKE_EMAIL and FOXDESK_IOS_SMOKE_PASSWORD"
 fi
 
-if [[ "${FOXDESK_IOS_SMOKE_WRITE:-}" == "1" ]]; then
-  mark_human_gate "Opt-in write smoke" "ready" "FOXDESK_IOS_SMOKE_WRITE=1"
+if api_write_ready "$API_WRITE_EVIDENCE"; then
+  mark_human_gate "Opt-in write smoke" "ready" "passing write evidence includes ticket/comment/attachment upload and authorized download"
+elif [[ "${FOXDESK_IOS_SMOKE_WRITE:-}" == "1" ]]; then
+  mark_human_gate "Opt-in write smoke" "missing" "FOXDESK_IOS_SMOKE_WRITE=1 is set, but write evidence does not include ticket/comment/attachment upload plus authorized download proof"
 else
-  mark_human_gate "Opt-in write smoke" "missing" "run once with FOXDESK_IOS_SMOKE_WRITE=1 on staging or a disposable workspace"
+  mark_human_gate "Opt-in write smoke" "missing" "run once with FOXDESK_IOS_SMOKE_WRITE=1 on staging or a disposable workspace; it must prove attachment download after upload"
 fi
 
 if [[ -n "${APNS_TEST_DEVICE_TOKEN:-}" ]]; then

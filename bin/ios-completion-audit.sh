@@ -72,6 +72,31 @@ evidence_ready() {
   [[ "$(json_field "$file" mode 2>/dev/null || true)" == "$mode" ]] || return 1
 }
 
+api_write_ready() {
+  local file="$1"
+
+  evidence_ready "$file" "live-write" || return 1
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const steps = Array.isArray(data.steps) ? data.steps : [];
+    const required = [
+      "create-ticket",
+      "comment-with-time",
+      "attachment-upload",
+      "attachment-metadata",
+      "attachment-download",
+      "created-ticket-detail",
+    ];
+    for (const name of required) {
+      const step = steps.find((row) => row && row.name === name);
+      if (!step || step.ok !== true) process.exit(1);
+    }
+    const download = steps.find((row) => row && row.name === "attachment-download");
+    if (!Number.isInteger(Number(download.bytes)) || Number(download.bytes) <= 0) process.exit(1);
+  ' "$file"
+}
+
 demo_write_ready() {
   local file="$1"
 
@@ -104,7 +129,7 @@ elif [[ -n "${FOXDESK_IOS_SMOKE_EMAIL:-}" && -n "${FOXDESK_IOS_SMOKE_PASSWORD:-}
 fi
 
 write_smoke_status="missing"
-if evidence_ready "$api_write_evidence" "live-write"; then
+if api_write_ready "$api_write_evidence"; then
   write_smoke_status="ready"
 elif [[ "${FOXDESK_IOS_SMOKE_WRITE:-}" == "1" && "$live_smoke_status" != "missing" ]]; then
   write_smoke_status="needs verification"
@@ -166,7 +191,7 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 | 5. Reply / internal note | Mobile comments endpoint and native composer are implemented | Opt-in write smoke: $write_smoke_status |
 | 6. Comment with time | \`comment-with-time\` endpoint, exact/manual time controls, linked time-entry contracts | Opt-in write smoke: $write_smoke_status |
 | 7. Basic reply formatting | \`MobileRichTextFormatter\` and Xcode tests preserve paragraphs, lists, bold/italic, and HTML escaping | Covered locally; verify visually during write smoke: $write_smoke_status |
-| 8. Attachments and photos | Camera/file picker, upload, preview/download, attachment contracts | Real-device or live smoke attachment upload: $write_smoke_status |
+| 8. Attachments and photos | Camera/file picker, upload, preview/download, attachment contracts | Real-device or live smoke attachment upload and authorized download: $write_smoke_status |
 | 9. Push notifications | Device-token endpoints, APNs payload dry-run, native routing tests | Apple Developer Push capability: $developer_status; physical iPhone APNs token: $apns_status |
 | 10. Global search | \`SearchView\`, mobile search contract, global search tests | Live smoke against real workspace: $live_smoke_status |
 | 11. Client context | \`ClientContextView\`, mobile client endpoint, demo-account contract expectations | Demo reviewer account populated with client context: $demo_status |
@@ -209,7 +234,7 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 3. Verify App Review demo account with \`npm run ios:demo:check -- --require-credentials --json\`.
 4. Prove App Review demo write permission by creating a demo ticket and linked timed internal comment with \`FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json\`.
 5. Run live mobile API read smoke with \`npm run ios:api:smoke -- --require-credentials --json\`.
-6. Run one opt-in write smoke with \`FOXDESK_IOS_SMOKE_WRITE=1\`.
+6. Run one opt-in write smoke with \`FOXDESK_IOS_SMOKE_WRITE=1\`; it must prove ticket creation, timed comment, attachment upload, and authorized attachment download.
 7. Run physical-device APNs smoke with \`APNS_TEST_DEVICE_TOKEN\`.
 8. Human-review App Store screenshots and privacy answers.
 9. Run \`npm run ios:submission:gate\` and require it to pass.

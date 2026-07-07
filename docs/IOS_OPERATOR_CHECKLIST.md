@@ -139,8 +139,9 @@ FOXDESK_IOS_SMOKE_WRITE=1 npm run ios:api:smoke -- --require-credentials --json
 ```
 
 The write smoke must create one internal smoke ticket, add one timed internal
-comment, upload one small attachment, reload ticket detail, and suppress
-notifications. It writes `tmp/ios-api-smoke/latest-live-write.json`.
+comment, upload one small attachment, download that attachment through the
+authorized URL, reload ticket detail, and suppress notifications. It writes
+`tmp/ios-api-smoke/latest-live-write.json`.
 
 ### 5. Physical iPhone APNs Smoke
 

@@ -210,7 +210,8 @@ the first MVP from scratch.
    - Run read-only smoke first.
    - Run write smoke only with `FOXDESK_IOS_SMOKE_WRITE=1`; it must create one
      internal smoke ticket, add a timed internal comment, upload one attachment,
-     reload detail, and suppress notifications.
+     download the uploaded attachment through the authorized URL, reload detail,
+     and suppress notifications.
 
 2. **Physical iPhone APNs smoke**
    - Install a debug/staging build on a real iPhone.

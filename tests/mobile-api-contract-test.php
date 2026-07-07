@@ -500,6 +500,8 @@ $assert(str_contains($iosCompletionAudit, 'tmp/ios-completion-audit/latest.md'),
 $assert(str_contains($iosCompletionAudit, 'Strict conclusion'), 'iOS completion audit must state whether the full release objective is complete.');
 $assert(str_contains($iosCompletionAudit, 'not complete for TestFlight/App Store'), 'iOS completion audit must avoid false completion while live gates are missing.');
 $assert(str_contains($iosCompletionAudit, 'Opt-in write smoke'), 'iOS completion audit must track comment/time/attachment write proof.');
+$assert(str_contains($iosCompletionAudit, 'api_write_ready'), 'iOS completion audit must inspect write-smoke evidence quality, not just ok/mode.');
+$assert(str_contains($iosCompletionAudit, 'authorized download'), 'iOS completion audit must require authorized attachment download proof before completion.');
 $assert(str_contains($iosCompletionAudit, 'Demo reviewer write proof'), 'iOS completion audit must track App Review demo account write proof separately from credentials.');
 $assert(str_contains($iosCompletionAudit, 'FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check'), 'iOS completion audit must document the demo reviewer write proof command.');
 $assert(str_contains($iosCompletionAudit, 'demo-write-comment-with-time'), 'iOS completion audit must inspect demo write proof evidence, not just env flags.');
@@ -538,6 +540,8 @@ $assert(str_contains($iosExternalGates, 'demo-write-create-ticket'), 'iOS extern
 $assert(str_contains($iosExternalGates, 'demo-write-detail-reload'), 'iOS external gates must require demo write proof to reload linked detail evidence.');
 $assert(str_contains($iosExternalGates, 'latest-live-read-only.json'), 'iOS external gates must require passing read-only live API smoke evidence.');
 $assert(str_contains($iosExternalGates, 'latest-live-write.json'), 'iOS external gates must require passing write smoke evidence.');
+$assert(str_contains($iosExternalGates, 'api_write_ready'), 'iOS external gates must inspect write-smoke evidence quality, not just ok/mode.');
+$assert(str_contains($iosExternalGates, 'attachment-download'), 'iOS external gates must require authorized attachment download proof in write-smoke evidence.');
 $assert(str_contains($iosExternalGates, 'latest-send.json'), 'iOS external gates must require passing physical-device APNs send evidence.');
 $assert(str_contains($iosExternalGates, 'needs verification'), 'iOS external gates must distinguish configured credentials from verified passing evidence.');
 $assert(str_contains($iosExternalGates, 'APP_STORE_CONNECT_APP_RECORD_READY'), 'iOS external gate status script must report the App Store Connect gate.');
@@ -685,6 +689,8 @@ $assert(str_contains($iosBetaGate, 'tmp/ios-beta-readiness/latest.md'), 'iOS bet
 $assert(str_contains($iosBetaGate, 'Writing evidence report'), 'iOS beta readiness gate must announce the evidence report path.');
 $assert(str_contains($iosBetaGate, 'human_gate_status'), 'iOS beta readiness gate must summarize human gate readiness.');
 $assert(str_contains($iosBetaGate, 'missing_human_gates'), 'iOS beta readiness gate must print only missing human gates.');
+$assert(str_contains($iosBetaGate, 'api_write_ready'), 'iOS beta readiness gate must inspect write-smoke evidence quality, not just env flags.');
+$assert(str_contains($iosBetaGate, 'attachment-download'), 'iOS beta readiness gate must require uploaded attachment download proof.');
 $assert(str_contains($iosBetaGate, 'APP_STORE_CONNECT_APP_RECORD_READY'), 'iOS beta readiness gate must let operators mark App Store Connect app record readiness.');
 $assert(str_contains($iosBetaGate, 'APPLE_DEVELOPER_BUNDLE_READY'), 'iOS beta readiness gate must let operators mark Apple Developer bundle/push readiness.');
 $assert(str_contains($iosBetaGate, 'Apple Business organization verification'), 'iOS beta readiness gate must report Apple Business verification as informational operator evidence.');
@@ -773,6 +779,9 @@ $assert(str_contains($iosAPISmoke, '`tickets/${ticketId}/comment-with-time`'), '
 $assert(str_contains($iosAPISmoke, "requestMultipart('attachments'"), 'iOS API write smoke must verify generic multipart attachment upload.');
 $assert(str_contains($iosAPISmoke, "fields: { ticket_id: ticketId }"), 'iOS API write smoke must send ticket_id with generic attachment uploads.');
 $assert(str_contains($iosAPISmoke, 'file.attachment_id'), 'iOS API write smoke must require an attachment id response.');
+$assert(str_contains($iosAPISmoke, 'requestBinary(downloadUrl'), 'iOS API write smoke must download the uploaded attachment through the authorized URL.');
+$assert(str_contains($iosAPISmoke, "record('attachment-download'"), 'iOS API write smoke must record attachment download evidence.');
+$assert(str_contains($iosAPISmoke, 'Attachment download did not return the uploaded smoke file contents'), 'iOS API write smoke must fail clearly when the attachment cannot be downloaded back.');
 $assert(str_contains($iosAPISmoke, 'skip_notification: true'), 'iOS API write smoke must avoid customer notification spam.');
 $assert(str_contains($iosAPISmoke, 'linked_time_visible'), 'iOS API write smoke must prove the created time entry remains linked to its comment.');
 $assert(str_contains($iosAPISmoke, 'asPositiveInt(row?.comment_id) === commentId'), 'iOS API write smoke must require time_entries.comment_id to match the created comment.');
@@ -799,6 +808,7 @@ $assert(str_contains($nativeDocs, 'npm run ios:api:smoke'), 'Native API docs mus
 $assert(str_contains($nativeDocs, 'FOXDESK_IOS_SMOKE_EMAIL'), 'Native API docs must document mobile API smoke credentials.');
 $assert(str_contains($nativeDocs, 'FOXDESK_IOS_SMOKE_WRITE=1'), 'Native API docs must document opt-in write smoke testing.');
 $assert(str_contains($nativeDocs, 'creates one internal smoke ticket'), 'Native API docs must describe what the write smoke creates.');
+$assert(str_contains($nativeDocs, 'downloads that attachment') && str_contains($nativeDocs, 'authorized URL'), 'Native API docs must document attachment download proof in the write smoke.');
 $assert(str_contains($nativeDocs, '`POST /api/mobile/v1/attachments`'), 'Native API docs must document generic attachment uploads.');
 $assert(str_contains($nativeDocs, 'uploads a small'), 'Native API docs must document attachment upload in the write smoke.');
 $assert(str_contains($nativeDocs, 'New-ticket attachments are a two-step flow'), 'Native API docs must explain how new-ticket staged attachments are uploaded after ticket creation.');

@@ -206,8 +206,8 @@ Keep these operator-only values in the ignored local `.env.ios-release` file:
 `FOXDESK_IOS_DEMO_2FA_CODE`, and `APNS_TEST_DEVICE_TOKEN`.
 
 The write smoke creates one internal smoke ticket, adds a timed internal
-comment, uploads one small attachment, verifies ticket detail, and uses
-`skip_notification: true`.
+comment, uploads one small attachment, downloads that attachment through the
+authorized URL, verifies ticket detail, and uses `skip_notification: true`.
 
 The demo reviewer check signs in through the mobile API and verifies that the
 review workspace has open, waiting, and done tickets plus at least one ticket

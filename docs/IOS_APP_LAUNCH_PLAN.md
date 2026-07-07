@@ -228,8 +228,9 @@ Done when:
 - `FOXDESK_IOS_SMOKE_WRITE=1` has been run once on staging or a disposable
   workspace.
 - The write smoke creates exactly one internal smoke ticket, adds a timed
-  internal comment, uploads one attachment, reloads the ticket detail, and uses
-  `skip_notification: true`.
+  internal comment, uploads one attachment, downloads that attachment through
+  the authorized URL, reloads the ticket detail, and uses `skip_notification:
+  true`.
 
 This is the most important remaining non-Apple validation because it proves
 that the API, permissions, tenant isolation, comments with time, attachments,

@@ -38,6 +38,24 @@ const config = {
   statusId: process.env.FOXDESK_IOS_SMOKE_STATUS_ID || '',
 };
 
+function appRootURL() {
+  const url = new URL(config.baseURL);
+  url.pathname = url.pathname.replace(/\/api\/mobile\/v1\/?$/, '/');
+  if (!url.pathname.endsWith('/')) {
+    url.pathname += '/';
+  }
+  url.search = '';
+  url.hash = '';
+  return url;
+}
+
+function resourceURL(value) {
+  if (!value || !String(value).trim()) {
+    return null;
+  }
+  return new URL(String(value).trim(), appRootURL());
+}
+
 const result = {
   ok: false,
   mode: config.email && config.password ? (config.writeEnabled ? 'live-write' : 'live-read-only') : 'preflight',
@@ -168,6 +186,29 @@ async function requestMultipart(path, { token = '', fields = {}, files = {} } = 
   return payload;
 }
 
+async function requestBinary(url, { token = '' } = {}) {
+  const headers = {
+    Accept: '*/*',
+  };
+  const resolvedURL = url instanceof URL ? url : new URL(String(url));
+  if (token && resolvedURL.host === appRootURL().host) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(resolvedURL, {
+    method: 'GET',
+    headers,
+  });
+  const data = Buffer.from(await response.arrayBuffer());
+  if (!response.ok) {
+    const error = new Error(`HTTP ${response.status}`);
+    error.status = response.status;
+    error.payload = data.toString('utf8').slice(0, 500);
+    throw error;
+  }
+  return data;
+}
+
 function dataOf(payload) {
   return payload?.data && typeof payload.data === 'object' ? payload.data : payload;
 }
@@ -274,6 +315,7 @@ async function runWriteSmoke(accessToken) {
     throw new Error('Comment-with-time response did not include linked comment_id and time_entry_id.');
   }
 
+  const attachmentBody = `FoxDesk iOS smoke attachment\nTicket: ${ticketId}\nCreated: ${now.toISOString()}\n`;
   const uploadPayload = dataOf(await requestMultipart('attachments', {
     token: accessToken,
     fields: { ticket_id: ticketId },
@@ -281,7 +323,7 @@ async function runWriteSmoke(accessToken) {
       file: {
         filename: 'ios-smoke-attachment.txt',
         blob: new Blob([
-          `FoxDesk iOS smoke attachment\nTicket: ${ticketId}\nCreated: ${now.toISOString()}\n`,
+          attachmentBody,
         ], { type: 'text/plain' }),
       },
     },
@@ -293,6 +335,27 @@ async function runWriteSmoke(accessToken) {
   });
   if (!attachmentId) {
     throw new Error('Attachment upload response did not include file.attachment_id.');
+  }
+
+  const metadata = dataOf(await request(`attachments/${attachmentId}`, { token: accessToken }));
+  const attachmentMeta = metadata?.attachment || {};
+  const downloadUrl = resourceURL(attachmentMeta.download_url || uploadPayload?.file?.url || uploadPayload?.url);
+  record('attachment-metadata', !!downloadUrl, {
+    attachment_id: attachmentId,
+    can_preview: !!attachmentMeta.can_preview,
+  });
+  if (!downloadUrl) {
+    throw new Error('Attachment metadata did not include a download URL.');
+  }
+
+  const downloaded = await requestBinary(downloadUrl, { token: accessToken });
+  const downloadOK = downloaded.equals(Buffer.from(attachmentBody, 'utf8'));
+  record('attachment-download', downloadOK, {
+    attachment_id: attachmentId,
+    bytes: downloaded.length,
+  });
+  if (!downloadOK) {
+    throw new Error('Attachment download did not return the uploaded smoke file contents.');
   }
 
   const detail = dataOf(await request(`tickets/${ticketId}`, { token: accessToken }));

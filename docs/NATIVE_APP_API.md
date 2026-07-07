@@ -735,9 +735,10 @@ With `FOXDESK_IOS_SMOKE_WRITE=1`, the smoke loads `tickets/create-options`,
 creates one internal smoke ticket through `POST /api/mobile/v1/tickets`, adds a
 linked internal timed comment through
 `POST /api/mobile/v1/tickets/{id}/comment-with-time`, uploads a small
-attachment through `POST /api/mobile/v1/attachments`, and reloads the created
-ticket detail to verify the comment body, linked 5-minute time entry, and
-attachment are visible together. It uses `skip_notification: true` and an
+attachment through `POST /api/mobile/v1/attachments`, downloads that attachment
+through the authorized URL returned by attachment metadata, and reloads the
+created ticket detail to verify the comment body, linked 5-minute time entry,
+and attachment are visible together. It uses `skip_notification: true` and an
 internal comment so it does not email customers. Optional overrides are available when the smoke account
 needs specific defaults: `FOXDESK_IOS_SMOKE_CLIENT_ID`,
 `FOXDESK_IOS_SMOKE_ASSIGNEE_ID`, `FOXDESK_IOS_SMOKE_PRIORITY_ID`, and
