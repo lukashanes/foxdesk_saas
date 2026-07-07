@@ -130,10 +130,10 @@ Out of scope for first release:
   the first page of results. Dashboard uses the native
   `app-home` feed for active timers, worked-time totals, a last-30-days time
   chart, recent work entries, unread notifications, and work queues. The shell
-  reads `app-tenant-state`, shows workspace status in Settings, and blocks work
+  reads `app-tenant-state`, shows workspace status in Account, and blocks work
   tabs when server access is not allowed. The Notifications tab uses
   `app-notifications` and `app-notification-read-state` for the native inbox,
-  ticket drill-ins, pull-to-refresh, and mark-read actions. Settings can request
+  ticket drill-ins, pull-to-refresh, and mark-read actions. Account can request
   iOS notification permission and register the APNs token through
   `mobile-register-device`; sign-out unregisters the current device through
   `mobile-unregister-device` before clearing local session tokens. Notification
@@ -371,7 +371,7 @@ npm run ios:apns:smoke -- --send --environment=production
 - If third-party/social login is added later, evaluate Sign in with Apple.
 - If the app lets users create accounts, account deletion must be available from
   the app. For the first release, prefer login to existing FoxDesk Cloud
-  workspaces and account/deletion request links in Settings.
+  workspaces and account/deletion request links in Account.
 
 ## Payment And Compliance Strategy
 
@@ -451,7 +451,7 @@ Apple billing setup:
   tickets, clients, and contacts. Ticket results open `TicketDetailView`;
   client results and contact results with `organization_id` open
   `ClientContextView`.
-- Keep per-tab navigation history: Dashboard, Tickets, Notifications, Settings.
+- Keep per-tab navigation history: Dashboard, Tickets, Notifications, Account.
 
 ### Notifications
 
@@ -489,12 +489,12 @@ Apple billing setup:
   server notice copy.
 - Keep legal/support/deletion links.
 - No Stripe, pricing, checkout, portal, or upgrade links.
-- Current scaffold keeps Settings available even when workspace work screens
+- Current scaffold keeps Account available even when workspace work screens
   are blocked by `app-tenant-state`.
 - Current scaffold also exposes a simple push-notification registration action
   backed by `mobile-register-device`.
 - Current scaffold links to support, Privacy Policy, Terms, and account deletion
-  request from Settings for App Store review readiness.
+  request from Account for App Store review readiness.
 
 ### Access Lock
 

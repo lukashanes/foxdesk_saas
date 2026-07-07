@@ -65,7 +65,7 @@ token is not a customer-facing identifier and must not be exposed in Release UI.
 
 ## Account Deletion
 
-The app links to a support request for account deletion from Settings:
+The app links to a support request for account deletion from Account:
 
 ```text
 mailto:support@foxdesk.net?subject=FoxDesk%20account%20deletion%20request

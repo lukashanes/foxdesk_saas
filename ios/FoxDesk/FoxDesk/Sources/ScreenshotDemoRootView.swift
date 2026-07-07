@@ -13,9 +13,6 @@ enum ScreenshotDemoConfiguration {
             return .dashboard
         }
         let requestedScreen = arguments[index + 1]
-        if requestedScreen == "settings" {
-            return .account
-        }
         return ScreenshotDemoScreen(rawValue: requestedScreen) ?? .dashboard
     }
 }

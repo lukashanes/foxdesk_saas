@@ -59,28 +59,28 @@ struct AccountView: View {
             }
 
             Section("Help and legal") {
-                SettingsLinkRow(
+                AccountLinkRow(
                     title: "Contact support",
                     systemImage: "questionmark.circle",
-                    url: FoxDeskSettingsLinks.supportEmail
+                    url: FoxDeskAccountLinks.supportEmail
                 )
-                SettingsLinkRow(
+                AccountLinkRow(
                     title: "Privacy Policy",
                     systemImage: "hand.raised",
-                    url: FoxDeskSettingsLinks.privacy
+                    url: FoxDeskAccountLinks.privacy
                 )
-                SettingsLinkRow(
+                AccountLinkRow(
                     title: "Terms",
                     systemImage: "doc.text",
-                    url: FoxDeskSettingsLinks.terms
+                    url: FoxDeskAccountLinks.terms
                 )
             }
 
             Section("Data requests") {
-                SettingsLinkRow(
+                AccountLinkRow(
                     title: "Request account deletion",
                     systemImage: "person.crop.circle.badge.xmark",
-                    url: FoxDeskSettingsLinks.accountDeletion
+                    url: FoxDeskAccountLinks.accountDeletion
                 )
                 Text("We will verify the request before deleting account or workspace data.")
                     .font(.footnote)
@@ -145,14 +145,14 @@ struct AccountView: View {
     }
 }
 
-private enum FoxDeskSettingsLinks {
+private enum FoxDeskAccountLinks {
     static let supportEmail = URL(string: "mailto:support@foxdesk.net?subject=FoxDesk%20iOS%20support")!
     static let accountDeletion = URL(string: "mailto:support@foxdesk.net?subject=FoxDesk%20account%20deletion%20request")!
     static let privacy = URL(string: "https://foxdesk.net/index.php?page=legal&type=privacy")!
     static let terms = URL(string: "https://foxdesk.net/index.php?page=legal&type=terms")!
 }
 
-private struct SettingsLinkRow: View {
+private struct AccountLinkRow: View {
     let title: String
     let systemImage: String
     let url: URL

@@ -807,6 +807,8 @@ $assert(str_contains($iosOperatorChecklist, 'Production APNs environment is `pro
 $assert(str_contains($iosAppPrivacyAnswers, 'Does the app track users across apps or websites owned by other companies? No.'), 'iOS App Privacy answers must explicitly rule out tracking.');
 $assert(str_contains($iosAppPrivacyAnswers, 'Photos or Videos'), 'iOS App Privacy answers must disclose uploaded photo/video data.');
 $assert(str_contains($iosAppPrivacyAnswers, 'APP_STORE_PRIVACY_REVIEWED=1'), 'iOS App Privacy answers must document the privacy review gate.');
+$assert(str_contains($iosAppPrivacyAnswers, 'account deletion from Account'), 'iOS App Privacy answers must point account deletion to Account.');
+$assert(!str_contains($iosAppPrivacyAnswers, 'account deletion from Settings'), 'iOS App Privacy answers must not point account deletion to the old Settings surface.');
 $assert(str_contains($iosDemoReviewerAccount, 'npm run ios:demo:check -- --require-credentials --json'), 'iOS demo reviewer account runbook must document the live verification command.');
 $assert(str_contains($iosDemoReviewerAccount, 'npm run ios:release:init'), 'iOS demo reviewer account runbook must document the safe release env initializer.');
 $assert(str_contains($iosDemoReviewerAccount, 'npm run ios:release:env'), 'iOS demo reviewer account runbook must document the redacted release env check.');
@@ -888,12 +890,17 @@ $assert(str_contains($iosAccountView, 'Copy APNs token'), 'iOS Account must let 
 $assert(str_contains($iosAccountView, 'UIPasteboard.general.string'), 'iOS Account must copy the APNs token to the clipboard.');
 $assert(str_contains($iosAccountView, '.textSelection(.enabled)'), 'iOS Account must make APNs token text selectable.');
 $assert(str_contains($iosAccountView, '#if DEBUG'), 'iOS APNs token diagnostics must be limited to debug/staging builds.');
+$assert(str_contains($iosAccountView, 'FoxDeskAccountLinks'), 'iOS Account links must use Account naming internally.');
+$assert(str_contains($iosAccountView, 'AccountLinkRow'), 'iOS Account link rows must use Account naming internally.');
+$assert(!str_contains($iosAccountView, 'FoxDeskSettingsLinks'), 'iOS Account view must not keep legacy Settings link naming.');
+$assert(!str_contains($iosAccountView, 'SettingsLinkRow'), 'iOS Account view must not keep legacy Settings row naming.');
 $assert(str_contains($iosApp, 'object(forInfoDictionaryKey: "FOXDESK_API_BASE_URL")'), 'iOS app must read FOXDESK_API_BASE_URL from Info.plist instead of hardcoding the backend.');
 $assert(str_contains($iosApp, 'FoxDeskEnvironment.production.baseURL'), 'iOS app must fall back to the production backend only when Info.plist is missing or invalid.');
 $assert(str_contains($iosApp, '#if DEBUG') && str_contains($iosApp, 'ScreenshotDemoConfiguration.isEnabled'), 'iOS screenshot fixture must be limited to debug builds.');
 $assert(str_contains($iosScreenshotDemoRootView, '#if DEBUG'), 'iOS screenshot demo root view must be debug-only.');
 $assert(str_contains($iosScreenshotDemoRootView, '--foxdesk-screenshot-mode'), 'iOS screenshot demo root view must be opt-in by launch argument.');
 $assert(str_contains($iosScreenshotDemoRootView, 'ScreenshotDemoScreen'), 'iOS screenshot demo root view must expose named screenshot screens.');
+$assert(!str_contains($iosScreenshotDemoRootView, 'requestedScreen == "settings"'), 'iOS screenshot fixture must not silently map the old settings screen to Account.');
 $assert(str_contains($iosScreenshotDemoRootView, '.navigationTitle("Account")'), 'iOS screenshot account fixture must use the Account title.');
 $assert(str_contains($iosScreenshotDemoRootView, 'Privacy Policy'), 'iOS screenshot Account fixture must show the privacy policy row.');
 $assert(str_contains($iosScreenshotDemoRootView, 'Terms'), 'iOS screenshot Account fixture must show the terms row.');
