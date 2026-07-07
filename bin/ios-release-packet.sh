@@ -52,6 +52,11 @@ and the human actions still needed.
 - External gates: \`tmp/ios-external-gates/latest.md\`
 - Next actions: \`tmp/ios-next-actions/latest.md\`
 - Completion audit: \`tmp/ios-completion-audit/latest.md\`
+- Demo account preflight: \`tmp/ios-demo-account-check/latest-preflight.json\`
+- Demo account live evidence: \`tmp/ios-demo-account-check/latest-live-demo-account.json\`
+- Mobile API smoke preflight: \`tmp/ios-api-smoke/latest-preflight.json\`
+- Mobile API read live evidence: \`tmp/ios-api-smoke/latest-live-read-only.json\`
+- Mobile API write live evidence: \`tmp/ios-api-smoke/latest-live-write.json\`
 - App Store screenshots: \`tmp/ios-app-store-screenshots/manifest.md\`
 - App Store submission packet: \`docs/IOS_APP_STORE_SUBMISSION.md\`
 - App Store Connect runbook: \`docs/IOS_APP_STORE_CONNECT_STEPS.md\`

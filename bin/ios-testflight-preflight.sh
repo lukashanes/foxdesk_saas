@@ -99,7 +99,7 @@ contains "$APP_TESTS" "testLaunchStorePendingTicketSurvivesBeforeRouterInit" "Ap
 contains "$PUSH_TESTS" "testAPNsTokenNotificationStoresTokenForDiagnostics" "App tests must cover APNs token capture."
 contains "$ACCOUNT_VIEW" "Push diagnostics" "Account must expose debug/staging APNs diagnostics."
 contains "$ACCOUNT_VIEW" "Copy APNs token" "Account must let testers copy APNs token for live smoke."
-contains "$ACCOUNT_VIEW" "#if DEBUG" "APNs token diagnostics must not ship in Release UI."
+contains "$ACCOUNT_VIEW" "#if DEBUG" "APNs token diagnostics must not ship in Production/App Store UI."
 contains "$APNS_SMOKE" "APNS_TEST_DEVICE_TOKEN" "APNs smoke script must support physical-device test tokens."
 contains "$APNS_SMOKE" "apns_send_notification" "APNs smoke script must be able to send a live APNs notification."
 contains "$API_SMOKE" "FOXDESK_IOS_SMOKE_EMAIL" "iOS API smoke must document email credential env."

@@ -532,6 +532,10 @@ $assert(str_contains($iosReleasePacket, 'tmp/ios-beta-readiness/latest.md'), 'iO
 $assert(str_contains($iosReleasePacket, 'tmp/ios-archive-preflight/latest.md'), 'iOS release packet must link archive preflight evidence.');
 $assert(str_contains($iosReleasePacket, 'npm run ios:completion:audit'), 'iOS release packet must refresh the completion audit.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-completion-audit/latest.md'), 'iOS release packet must link completion audit evidence.');
+$assert(str_contains($iosReleasePacket, 'tmp/ios-demo-account-check/latest-preflight.json'), 'iOS release packet must link demo account preflight evidence.');
+$assert(str_contains($iosReleasePacket, 'tmp/ios-api-smoke/latest-preflight.json'), 'iOS release packet must link mobile API smoke preflight evidence.');
+$assert(str_contains($iosReleasePacket, 'tmp/ios-api-smoke/latest-live-read-only.json'), 'iOS release packet must link read-only live API smoke evidence.');
+$assert(str_contains($iosReleasePacket, 'tmp/ios-api-smoke/latest-live-write.json'), 'iOS release packet must link write live API smoke evidence.');
 $assert(str_contains($iosReleasePacket, 'docs/IOS_APP_STORE_CONNECT_STEPS.md'), 'iOS release packet must link App Store Connect steps.');
 $assert(str_contains($iosReleasePacket, 'docs/IOS_APPLE_DEVELOPER_STEPS.md'), 'iOS release packet must link Apple Developer steps.');
 $assert(str_contains($iosReleasePacket, 'npm run ios:release:env'), 'iOS release packet must document the redacted release env check.');
@@ -783,6 +787,7 @@ $assert(str_contains($iosTestFlightPreflight, 'IOS_APP_STORE_CONNECT_STEPS.md'),
 $assert(str_contains($iosTestFlightPreflight, 'IOS_APPLE_DEVELOPER_STEPS.md'), 'iOS TestFlight preflight must require the Apple Developer steps runbook.');
 $assert(str_contains($iosTestFlightPreflight, 'IOS_APP_PRIVACY_ANSWERS.md'), 'iOS TestFlight preflight must require the App Privacy answers runbook.');
 $assert(str_contains($iosTestFlightPreflight, 'IOS_DEMO_REVIEWER_ACCOUNT.md'), 'iOS TestFlight preflight must require the demo reviewer account runbook.');
+$assert(str_contains($iosTestFlightPreflight, 'Production/App Store UI'), 'iOS TestFlight preflight failure wording must use precise Production/App Store diagnostics wording.');
 $assert(str_contains($iosAppStoreSteps, 'https://appstoreconnect.apple.com/apps'), 'iOS App Store Connect steps must link the app record page.');
 $assert(str_contains($iosAppStoreSteps, 'Bundle ID: `net.foxdesk.ios`'), 'iOS App Store Connect steps must include the bundle id.');
 $assert(str_contains($iosAppStoreSteps, 'APP_STORE_CONNECT_APP_RECORD_READY=1'), 'iOS App Store Connect steps must document the readiness flag.');
