@@ -507,6 +507,17 @@ re-running the native simulator suite:
   - `./bin/run-php.sh tests/ios-mvp-scope-contract-test.php`
   - `npm run ios:gate`
   - `npm run ios:mvp:audit`
+- As of 2026-07-07 05:18 UTC, the app was built, installed, launched, and
+  visually checked on an iOS simulator after the five-tab shell update.
+  XcodeBuildMCP `build_run_sim` succeeded for profile `foxdesk-ios`
+  (`FoxDesk` scheme, bundle `net.foxdesk.ios`) with no diagnostics warnings or
+  errors. The repo simulator smoke also launched the app and captured the
+  native login screen at `tmp/ios-smoke/foxdesk-login.png`
+  (`1206x2622`). Verified commands/tools:
+  - XcodeBuildMCP `session_show_defaults`
+  - XcodeBuildMCP `build_run_sim`
+  - XcodeBuildMCP `screenshot`
+  - `npm run ios:sim:smoke`
 
 The native activity surface should now render time entries created together
 with comments inline under that comment. Time entries without `comment_id`
