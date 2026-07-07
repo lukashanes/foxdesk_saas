@@ -595,7 +595,8 @@ $assert(str_contains($iosReleaseEnvCheck, 'APP_STORE_CONNECT_APP_RECORD_READY'),
 $assert(str_contains($iosReleaseEnvCheck, 'identity context only'), 'iOS release env check must treat Apple Business as context, not a substitute for App Store Connect.');
 $assert(str_contains($iosReleaseEnvCheck, 'not a substitute for App Store Connect or Developer signing'), 'iOS release env check must explain that Apple Business does not satisfy signing/upload gates.');
 $assert(str_contains($iosReleaseEnvCheck, 'FOXDESK_IOS_DEMO_EMAIL'), 'iOS release env check must report demo reviewer credentials without printing values.');
-$assert(str_contains($iosReleaseEnvCheck, 'FOXDESK_IOS_DEMO_WRITE'), 'iOS release env check must report demo reviewer write proof readiness.');
+$assert(str_contains($iosReleaseEnvCheck, 'FOXDESK_IOS_DEMO_WRITE'), 'iOS release env check must report the demo reviewer write proof trigger.');
+$assert(str_contains($iosReleaseEnvCheck, 'evidence still comes from npm run ios:demo:check'), 'iOS release env check must not imply FOXDESK_IOS_DEMO_WRITE alone proves the write proof.');
 $assert(str_contains($iosReleaseEnvCheck, 'FOXDESK_IOS_ALLOW_PRODUCTION_WRITE_SMOKE'), 'iOS release env check must require explicit acknowledgement for production write smoke.');
 $assert(str_contains($iosReleaseEnvCheck, 'APNS_TEST_DEVICE_TOKEN'), 'iOS release env check must report the physical APNs token gate without printing values.');
 $assert(str_contains($iosExternalGates, 'ios-release-env.sh'), 'iOS external gates must auto-load the local release env.');

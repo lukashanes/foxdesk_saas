@@ -135,9 +135,9 @@ else
 fi
 
 if value_is_one FOXDESK_IOS_DEMO_WRITE; then
-  mark 1 "Demo reviewer write proof"
+  mark 1 "Demo reviewer write proof trigger" "configured; evidence still comes from npm run ios:demo:check -- --require-credentials --json"
 else
-  mark 0 "Demo reviewer write proof" "set FOXDESK_IOS_DEMO_WRITE=1 only for the final safe App Review write check"
+  mark 0 "Demo reviewer write proof trigger" "set FOXDESK_IOS_DEMO_WRITE=1 only for the final safe App Review write check"
 fi
 
 cat >> "$OUT" <<MD
