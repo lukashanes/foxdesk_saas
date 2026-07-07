@@ -182,11 +182,12 @@ npm run ios:api:smoke -- --require-credentials --json
 One write smoke:
 
 ```bash
-npm run ios:api:smoke -- --require-credentials --json
+FOXDESK_IOS_SMOKE_WRITE=1 npm run ios:api:smoke -- --require-credentials --json
 ```
 
-Put `FOXDESK_IOS_SMOKE_EMAIL`, `FOXDESK_IOS_SMOKE_PASSWORD`, and
-`FOXDESK_IOS_SMOKE_WRITE=1` in `.env.ios-release` for this step.
+Put `FOXDESK_IOS_SMOKE_EMAIL` and `FOXDESK_IOS_SMOKE_PASSWORD` in
+`.env.ios-release` for this step. Keep `FOXDESK_IOS_SMOKE_WRITE=0` by default
+and enable write mode only for this explicit smoke run.
 The write smoke creates one internal smoke ticket, adds one timed internal
 comment, uploads one small attachment, reloads ticket detail, verifies the
 linked time entry, and suppresses notifications.

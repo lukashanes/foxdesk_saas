@@ -800,6 +800,8 @@ $assert(str_contains($iosAppStoreSteps, 'APP_STORE_CONNECT_APP_RECORD_READY=1'),
 $assert(str_contains($iosAppStoreSteps, 'docs/IOS_APPLE_DEVELOPER_STEPS.md'), 'iOS App Store Connect steps must link the Apple Developer steps runbook.');
 $assert(str_contains($iosAppStoreSteps, 'APPLE_DEVELOPER_BUNDLE_READY=1'), 'iOS App Store Connect steps must document the Apple Developer bundle/push readiness flag.');
 $assert(str_contains($iosAppStoreSteps, 'npm run ios:release:env'), 'iOS App Store Connect steps must document the redacted env check.');
+$assert(str_contains($iosAppStoreSteps, 'FOXDESK_IOS_SMOKE_WRITE=1 npm run ios:api:smoke -- --require-credentials --json'), 'iOS App Store Connect steps must show the opt-in write smoke command explicitly.');
+$assert(str_contains($iosAppStoreSteps, 'Keep `FOXDESK_IOS_SMOKE_WRITE=0` by default'), 'iOS App Store Connect steps must keep write smoke disabled by default.');
 $assert(!str_contains($iosAppStoreSteps, 'FOXDESK_IOS_DEMO_PASSWORD=<password>'), 'iOS App Store Connect steps must not encourage pasting demo passwords into shell history.');
 $assert(str_contains($iosAppStoreSteps, 'npm run ios:submission:gate'), 'iOS App Store Connect steps must end with the strict submission gate.');
 $assert(str_contains($iosAppleDeveloperSteps, 'Bundle ID: `net.foxdesk.ios`'), 'iOS Apple Developer steps must include the production bundle id.');
