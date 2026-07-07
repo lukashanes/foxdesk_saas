@@ -246,6 +246,8 @@ Done when:
 - Account -> Push diagnostics shows the intended backend.
 - The device token is copied from the app and supplied as
   `APNS_TEST_DEVICE_TOKEN`.
+- `npm run ios:apns:smoke -- --json` validates every first-release ticket push
+  payload type without sending a notification.
 - `npm run ios:apns:smoke -- --send --environment=production` reaches the
   device.
 - A tapped push notification opens the matching ticket in the native app.

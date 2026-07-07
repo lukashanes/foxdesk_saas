@@ -323,6 +323,7 @@ $assert(str_contains($iosMVPPlan, 'kSecAttrAccessibleAfterFirstUnlockThisDeviceO
 $assert(str_contains($iosPlan, 'Backend APNs dispatch is implemented'), 'iOS launch plan must reflect backend APNs dispatch status.');
 $assert(str_contains($iosPlan, 'sign-out unregisters the current device'), 'iOS launch plan must document push device unregister on sign-out.');
 $assert(str_contains($iosPlan, 'real-device smoke testing'), 'iOS launch plan must keep real-device APNs smoke as a release gate.');
+$assert(str_contains($iosPlan, 'validates every first-release ticket push'), 'iOS launch plan must require APNs dry-run payload validation before live iPhone smoke.');
 $assert(str_contains($iosPlan, 'mocked agent workflow smoke'), 'iOS launch plan must describe the mocked agent workflow smoke.');
 $assert(str_contains($iosPlan, 'local reply drafts'), 'iOS launch plan must document local reply drafts.');
 $assert(str_contains($iosPlan, 'cached ticket-list persistence'), 'iOS launch plan must document cached ticket list continuity.');
@@ -988,6 +989,8 @@ $assert(str_contains($iosMVPPlan, 'Keychain'), 'iOS app plan must require secure
 $assert(str_contains($iosMVPPlan, 'Billing, reporting, platform administration'), 'iOS app plan must keep web-only surfaces out of the first iOS release.');
 $assert(str_contains($iosMVPPlan, 'comment-with-time'), 'iOS app plan must include comment-with-time as an MVP workflow.');
 $assert(str_contains($iosMVPPlan, 'APNS_TEST_DEVICE_TOKEN'), 'iOS app plan must include physical APNs smoke evidence.');
+$assert(str_contains($iosMVPPlan, 'npm run ios:apns:smoke -- --json'), 'iOS app plan must require APNs dry-run before live iPhone smoke.');
+$assert(str_contains($iosMVPPlan, 'dry-run must pass first'), 'iOS app plan must explain dry-run comes before live APNs send.');
 $assert(str_contains($iosMVPPlan, 'npm run ios:submission:gate'), 'iOS app plan must document the strict submission gate.');
 $assert(str_contains($nativeDocs, 'Account → Push diagnostics'), 'Native API docs must document the iOS APNs token capture path.');
 $assert(str_contains($nativeDocs, 'Copy APNs token'), 'Native API docs must document the iOS APNs token copy action.');

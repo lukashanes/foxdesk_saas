@@ -154,7 +154,12 @@ Evidence:
 - `PushNavigationRouter`
 - `PushRegistrationServiceTests`
 - `PushNavigationRouterTests`
+- `npm run ios:apns:smoke -- --json`
 - `APNS_TEST_DEVICE_TOKEN=<token> npm run ios:apns:smoke -- --send --environment=production`
+
+The dry-run must pass first. It validates every first-release ticket push
+payload type without sending a notification; the physical iPhone smoke proves
+Apple delivery and tap-to-ticket routing.
 
 ### 6. Offline And Speed
 
