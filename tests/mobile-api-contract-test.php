@@ -758,6 +758,7 @@ $assert(str_contains($iosAppStoreSubmission, 'npm run ios:external:gates'), 'iOS
 $assert(str_contains($iosAppStoreSubmission, 'tmp/ios-external-gates/latest.md'), 'iOS submission packet must document the external gate evidence report.');
 $assert(str_contains($iosAppStoreSubmission, 'tmp/ios-mvp-local-audit/latest.md'), 'iOS submission packet must document the MVP audit evidence report.');
 $assert(str_contains($iosAppStoreSubmission, 'npm run ios:submission:gate'), 'iOS submission packet must document the strict submission gate.');
+$assert(str_contains($iosAppStoreSubmission, 'FOXDESK_IOS_SMOKE_WRITE=1 npm run ios:api:smoke -- --require-credentials --json'), 'iOS submission packet must show the opt-in write smoke command explicitly.');
 $assert(str_contains($iosAppStoreSubmission, 'Privacy Policy URL'), 'iOS submission packet must document the privacy policy URL.');
 $assert(str_contains($iosAppStoreSubmission, 'Privacy Policy URL: `https://foxdesk.net/index.php?page=legal&type=privacy`'), 'iOS submission packet must use the live privacy policy URL.');
 $assert(str_contains($iosAppStoreSubmission, 'Support URL'), 'iOS submission packet must document the support URL.');

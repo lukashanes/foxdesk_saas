@@ -205,7 +205,7 @@ npm run ios:archive:preflight
 npm run ios:testflight:preflight
 npm run ios:demo:check -- --require-credentials --json
 npm run ios:api:smoke -- --require-credentials --json
-npm run ios:api:smoke -- --require-credentials --json
+FOXDESK_IOS_SMOKE_WRITE=1 npm run ios:api:smoke -- --require-credentials --json
 npm run ios:apns:smoke -- --json
 npm run ios:apns:smoke -- --send --environment=production
 ```
