@@ -14,6 +14,7 @@
 		09AE2CC09297366E1D5071BB /* AuthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A286A3A4202027D19D61952 /* AuthModels.swift */; };
 		0C6B3668BA05778459CDA8BB /* CameraCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DF2B4A07CB3CF5DA6E831C4 /* CameraCaptureView.swift */; };
 		0D75A7588F2E58A03C0F6A51 /* TicketModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15EB2A96C4410D4F1DE1922A /* TicketModels.swift */; };
+		1033FCB37D7FFEBE66C08AB2 /* MobileRichTextFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48C1E516900E18772BBE5C11 /* MobileRichTextFormatterTests.swift */; };
 		13B3E5FEB40B6368871BC97B /* FoxDeskKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 389BC991F1584CC6C1002DA4 /* FoxDeskKit.framework */; };
 		16E1D3DD388B806195D0EF67 /* TicketCommentDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 897D59F23AB6289F0ED6EDA7 /* TicketCommentDraft.swift */; };
 		204B8AE31623A96D79CB21B3 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7775754E0D5DDBE9E88CA816 /* RootView.swift */; };
@@ -131,6 +132,7 @@
 		46943E9AF58268A44A2A02CA /* ScreenshotDemoRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotDemoRootView.swift; sourceTree = "<group>"; };
 		46B4E6F3AED5D296B73325E7 /* KeychainTokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainTokenStore.swift; sourceTree = "<group>"; };
 		48569663834E9DE4F968848C /* ClientContextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientContextView.swift; sourceTree = "<group>"; };
+		48C1E516900E18772BBE5C11 /* MobileRichTextFormatterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileRichTextFormatterTests.swift; sourceTree = "<group>"; };
 		4A286A3A4202027D19D61952 /* AuthModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModels.swift; sourceTree = "<group>"; };
 		4AD0219E37FD6D62CD4B9902 /* DashboardWorkedTimeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardWorkedTimeView.swift; sourceTree = "<group>"; };
 		4B400DBB271B686EEEEEB428 /* SearchModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchModels.swift; sourceTree = "<group>"; };
@@ -333,6 +335,7 @@
 			isa = PBXGroup;
 			children = (
 				17ED2C789D3D650419DDE160 /* FoxDeskAPIClientTests.swift */,
+				48C1E516900E18772BBE5C11 /* MobileRichTextFormatterTests.swift */,
 			);
 			path = FoxDeskKitTests;
 			sourceTree = "<group>";
@@ -520,6 +523,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				907253D364EE987E91C781AA /* FoxDeskAPIClientTests.swift in Sources */,
+				1033FCB37D7FFEBE66C08AB2 /* MobileRichTextFormatterTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

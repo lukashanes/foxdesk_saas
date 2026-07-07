@@ -219,6 +219,7 @@ $iosScreenshotDemoRootView = file_get_contents($root . '/ios/FoxDesk/FoxDesk/Sou
 $iosPushNavigationTests = file_get_contents($root . '/ios/FoxDesk/FoxDeskTests/PushNavigationRouterTests.swift');
 $iosPushRegistrationTests = file_get_contents($root . '/ios/FoxDesk/FoxDeskTests/PushRegistrationServiceTests.swift');
 $iosRichTextFormatter = file_get_contents($root . '/ios/FoxDesk/FoxDeskKit/Sources/Formatting/MobileRichTextFormatter.swift');
+$iosRichTextFormatterTests = file_get_contents($root . '/ios/FoxDesk/FoxDeskKitTests/MobileRichTextFormatterTests.swift');
 $iosAPIClient = file_get_contents($root . '/ios/FoxDesk/FoxDeskKit/Sources/API/FoxDeskAPIClient.swift');
 $iosAPIClientTests = file_get_contents($root . '/ios/FoxDesk/FoxDeskKitTests/FoxDeskAPIClientTests.swift');
 $iosKeychainTokenStore = file_get_contents($root . '/ios/FoxDesk/FoxDeskKit/Sources/Security/KeychainTokenStore.swift');
@@ -296,6 +297,7 @@ $assert($iosScreenshotDemoRootView !== false, 'iOS screenshot demo root view is 
 $assert($iosPushNavigationTests !== false, 'iOS push navigation tests are missing.');
 $assert($iosPushRegistrationTests !== false, 'iOS push registration tests are missing.');
 $assert($iosRichTextFormatter !== false, 'iOS mobile rich text formatter is missing.');
+$assert($iosRichTextFormatterTests !== false, 'iOS mobile rich text formatter tests are missing.');
 $assert($iosAPIClient !== false, 'iOS API client is missing.');
 $assert($iosAPIClientTests !== false, 'iOS API client tests are missing.');
 $assert($iosKeychainTokenStore !== false, 'iOS Keychain token store is missing.');
@@ -889,6 +891,11 @@ $assert(str_contains($iosPushNavigationTests, 'testOpenTicketIgnoresInvalidIDs')
 $assert(str_contains($iosPushRegistrationTests, 'testAPNsTokenNotificationStoresTokenForDiagnostics'), 'iOS tests must cover APNs token capture for real-device diagnostics.');
 $assert(str_contains($iosPushRegistrationTests, 'testAPNsRegistrationFailureUpdatesState'), 'iOS tests must cover APNs registration failure state.');
 $assert(str_contains($iosTestFlightPreflight, 'FoxDeskTests/PushNavigationRouterTests.swift'), 'iOS TestFlight preflight must require app-level navigation tests.');
+$assert(str_contains($iosTestFlightPreflight, 'FoxDeskKitTests/MobileRichTextFormatterTests.swift'), 'iOS TestFlight preflight must require rich text formatter tests.');
+$assert(str_contains($iosRichTextFormatterTests, 'testConvertsParagraphsListsAndInlineFormattingToHTML'), 'iOS rich text tests must cover paragraphs, lists, and inline formatting.');
+$assert(str_contains($iosRichTextFormatterTests, 'testEscapesHTMLBeforeApplyingAllowedInlineFormatting'), 'iOS rich text tests must cover escaping HTML before allowed formatting.');
+$assert(str_contains($iosRichTextFormatterTests, 'testNormalizesWindowsLineEndingsAndSkipsEmptyBlocks'), 'iOS rich text tests must cover Windows line endings and empty block cleanup.');
+$assert(str_contains($iosRichTextFormatterTests, 'MobileRichTextFormatter.html'), 'iOS rich text tests must exercise the shared formatter directly.');
 $assert(str_contains($iosRootView, 'Label("Account", systemImage: "person.crop.circle")'), 'iOS signed-in shell must label the account tab as Account, not Settings.');
 $assert(!str_contains($iosRootView, 'Label("Settings", systemImage: "gearshape")'), 'iOS signed-in shell must not expose a web-admin-style Settings tab.');
 $assert(str_contains($iosRootView, 'AccountView()'), 'iOS signed-in shell must render AccountView.');
