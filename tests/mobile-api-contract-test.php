@@ -553,6 +553,13 @@ $assert(str_contains($iosNextActions, 'npm run ios:external:gates'), 'iOS next-a
 $assert(str_contains($iosNextActions, 'Ordered Actions'), 'iOS next-actions report must provide ordered operator actions.');
 $assert(str_contains($iosNextActions, 'Apple Business Note'), 'iOS next-actions must explain the already-complete Apple Business step separately.');
 $assert(str_contains($iosNextActions, 'company identity evidence only'), 'iOS next-actions must not imply Apple Business replaces App Store Connect or Developer setup.');
+$assert(str_contains($iosNextActions, 'App Store Connect Copy/Paste Fields'), 'iOS next-actions must include copy/paste App Store Connect fields.');
+$assert(str_contains($iosNextActions, 'App name | \\`FoxDesk\\`'), 'iOS next-actions must include the App Store Connect app name.');
+$assert(str_contains($iosNextActions, 'Bundle ID | \\`net.foxdesk.ios\\`'), 'iOS next-actions must include the App Store Connect bundle id.');
+$assert(str_contains($iosNextActions, 'SKU | \\`foxdesk-ios\\`'), 'iOS next-actions must include the App Store Connect SKU.');
+$assert(str_contains($iosNextActions, 'Organization | \\`Aenze s.r.o.\\`'), 'iOS next-actions must include the verified organization name.');
+$assert(str_contains($iosNextActions, 'Privacy Policy URL | \\`https://foxdesk.net/index.php?page=legal&type=privacy\\`'), 'iOS next-actions must include the live privacy policy URL.');
+$assert(str_contains($iosNextActions, 'docs/IOS_APP_STORE_CONNECT_METADATA.md'), 'iOS next-actions must link the App Store Connect metadata source.');
 $assert(str_contains($iosNextActions, 'Safe Local Release Env'), 'iOS next-actions report must lead with the safe local release env workflow.');
 $assert(str_contains($iosNextActions, 'npm run ios:release:env'), 'iOS next-actions report must document the redacted release env check.');
 $assert(str_contains($iosNextActions, '**Prepare App Review demo account** ($(bool_status "$demo_creds_status"))'), 'iOS next-actions must not mark the demo account ready from the App Review notes template alone.');

@@ -86,6 +86,26 @@ Apple Business verification for \`Aenze s.r.o.\` is recorded and ready. It is
 company identity evidence only. Continue with the App Store Connect app record
 and the Apple Developer bundle ID / Push Notifications setup before TestFlight.
 
+## App Store Connect Copy/Paste Fields
+
+Use these exact first-pass values when creating the app record:
+
+| Field | Value |
+| --- | --- |
+| App name | \`FoxDesk\` |
+| Bundle ID | \`net.foxdesk.ios\` |
+| SKU | \`foxdesk-ios\` |
+| Primary language | \`English\` |
+| Category | \`Business\` |
+| Organization | \`Aenze s.r.o.\` |
+| Privacy Policy URL | \`https://foxdesk.net/index.php?page=legal&type=privacy\` |
+| Support URL | \`https://foxdesk.net/#support\` |
+| Marketing URL | \`https://foxdesk.net\` |
+
+Metadata source: \`docs/IOS_APP_STORE_CONNECT_METADATA.md\`. Do not paste demo
+passwords into committed files; add reviewer credentials only in App Store
+Connect review notes and the ignored local \`.env.ios-release\`.
+
 ## Safe Local Release Env
 
 Use one ignored local env file for App Review credentials, live-smoke
