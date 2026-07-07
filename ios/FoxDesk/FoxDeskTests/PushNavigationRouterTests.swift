@@ -61,4 +61,16 @@ final class PushNavigationRouterTests: XCTestCase {
         XCTAssertEqual(router.consumePendingTicketID(), 91)
         XCTAssertNil(PendingPushNavigationStore.consumeTicketID())
     }
+
+    func testClearPendingNavigationDropsRuntimeAndLaunchTickets() {
+        PendingPushNavigationStore.store(ticketID: 123)
+        let router = PushNavigationRouter(notificationCenter: NotificationCenter())
+
+        router.openTicket(id: 456)
+        router.clearPendingNavigation()
+
+        XCTAssertNil(router.pendingTicketID)
+        XCTAssertNil(router.consumePendingTicketID())
+        XCTAssertNil(PendingPushNavigationStore.consumeTicketID())
+    }
 }

@@ -64,4 +64,9 @@ final class PushNavigationRouter {
         pendingTicketID = nil
         return ticketID
     }
+
+    func clearPendingNavigation() {
+        pendingTicketID = nil
+        PendingPushNavigationStore.clear()
+    }
 }

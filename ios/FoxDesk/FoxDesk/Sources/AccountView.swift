@@ -5,6 +5,7 @@ import FoxDeskKit
 struct AccountView: View {
     @Environment(AppSession.self) private var session
     @Environment(PushRegistrationService.self) private var pushRegistration
+    @Environment(PushNavigationRouter.self) private var pushRouter
     @State private var didCopyAPNsToken = false
 
     var body: some View {
@@ -92,6 +93,7 @@ struct AccountView: View {
                     Task {
                         await session.signOut()
                         pushRegistration.resetAfterSignOut()
+                        pushRouter.clearPendingNavigation()
                     }
                 }
             }

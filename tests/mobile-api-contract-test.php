@@ -1010,6 +1010,7 @@ $assert(str_contains($iosAccountView, '.textSelection(.enabled)'), 'iOS Account 
 $assert(str_contains($iosAccountView, '#if DEBUG'), 'iOS APNs token diagnostics must be limited to debug/staging builds.');
 $assert(str_contains($iosProject, 'Staging: debug') && str_contains($iosAccountView, '#if DEBUG'), 'iOS Staging builds must expose debug-gated Push diagnostics for APNs smoke testing.');
 $assert(str_contains($iosAccountView, 'pushRegistration.resetAfterSignOut()'), 'iOS Account sign-out must clear local push registration state after server unregister/logout.');
+$assert(str_contains($iosAccountView, 'pushRouter.clearPendingNavigation()'), 'iOS Account sign-out must clear pending push navigation so another user cannot inherit a ticket route.');
 $assert(str_contains($iosAccountView, 'FoxDeskAccountLinks'), 'iOS Account links must use Account naming internally.');
 $assert(str_contains($iosAccountView, 'AccountLinkRow'), 'iOS Account link rows must use Account naming internally.');
 $assert(!str_contains($iosAccountView, 'FoxDeskSettingsLinks'), 'iOS Account view must not keep legacy Settings link naming.');
@@ -1031,6 +1032,8 @@ $assert(str_contains($iosAppSession, 'client.unregisterDevice'), 'iOS AppSession
 $assert(str_contains($iosAPIClientTests, 'testUnregisterDevicePostsDeviceID'), 'iOS API tests must cover device unregister request shape.');
 $assert(str_contains($iosAPIClientTests, 'testAppSessionSignOutUnregistersDeviceBeforeLogout'), 'iOS session tests must cover unregister before logout.');
 $assert(str_contains($iosPushRegistrationTests, 'testResetAfterSignOutClearsLocalPushState'), 'iOS push registration tests must cover local push-state reset after sign-out.');
+$assert(str_contains($iosPushRouter, 'func clearPendingNavigation()'), 'iOS push router must expose an explicit cleanup for pending ticket routes.');
+$assert(str_contains($iosPushNavigationTests, 'testClearPendingNavigationDropsRuntimeAndLaunchTickets'), 'iOS push navigation tests must cover clearing runtime and launch-store pending tickets.');
 $assert(str_contains($iosAPIClient, 'session: URLSession = FoxDeskAPIClient.makeDefaultSession()'), 'iOS API client must not default to URLSession.shared.');
 $assert(str_contains($iosAPIClient, 'public static func makeDefaultSession() -> URLSession'), 'iOS API client must expose its cookie-less default session factory.');
 $assert(str_contains($iosPushRegistrationService, 'func resetAfterSignOut()'), 'iOS push registration service must expose an explicit local reset after sign-out.');
