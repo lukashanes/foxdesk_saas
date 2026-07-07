@@ -81,6 +81,7 @@ foreach ($swiftFiles as $path) {
 $rootView = $readFile($iosSources . '/RootView.swift');
 $accountView = $readFile($iosSources . '/AccountView.swift');
 $searchView = $readFile($iosSources . '/SearchView.swift');
+$screenshotDemo = $readFile($iosSources . '/ScreenshotDemoRootView.swift');
 $tenantModels = $readFile($kitSources . '/Models/TenantModels.swift');
 
 $assert(str_contains($rootView, 'WorkspaceAccessBlockedView'), 'iOS app must show a workspace-access state instead of billing or platform screens.');
@@ -95,6 +96,8 @@ $assert(!str_contains($accountView, 'checkoutLabel'), 'iOS Account must not expo
 $assert(!str_contains($accountView, 'portalLabel'), 'iOS Account must not expose portal labels.');
 $assert(!str_contains($searchView, '"reports"'), 'iOS Search must not show report sections in the first agent/admin MVP.');
 $assert(!str_contains($searchView, 'case "report"'), 'iOS Search must not render report result rows in the first agent/admin MVP.');
+$assert(!str_contains(strtolower($screenshotDemo), 'billing'), 'iOS App Store screenshot fixture must not show billing copy in the agent/admin MVP.');
+$assert(!str_contains(strtolower($screenshotDemo), 'report'), 'iOS App Store screenshot fixture must not show report copy in the agent/admin MVP.');
 
 $assert(str_contains($accountView, 'Contact support'), 'iOS Account must keep support available.');
 $assert(str_contains($accountView, 'Privacy Policy'), 'iOS Account must keep privacy policy available.');

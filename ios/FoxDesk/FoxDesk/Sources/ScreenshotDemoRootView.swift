@@ -162,7 +162,7 @@ private struct ScreenshotTicketsView: View {
                 demoTicket("VPN access stopped working", code: "TK-10821", meta: "Aenze · Urgent · 10 min ago", color: .red)
                 demoTicket("Prepare onboarding checklist", code: "TK-10819", meta: "Northline · In progress", color: .blue)
                 demoTicket("Newsletter image is cropped", code: "TK-10817", meta: "EnviTrail · Waiting", color: .orange)
-                demoTicket("Update billing report comments", code: "TK-10810", meta: "Studio Care · Done today", color: .green)
+                demoTicket("Finalize product copy notes", code: "TK-10810", meta: "Studio Care · Done today", color: .green)
             }
         }
         .searchable(text: .constant(""), prompt: "Search tickets")
@@ -275,7 +275,7 @@ private struct ScreenshotClientView: View {
             }
             Section("Open tickets") {
                 demoTicket("VPN access stopped working", code: "TK-10821", meta: "Urgent", color: .red)
-                demoTicket("Billing report comments", code: "TK-10810", meta: "Waiting", color: .orange)
+                demoTicket("Finalize product copy notes", code: "TK-10810", meta: "Waiting", color: .orange)
             }
             Section("Contacts") {
                 Label("Eva Novak", systemImage: "person.crop.circle")
@@ -295,7 +295,7 @@ private struct ScreenshotNotificationsView: View {
             }
             Section("Yesterday") {
                 notification("Ticket done", "Newsletter image is cropped", unread: false)
-                notification("Mention", "Emma mentioned you in billing report comments", unread: false)
+                notification("Mention", "Emma mentioned you in product copy notes", unread: false)
             }
         }
         .navigationTitle("Notifications")
