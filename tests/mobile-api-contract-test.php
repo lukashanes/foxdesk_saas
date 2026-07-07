@@ -499,6 +499,8 @@ $assert(str_contains($iosCompletionAudit, 'tmp/ios-completion-audit/latest.md'),
 $assert(str_contains($iosCompletionAudit, 'Strict conclusion'), 'iOS completion audit must state whether the full release objective is complete.');
 $assert(str_contains($iosCompletionAudit, 'not complete for TestFlight/App Store'), 'iOS completion audit must avoid false completion while live gates are missing.');
 $assert(str_contains($iosCompletionAudit, 'Opt-in write smoke'), 'iOS completion audit must track comment/time/attachment write proof.');
+$assert(str_contains($iosCompletionAudit, 'Basic reply formatting'), 'iOS completion audit must track rich-text reply formatting proof.');
+$assert(str_contains($iosCompletionAudit, 'MobileRichTextFormatter'), 'iOS completion audit must cite the native rich text formatter evidence.');
 $assert(str_contains($iosCompletionAudit, 'Physical iPhone APNs token'), 'iOS completion audit must track physical APNs proof.');
 $assert(str_contains($iosCompletionAudit, 'App Store Connect app record'), 'iOS completion audit must track App Store Connect proof.');
 $assert(str_contains($iosCompletionAudit, 'Apple Developer explicit App ID'), 'iOS completion audit must track Apple Developer App ID proof.');
