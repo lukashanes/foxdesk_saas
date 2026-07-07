@@ -512,6 +512,7 @@ $assert(str_contains($iosCompletionAudit, 'latest-live-write.json'), 'iOS comple
 $assert(str_contains($iosCompletionAudit, 'latest-send.json'), 'iOS completion audit must require APNs live-send evidence.');
 $assert(str_contains($iosCompletionAudit, 'needs verification'), 'iOS completion audit must distinguish configured env from verified live evidence.');
 $assert(str_contains($iosExternalGates, 'tmp/ios-external-gates/latest.md'), 'iOS external gate status script must write a durable evidence report.');
+$assert(file_exists($root . '/tests/ios-external-gates-contract-test.php'), 'iOS MVP gate must include an executable external gate independence contract.');
 $assert(str_contains($iosDemoAccountCheck, 'ios-demo-account-check'), 'iOS demo account check must write durable redacted evidence.');
 $assert(str_contains($iosAPISmoke, 'ios-api-smoke'), 'iOS API smoke must write durable redacted evidence.');
 $assert(str_contains($iosAPNsSmoke, 'tmp/ios-apns-smoke'), 'iOS APNs smoke must write durable redacted evidence.');
@@ -523,6 +524,7 @@ $assert(str_contains($iosExternalGates, 'needs verification'), 'iOS external gat
 $assert(str_contains($iosExternalGates, 'APP_STORE_CONNECT_APP_RECORD_READY'), 'iOS external gate status script must report the App Store Connect gate.');
 $assert(str_contains($iosExternalGates, 'APPLE_DEVELOPER_BUNDLE_READY'), 'iOS external gate status script must report the Apple Developer bundle/push gate.');
 $assert(str_contains($iosExternalGates, 'APPLE_BUSINESS_VERIFIED'), 'iOS external gate status script must report Apple Business verification as operator evidence.');
+$assert(str_contains($iosMVPGate, 'tests/ios-external-gates-contract-test.php'), 'iOS MVP gate must run the external gate independence contract.');
 $assert(str_contains($iosNextActions, 'tmp/ios-next-actions/latest.md'), 'iOS next-actions script must write a durable report.');
 $assert(str_contains($iosNextActions, 'npm run ios:external:gates'), 'iOS next-actions script must refresh external gate evidence before reporting.');
 $assert(str_contains($iosNextActions, 'Ordered Actions'), 'iOS next-actions report must provide ordered operator actions.');
