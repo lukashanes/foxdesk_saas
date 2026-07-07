@@ -584,6 +584,9 @@ $assert(str_contains($iosNextActions, 'This is not ready until the credentials a
 $assert(str_contains($iosNextActions, 'Demo reviewer write proof'), 'iOS next-actions must track the demo account write proof status.');
 $assert(str_contains($iosNextActions, 'FOXDESK_IOS_DEMO_WRITE=1'), 'iOS next-actions must tell operators how to run the demo account write proof.');
 $assert(!str_contains($iosNextActions, 'FOXDESK_IOS_DEMO_PASSWORD=<password>'), 'iOS next-actions report must not encourage pasting demo passwords into shell history.');
+$assert(str_contains($iosNextActions, 'First validate every first-release push payload shape'), 'iOS next-actions must tell operators to run APNs dry-run before live send.');
+$assert(str_contains($iosNextActions, 'npm run ios:apns:smoke -- --json'), 'iOS next-actions must include the APNs dry-run command.');
+$assert(str_contains($iosNextActions, 'Then send one live APNs notification'), 'iOS next-actions must keep physical APNs smoke scoped to one live notification.');
 $assert(str_contains($iosNextActions, 'npm run ios:submission:gate'), 'iOS next-actions report must end with the strict final gate.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-release-packet/latest.md'), 'iOS release packet script must write a durable handoff packet.');
 $assert(str_contains($iosReleasePacket, 'npm run ios:external:gates'), 'iOS release packet must refresh external gate evidence.');

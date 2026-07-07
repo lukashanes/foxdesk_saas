@@ -187,7 +187,15 @@ values. The iOS gate scripts auto-load \`.env.ios-release\` when present.
 8. **Run physical iPhone APNs smoke** ($(bool_status "$apns_status"))
    - Install a debug/staging build on a real iPhone.
    - Open Account -> Push diagnostics and copy the APNs token.
-   - Set \`APNS_TEST_DEVICE_TOKEN\` in \`.env.ios-release\`, then run:
+   - Set \`APNS_TEST_DEVICE_TOKEN\` in \`.env.ios-release\`.
+   - First validate every first-release push payload shape without sending a
+     notification:
+
+     \`\`\`bash
+     npm run ios:apns:smoke -- --json
+     \`\`\`
+
+   - Then send one live APNs notification to the physical iPhone:
 
      \`\`\`bash
      npm run ios:apns:smoke -- --send --environment=production
