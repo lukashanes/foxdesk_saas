@@ -11,6 +11,7 @@ SCREENSHOT_SCRIPT="$ROOT_DIR/bin/ios-app-store-screenshots.sh"
 DEMO_EVIDENCE="$ROOT_DIR/tmp/ios-demo-account-check/latest-live-demo-account.json"
 API_READ_EVIDENCE="$ROOT_DIR/tmp/ios-api-smoke/latest-live-read-only.json"
 API_WRITE_EVIDENCE="$ROOT_DIR/tmp/ios-api-smoke/latest-live-write.json"
+APNS_DRY_EVIDENCE="$ROOT_DIR/tmp/ios-apns-smoke/latest-dry-run.json"
 APNS_SEND_EVIDENCE="$ROOT_DIR/tmp/ios-apns-smoke/latest-send.json"
 
 log() {
@@ -129,6 +130,32 @@ apns_send_ready() {
   [[ "$(json_field "$file" sent 2>/dev/null || true)" == "true" ]] || return 1
 }
 
+apns_dry_ready() {
+  local file="$1"
+
+  evidence_ready "$file" "dry-run" || return 1
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const required = [
+      "new_ticket",
+      "new_comment",
+      "assigned_to_you",
+      "mentioned",
+      "ticket_updated",
+      "status_changed",
+      "priority_changed",
+      "due_date_reminder",
+    ];
+    const types = Array.isArray(data.validated_types) ? data.validated_types : [];
+    for (const type of required) {
+      if (!types.includes(type)) process.exit(1);
+      const payload = data.validated_payloads && data.validated_payloads[type];
+      if (!payload || Number(payload.ticket_id) <= 0 || payload.type !== type) process.exit(1);
+    }
+  ' "$file"
+}
+
 assert_evidence() {
   local label="$1"
   local predicate="$2"
@@ -217,6 +244,10 @@ assert_evidence "Live mobile API read-only smoke" api_read_ready "$API_READ_EVID
 log "Running required opt-in write smoke"
 (cd "$ROOT_DIR" && FOXDESK_IOS_SMOKE_WRITE=1 npm run ios:api:smoke -- --require-credentials --json)
 assert_evidence "Opt-in mobile API write smoke" api_write_ready "$API_WRITE_EVIDENCE" "expected latest-live-write.json with ticket, timed comment, attachment upload, metadata, authorized download, and detail reload proof."
+
+log "Checking complete APNs dry-run payload coverage"
+(cd "$ROOT_DIR" && npm run ios:apns:smoke -- --json)
+assert_evidence "APNs dry-run payload coverage" apns_dry_ready "$APNS_DRY_EVIDENCE" "expected latest-dry-run.json with every required notification type and valid ticket payloads."
 
 log "Running required real-device APNs smoke"
 (cd "$ROOT_DIR" && npm run ios:apns:smoke -- --send "--environment=${APNS_TEST_ENVIRONMENT:-production}" --json)

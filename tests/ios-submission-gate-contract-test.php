@@ -27,9 +27,10 @@ $assert($contains('npm run ios:completion:audit'), 'Submission gate must run the
 $assert($contains('DEMO_EVIDENCE="$ROOT_DIR/tmp/ios-demo-account-check/latest-live-demo-account.json"'), 'Submission gate must require demo-account evidence JSON.');
 $assert($contains('API_READ_EVIDENCE="$ROOT_DIR/tmp/ios-api-smoke/latest-live-read-only.json"'), 'Submission gate must require live read-only API evidence JSON.');
 $assert($contains('API_WRITE_EVIDENCE="$ROOT_DIR/tmp/ios-api-smoke/latest-live-write.json"'), 'Submission gate must require live write API evidence JSON.');
+$assert($contains('APNS_DRY_EVIDENCE="$ROOT_DIR/tmp/ios-apns-smoke/latest-dry-run.json"'), 'Submission gate must require APNs dry-run evidence JSON.');
 $assert($contains('APNS_SEND_EVIDENCE="$ROOT_DIR/tmp/ios-apns-smoke/latest-send.json"'), 'Submission gate must require live APNs send evidence JSON.');
 
-foreach (['evidence_ready()', 'api_read_ready()', 'api_write_ready()', 'demo_write_ready()', 'apns_send_ready()', 'assert_evidence()'] as $function) {
+foreach (['evidence_ready()', 'api_read_ready()', 'api_write_ready()', 'demo_write_ready()', 'apns_send_ready()', 'apns_dry_ready()', 'assert_evidence()'] as $function) {
     $assert($contains($function), "Submission gate is missing {$function}.");
 }
 
@@ -48,6 +49,9 @@ $assert($contains('Number(download.bytes) <= 0'), 'Attachment download proof mus
 $assert($contains('comment_visible !== true'), 'Demo account proof must require the timed comment to be visible after reload.');
 $assert($contains('linked_time_visible !== true'), 'Demo account proof must require linked time to be visible after reload.');
 $assert($contains('sent 2>/dev/null || true)" == "true"'), 'APNs proof must require sent=true, not only environment flags.');
+$assert($contains('"due_date_reminder"'), 'APNs dry-run proof must cover due date reminders.');
+$assert($contains('validated_payloads'), 'APNs dry-run proof must inspect validated payload content, not only command success.');
+$assert($contains('payload.type !== type'), 'APNs dry-run proof must verify each payload type matches the expected notification type.');
 
 $assert($contains('FOXDESK_IOS_ALLOW_PRODUCTION_WRITE_SMOKE'), 'Production write smoke must require an explicit acknowledgement.');
 $assert($contains('staging.app.foxdesk.net'), 'Submission gate should recommend staging or a disposable workspace for write smoke.');
@@ -55,6 +59,8 @@ $assert($contains('staging.app.foxdesk.net'), 'Submission gate should recommend 
 $assert($contains('npm run ios:demo:check -- --require-credentials --json'), 'Submission gate must run the App Review demo account check with credentials.');
 $assert($contains('npm run ios:api:smoke -- --require-credentials --json'), 'Submission gate must run the live API smoke with credentials.');
 $assert($contains('FOXDESK_IOS_SMOKE_WRITE=1 npm run ios:api:smoke -- --require-credentials --json'), 'Submission gate must run the opt-in live write smoke.');
+$assert($contains('npm run ios:apns:smoke -- --json'), 'Submission gate must refresh APNs dry-run payload evidence before live send.');
+$assert($contains('APNs dry-run payload coverage'), 'Submission gate must label APNs dry-run coverage separately from live send.');
 $assert($contains('npm run ios:apns:smoke -- --send'), 'Submission gate must send a real APNs notification.');
 
 $assert($contains('APP_STORE_CONNECT_APP_RECORD_READY'), 'Submission gate must require App Store Connect app record confirmation.');
