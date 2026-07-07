@@ -135,9 +135,9 @@ else
 fi
 
 if value_is_one FOXDESK_IOS_DEMO_WRITE; then
-  mark 1 "Demo reviewer write proof trigger" "configured; evidence still comes from npm run ios:demo:check -- --require-credentials --json"
+  mark 1 "Demo reviewer write smoke enabled" "trigger configured; proof is only the passing JSON from npm run ios:demo:check -- --require-credentials --json"
 else
-  mark 0 "Demo reviewer write proof trigger" "set FOXDESK_IOS_DEMO_WRITE=1 only for the final safe App Review write check"
+  mark 0 "Demo reviewer write smoke enabled" "set FOXDESK_IOS_DEMO_WRITE=1 only for the final safe App Review write check"
 fi
 
 cat >> "$OUT" <<MD
@@ -160,7 +160,7 @@ else
 fi
 
 if value_is_one FOXDESK_IOS_SMOKE_WRITE; then
-  mark 1 "Opt-in write smoke"
+  mark 1 "Opt-in write smoke enabled" "trigger configured; proof is only the passing JSON from npm run ios:api:smoke -- --require-credentials --json"
   if smoke_base_is_production && ! value_is_one FOXDESK_IOS_ALLOW_PRODUCTION_WRITE_SMOKE; then
     mark 0 "Production write-smoke acknowledgement" "set FOXDESK_IOS_ALLOW_PRODUCTION_WRITE_SMOKE=1 only for a disposable production workspace"
   elif smoke_base_is_production; then
@@ -169,7 +169,7 @@ if value_is_one FOXDESK_IOS_SMOKE_WRITE; then
     mark 1 "Production write-smoke acknowledgement" "not needed for non-production smoke base"
   fi
 else
-  mark 0 "Opt-in write smoke" "set FOXDESK_IOS_SMOKE_WRITE=1 only for a safe disposable workspace"
+  mark 0 "Opt-in write smoke enabled" "set FOXDESK_IOS_SMOKE_WRITE=1 only for a safe disposable workspace"
 fi
 
 cat >> "$OUT" <<MD
