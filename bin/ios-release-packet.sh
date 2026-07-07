@@ -101,6 +101,7 @@ npm run ios:beta:gate
 npm run ios:completion:audit
 npm run ios:metadata:check
 npm run ios:archive:preflight
+npm run ios:apns:smoke -- --json
 \`\`\`
 
 The strict submission gate must pass before calling the release ready. Keep
@@ -118,7 +119,9 @@ call the iOS release ready until \`npm run ios:submission:gate\` passes. A
 successful archive proves only that Xcode can build the app. It does not prove
 the App Store Connect record, Apple Developer Push capability, demo reviewer
 account, live mobile API smoke, opt-in write smoke, physical-device APNs smoke,
-screenshots, or privacy review.
+screenshots, or privacy review. The APNs dry-run proves all first-release push
+payload shapes; the physical-device APNs smoke proves Apple delivery to one
+real iPhone.
 
 ## Archive Command
 

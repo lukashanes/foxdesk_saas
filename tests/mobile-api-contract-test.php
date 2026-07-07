@@ -596,6 +596,7 @@ $assert(str_contains($iosReleasePacket, 'npm run ios:sim:smoke'), 'iOS release p
 $assert(str_contains($iosReleasePacket, 'tmp/ios-archive-preflight/latest.md'), 'iOS release packet must link archive preflight evidence.');
 $assert(str_contains($iosReleasePacket, 'npm run ios:completion:audit'), 'iOS release packet must refresh the completion audit.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-completion-audit/latest.md'), 'iOS release packet must link completion audit evidence.');
+$assert(str_contains($iosReleasePacket, 'npm run ios:apns:smoke -- --json'), 'iOS release packet must include the APNs dry-run payload validation command before upload.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-demo-account-check/latest-preflight.json'), 'iOS release packet must link demo account preflight evidence.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-api-smoke/latest-preflight.json'), 'iOS release packet must link mobile API smoke preflight evidence.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-api-smoke/latest-live-read-only.json'), 'iOS release packet must link read-only live API smoke evidence.');
@@ -610,6 +611,7 @@ $assert(str_contains($iosReleasePacket, 'npm run ios:submission:gate'), 'iOS rel
 $assert(str_contains($iosReleasePacket, '## Upload Guard'), 'iOS release packet must include an explicit upload guard before archive instructions.');
 $assert(str_contains($iosReleasePacket, 'Do not upload a build to App Store Connect'), 'iOS release packet must block upload/TestFlight claims until the strict gate passes.');
 $assert(str_contains($iosReleasePacket, 'successful archive proves only'), 'iOS release packet must not let a successful archive substitute for live release evidence.');
+$assert(str_contains($iosReleasePacket, 'APNs dry-run proves all first-release push'), 'iOS release packet must distinguish APNs payload validation from physical delivery.');
 $assert(str_contains($iosReleasePacket, '.env.ios-release.example'), 'iOS release packet must document the local env template.');
 $assert(str_contains($iosReleaseEnvLoader, '.env.ios-release'), 'iOS release env loader must load the ignored local env file.');
 $assert(str_contains($iosReleaseEnvLoader, 'FOXDESK_IOS_RELEASE_ENV_FILE'), 'iOS release env loader must support an override path.');
