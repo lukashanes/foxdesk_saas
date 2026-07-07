@@ -575,6 +575,8 @@ $assert(str_contains($iosReleaseEnvLoader, 'FOXDESK_IOS_RELEASE_ENV_FILE'), 'iOS
 $assert(str_contains($iosReleaseEnvInit, '.env.ios-release.example'), 'iOS release env init must copy from the committed template.');
 $assert(str_contains($iosReleaseEnvInit, 'chmod 600 "$ENV_FILE"'), 'iOS release env init must enforce owner-only permissions.');
 $assert(str_contains($iosReleaseEnvInit, 'Existing local env preserved'), 'iOS release env init must preserve existing local secrets.');
+$assert(str_contains($iosReleaseEnvInit, 'sync_missing_template_keys'), 'iOS release env init must keep existing local env files in sync with new template keys.');
+$assert(str_contains($iosReleaseEnvInit, 'Added missing template keys'), 'iOS release env init must report when it appends new non-secret template keys.');
 $assert(str_contains($iosReleaseEnvInit, 'npm run ios:release:env'), 'iOS release env init must immediately point operators to the redacted env check.');
 $assert(str_contains($iosReleaseEnvCheck, 'tmp/ios-release-env/latest.md'), 'iOS release env check must write a durable redacted report.');
 $assert(str_contains($iosReleaseEnvCheck, '--strict'), 'iOS release env check must support strict mode for release gates.');

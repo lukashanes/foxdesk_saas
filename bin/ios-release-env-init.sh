@@ -11,9 +11,40 @@ if [[ ! -f "$TEMPLATE" ]]; then
   exit 1
 fi
 
+sync_missing_template_keys() {
+  local key
+  local line
+  local -a missing_keys=()
+
+  while IFS='=' read -r key _; do
+    [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+    if ! grep -Eq "^${key}=" "$ENV_FILE"; then
+      missing_keys+=("$key")
+    fi
+  done < <(grep -E '^[A-Za-z_][A-Za-z0-9_]*=' "$TEMPLATE")
+
+  if [[ "${#missing_keys[@]}" -eq 0 ]]; then
+    printf '[ios:release:init] Existing local env already has current template keys.\n'
+    return
+  fi
+
+  {
+    printf '\n# Added by ios:release:init on %s to keep this local file in sync with .env.ios-release.example.\n' "$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+    for key in "${missing_keys[@]}"; do
+      line="$(grep -E "^${key}=" "$TEMPLATE" | head -n 1)"
+      if [[ -n "$line" ]]; then
+        printf '%s\n' "$line"
+      fi
+    done
+  } >> "$ENV_FILE"
+
+  printf '[ios:release:init] Added missing template keys: %s\n' "${missing_keys[*]}"
+}
+
 if [[ -f "$ENV_FILE" ]]; then
   chmod 600 "$ENV_FILE"
   printf '[ios:release:init] Existing local env preserved: %s\n' "$ENV_FILE"
+  sync_missing_template_keys
 else
   cp "$TEMPLATE" "$ENV_FILE"
   chmod 600 "$ENV_FILE"
