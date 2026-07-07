@@ -8,9 +8,14 @@ on the web.
 
 ## Current Local State
 
-As of 2026-07-07 04:35 UTC:
+As of 2026-07-07 06:30 UTC:
 
 - `npm run ios:mvp:audit` passes.
+- `npm run ios:gate` passes.
+- `npm run ios:testflight:preflight` passes.
+- `npm run ios:release:packet` writes the current handoff packet.
+- `npm run ios:completion:audit` refreshes release env, external gates,
+  next actions, and APNs dry-run evidence.
 - `npm run ios:beta:gate` passes locally and writes
   `tmp/ios-beta-readiness/latest.md`.
 - Xcode simulator tests pass, including regressions that clear the local
@@ -21,6 +26,8 @@ As of 2026-07-07 04:35 UTC:
   `tmp/ios-smoke/foxdesk-login.png` plus `tmp/ios-smoke/latest.md`.
 - App Store screenshots exist in `tmp/ios-app-store-screenshots`.
 - External gate evidence is written to `tmp/ios-external-gates/latest.md`.
+- APNs dry-run payload evidence is written to
+  `tmp/ios-apns-smoke/latest-dry-run.json`.
 - Apple Business organization verification is done for `Aenze s.r.o.`
   (reported by the operator from Apple Business email confirmation and
   re-confirmed on 2026-07-07).
@@ -161,6 +168,7 @@ Then run:
 
 ```bash
 npm run ios:release:env
+npm run ios:apns:smoke -- --json
 npm run ios:apns:smoke -- --send --environment=production
 ```
 
@@ -169,6 +177,8 @@ The live send writes `tmp/ios-apns-smoke/latest-send.json`.
 
 Pass criteria:
 
+- `npm run ios:apns:smoke -- --json` validates every first-release ticket push
+  payload type without sending a real notification,
 - the iPhone receives the push,
 - tapping it opens the matching ticket,
 - the live notification payload contains a valid `ticket_id`,

@@ -958,7 +958,10 @@ $assert(str_contains($iosOperatorChecklist, 'docs/IOS_APPLE_DEVELOPER_STEPS.md')
 $assert(str_contains($iosOperatorChecklist, 'docs/IOS_APP_PRIVACY_ANSWERS.md'), 'iOS operator checklist must link the App Privacy answers runbook.');
 $assert(str_contains($iosOperatorChecklist, 'docs/IOS_DEMO_REVIEWER_ACCOUNT.md'), 'iOS operator checklist must link the demo reviewer account runbook.');
 $assert(str_contains($iosOperatorChecklist, 'does not replace the App Store Connect app record'), 'iOS operator checklist must distinguish Apple Business from App Store Connect release gates.');
+$assert(str_contains($iosOperatorChecklist, 'npm run ios:release:packet'), 'iOS operator checklist must include the release packet in current state and final handoff steps.');
+$assert(str_contains($iosOperatorChecklist, 'tmp/ios-apns-smoke/latest-dry-run.json'), 'iOS operator checklist must point operators to APNs dry-run evidence.');
 $assert(str_contains($iosOperatorChecklist, 'safe APNs dry-run validates every first-release ticket push type'), 'iOS operator checklist must distinguish APNs dry-run payload validation from live physical-device delivery.');
+$assert(str_contains($iosOperatorChecklist, 'npm run ios:apns:smoke -- --json'), 'iOS operator checklist must tell operators to run APNs dry-run before live APNs send.');
 $assert(str_contains($iosOperatorChecklist, 'Do not spam the device with every notification type'), 'iOS operator checklist must keep the physical APNs smoke to one live notification.');
 $assert(str_contains($iosAPNsSmoke, "'validated_types'"), 'APNs smoke must report validated notification types.');
 $assert(str_contains($iosAPNsSmoke, "'new_ticket'"), 'APNs smoke must validate new-ticket payloads.');
