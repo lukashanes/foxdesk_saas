@@ -62,6 +62,19 @@ final class PushNavigationRouterTests: XCTestCase {
         XCTAssertNil(PendingPushNavigationStore.consumeTicketID())
     }
 
+    func testNotificationEventPrefersTappedTicketOverStaleStoredTicket() async throws {
+        let notificationCenter = NotificationCenter()
+        let router = PushNavigationRouter(notificationCenter: notificationCenter)
+
+        PendingPushNavigationStore.store(ticketID: 91)
+        notificationCenter.post(name: .foxDeskOpenTicketFromNotification, object: 92)
+        try await Task.sleep(for: .milliseconds(50))
+
+        XCTAssertEqual(router.pendingTicketID, 92)
+        XCTAssertEqual(router.consumePendingTicketID(), 92)
+        XCTAssertNil(PendingPushNavigationStore.consumeTicketID())
+    }
+
     func testClearPendingNavigationDropsRuntimeAndLaunchTickets() {
         PendingPushNavigationStore.store(ticketID: 123)
         let router = PushNavigationRouter(notificationCenter: NotificationCenter())

@@ -45,7 +45,8 @@ final class PushNavigationRouter {
         ) { [weak self] notification in
             guard let ticketID = notification.object as? Int else { return }
             Task { @MainActor in
-                self?.openTicket(id: PendingPushNavigationStore.consumeTicketID() ?? ticketID)
+                PendingPushNavigationStore.clear()
+                self?.openTicket(id: ticketID)
             }
         }
 

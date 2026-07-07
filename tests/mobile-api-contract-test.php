@@ -1017,6 +1017,7 @@ $assert(str_contains($iosRootView, 'TicketDetailView(ticketID: route.ticketID)')
 $assert(str_contains($iosPushNavigationTests, 'testLaunchStorePendingTicketSurvivesBeforeRouterInit'), 'iOS tests must cover cold-start APNs ticket routing before the router exists.');
 $assert(str_contains($iosPushNavigationTests, 'testNotificationEventConsumesStoredLaunchTicket'), 'iOS tests must consume stored push ticket routes exactly once.');
 $assert(str_contains($iosPushNavigationTests, 'testNotificationCenterEventStoresPendingTicket'), 'iOS tests must cover APNs tap notification routing.');
+$assert(str_contains($iosPushNavigationTests, 'testNotificationEventPrefersTappedTicketOverStaleStoredTicket'), 'iOS tests must prove a tapped APNs notification opens its own ticket instead of a stale stored ticket.');
 $assert(str_contains($iosPushNavigationTests, 'testOpenTicketIgnoresInvalidIDs'), 'iOS tests must reject invalid push ticket IDs.');
 $assert(str_contains($iosPushRegistrationTests, 'testAPNsTokenNotificationStoresTokenForDiagnostics'), 'iOS tests must cover APNs token capture for real-device diagnostics.');
 $assert(str_contains($iosPushRegistrationTests, 'testAPNsRegistrationFailureUpdatesState'), 'iOS tests must cover APNs registration failure state.');
