@@ -1081,6 +1081,7 @@ $assert(str_contains($iosNewTicketView, 'DatePicker("Due date"'), 'iOS new ticke
 $assert(str_contains($iosNewTicketView, 'PhotosPicker'), 'iOS new ticket screen must let agents attach a photo before creating a ticket.');
 $assert(str_contains($iosNewTicketView, 'fileImporter'), 'iOS new ticket screen must let agents attach a file before creating a ticket.');
 $assert(str_contains($iosNewTicketView, 'CameraCaptureView'), 'iOS new ticket screen must let agents capture a camera photo before creating a ticket.');
+$assert(str_contains($iosNewTicketView, 'defer { selectedPhoto = nil }'), 'iOS new ticket screen must clear the photo picker selection after every load attempt so the same photo can be selected again.');
 $assert(str_contains($iosNewTicketView, 'PendingNewTicketAttachment'), 'iOS new ticket screen must keep pending attachments before a ticket id exists.');
 $assert(str_contains($iosNewTicketView, 'uploadPendingAttachments(to:'), 'iOS new ticket screen must upload pending attachments after creating the ticket.');
 $assert(str_contains($iosNewTicketView, 'session.client.uploadAttachment'), 'iOS new ticket attachment flow must use the native upload endpoint.');
@@ -1124,6 +1125,7 @@ $assert(str_contains($iosTicketAttachmentsView, 'PendingAttachmentUpload'), 'iOS
 $assert(str_contains($iosTicketAttachmentsView, 'failedUpload'), 'iOS ticket detail must expose failed attachment upload retry state.');
 $assert(str_contains($iosTicketAttachmentsView, 'Retry upload'), 'iOS ticket detail must show a retry action after attachment upload failure.');
 $assert(str_contains($iosTicketAttachmentsView, 'retryFailedUpload'), 'iOS ticket detail must retry the failed attachment without requiring a new file selection.');
+$assert(str_contains($iosTicketAttachmentsView, 'defer { selectedPhoto = nil }'), 'iOS ticket detail must clear the photo picker selection after every load attempt so retrying the same photo is possible.');
 $assert(str_contains($iosTicketAttachmentsView, 'AttachmentThumbnailView'), 'iOS ticket detail must show image thumbnails in the attachment list.');
 $assert(str_contains($iosTicketAttachmentsView, 'downloadResource(accessToken: accessToken, url: url)'), 'iOS attachment thumbnails must use the authorized download flow.');
 $assert(str_contains($iosTicketAttachmentsView, 'attachmentMetadata('), 'iOS attachment thumbnails must resolve metadata when a row lacks preview URLs.');

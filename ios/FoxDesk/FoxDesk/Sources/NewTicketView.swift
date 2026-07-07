@@ -297,9 +297,10 @@ struct NewTicketView: View {
     }
 
     private func addSelectedPhoto(_ item: PhotosPickerItem) async {
+        defer { selectedPhoto = nil }
+
         guard let data = try? await item.loadTransferable(type: Data.self) else {
             attachmentMessage = "Could not read selected photo."
-            selectedPhoto = nil
             return
         }
         let type = item.supportedContentTypes.first ?? .jpeg
@@ -309,7 +310,6 @@ struct NewTicketView: View {
             filename: "photo-\(Int(Date().timeIntervalSince1970)).\(ext)",
             mimeType: type.preferredMIMEType ?? "image/jpeg"
         )
-        selectedPhoto = nil
     }
 
     private func addSelectedFile(_ url: URL) async {

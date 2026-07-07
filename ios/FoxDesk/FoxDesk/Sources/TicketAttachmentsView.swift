@@ -104,6 +104,8 @@ struct AttachmentUploadSection: View {
     }
 
     private func uploadPhoto(_ item: PhotosPickerItem) async {
+        defer { selectedPhoto = nil }
+
         guard let data = try? await item.loadTransferable(type: Data.self) else {
             message = "Could not read selected photo."
             return
@@ -115,7 +117,6 @@ struct AttachmentUploadSection: View {
             filename: "photo-\(Int(Date().timeIntervalSince1970)).\(ext)",
             mimeType: type.preferredMIMEType ?? "image/jpeg"
         )
-        selectedPhoto = nil
     }
 
     private func uploadCameraPhoto(_ data: Data) async {
