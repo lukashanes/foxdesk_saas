@@ -8,12 +8,15 @@ on the web.
 
 ## Current Local State
 
-As of 2026-07-06 22:45 UTC:
+As of 2026-07-07 00:48 UTC:
 
 - `npm run ios:mvp:audit` passes.
-- `npm run ios:beta:gate` passes locally.
+- `npm run ios:beta:gate` passes locally and writes
+  `tmp/ios-beta-readiness/latest.md`.
 - Xcode simulator tests pass, including the regression that clears the local
   session even when APNs unregister or server logout fails.
+- Simulator launch smoke passes and writes
+  `tmp/ios-smoke/foxdesk-login.png` plus `tmp/ios-smoke/latest.md`.
 - App Store screenshots exist in `tmp/ios-app-store-screenshots`.
 - External gate evidence is written to `tmp/ios-external-gates/latest.md`.
 - Apple Business organization verification is done for `Aenze s.r.o.`
