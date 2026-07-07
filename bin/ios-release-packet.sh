@@ -68,6 +68,8 @@ ${gate_snapshot:-See \`tmp/ios-external-gates/latest.md\` for the current extern
 - Mobile API smoke preflight: \`tmp/ios-api-smoke/latest-preflight.json\`
 - Mobile API read live evidence: \`tmp/ios-api-smoke/latest-live-read-only.json\`
 - Mobile API write live evidence: \`tmp/ios-api-smoke/latest-live-write.json\`
+- APNs dry-run evidence: \`tmp/ios-apns-smoke/latest-dry-run.json\`
+- APNs live send evidence: \`tmp/ios-apns-smoke/latest-send.json\`
 - App Store screenshots: \`tmp/ios-app-store-screenshots/manifest.md\`
 - App Store submission packet: \`docs/IOS_APP_STORE_SUBMISSION.md\`
 - App Store Connect runbook: \`docs/IOS_APP_STORE_CONNECT_STEPS.md\`

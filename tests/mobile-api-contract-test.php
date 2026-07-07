@@ -543,6 +543,8 @@ $assert(str_contains($iosReleasePacket, 'tmp/ios-demo-account-check/latest-prefl
 $assert(str_contains($iosReleasePacket, 'tmp/ios-api-smoke/latest-preflight.json'), 'iOS release packet must link mobile API smoke preflight evidence.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-api-smoke/latest-live-read-only.json'), 'iOS release packet must link read-only live API smoke evidence.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-api-smoke/latest-live-write.json'), 'iOS release packet must link write live API smoke evidence.');
+$assert(str_contains($iosReleasePacket, 'tmp/ios-apns-smoke/latest-dry-run.json'), 'iOS release packet must link APNs dry-run evidence.');
+$assert(str_contains($iosReleasePacket, 'tmp/ios-apns-smoke/latest-send.json'), 'iOS release packet must link APNs live send evidence.');
 $assert(str_contains($iosReleasePacket, 'docs/IOS_APP_STORE_CONNECT_STEPS.md'), 'iOS release packet must link App Store Connect steps.');
 $assert(str_contains($iosReleasePacket, 'docs/IOS_APPLE_DEVELOPER_STEPS.md'), 'iOS release packet must link Apple Developer steps.');
 $assert(str_contains($iosReleasePacket, 'npm run ios:release:env'), 'iOS release packet must document the redacted release env check.');
