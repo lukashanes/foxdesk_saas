@@ -21,6 +21,16 @@ SCREENS=(
   account
 )
 
+FORBIDDEN_SCREEN_LABELS=(
+  "billing"
+  "platform admin"
+  "settings"
+  "self-hosted setup"
+  "API tokens"
+  "Push diagnostics"
+  "APNs token"
+)
+
 log() {
   printf '[ios:screenshots] %s\n' "$1"
 }
@@ -94,6 +104,13 @@ xcrun simctl install "$SIMULATOR_UDID" "$APP_PATH"
   printf -- '- Generated: %s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   printf -- '- Simulator: %s\n' "$SIMULATOR_UDID"
   printf -- '- Mode: debug-only populated fixture\n\n'
+  printf '## Scope Guard\n\n'
+  printf 'These screenshots are for the first native iOS work-companion release. They must show only agent/admin work surfaces: sign in, dashboard, tickets, ticket detail, reply, attachments, search, client context, notifications, and account.\n\n'
+  printf 'Before upload, manually confirm the images do not show internal or out-of-scope surfaces:\n\n'
+  for label in "${FORBIDDEN_SCREEN_LABELS[@]}"; do
+    printf -- '- [ ] No %s screen or secret value is visible.\n' "$label"
+  done
+  printf '\n'
   printf '## Screenshots\n\n'
 } > "$MANIFEST"
 

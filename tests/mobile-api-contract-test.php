@@ -822,6 +822,14 @@ $assert(str_contains($iosAppStoreScreenshots, 'tmp/ios-app-store-screenshots'), 
 $assert(str_contains($iosAppStoreScreenshots, 'manifest.md'), 'iOS screenshot generator must write a screenshot evidence manifest.');
 $assert(str_contains($iosAppStoreScreenshots, 'account'), 'iOS screenshot generator must include the Account screen.');
 $assert(!str_contains($iosAppStoreScreenshots, "\n  settings\n"), 'iOS screenshot generator must not capture the old Settings screen name.');
+$assert(str_contains($iosAppStoreScreenshots, '## Scope Guard'), 'iOS screenshot generator must include an App Store scope guard in the manifest.');
+$assert(str_contains($iosAppStoreScreenshots, 'first native iOS work-companion release'), 'iOS screenshot manifest must scope screenshots to the native work-companion release.');
+$assert(str_contains($iosAppStoreScreenshots, 'billing'), 'iOS screenshot manifest must require manual review for billing screenshots.');
+$assert(str_contains($iosAppStoreScreenshots, 'platform admin'), 'iOS screenshot manifest must require manual review for platform admin screenshots.');
+$assert(str_contains($iosAppStoreScreenshots, 'self-hosted setup'), 'iOS screenshot manifest must require manual review for self-hosted setup screenshots.');
+$assert(str_contains($iosAppStoreScreenshots, 'API tokens'), 'iOS screenshot manifest must require manual review for API token exposure.');
+$assert(str_contains($iosAppStoreScreenshots, 'Push diagnostics'), 'iOS screenshot manifest must require manual review for debug push diagnostics.');
+$assert(str_contains($iosAppStoreScreenshots, 'APNs token'), 'iOS screenshot manifest must require manual review for APNs token exposure.');
 $assert(str_contains($iosAppStoreScreenshots, "*.launch.log"), 'iOS screenshot generator must clear stale launch logs before capture.');
 $assert(str_contains($iosAppStoreScreenshots, 'CODE_SIGNING_ALLOWED=NO'), 'iOS screenshot generator must be runnable locally without signing.');
 $assert(str_contains($iosAPISmoke, 'FOXDESK_IOS_SMOKE_PASSWORD'), 'iOS API smoke script must accept a smoke account password.');
@@ -1076,6 +1084,11 @@ $assert(str_contains($iosScreenshotDemoRootView, '.navigationTitle("Account")'),
 $assert(str_contains($iosScreenshotDemoRootView, 'Privacy Policy'), 'iOS screenshot Account fixture must show the privacy policy row.');
 $assert(str_contains($iosScreenshotDemoRootView, 'Terms'), 'iOS screenshot Account fixture must show the terms row.');
 $assert(str_contains($iosScreenshotDemoRootView, 'Request account deletion'), 'iOS screenshot Account fixture must show the account deletion request row.');
+$assert(!str_contains($iosScreenshotDemoRootView, 'Push diagnostics'), 'iOS screenshot Account fixture must not show debug Push diagnostics.');
+$assert(!str_contains($iosScreenshotDemoRootView, 'APNs token'), 'iOS screenshot Account fixture must not show APNs token text.');
+$assert(!str_contains($iosScreenshotDemoRootView, 'Copy APNs token'), 'iOS screenshot Account fixture must not show the APNs token copy action.');
+$assert(!str_contains($iosScreenshotDemoRootView, 'Billing'), 'iOS screenshot fixture must not show billing surfaces.');
+$assert(!str_contains($iosScreenshotDemoRootView, 'Platform'), 'iOS screenshot fixture must not show platform admin surfaces.');
 $assert(str_contains($iosAPIClient, 'func unregisterDevice'), 'iOS API client must expose device unregister.');
 $assert(str_contains($iosAPIClient, 'path: "device-token/unregister"'), 'iOS API client must call the native device unregister endpoint.');
 $assert(str_contains($iosAppSession, 'client.unregisterDevice'), 'iOS AppSession sign-out must unregister the device before logout.');
