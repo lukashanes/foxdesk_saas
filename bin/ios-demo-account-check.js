@@ -34,6 +34,7 @@ const config = {
   email: (process.env.FOXDESK_IOS_DEMO_EMAIL || process.env.FOXDESK_IOS_SMOKE_EMAIL || '').trim(),
   password: process.env.FOXDESK_IOS_DEMO_PASSWORD || process.env.FOXDESK_IOS_SMOKE_PASSWORD || '',
   twoFactorCode: (process.env.FOXDESK_IOS_DEMO_2FA_CODE || process.env.FOXDESK_IOS_SMOKE_2FA_CODE || '').trim(),
+  writeEnabled: process.env.FOXDESK_IOS_DEMO_WRITE === '1',
 };
 
 const result = {
@@ -188,6 +189,49 @@ async function listTickets(accessToken, view) {
   return tickets;
 }
 
+async function verifyDemoWrite(accessToken, candidateMap) {
+  if (!config.writeEnabled) {
+    record('demo-write-comment-with-time', true, {
+      message: 'Skipped. Set FOXDESK_IOS_DEMO_WRITE=1 to prove the reviewer account can add an internal timed comment.',
+    });
+    return;
+  }
+
+  const ticketId = [...candidateMap.keys()][0];
+  record('demo-write-candidate', !!ticketId, {
+    ticket_id: ticketId || null,
+    message: ticketId ? 'Using existing demo ticket for a safe internal write check.' : 'No demo ticket available for write check.',
+  });
+  if (!ticketId) {
+    throw new Error('Demo write check requires at least one accessible ticket.');
+  }
+
+  const payload = dataOf(await request(`tickets/${ticketId}/comment-with-time`, {
+    method: 'POST',
+    token: accessToken,
+    body: {
+      ticket_id: ticketId,
+      content: '<p><strong>App Review write check</strong></p><p>Internal timed comment created by the FoxDesk iOS demo account verifier.</p>',
+      is_internal: true,
+      skip_notification: true,
+      duration_minutes: 3,
+      is_billable: false,
+      time_summary: 'App Review write check',
+    },
+  }));
+
+  const commentId = asPositiveInt(payload?.comment_id);
+  const timeEntryId = asPositiveInt(payload?.time_entry_id);
+  record('demo-write-comment-with-time', !!commentId && !!timeEntryId, {
+    ticket_id: ticketId,
+    comment_id: commentId || null,
+    time_entry_id: timeEntryId || null,
+  });
+  if (!commentId || !timeEntryId) {
+    throw new Error('Demo reviewer write check did not return linked comment_id and time_entry_id.');
+  }
+}
+
 async function main() {
   requireEnv();
 
@@ -299,6 +343,8 @@ async function main() {
       source_ticket_id: clientContext?.source_ticket_id || null,
       message: clientContext ? 'At least one ticket opens a readable client context.' : 'Add one ticket linked to a client with related tickets or contacts visible.',
     });
+
+    await verifyDemoWrite(accessToken, candidateMap);
   } finally {
     if (refreshToken) {
       try {

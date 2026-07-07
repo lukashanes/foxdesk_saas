@@ -514,6 +514,10 @@ $assert(str_contains($iosCompletionAudit, 'needs verification'), 'iOS completion
 $assert(str_contains($iosExternalGates, 'tmp/ios-external-gates/latest.md'), 'iOS external gate status script must write a durable evidence report.');
 $assert(file_exists($root . '/tests/ios-external-gates-contract-test.php'), 'iOS MVP gate must include an executable external gate independence contract.');
 $assert(str_contains($iosDemoAccountCheck, 'ios-demo-account-check'), 'iOS demo account check must write durable redacted evidence.');
+$assert(str_contains($iosDemoAccountCheck, 'FOXDESK_IOS_DEMO_WRITE'), 'iOS demo account check must support an opt-in write proof for reviewer permissions.');
+$assert(str_contains($iosDemoAccountCheck, '`tickets/${ticketId}/comment-with-time`'), 'iOS demo account write proof must use the versioned comment-with-time endpoint.');
+$assert(str_contains($iosDemoAccountCheck, 'skip_notification: true'), 'iOS demo account write proof must avoid customer notification spam.');
+$assert(str_contains($iosDemoAccountCheck, 'comment_id') && str_contains($iosDemoAccountCheck, 'time_entry_id'), 'iOS demo account write proof must require linked comment and time ids.');
 $assert(str_contains($iosAPISmoke, 'ios-api-smoke'), 'iOS API smoke must write durable redacted evidence.');
 $assert(str_contains($iosAPNsSmoke, 'tmp/ios-apns-smoke'), 'iOS APNs smoke must write durable redacted evidence.');
 $assert(str_contains($iosExternalGates, 'latest-live-demo-account.json'), 'iOS external gates must require passing demo account evidence, not only env values.');
@@ -845,6 +849,7 @@ $assert(str_contains($iosDemoReviewerAccount, 'npm run ios:release:init'), 'iOS 
 $assert(str_contains($iosDemoReviewerAccount, 'npm run ios:release:env'), 'iOS demo reviewer account runbook must document the redacted release env check.');
 $assert(str_contains($iosDemoReviewerAccount, '.env.ios-release'), 'iOS demo reviewer account runbook must keep demo credentials in the ignored local env file.');
 $assert(!str_contains($iosDemoReviewerAccount, 'FOXDESK_IOS_DEMO_PASSWORD=<password>'), 'iOS demo reviewer account runbook must not encourage pasting demo passwords into shell history.');
+$assert(str_contains($iosDemoReviewerAccount, 'FOXDESK_IOS_DEMO_WRITE=1'), 'iOS demo reviewer account runbook must document the opt-in write proof command.');
 $assert(str_contains($iosDemoReviewerAccount, 'permission to add comment-with-time records'), 'iOS demo reviewer account runbook must require timed-comment permission.');
 $assert(str_contains($iosDemoReviewerAccount, 'client context opens'), 'iOS demo reviewer account runbook must require readable client context data.');
 $assert(str_contains($iosDemoReviewerAccount, '/api/mobile/v1/clients/{id}'), 'iOS demo reviewer account runbook must document the client context verification endpoint.');

@@ -52,6 +52,18 @@ npm run ios:release:env
 npm run ios:demo:check -- --require-credentials --json
 ```
 
+Before the final App Store submission gate, run one safe write proof against
+the same demo workspace:
+
+```bash
+FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json
+```
+
+That opt-in check adds one internal timed comment with
+`skip_notification: true` to an existing demo ticket and verifies that the API
+returns linked `comment_id` and `time_entry_id` values. It should not be left
+enabled for routine read-only checks.
+
 The check must pass before App Store submission. The final strict gate loads
 the same local `.env.ios-release` file without printing secret values.
 
@@ -62,6 +74,8 @@ The checker signs in through the mobile API and verifies:
 - at least one ticket has both comments and an attachment,
 - at least one ticket opens a readable client context via
   `/api/mobile/v1/clients/{id}`.
+- with `FOXDESK_IOS_DEMO_WRITE=1`, the account can add an internal
+  comment-with-time record without notifying customers.
 
 ## App Review Notes
 
