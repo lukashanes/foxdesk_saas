@@ -547,6 +547,9 @@ $assert(str_contains($iosDemoAccountCheck, '`tickets/${ticketId}/comment-with-ti
 $assert(str_contains($iosDemoAccountCheck, 'skip_notification: true'), 'iOS demo account write proof must avoid customer notification spam.');
 $assert(str_contains($iosDemoAccountCheck, 'comment_id') && str_contains($iosDemoAccountCheck, 'time_entry_id'), 'iOS demo account write proof must require linked comment and time ids.');
 $assert(str_contains($iosDemoAccountCheck, 'demo-write-detail-reload'), 'iOS demo account write proof must reload the ticket and verify linked timed comment visibility.');
+$assert(str_contains($iosDemoAccountCheck, 'manual_date'), 'iOS demo account write proof must send manual_date for exact work records.');
+$assert(str_contains($iosDemoAccountCheck, 'manual_start_time'), 'iOS demo account write proof must send manual_start_time for exact work records.');
+$assert(str_contains($iosDemoAccountCheck, 'manual_end_time'), 'iOS demo account write proof must send manual_end_time for exact work records.');
 $assert(str_contains($appHandler, "\$skip_notification = api_app_bool(\$input, 'skip_notification', false);"), 'Mobile create-ticket API must accept skip_notification.');
 $assert(str_contains($appHandler, "if (!\$skip_notification && function_exists('ticket_event_dispatch_in_app'))"), 'Mobile create-ticket API must honor skip_notification before dispatching in-app events.');
 $assert(str_contains($iosAPISmoke, 'ios-api-smoke'), 'iOS API smoke must write durable redacted evidence.');
@@ -968,6 +971,7 @@ $assert(!str_contains($iosDemoReviewerAccount, 'Password: fill in `docs/IOS_APP_
 $assert(str_contains($iosDemoReviewerAccount, 'FOXDESK_IOS_DEMO_WRITE=1'), 'iOS demo reviewer account runbook must document the opt-in write proof command.');
 $assert(str_contains($iosDemoReviewerAccount, 'permission to add comment-with-time records'), 'iOS demo reviewer account runbook must require timed-comment permission.');
 $assert(str_contains($iosDemoReviewerAccount, 'creates one internal demo ticket'), 'iOS demo reviewer account runbook must document that write proof creates a demo ticket first.');
+$assert(str_contains($iosDemoReviewerAccount, 'manual_date') && str_contains($iosDemoReviewerAccount, 'manual_start_time') && str_contains($iosDemoReviewerAccount, 'manual_end_time'), 'iOS demo reviewer account runbook must document exact manual date/start/end write proof.');
 $assert(str_contains($iosDemoReviewerAccount, 'client context opens'), 'iOS demo reviewer account runbook must require readable client context data.');
 $assert(str_contains($iosDemoReviewerAccount, '/api/mobile/v1/clients/{id}'), 'iOS demo reviewer account runbook must document the client context verification endpoint.');
 $assert(str_contains($iosHandoff, 'docs/IOS_APP_STORE_CONNECT_STEPS.md'), 'iOS handoff must link the App Store Connect steps runbook.');

@@ -60,7 +60,8 @@ FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json
 ```
 
 That opt-in check creates one internal demo ticket with `skip_notification:
-true`, adds one linked internal timed comment, then reloads the created ticket
+true`, adds one linked internal timed comment with explicit `manual_date`,
+`manual_start_time`, and `manual_end_time`, then reloads the created ticket
 detail and verifies that the comment and `time_entry_id` are visible together.
 It should not be left enabled for routine read-only checks.
 

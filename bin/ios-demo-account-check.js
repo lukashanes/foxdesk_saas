@@ -243,6 +243,10 @@ async function verifyDemoWrite(accessToken, createOptions) {
     throw new Error('Demo reviewer write check did not create a ticket.');
   }
 
+  const manualDate = now.toISOString().slice(0, 10);
+  const manualStartTime = '09:00';
+  const manualEndTime = '09:03';
+
   const payload = dataOf(await request(`tickets/${ticketId}/comment-with-time`, {
     method: 'POST',
     token: accessToken,
@@ -251,6 +255,9 @@ async function verifyDemoWrite(accessToken, createOptions) {
       content: '<p><strong>App Review write check</strong></p><p>Internal timed comment created by the FoxDesk iOS demo account verifier.</p>',
       is_internal: true,
       skip_notification: true,
+      manual_date: manualDate,
+      manual_start_time: manualStartTime,
+      manual_end_time: manualEndTime,
       duration_minutes: 3,
       is_billable: false,
       time_summary: 'App Review write check',
@@ -263,6 +270,9 @@ async function verifyDemoWrite(accessToken, createOptions) {
     ticket_id: ticketId,
     comment_id: commentId || null,
     time_entry_id: timeEntryId || null,
+    manual_date: manualDate,
+    manual_start_time: manualStartTime,
+    manual_end_time: manualEndTime,
   });
   if (!commentId || !timeEntryId) {
     throw new Error('Demo reviewer write check did not return linked comment_id and time_entry_id.');
