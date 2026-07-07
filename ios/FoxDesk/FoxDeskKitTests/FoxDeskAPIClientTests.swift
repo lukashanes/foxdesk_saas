@@ -24,6 +24,16 @@ final class FoxDeskAPIClientTests: XCTestCase {
         XCTAssertTrue(url.absoluteString.contains("view=open"))
     }
 
+    func testDefaultMobileSessionDoesNotUseBrowserCookies() {
+        let session = FoxDeskAPIClient.makeDefaultSession()
+        let configuration = session.configuration
+
+        XCTAssertNil(configuration.httpCookieStorage)
+        XCTAssertFalse(configuration.httpShouldSetCookies)
+        XCTAssertNil(configuration.urlCache)
+        XCTAssertEqual(configuration.requestCachePolicy, .reloadIgnoringLocalCacheData)
+    }
+
     func testLoginDecodesMobileSession() async throws {
         let client = FoxDeskAPIClient(
             environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),

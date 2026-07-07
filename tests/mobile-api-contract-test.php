@@ -1023,6 +1023,12 @@ $assert(str_contains($iosAPIClient, 'path: "device-token/unregister"'), 'iOS API
 $assert(str_contains($iosAppSession, 'client.unregisterDevice'), 'iOS AppSession sign-out must unregister the device before logout.');
 $assert(str_contains($iosAPIClientTests, 'testUnregisterDevicePostsDeviceID'), 'iOS API tests must cover device unregister request shape.');
 $assert(str_contains($iosAPIClientTests, 'testAppSessionSignOutUnregistersDeviceBeforeLogout'), 'iOS session tests must cover unregister before logout.');
+$assert(str_contains($iosAPIClient, 'session: URLSession = FoxDeskAPIClient.makeDefaultSession()'), 'iOS API client must not default to URLSession.shared.');
+$assert(str_contains($iosAPIClient, 'public static func makeDefaultSession() -> URLSession'), 'iOS API client must expose its cookie-less default session factory.');
+$assert(str_contains($iosAPIClient, 'configuration.httpCookieStorage = nil'), 'iOS API client default session must not keep browser cookie storage.');
+$assert(str_contains($iosAPIClient, 'configuration.httpShouldSetCookies = false'), 'iOS API client default session must not accept web session cookies.');
+$assert(str_contains($iosAPIClient, 'configuration.requestCachePolicy = .reloadIgnoringLocalCacheData'), 'iOS API client default session should rely on app-level caches rather than URL cache.');
+$assert(str_contains($iosAPIClientTests, 'testDefaultMobileSessionDoesNotUseBrowserCookies'), 'iOS API tests must prove the default mobile session does not use browser cookies.');
 $assert(str_contains($iosProject, 'INFOPLIST_KEY_NSCameraUsageDescription'), 'iOS app must declare camera usage for ticket photo capture.');
 $assert(str_contains($iosTicketAttachmentsView, 'Label("Take photo", systemImage: "camera")'), 'iOS ticket detail must expose camera photo capture.');
 $assert(str_contains($iosTicketAttachmentsView, 'CameraCaptureView'), 'iOS ticket detail must present the camera capture view.');

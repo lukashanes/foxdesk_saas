@@ -32,7 +32,7 @@ public final class FoxDeskAPIClient {
 
     public init(
         environment: FoxDeskEnvironment = .production,
-        session: URLSession = .shared
+        session: URLSession = FoxDeskAPIClient.makeDefaultSession()
     ) {
         self.environment = environment
         self.session = session
@@ -44,6 +44,15 @@ public final class FoxDeskAPIClient {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         self.decoder = decoder
+    }
+
+    public static func makeDefaultSession() -> URLSession {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.httpCookieStorage = nil
+        configuration.httpShouldSetCookies = false
+        configuration.urlCache = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: configuration)
     }
 
     public func apiURL(path: String, queryItems: [URLQueryItem] = []) throws -> URL {
