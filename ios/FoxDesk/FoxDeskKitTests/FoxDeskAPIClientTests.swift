@@ -2087,8 +2087,21 @@ final class FoxDeskAPIClientTests: XCTestCase {
             FoxDeskNotificationPayload.ticketID(from: ["data": ["ticket_id": "44"]]),
             44
         )
+        XCTAssertEqual(
+            FoxDeskNotificationPayload.ticketID(from: [
+                "aps": ["alert": ["title": "Ticket updated"]],
+                "ticket_id": "45",
+            ]),
+            45
+        )
         XCTAssertNil(
             FoxDeskNotificationPayload.ticketID(from: ["data": ["client_id": 12]])
+        )
+        XCTAssertNil(
+            FoxDeskNotificationPayload.ticketID(from: ["ticket_id": 0])
+        )
+        XCTAssertNil(
+            FoxDeskNotificationPayload.ticketID(from: ["data": ["ticket_id": "-2"]])
         )
     }
 

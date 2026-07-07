@@ -24,19 +24,21 @@ public enum FoxDeskNotificationPayload {
     }
 
     private static func intValue(_ value: Any?) -> Int? {
+        let candidate: Int?
         if let number = value as? NSNumber {
-            return number.intValue
+            candidate = number.intValue
+        } else if let int = value as? Int {
+            candidate = int
+        } else if let string = value as? String {
+            candidate = Int(string.trimmingCharacters(in: .whitespacesAndNewlines))
+        } else {
+            candidate = nil
         }
 
-        if let int = value as? Int {
-            return int
+        guard let candidate, candidate > 0 else {
+            return nil
         }
-
-        if let string = value as? String {
-            return Int(string.trimmingCharacters(in: .whitespacesAndNewlines))
-        }
-
-        return nil
+        return candidate
     }
 
     private static func dictionaryValue(_ value: Any?) -> [AnyHashable: Any]? {
