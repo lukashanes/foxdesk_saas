@@ -33,11 +33,12 @@ settings stay on the web for the first release.
 
 ## Latest Verified State
 
-As of 2026-07-06 22:45 UTC, commit `9add7cc` is the current iOS code
+As of 2026-07-07 04:35 UTC, commit `080b441` is the current iOS code
 baseline; a later docs-only handoff commit may sit on top of it. The local beta
-gate passed end-to-end in this release run:
+gate and the focused iOS gate have passed in this release run:
 
 - `npm run ios:beta:gate`
+- `npm run ios:gate`
 - `npm run ios:release:env`
 - `npm run ios:next`
 
@@ -46,10 +47,11 @@ compatibility build, Staging build, simulator launch smoke, TestFlight
 preflight, mobile API safe smoke preflight, and APNs dry-run. Evidence:
 `tmp/ios-beta-readiness/latest.md`.
 
-The latest iOS test addition proves that sign-out clears the local session,
-tokens, user state, and token store even if APNs device unregister and server
-logout both fail. This keeps the native app from leaving stale local access on
-the device after a network/server failure.
+The latest iOS test additions prove that sign-out clears local session tokens,
+user state, token store, APNs registration preview state, and pending
+push/deep-link ticket navigation. This keeps the native app from leaving stale
+local access or opening a previous user's pushed ticket after logout, even when
+APNs device unregister or server logout fails.
 
 For a requirement-by-requirement completion audit that separates local MVP
 evidence from Apple/live-service release evidence, run:

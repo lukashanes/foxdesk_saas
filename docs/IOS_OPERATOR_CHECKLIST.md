@@ -8,13 +8,15 @@ on the web.
 
 ## Current Local State
 
-As of 2026-07-07 00:48 UTC:
+As of 2026-07-07 04:35 UTC:
 
 - `npm run ios:mvp:audit` passes.
 - `npm run ios:beta:gate` passes locally and writes
   `tmp/ios-beta-readiness/latest.md`.
-- Xcode simulator tests pass, including the regression that clears the local
-  session even when APNs unregister or server logout fails.
+- Xcode simulator tests pass, including regressions that clear the local
+  session even when APNs unregister or server logout fails, reset APNs
+  diagnostic state after sign-out, and clear any pending push/deep-link ticket
+  navigation so the next signed-in account cannot inherit it.
 - Simulator launch smoke passes and writes
   `tmp/ios-smoke/foxdesk-login.png` plus `tmp/ios-smoke/latest.md`.
 - App Store screenshots exist in `tmp/ios-app-store-screenshots`.
