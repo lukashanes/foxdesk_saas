@@ -87,6 +87,116 @@ public final class FoxDeskAPIClient {
         return rootPath + "/api/mobile/v1/" + path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
     }
 
+    private func legacyAPIURL(path: String, method: String, queryItems: [URLQueryItem] = []) throws -> URL? {
+        guard let route = legacyMobileRoute(path: path, method: method),
+              var components = URLComponents(url: environment.baseURL, resolvingAgainstBaseURL: false)
+        else {
+            return nil
+        }
+
+        let basePath = environment.baseURL.path
+        if basePath.hasSuffix("/index.php") {
+            components.path = basePath
+        } else {
+            let trimmed = basePath.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            components.path = (trimmed.isEmpty ? "" : "/" + trimmed) + "/index.php"
+        }
+
+        var items = components.queryItems ?? []
+        items.append(URLQueryItem(name: "page", value: "api"))
+        items.append(URLQueryItem(name: "action", value: route.action))
+        items.append(contentsOf: route.queryItems)
+        items.append(contentsOf: queryItems)
+        components.queryItems = items
+        return components.url
+    }
+
+    private struct LegacyMobileRoute {
+        let action: String
+        let queryItems: [URLQueryItem]
+    }
+
+    private func legacyMobileRoute(path: String, method: String) -> LegacyMobileRoute? {
+        let normalizedMethod = method.uppercased()
+        let segments = path
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+            .split(separator: "/")
+            .map(String.init)
+        let first = segments.first ?? ""
+        let second = segments.count > 1 ? segments[1] : ""
+        let third = segments.count > 2 ? segments[2] : ""
+
+        func route(_ action: String, _ queryItems: [URLQueryItem] = []) -> LegacyMobileRoute {
+            LegacyMobileRoute(action: action, queryItems: queryItems)
+        }
+
+        func ticketQuery(_ value: String) -> [URLQueryItem] {
+            if Int(value) != nil {
+                return [
+                    URLQueryItem(name: "id", value: value),
+                    URLQueryItem(name: "ticket_id", value: value)
+                ]
+            }
+            return [
+                URLQueryItem(name: "ticket_hash", value: value),
+                URLQueryItem(name: "hash", value: value)
+            ]
+        }
+
+        if first == "login", normalizedMethod == "POST" { return route("mobile-login") }
+        if first == "verify-2fa", normalizedMethod == "POST" { return route("mobile-verify-2fa") }
+        if first == "refresh", normalizedMethod == "POST" { return route("mobile-refresh") }
+        if first == "me", normalizedMethod == "GET" { return route("mobile-me") }
+        if first == "logout", normalizedMethod == "POST" { return route("mobile-logout") }
+        if ["shell", "app-shell"].contains(first), normalizedMethod == "GET" { return route("app-shell") }
+        if ["home", "work"].contains(first), normalizedMethod == "GET" { return route("app-home") }
+        if first == "tenant-state", normalizedMethod == "GET" { return route("app-tenant-state") }
+
+        if first == "tickets" {
+            if second.isEmpty {
+                if normalizedMethod == "GET" { return route("app-ticket-list") }
+                if normalizedMethod == "POST" { return route("app-create-ticket") }
+            }
+            if second == "create-options", normalizedMethod == "GET" {
+                return route("app-ticket-create-options")
+            }
+
+            let ticketItems = ticketQuery(second)
+            if third.isEmpty {
+                if normalizedMethod == "GET" { return route("app-ticket-detail", ticketItems) }
+                if normalizedMethod == "POST" { return route("app-update-ticket", ticketItems) }
+            }
+            if third == "actions", normalizedMethod == "GET" { return route("app-ticket-actions", ticketItems) }
+            if third == "comments", normalizedMethod == "POST" { return route("app-add-comment", ticketItems) }
+            if third == "comment-with-time", normalizedMethod == "POST" { return route("app-add-comment-with-time", ticketItems) }
+            if third == "timer", normalizedMethod == "GET" { return route("app-ticket-timer", ticketItems) }
+            if third == "timer", normalizedMethod == "POST" { return route("app-ticket-timer-action", ticketItems) }
+            if third == "attachments", normalizedMethod == "POST" { return route("upload", ticketItems) }
+        }
+
+        if first == "attachments" {
+            if second.isEmpty, normalizedMethod == "POST" { return route("upload") }
+            if !second.isEmpty, normalizedMethod == "GET" {
+                return route("app-attachment-metadata", [URLQueryItem(name: "attachment_id", value: second)])
+            }
+        }
+
+        if first == "clients", !second.isEmpty, normalizedMethod == "GET" {
+            return route("app-client-overview", [URLQueryItem(name: "organization_id", value: second)])
+        }
+        if first == "search", normalizedMethod == "GET" { return route("global-search") }
+        if first == "device-token", second.isEmpty, normalizedMethod == "POST" { return route("mobile-register-device") }
+        if first == "device-token", ["delete", "unregister"].contains(second), normalizedMethod == "POST" {
+            return route("mobile-unregister-device")
+        }
+        if first == "notifications", second.isEmpty, normalizedMethod == "GET" { return route("app-notifications") }
+        if first == "notifications", second == "summary", normalizedMethod == "GET" { return route("app-notifications-summary") }
+        if first == "notifications", second == "read-state", normalizedMethod == "POST" { return route("app-notification-read-state") }
+        if first == "reporting-review", normalizedMethod == "GET" { return route("app-reporting-review") }
+
+        return nil
+    }
+
     public func login(email: String, password: String, device: DeviceContext) async throws -> MobileAuthResponse {
         let request = MobileLoginRequest(
             email: email,
@@ -455,6 +565,31 @@ public final class FoxDeskAPIClient {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
 
+        let preferServerMessageForUnauthorized = ["login", "verify-2fa"].contains(
+            path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        )
+
+        do {
+            return try await sendJSONRequest(
+                request,
+                preferServerMessageForUnauthorized: preferServerMessageForUnauthorized
+            )
+        } catch FoxDeskAPIError.server(let statusCode, _) where statusCode == 404 {
+            guard let fallbackURL = try legacyAPIURL(path: path, method: method, queryItems: queryItems) else {
+                throw FoxDeskAPIError.server(statusCode: statusCode, message: "FoxDesk request failed.")
+            }
+            request.url = fallbackURL
+            return try await sendJSONRequest(
+                request,
+                preferServerMessageForUnauthorized: preferServerMessageForUnauthorized
+            )
+        }
+    }
+
+    private func sendJSONRequest<Response: Decodable>(
+        _ request: URLRequest,
+        preferServerMessageForUnauthorized: Bool = false
+    ) async throws -> Response {
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw FoxDeskAPIError.invalidResponse
@@ -462,9 +597,14 @@ public final class FoxDeskAPIClient {
 
         guard (200..<300).contains(httpResponse.statusCode) else {
             if httpResponse.statusCode == 401 {
+                if preferServerMessageForUnauthorized,
+                   let message = apiErrorMessage(from: data),
+                   !message.isEmpty {
+                    throw FoxDeskAPIError.server(statusCode: httpResponse.statusCode, message: message)
+                }
                 throw FoxDeskAPIError.unauthorized
             }
-            let message = (try? decoder.decode(APIErrorResponse.self, from: data).message) ?? "FoxDesk request failed."
+            let message = apiErrorMessage(from: data) ?? "FoxDesk request failed."
             throw FoxDeskAPIError.server(statusCode: httpResponse.statusCode, message: message)
         }
 
@@ -473,6 +613,13 @@ public final class FoxDeskAPIClient {
         } catch {
             throw FoxDeskAPIError.decoding(error.localizedDescription)
         }
+    }
+
+    private func apiErrorMessage(from data: Data) -> String? {
+        guard let response = try? decoder.decode(APIErrorResponse.self, from: data) else {
+            return nil
+        }
+        return response.message?.isEmpty == false ? response.message : response.error
     }
 
     private func sendMultipart<Response: Decodable>(
@@ -509,6 +656,18 @@ public final class FoxDeskAPIClient {
         body.appendUTF8("--\(boundary)--\r\n")
         request.httpBody = body
 
+        do {
+            return try await sendMultipartRequest(request)
+        } catch FoxDeskAPIError.server(let statusCode, _) where statusCode == 404 {
+            guard let fallbackURL = try legacyAPIURL(path: path, method: "POST") else {
+                throw FoxDeskAPIError.server(statusCode: statusCode, message: "FoxDesk upload failed.")
+            }
+            request.url = fallbackURL
+            return try await sendMultipartRequest(request)
+        }
+    }
+
+    private func sendMultipartRequest<Response: Decodable>(_ request: URLRequest) async throws -> Response {
         let (responseData, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw FoxDeskAPIError.invalidResponse
@@ -518,7 +677,7 @@ public final class FoxDeskAPIClient {
             if httpResponse.statusCode == 401 {
                 throw FoxDeskAPIError.unauthorized
             }
-            let message = (try? decoder.decode(APIErrorResponse.self, from: responseData).message) ?? "FoxDesk upload failed."
+            let message = apiErrorMessage(from: responseData) ?? "FoxDesk upload failed."
             throw FoxDeskAPIError.server(statusCode: httpResponse.statusCode, message: message)
         }
 

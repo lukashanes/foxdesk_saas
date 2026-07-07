@@ -9,6 +9,7 @@ examples/agent-api/.env
 config.php
 .env.production
 .env.ios-release
+ios/FoxDesk/DerivedData/
 .stripe.generated.env
 cloudflare/email-router/worker-configuration.d.ts
 deploy/hetzner/.env.prod

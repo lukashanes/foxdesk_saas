@@ -88,6 +88,103 @@ final class FoxDeskAPIClientTests: XCTestCase {
         XCTAssertEqual(result.user?.avatar, "uploads/avatar-emma.jpg")
     }
 
+    func testLoginFallsBackToLegacyAPIWhenVersionedPathIsUnavailable() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        var requestIndex = 0
+        URLProtocolStub.requestHandler = { request in
+            defer { requestIndex += 1 }
+
+            if requestIndex == 0 {
+                Self.assertAPIPath(request.url, "/api/mobile/v1/login")
+                let response = HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 404,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "text/html"]
+                )!
+                return (response, Data("<h1>Not Found</h1>".utf8))
+            }
+
+            XCTAssertEqual(request.httpMethod, "POST")
+            let components = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)
+            XCTAssertEqual(components?.path, "/index.php")
+            let query = Dictionary(uniqueKeysWithValues: (components?.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+            XCTAssertEqual(query["page"], "api")
+            XCTAssertEqual(query["action"], "mobile-login")
+
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            let data = """
+            {
+              "success": true,
+              "requires_2fa": false,
+              "session": {
+                "token_type": "Bearer",
+                "access_token": "fdm_at_fallback",
+                "refresh_token": "fdm_rt_fallback",
+                "expires_in": 3600,
+                "refresh_expires_in": 5184000
+              },
+              "user": {
+                "id": 7,
+                "email": "agent@example.com",
+                "first_name": "Emma",
+                "last_name": "Carter",
+                "name": "Emma Carter",
+                "role": "agent",
+                "language": "en",
+                "tenant_id": 3
+              }
+            }
+            """.data(using: .utf8)!
+            return (response, data)
+        }
+
+        let result = try await client.login(
+            email: "agent@example.com",
+            password: "secret",
+            device: DeviceContext(deviceId: "device", deviceName: "iPhone", appVersion: "0.1")
+        )
+
+        XCTAssertEqual(result.session?.accessToken, "fdm_at_fallback")
+        XCTAssertEqual(requestIndex, 2)
+    }
+
+    func testLoginShowsServerMessageForInvalidCredentials() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        URLProtocolStub.requestHandler = { request in
+            Self.assertAPIPath(request.url, "/api/mobile/v1/login")
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 401,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, Data(#"{"success":false,"error":"Invalid email or password."}"#.utf8))
+        }
+
+        do {
+            _ = try await client.login(
+                email: "agent@example.com",
+                password: "wrong",
+                device: DeviceContext(deviceId: "device", deviceName: "iPhone", appVersion: "0.1")
+            )
+            XCTFail("Expected invalid login to fail.")
+        } catch let error as FoxDeskAPIError {
+            XCTAssertEqual(error.errorDescription, "Invalid email or password.")
+        }
+    }
+
     func testBearerTokenIsSentForMeRequest() async throws {
         let client = FoxDeskAPIClient(
             environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),

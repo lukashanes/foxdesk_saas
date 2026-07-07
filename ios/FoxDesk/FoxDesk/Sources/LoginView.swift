@@ -58,6 +58,10 @@ struct LoginView: View {
                 .controlSize(.large)
                 .disabled(email.isEmpty || password.isEmpty)
 
+                Link("Set or reset password", destination: URL(string: "https://app.foxdesk.net/index.php?page=forgot-password")!)
+                    .font(.callout.weight(.medium))
+                    .frame(maxWidth: .infinity, alignment: .center)
+
                 Spacer()
             }
             .padding(24)
@@ -113,4 +117,3 @@ private extension View {
             .font(.body)
     }
 }
-
