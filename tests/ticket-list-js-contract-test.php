@@ -19,6 +19,9 @@ $assert(str_contains($page, '$date_sort_url'), 'Tickets page must expose a click
 $assert(str_contains($page, '$date_sort_next = $sort === \'oldest\' ? \'newest\' : \'oldest\';'), 'Date header must toggle newest/oldest sorting.');
 $assert(str_contains($page, 'class="ticket-date-sort'), 'Date column header must be a clickable sort control.');
 $assert(str_contains($page, 'get_icon($date_sort_icon'), 'Date sort control must show direction.');
+$assert(str_contains($page, '$ticket_list_asset_version'), 'Tickets page must define a ticket-list asset cache buster.');
+$assert(str_contains($page, "filemtime(\$file)"), 'Ticket list asset version must change when the JS file changes.');
+$assert(str_contains($page, "assets/js/ticket-list.js?v=<?php echo e(\$ticket_list_asset_version('assets/js/ticket-list.js')); ?>"), 'Tickets page must load ticket-list.js with filemtime cache busting.');
 
 foreach ([
     'window.applyHeaderSort',
@@ -34,14 +37,17 @@ foreach ([
     'document.body.appendChild(dropdown)',
     'restoreOpenDropdown()',
     'clearDropdownPosition(openDropdown)',
+    "dropdown.style.position = 'absolute';",
+    'var scrollX = window.pageXOffset',
+    'var scrollY = window.pageYOffset',
     "document.addEventListener('DOMContentLoaded'",
 ] as $needle) {
     $assert(str_contains($asset, $needle), 'Ticket list JS asset missing behavior: ' . $needle);
 }
 
 $assert(
-    strpos($asset, 'document.body.appendChild(dropdown)') < strpos($asset, "dropdown.style.position = 'fixed';"),
-    'Ticket inline dropdowns must be portaled to body before fixed positioning.'
+    strpos($asset, 'document.body.appendChild(dropdown)') < strpos($asset, "dropdown.style.position = 'absolute';"),
+    'Ticket inline dropdowns must be portaled to body before page-level positioning.'
 );
 $assert(
     str_contains($asset, 'openOriginalParent.insertBefore(openDropdown, openOriginalNextSibling)'),

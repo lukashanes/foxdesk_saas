@@ -337,7 +337,7 @@
                 document.body.appendChild(dropdown);
             }
 
-            dropdown.style.position = 'fixed';
+            dropdown.style.position = 'absolute';
             dropdown.style.left = '0px';
             dropdown.style.top = '0px';
             dropdown.style.right = 'auto';
@@ -352,13 +352,15 @@
             var dropdownHeight = dropdown.offsetHeight;
             var viewportWidth = document.documentElement.clientWidth;
             var viewportHeight = document.documentElement.clientHeight;
-            var left = rect.left;
-            if (left + dropdownWidth > viewportWidth - 8) {
-                left = Math.max(8, viewportWidth - dropdownWidth - 8);
+            var scrollX = window.pageXOffset || document.documentElement.scrollLeft || 0;
+            var scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+            var left = rect.left + scrollX;
+            if (left + dropdownWidth > scrollX + viewportWidth - 8) {
+                left = Math.max(scrollX + 8, scrollX + viewportWidth - dropdownWidth - 8);
             }
-            var top = rect.bottom + 4;
-            if (top + dropdownHeight > viewportHeight - 8) {
-                top = Math.max(8, rect.top - dropdownHeight - 4);
+            var top = rect.bottom + scrollY + 4;
+            if (top + dropdownHeight > scrollY + viewportHeight - 8) {
+                top = Math.max(scrollY + 8, rect.top + scrollY - dropdownHeight - 4);
             }
             dropdown.style.left = left + 'px';
             dropdown.style.top = top + 'px';

@@ -11,6 +11,11 @@ if ($is_archive && !is_admin()) {
 }
 $page_title = $is_archive ? t('Archive') : t('Tickets');
 $page = 'tickets';
+$ticket_list_asset_version = static function (string $path): string {
+    $file = dirname(__DIR__) . '/' . ltrim($path, '/');
+    $base = defined('APP_VERSION') ? APP_VERSION : '1';
+    return $base . '-' . (is_file($file) ? (string) filemtime($file) : '0');
+};
 // Preserve current filter params for redirects after bulk actions
 $_redirect_params = ticket_bulk_action_redirect_params($_GET);
 ticket_handle_bulk_actions($_SERVER['REQUEST_METHOD'] ?? 'GET', $_POST, $user, $is_archive, $_redirect_params);
@@ -1448,7 +1453,7 @@ window.FoxDeskTicketListConfig = {
     }
 };
 </script>
-<script src="assets/js/ticket-list.js?v=<?php echo defined('APP_VERSION') ? APP_VERSION : '1'; ?>" defer></script>
+<script src="assets/js/ticket-list.js?v=<?php echo e($ticket_list_asset_version('assets/js/ticket-list.js')); ?>" defer></script>
 <template id="tl-due-popover-tpl">
     <div class="tl-due-popover" role="dialog" aria-label="<?php echo e(t('Due date')); ?>">
         <input type="date" class="tl-due-popover__input">
