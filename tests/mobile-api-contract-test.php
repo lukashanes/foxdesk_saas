@@ -596,6 +596,9 @@ $assert(str_contains($iosReleasePacket, 'docs/IOS_APPLE_DEVELOPER_STEPS.md'), 'i
 $assert(str_contains($iosReleasePacket, 'npm run ios:release:env'), 'iOS release packet must document the redacted release env check.');
 $assert(!str_contains($iosReleasePacket, 'FOXDESK_IOS_DEMO_PASSWORD=<password>'), 'iOS release packet must not encourage pasting demo passwords into shell history.');
 $assert(str_contains($iosReleasePacket, 'npm run ios:submission:gate'), 'iOS release packet must include the strict submission gate.');
+$assert(str_contains($iosReleasePacket, '## Upload Guard'), 'iOS release packet must include an explicit upload guard before archive instructions.');
+$assert(str_contains($iosReleasePacket, 'Do not upload a build to App Store Connect'), 'iOS release packet must block upload/TestFlight claims until the strict gate passes.');
+$assert(str_contains($iosReleasePacket, 'successful archive proves only'), 'iOS release packet must not let a successful archive substitute for live release evidence.');
 $assert(str_contains($iosReleasePacket, '.env.ios-release.example'), 'iOS release packet must document the local env template.');
 $assert(str_contains($iosReleaseEnvLoader, '.env.ios-release'), 'iOS release env loader must load the ignored local env file.');
 $assert(str_contains($iosReleaseEnvLoader, 'FOXDESK_IOS_RELEASE_ENV_FILE'), 'iOS release env loader must support an override path.');

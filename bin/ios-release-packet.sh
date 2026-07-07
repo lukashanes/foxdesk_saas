@@ -111,6 +111,15 @@ npm run ios:release:env
 npm run ios:submission:gate
 \`\`\`
 
+## Upload Guard
+
+Do not upload a build to App Store Connect, distribute it through TestFlight, or
+call the iOS release ready until \`npm run ios:submission:gate\` passes. A
+successful archive proves only that Xcode can build the app. It does not prove
+the App Store Connect record, Apple Developer Push capability, demo reviewer
+account, live mobile API smoke, opt-in write smoke, physical-device APNs smoke,
+screenshots, or privacy review.
+
 ## Archive Command
 
 Run this only after Apple Developer signing and App Store Connect are ready:
