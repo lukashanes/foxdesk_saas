@@ -609,6 +609,16 @@ $assert(str_contains($iosReleasePacket, 'ios-release-env.sh') || str_contains($i
 $assert(str_contains($iosBetaGate, 'ios-release-env.sh'), 'iOS beta readiness gate must auto-load the local release env.');
 $assert(str_contains($iosSubmissionGate, 'ios-release-env.sh'), 'iOS submission gate must auto-load the local release env.');
 $assert(str_contains($iosSubmissionGate, 'npm run ios:completion:audit'), 'iOS submission gate must run the completion audit before final checks.');
+$assert(str_contains($iosSubmissionGate, 'api_read_ready'), 'iOS submission gate must verify read-only live API evidence after running the live smoke.');
+$assert(str_contains($iosSubmissionGate, 'api_write_ready'), 'iOS submission gate must verify write-smoke evidence after running the write smoke.');
+$assert(str_contains($iosSubmissionGate, 'demo_write_ready'), 'iOS submission gate must verify demo write evidence after running the demo account check.');
+$assert(str_contains($iosSubmissionGate, 'apns_send_ready'), 'iOS submission gate must verify APNs send evidence after running the live APNs smoke.');
+$assert(str_contains($iosSubmissionGate, 'assert_evidence'), 'iOS submission gate must fail if a live command does not leave passing evidence.');
+$assert(str_contains($iosSubmissionGate, 'attachment-download'), 'iOS submission gate must require authorized attachment download proof in write-smoke evidence.');
+$assert(str_contains($iosSubmissionGate, 'latest-live-read-only.json'), 'iOS submission gate must inspect read-only live API evidence.');
+$assert(str_contains($iosSubmissionGate, 'latest-live-write.json'), 'iOS submission gate must inspect write live API evidence.');
+$assert(str_contains($iosSubmissionGate, 'latest-live-demo-account.json'), 'iOS submission gate must inspect live demo account evidence.');
+$assert(str_contains($iosSubmissionGate, 'latest-send.json'), 'iOS submission gate must inspect live APNs send evidence.');
 $assert(str_contains($iosOperatorChecklist, '.env.ios-release.example'), 'iOS operator checklist must document the local env template.');
 $assert(str_contains($iosAppStoreSubmission, '.env.ios-release.example'), 'iOS App Store submission packet must document the local env template.');
 $assert(str_contains($iosHandoff, '.env.ios-release.example'), 'iOS handoff must document the local env template.');

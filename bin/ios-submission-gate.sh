@@ -8,6 +8,10 @@ SCREENSHOT_DIR="$ROOT_DIR/tmp/ios-app-store-screenshots"
 SCREENSHOT_MANIFEST="$SCREENSHOT_DIR/manifest.md"
 SCREENSHOT_ACCOUNT="$SCREENSHOT_DIR/account.png"
 SCREENSHOT_SCRIPT="$ROOT_DIR/bin/ios-app-store-screenshots.sh"
+DEMO_EVIDENCE="$ROOT_DIR/tmp/ios-demo-account-check/latest-live-demo-account.json"
+API_READ_EVIDENCE="$ROOT_DIR/tmp/ios-api-smoke/latest-live-read-only.json"
+API_WRITE_EVIDENCE="$ROOT_DIR/tmp/ios-api-smoke/latest-live-write.json"
+APNS_SEND_EVIDENCE="$ROOT_DIR/tmp/ios-apns-smoke/latest-send.json"
 
 log() {
   printf '[ios:submission:gate] %s\n' "$1"
@@ -28,6 +32,112 @@ require_env_value() {
   local message="$2"
   if [[ -z "${!name:-}" ]]; then
     failures+=("$message")
+  fi
+}
+
+json_field() {
+  local file="$1"
+  local path="$2"
+
+  [[ -f "$file" ]] || return 1
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    let value = data;
+    for (const key of process.argv[2].split(".")) {
+      if (!value || typeof value !== "object" || !(key in value)) {
+        process.exit(3);
+      }
+      value = value[key];
+    }
+    if (typeof value === "boolean") {
+      process.stdout.write(value ? "true" : "false");
+    } else if (value === null || value === undefined) {
+      process.stdout.write("");
+    } else {
+      process.stdout.write(String(value));
+    }
+  ' "$file" "$path"
+}
+
+evidence_ready() {
+  local file="$1"
+  local mode="$2"
+
+  [[ -f "$file" ]] || return 1
+  [[ "$(json_field "$file" ok 2>/dev/null || true)" == "true" ]] || return 1
+  [[ "$(json_field "$file" mode 2>/dev/null || true)" == "$mode" ]] || return 1
+}
+
+api_write_ready() {
+  local file="$1"
+
+  evidence_ready "$file" "live-write" || return 1
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const steps = Array.isArray(data.steps) ? data.steps : [];
+    const required = [
+      "create-ticket",
+      "comment-with-time",
+      "attachment-upload",
+      "attachment-metadata",
+      "attachment-download",
+      "created-ticket-detail",
+    ];
+    for (const name of required) {
+      const step = steps.find((row) => row && row.name === name);
+      if (!step || step.ok !== true) process.exit(1);
+    }
+    const download = steps.find((row) => row && row.name === "attachment-download");
+    if (!Number.isInteger(Number(download.bytes)) || Number(download.bytes) <= 0) process.exit(1);
+  ' "$file"
+}
+
+api_read_ready() {
+  local file="$1"
+
+  evidence_ready "$file" "live-read-only"
+}
+
+demo_write_ready() {
+  local file="$1"
+
+  evidence_ready "$file" "live-demo-account" || return 1
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const steps = Array.isArray(data.steps) ? data.steps : [];
+    const create = steps.find((row) => row && row.name === "demo-write-create-ticket");
+    const comment = steps.find((row) => row && row.name === "demo-write-comment-with-time");
+    const reload = steps.find((row) => row && row.name === "demo-write-detail-reload");
+    const hasId = (value) => Number.isInteger(Number(value)) && Number(value) > 0;
+    if (
+      !create || create.ok !== true || !hasId(create.ticket_id) ||
+      !comment || comment.ok !== true || !hasId(comment.comment_id) || !hasId(comment.time_entry_id) ||
+      !reload || reload.ok !== true || !hasId(reload.ticket_id) || reload.comment_visible !== true || reload.linked_time_visible !== true
+    ) {
+      process.exit(1);
+    }
+  ' "$file"
+}
+
+apns_send_ready() {
+  local file="$1"
+
+  evidence_ready "$file" "send" || return 1
+  [[ "$(json_field "$file" sent 2>/dev/null || true)" == "true" ]] || return 1
+}
+
+assert_evidence() {
+  local label="$1"
+  local predicate="$2"
+  local file="$3"
+  local message="$4"
+
+  if ! "$predicate" "$file"; then
+    printf '[ios:submission:gate] %s evidence failed: %s\n' "$label" "$message" >&2
+    exit 2
   fi
 }
 
@@ -98,14 +208,18 @@ fi
 
 log "Running required App Review demo account check"
 (cd "$ROOT_DIR" && FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json)
+assert_evidence "App Review demo account" demo_write_ready "$DEMO_EVIDENCE" "expected live-demo-account JSON with created ticket, linked timed comment, and detail reload proof."
 
 log "Running required live mobile API smoke"
 (cd "$ROOT_DIR" && npm run ios:api:smoke -- --require-credentials --json)
+assert_evidence "Live mobile API read-only smoke" api_read_ready "$API_READ_EVIDENCE" "expected latest-live-read-only.json with ok=true and mode=live-read-only."
 
 log "Running required opt-in write smoke"
 (cd "$ROOT_DIR" && FOXDESK_IOS_SMOKE_WRITE=1 npm run ios:api:smoke -- --require-credentials --json)
+assert_evidence "Opt-in mobile API write smoke" api_write_ready "$API_WRITE_EVIDENCE" "expected latest-live-write.json with ticket, timed comment, attachment upload, metadata, authorized download, and detail reload proof."
 
 log "Running required real-device APNs smoke"
 (cd "$ROOT_DIR" && npm run ios:apns:smoke -- --send "--environment=${APNS_TEST_ENVIRONMENT:-production}" --json)
+assert_evidence "Real-device APNs smoke" apns_send_ready "$APNS_SEND_EVIDENCE" "expected latest-send.json with ok=true, mode=send, and sent=true."
 
 log "OK: iOS submission gate passed"
