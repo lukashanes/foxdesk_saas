@@ -33,15 +33,17 @@ settings stay on the web for the first release.
 
 ## Latest Verified State
 
-As of 2026-07-07 05:45 UTC, the current checked-in iOS handoff state reflects
+As of 2026-07-07 06:20 UTC, the current checked-in iOS handoff state reflects
 the latest verified local release evidence. The local TestFlight preflight and
 focused iOS gate have passed in this release run:
 
 - `./bin/run-php.sh tests/mobile-api-contract-test.php`
+- `./bin/run-php.sh tests/ios-submission-gate-contract-test.php`
 - `npm run ios:testflight:preflight`
 - `npm run ios:gate`
 - `npm run ios:release:env`
 - `npm run ios:next`
+- `npm run ios:release:packet`
 
 The latest local evidence verifies the iOS MVP gate, Xcode tests, TestFlight
 preflight, archive preflight, mobile API contracts, and APNs dry-run payload
@@ -49,6 +51,15 @@ validation. TestFlight APNs instructions now separate the safe dry-run that
 validates every first-release push payload type from the one live physical
 iPhone send that proves Apple delivery. Evidence:
 `tmp/ios-archive-preflight/latest.md` and `tmp/ios-external-gates/latest.md`.
+
+The strict submission gate now refreshes and verifies
+`tmp/ios-apns-smoke/latest-dry-run.json` before attempting the physical-device
+APNs send. The release packet also lists
+`npm run ios:apns:smoke -- --json` in the before-upload commands and explains
+that the dry-run validates payload shapes and the iPhone smoke validates Apple
+delivery. Use `tmp/ios-release-packet/latest.md` as the compact operator
+handoff before upload preparation.
+In short: dry-run validates payload shapes; iPhone smoke validates Apple delivery.
 
 The latest iOS test additions prove that sign-out clears local session tokens,
 user state, token store, APNs registration preview state, and pending
