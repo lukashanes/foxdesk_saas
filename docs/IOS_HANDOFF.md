@@ -33,9 +33,9 @@ settings stay on the web for the first release.
 
 ## Latest Verified State
 
-As of 2026-07-07 05:45 UTC, commit `df2a31f` is the latest verified iOS
-handoff baseline. The local TestFlight preflight and focused iOS gate have
-passed in this release run:
+As of 2026-07-07 05:45 UTC, the current checked-in iOS handoff state reflects
+the latest verified local release evidence. The local TestFlight preflight and
+focused iOS gate have passed in this release run:
 
 - `./bin/run-php.sh tests/mobile-api-contract-test.php`
 - `npm run ios:testflight:preflight`
