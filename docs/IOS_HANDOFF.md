@@ -479,6 +479,23 @@ re-running the native simulator suite:
   - `npm run ios:release:packet`
   - `./bin/run-php.sh tests/mobile-api-contract-test.php`
   - `./bin/run-php.sh tests/ios-mvp-traceability-contract-test.php`
+- As of 2026-07-07 05:01 UTC, commit `cacdefd` adds
+  `tests/ios-ticket-detail-contract-test.php` and wires it into
+  `bin/ios-mvp-gate.sh`. The iOS MVP gate now explicitly protects the native
+  ticket detail surface: header, client context, comments, rich-text rendering,
+  timed comments, attachments/photos/previews, timer actions, status/priority/
+  assignee management, and offline cache fallback. The release packet was
+  regenerated from this revision. Verified commands:
+  - `./bin/run-php.sh tests/ios-ticket-detail-contract-test.php`
+  - `npm run ios:gate`
+  - `npm run ios:mvp:audit`
+  - `npm run ios:completion:audit`
+  - `npm run ios:release:packet`
+  Remaining release blockers are external/operator gates: App Store Connect app
+  record for `net.foxdesk.ios`, Apple Developer bundle ID with Push
+  Notifications, demo reviewer credentials/write proof, live mobile API
+  read/write smoke, physical iPhone APNs token/send smoke, and App Store
+  privacy review.
 
 The native activity surface should now render time entries created together
 with comments inline under that comment. Time entries without `comment_id`
