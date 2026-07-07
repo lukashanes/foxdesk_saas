@@ -48,6 +48,7 @@ developer_status="$(status_from_report "Apple Developer bundle and push capabili
 business_status="$(status_from_report "Apple Business organization verification")"
 app_review_notes_status="$(status_from_report "App Review notes template")"
 demo_creds_status="$(status_from_report "Demo reviewer account credentials")"
+demo_write_status="$(status_from_report "Demo reviewer write proof")"
 api_smoke_status="$(status_from_report "Live mobile API smoke credentials")"
 write_smoke_status="$(status_from_report "Opt-in write smoke")"
 apns_status="$(status_from_report "Physical iPhone APNs token")"
@@ -72,6 +73,7 @@ cat > "$REPORT" <<REPORT
 | Apple Developer bundle + Push Notifications | $developer_status |
 | App Review notes template | $app_review_notes_status |
 | Demo reviewer credentials | $demo_creds_status |
+| Demo reviewer write proof | $demo_write_status |
 | Live mobile API smoke credentials | $api_smoke_status |
 | Opt-in write smoke | $write_smoke_status |
 | Physical iPhone APNs token | $apns_status |
@@ -134,7 +136,16 @@ values. The iOS gate scripts auto-load \`.env.ios-release\` when present.
      npm run ios:demo:check -- --require-credentials --json
      \`\`\`
 
-5. **Run live mobile API smoke** ($(bool_status "$api_smoke_status"))
+5. **Run demo account write proof** ($(bool_status "$demo_write_status"))
+   - This proves the App Review account can add an internal timed comment
+     without notifying customers. Set \`FOXDESK_IOS_DEMO_WRITE=1\` in
+     \`.env.ios-release\`, then run:
+
+     \`\`\`bash
+     npm run ios:demo:check -- --require-credentials --json
+     \`\`\`
+
+6. **Run live mobile API smoke** ($(bool_status "$api_smoke_status"))
    - Use staging or a disposable production workspace. Fill
      \`FOXDESK_IOS_SMOKE_EMAIL\` and \`FOXDESK_IOS_SMOKE_PASSWORD\` in
      \`.env.ios-release\`, then run:
@@ -143,7 +154,7 @@ values. The iOS gate scripts auto-load \`.env.ios-release\` when present.
      npm run ios:api:smoke -- --require-credentials --json
      \`\`\`
 
-6. **Run one opt-in write smoke** ($(bool_status "$write_smoke_status"))
+7. **Run one opt-in write smoke** ($(bool_status "$write_smoke_status"))
    - This creates one internal smoke ticket, timed internal comment, and small
      attachment. Set \`FOXDESK_IOS_SMOKE_WRITE=1\` in \`.env.ios-release\`,
      then run:
@@ -152,7 +163,7 @@ values. The iOS gate scripts auto-load \`.env.ios-release\` when present.
      npm run ios:api:smoke -- --require-credentials --json
      \`\`\`
 
-7. **Run physical iPhone APNs smoke** ($(bool_status "$apns_status"))
+8. **Run physical iPhone APNs smoke** ($(bool_status "$apns_status"))
    - Install a debug/staging build on a real iPhone.
    - Open Account -> Push diagnostics and copy the APNs token.
    - Set \`APNS_TEST_DEVICE_TOKEN\` in \`.env.ios-release\`, then run:
@@ -161,11 +172,11 @@ values. The iOS gate scripts auto-load \`.env.ios-release\` when present.
      npm run ios:apns:smoke -- --send --environment=production
      \`\`\`
 
-8. **Review screenshots** ($(bool_status "$screenshots_status"))
+9. **Review screenshots** ($(bool_status "$screenshots_status"))
    - Review \`tmp/ios-app-store-screenshots/manifest.md\`.
    - Upload only screenshots without real customer data, tokens, provider internals, billing, platform admin, or self-hosted setup.
 
-9. **Review App Store privacy answers** ($(bool_status "$privacy_status"))
+10. **Review App Store privacy answers** ($(bool_status "$privacy_status"))
    - Review \`docs/IOS_APP_PRIVACY_ANSWERS.md\` as a human/operator.
    - After review, set \`APP_STORE_PRIVACY_REVIEWED=1\` in
      \`.env.ios-release\`.

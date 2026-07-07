@@ -75,11 +75,14 @@ Before submission, verify the demo account with:
 ```bash
 npm run ios:release:env
 npm run ios:demo:check -- --require-credentials --json
+FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json
 ```
 
 Put `FOXDESK_IOS_DEMO_EMAIL` and `FOXDESK_IOS_DEMO_PASSWORD` in the ignored
 local `.env.ios-release` file. If 2FA is enabled, also set
-`FOXDESK_IOS_DEMO_2FA_CODE`.
+`FOXDESK_IOS_DEMO_2FA_CODE`. Set `FOXDESK_IOS_DEMO_WRITE=1` only for the final
+safe write proof; it creates one internal timed comment with notifications
+suppressed.
 
 Detailed setup is in `docs/IOS_DEMO_REVIEWER_ACCOUNT.md`.
 

@@ -64,6 +64,25 @@ evidence_ready() {
   [[ "$(json_field "$file" mode 2>/dev/null || true)" == "$mode" ]] || return 1
 }
 
+demo_write_ready() {
+  local file="$1"
+
+  [[ -f "$file" ]] || return 1
+  [[ "$(json_field "$file" ok 2>/dev/null || true)" == "true" ]] || return 1
+  [[ "$(json_field "$file" mode 2>/dev/null || true)" == "live-demo-account" ]] || return 1
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const step = Array.isArray(data.steps)
+      ? data.steps.find((row) => row && row.name === "demo-write-comment-with-time")
+      : null;
+    const hasId = (value) => Number.isInteger(Number(value)) && Number(value) > 0;
+    if (!step || step.ok !== true || !hasId(step.comment_id) || !hasId(step.time_entry_id)) {
+      process.exit(1);
+    }
+  ' "$file"
+}
+
 screenshot_count=0
 if [[ -d "$SCREENSHOT_DIR" ]]; then
   screenshot_count="$(find "$SCREENSHOT_DIR" -maxdepth 1 -type f \( -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' \) | wc -l | tr -d ' ')"
@@ -112,6 +131,14 @@ elif [[ -n "${FOXDESK_IOS_DEMO_EMAIL:-}" && -n "${FOXDESK_IOS_DEMO_PASSWORD:-}" 
   gate_status "Demo reviewer account credentials" "needs verification" "FOXDESK_IOS_DEMO_EMAIL and FOXDESK_IOS_DEMO_PASSWORD are set, but tmp/ios-demo-account-check/latest-live-demo-account.json is not passing; run npm run ios:demo:check -- --require-credentials --json."
 else
   gate_status "Demo reviewer account credentials" "missing" "Set FOXDESK_IOS_DEMO_EMAIL and FOXDESK_IOS_DEMO_PASSWORD, then run npm run ios:demo:check -- --require-credentials --json."
+fi
+
+if demo_write_ready "$DEMO_EVIDENCE"; then
+  gate_status "Demo reviewer write proof" "ready" "Passing demo evidence includes an internal comment-with-time write check."
+elif [[ "${FOXDESK_IOS_DEMO_WRITE:-}" == "1" ]]; then
+  gate_status "Demo reviewer write proof" "needs verification" "FOXDESK_IOS_DEMO_WRITE=1 is set, but demo evidence does not include linked comment_id/time_entry_id; rerun npm run ios:demo:check -- --require-credentials --json."
+else
+  gate_status "Demo reviewer write proof" "missing" "Run once with FOXDESK_IOS_DEMO_WRITE=1 to prove the App Review account can add an internal timed comment."
 fi
 
 if evidence_ready "$API_READ_EVIDENCE" "live-read-only"; then

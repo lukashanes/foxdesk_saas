@@ -129,6 +129,12 @@ else
   mark 0 "Demo reviewer credentials" "FOXDESK_IOS_DEMO_EMAIL and FOXDESK_IOS_DEMO_PASSWORD"
 fi
 
+if value_is_one FOXDESK_IOS_DEMO_WRITE; then
+  mark 1 "Demo reviewer write proof"
+else
+  mark 0 "Demo reviewer write proof" "set FOXDESK_IOS_DEMO_WRITE=1 only for the final safe App Review write check"
+fi
+
 cat >> "$OUT" <<MD
 
 ## Live Mobile API Smoke

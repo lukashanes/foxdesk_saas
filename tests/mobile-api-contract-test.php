@@ -521,6 +521,8 @@ $assert(str_contains($iosDemoAccountCheck, 'comment_id') && str_contains($iosDem
 $assert(str_contains($iosAPISmoke, 'ios-api-smoke'), 'iOS API smoke must write durable redacted evidence.');
 $assert(str_contains($iosAPNsSmoke, 'tmp/ios-apns-smoke'), 'iOS APNs smoke must write durable redacted evidence.');
 $assert(str_contains($iosExternalGates, 'latest-live-demo-account.json'), 'iOS external gates must require passing demo account evidence, not only env values.');
+$assert(str_contains($iosExternalGates, 'Demo reviewer write proof'), 'iOS external gates must report the App Review demo account write proof separately.');
+$assert(str_contains($iosExternalGates, 'demo-write-comment-with-time'), 'iOS external gates must inspect demo write proof evidence, not only credentials.');
 $assert(str_contains($iosExternalGates, 'latest-live-read-only.json'), 'iOS external gates must require passing read-only live API smoke evidence.');
 $assert(str_contains($iosExternalGates, 'latest-live-write.json'), 'iOS external gates must require passing write smoke evidence.');
 $assert(str_contains($iosExternalGates, 'latest-send.json'), 'iOS external gates must require passing physical-device APNs send evidence.');
@@ -538,6 +540,8 @@ $assert(str_contains($iosNextActions, 'Safe Local Release Env'), 'iOS next-actio
 $assert(str_contains($iosNextActions, 'npm run ios:release:env'), 'iOS next-actions report must document the redacted release env check.');
 $assert(str_contains($iosNextActions, '**Prepare App Review demo account** ($(bool_status "$demo_creds_status"))'), 'iOS next-actions must not mark the demo account ready from the App Review notes template alone.');
 $assert(str_contains($iosNextActions, 'This is not ready until the credentials are present'), 'iOS next-actions must explain that the demo account requires live credential verification.');
+$assert(str_contains($iosNextActions, 'Demo reviewer write proof'), 'iOS next-actions must track the demo account write proof status.');
+$assert(str_contains($iosNextActions, 'FOXDESK_IOS_DEMO_WRITE=1'), 'iOS next-actions must tell operators how to run the demo account write proof.');
 $assert(!str_contains($iosNextActions, 'FOXDESK_IOS_DEMO_PASSWORD=<password>'), 'iOS next-actions report must not encourage pasting demo passwords into shell history.');
 $assert(str_contains($iosNextActions, 'npm run ios:submission:gate'), 'iOS next-actions report must end with the strict final gate.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-release-packet/latest.md'), 'iOS release packet script must write a durable handoff packet.');
@@ -576,6 +580,7 @@ $assert(str_contains($iosReleaseEnvCheck, 'APP_STORE_CONNECT_APP_RECORD_READY'),
 $assert(str_contains($iosReleaseEnvCheck, 'identity context only'), 'iOS release env check must treat Apple Business as context, not a substitute for App Store Connect.');
 $assert(str_contains($iosReleaseEnvCheck, 'not a substitute for App Store Connect or Developer signing'), 'iOS release env check must explain that Apple Business does not satisfy signing/upload gates.');
 $assert(str_contains($iosReleaseEnvCheck, 'FOXDESK_IOS_DEMO_EMAIL'), 'iOS release env check must report demo reviewer credentials without printing values.');
+$assert(str_contains($iosReleaseEnvCheck, 'FOXDESK_IOS_DEMO_WRITE'), 'iOS release env check must report demo reviewer write proof readiness.');
 $assert(str_contains($iosReleaseEnvCheck, 'APNS_TEST_DEVICE_TOKEN'), 'iOS release env check must report the physical APNs token gate without printing values.');
 $assert(str_contains($iosExternalGates, 'ios-release-env.sh'), 'iOS external gates must auto-load the local release env.');
 $assert(str_contains($iosNextActions, 'ios-release-env.sh'), 'iOS next-actions must auto-load the local release env.');
@@ -596,6 +601,7 @@ $assert(str_contains($iosReleaseEnvExample, 'APPLE_DEVELOPER_BUNDLE_READY=0'), '
 $assert(str_contains($iosReleaseEnvExample, 'APPLE_BUSINESS_VERIFIED=1'), 'iOS release env template must include Apple Business verification state.');
 $assert(str_contains($iosReleaseEnvExample, 'APP_STORE_PRIVACY_REVIEWED=0'), 'iOS release env template must include the privacy review flag.');
 $assert(str_contains($iosReleaseEnvExample, 'FOXDESK_IOS_DEMO_EMAIL='), 'iOS release env template must include demo reviewer credentials.');
+$assert(str_contains($iosReleaseEnvExample, 'FOXDESK_IOS_DEMO_WRITE=0'), 'iOS release env template must keep demo write proof disabled by default.');
 $assert(str_contains($iosReleaseEnvExample, 'FOXDESK_IOS_SMOKE_BASE_URL=https://app.foxdesk.net/api/mobile/v1'), 'iOS release env template must include the production mobile API base.');
 $assert(str_contains($iosReleaseEnvExample, 'FOXDESK_IOS_SMOKE_WRITE=0'), 'iOS release env template must keep write smoke disabled by default.');
 $assert(str_contains($iosReleaseEnvExample, 'APNS_TEST_DEVICE_TOKEN='), 'iOS release env template must include the physical-device APNs token.');
@@ -670,7 +676,9 @@ $assert(str_contains($iosSubmissionGate, 'APPLE_BUSINESS_VERIFIED'), 'iOS submis
 $assert(str_contains($iosSubmissionGate, 'APP_STORE_PRIVACY_REVIEWED'), 'iOS submission gate must require human privacy review.');
 $assert(str_contains($iosSubmissionGate, 'FOXDESK_IOS_DEMO_EMAIL'), 'iOS submission gate must require demo reviewer account email.');
 $assert(str_contains($iosSubmissionGate, 'FOXDESK_IOS_DEMO_PASSWORD'), 'iOS submission gate must require demo reviewer account password.');
+$assert(str_contains($iosSubmissionGate, 'FOXDESK_IOS_DEMO_WRITE'), 'iOS submission gate must require demo reviewer write proof readiness.');
 $assert(str_contains($iosSubmissionGate, 'npm run ios:demo:check'), 'iOS submission gate must run the live demo reviewer account check.');
+$assert(str_contains($iosSubmissionGate, 'FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check'), 'iOS submission gate must run the demo account check in write-proof mode.');
 $assert(str_contains($iosSubmissionGate, 'FOXDESK_IOS_SMOKE_EMAIL'), 'iOS submission gate must require live mobile API smoke credentials.');
 $assert(str_contains($iosSubmissionGate, 'FOXDESK_IOS_SMOKE_WRITE'), 'iOS submission gate must require opt-in write smoke.');
 $assert(str_contains($iosSubmissionGate, 'APNS_TEST_DEVICE_TOKEN'), 'iOS submission gate must require a physical-device APNs token.');
@@ -785,6 +793,7 @@ $assert(str_contains($iosAppStoreSubmission, 'Support URL: `https://foxdesk.net/
 $assert(str_contains($iosAppStoreSubmission, 'Demo reviewer account'), 'iOS submission packet must document the demo reviewer account.');
 $assert(str_contains($iosAppStoreSubmission, 'FOXDESK_IOS_DEMO_EMAIL'), 'iOS submission packet must document demo account gate env.');
 $assert(str_contains($iosAppStoreSubmission, 'npm run ios:demo:check'), 'iOS submission packet must document the demo account check command.');
+$assert(str_contains($iosAppStoreSubmission, 'FOXDESK_IOS_DEMO_WRITE=1'), 'iOS submission packet must document the demo account write proof command.');
 $assert(str_contains($iosAppStoreSubmission, 'client whose context opens'), 'iOS submission packet must require client context in the demo workspace.');
 $assert(str_contains($iosAppStoreSubmission, 'Device token for push notification delivery'), 'iOS submission packet must include APNs privacy disclosure.');
 $assert(str_contains($iosAppStoreSubmission, 'Request account deletion'), 'iOS submission packet must include account deletion handling.');
