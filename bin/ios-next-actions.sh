@@ -78,6 +78,12 @@ cat > "$REPORT" <<REPORT
 | Populated screenshots | $screenshots_status |
 | App Store privacy review | $privacy_status |
 
+## Apple Business Note
+
+Apple Business verification for \`Aenze s.r.o.\` is recorded and ready. It is
+company identity evidence only. Continue with the App Store Connect app record
+and the Apple Developer bundle ID / Push Notifications setup before TestFlight.
+
 ## Safe Local Release Env
 
 Use one ignored local env file for App Review credentials, live-smoke

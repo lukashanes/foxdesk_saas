@@ -528,6 +528,8 @@ $assert(str_contains($iosMVPGate, 'tests/ios-external-gates-contract-test.php'),
 $assert(str_contains($iosNextActions, 'tmp/ios-next-actions/latest.md'), 'iOS next-actions script must write a durable report.');
 $assert(str_contains($iosNextActions, 'npm run ios:external:gates'), 'iOS next-actions script must refresh external gate evidence before reporting.');
 $assert(str_contains($iosNextActions, 'Ordered Actions'), 'iOS next-actions report must provide ordered operator actions.');
+$assert(str_contains($iosNextActions, 'Apple Business Note'), 'iOS next-actions must explain the already-complete Apple Business step separately.');
+$assert(str_contains($iosNextActions, 'company identity evidence only'), 'iOS next-actions must not imply Apple Business replaces App Store Connect or Developer setup.');
 $assert(str_contains($iosNextActions, 'Safe Local Release Env'), 'iOS next-actions report must lead with the safe local release env workflow.');
 $assert(str_contains($iosNextActions, 'npm run ios:release:env'), 'iOS next-actions report must document the redacted release env check.');
 $assert(str_contains($iosNextActions, '**Prepare App Review demo account** ($(bool_status "$demo_creds_status"))'), 'iOS next-actions must not mark the demo account ready from the App Review notes template alone.');
