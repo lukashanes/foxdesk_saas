@@ -6,6 +6,7 @@ struct SearchView: View {
 
     @State private var query = ""
     @State private var results: GlobalSearchResponse?
+    @State private var completedQuery = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
 
@@ -38,9 +39,17 @@ struct SearchView: View {
                 }
             } else if sections.isEmpty {
                 Section {
-                    ContentUnavailableView("No results", systemImage: "magnifyingglass", description: Text("Try a ticket code, client name, or subject."))
+                    ContentUnavailableView("No results", systemImage: "magnifyingglass", description: Text(noResultsDescription))
                 }
             } else {
+                if !completedQuery.isEmpty {
+                    Section {
+                        Label("Results for “\(completedQuery)”", systemImage: "magnifyingglass")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 ForEach(sections, id: \.key) { entry in
                     Section(entry.section.definition?.label ?? entry.key) {
                         ForEach(entry.section.items, id: \.stableID) { item in
@@ -57,12 +66,26 @@ struct SearchView: View {
         }
     }
 
+    private var noResultsDescription: String {
+        if completedQuery.isEmpty {
+            return "Try a ticket code, client name, or subject."
+        }
+        return "No tickets, clients, or contacts matched “\(completedQuery)”."
+    }
+
     private func search() async {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed.count >= 2 else {
             results = nil
+            completedQuery = ""
             errorMessage = nil
             return
+        }
+
+        if trimmed != completedQuery {
+            results = nil
+            completedQuery = ""
+            errorMessage = nil
         }
 
         do {
@@ -75,6 +98,7 @@ struct SearchView: View {
             results = try await session.authenticated { accessToken in
                 try await session.client.globalSearch(accessToken: accessToken, query: trimmed)
             }
+            completedQuery = trimmed
             errorMessage = nil
         } catch is CancellationError {
             return

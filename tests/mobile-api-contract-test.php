@@ -416,6 +416,10 @@ $assert(str_contains($iosDashboardQuickActionsView, '.badge(unreadCount)'), 'iOS
 $assert(str_contains($iosTicketsView, '.task(id: searchText)'), 'iOS Tickets search must update results while agents type.');
 $assert(str_contains($iosTicketsView, 'Task.sleep(for: .milliseconds(250))'), 'iOS Tickets search must debounce live filtering.');
 $assert(str_contains($iosTicketsView, 'if trimmed.count < 2'), 'iOS Tickets search must reset short queries instead of keeping stale results.');
+$assert(str_contains($iosSearchView, '@State private var completedQuery'), 'iOS global search must track the last completed query separately from the text currently being typed.');
+$assert(str_contains($iosSearchView, 'if trimmed != completedQuery'), 'iOS global search must clear stale results when agents change the query.');
+$assert(str_contains($iosSearchView, 'Results for “\\(completedQuery)”'), 'iOS global search must label returned results with the completed query.');
+$assert(str_contains($iosSearchView, 'No tickets, clients, or contacts matched “\\(completedQuery)”.'), 'iOS global search empty state must refer to the completed query, not a stale previous query.');
 $assert(str_contains($iosSearchView, 'item.type == "client"'), 'iOS Search must treat client results as navigable client context rows.');
 $assert(str_contains($iosSearchView, 'ClientContextView(organizationID: item.id'), 'iOS Search client results must open native client context.');
 $assert(str_contains($iosSearchView, 'item.type == "contact", let organizationID = item.organizationId'), 'iOS Search contact results with organization IDs must be navigable.');
