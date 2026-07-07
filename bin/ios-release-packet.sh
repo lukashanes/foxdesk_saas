@@ -48,6 +48,7 @@ and the human actions still needed.
 
 - Beta readiness: \`tmp/ios-beta-readiness/latest.md\`
 - MVP audit: \`tmp/ios-mvp-local-audit/latest.md\`
+- Simulator smoke: \`tmp/ios-smoke/latest.md\`
 - Archive preflight: \`tmp/ios-archive-preflight/latest.md\`
 - External gates: \`tmp/ios-external-gates/latest.md\`
 - Next actions: \`tmp/ios-next-actions/latest.md\`
@@ -83,6 +84,7 @@ auto-load it when present. To use a different local path, set
 \`\`\`bash
 npm run ios:release:env
 npm run ios:mvp:audit
+npm run ios:sim:smoke
 npm run ios:beta:gate
 npm run ios:completion:audit
 npm run ios:metadata:check

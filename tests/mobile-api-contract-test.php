@@ -435,6 +435,8 @@ $assert(str_contains($packageJson, '"ios:production:check": "./bin/ios-productio
 $assert(str_contains($packageJson, '"ios:release:check": "./bin/ios-release-build-check.sh"'), 'package.json must expose the iOS Release build check.');
 $assert(str_contains($packageJson, '"ios:staging:check": "./bin/ios-staging-build-check.sh"'), 'package.json must expose the iOS Staging build check.');
 $assert(str_contains($packageJson, '"ios:sim:smoke": "./bin/ios-simulator-smoke.sh"'), 'package.json must expose the iOS simulator launch smoke.');
+$assert(str_contains($iosSimulatorSmoke, 'foxdesk-login.png'), 'iOS simulator smoke must write a durable login screenshot.');
+$assert(str_contains($iosSimulatorSmoke, 'latest.md') && str_contains($iosSimulatorSmoke, 'cat > "$REPORT"'), 'iOS simulator smoke must write a durable report.');
 $assert(str_contains($packageJson, '"ios:screenshots": "./bin/ios-app-store-screenshots.sh"'), 'package.json must expose the iOS App Store screenshot generator.');
 $assert(str_contains($packageJson, '"ios:api:smoke": "node bin/ios-api-smoke.js"'), 'package.json must expose the iOS mobile API live smoke.');
 $assert(str_contains($packageJson, '"ios:demo:check": "node bin/ios-demo-account-check.js"'), 'package.json must expose the iOS demo reviewer account check.');
@@ -498,6 +500,7 @@ $assert(str_contains($iosCompletionAudit, 'Opt-in write smoke'), 'iOS completion
 $assert(str_contains($iosCompletionAudit, 'Physical iPhone APNs token'), 'iOS completion audit must track physical APNs proof.');
 $assert(str_contains($iosCompletionAudit, 'App Store Connect app record'), 'iOS completion audit must track App Store Connect proof.');
 $assert(str_contains($iosCompletionAudit, 'Apple Developer explicit App ID'), 'iOS completion audit must track Apple Developer App ID proof.');
+$assert(str_contains($iosCompletionAudit, 'tmp/ios-smoke/latest.md'), 'iOS completion audit must report simulator launch smoke evidence.');
 $assert(str_contains($iosCompletionAudit, 'latest-preflight.json'), 'iOS completion audit must report preflight evidence for no-secret demo/API smoke readiness.');
 $assert(str_contains($iosCompletionAudit, 'latest-live-demo-account.json'), 'iOS completion audit must require live demo account evidence.');
 $assert(str_contains($iosCompletionAudit, 'latest-live-read-only.json'), 'iOS completion audit must require read-only live API smoke evidence.');
@@ -529,6 +532,8 @@ $assert(str_contains($iosReleasePacket, 'tmp/ios-release-packet/latest.md'), 'iO
 $assert(str_contains($iosReleasePacket, 'npm run ios:external:gates'), 'iOS release packet must refresh external gate evidence.');
 $assert(str_contains($iosReleasePacket, 'npm run ios:next'), 'iOS release packet must refresh the next-action checklist.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-beta-readiness/latest.md'), 'iOS release packet must link beta readiness evidence.');
+$assert(str_contains($iosReleasePacket, 'tmp/ios-smoke/latest.md'), 'iOS release packet must link simulator launch smoke evidence.');
+$assert(str_contains($iosReleasePacket, 'npm run ios:sim:smoke'), 'iOS release packet must include the simulator launch smoke command.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-archive-preflight/latest.md'), 'iOS release packet must link archive preflight evidence.');
 $assert(str_contains($iosReleasePacket, 'npm run ios:completion:audit'), 'iOS release packet must refresh the completion audit.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-completion-audit/latest.md'), 'iOS release packet must link completion audit evidence.');

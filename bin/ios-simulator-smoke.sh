@@ -7,6 +7,7 @@ BUNDLE_ID="net.foxdesk.ios"
 OUT_DIR="${IOS_SMOKE_OUTPUT_DIR:-$ROOT/tmp/ios-smoke}"
 DERIVED_DATA="$OUT_DIR/DerivedData"
 SCREENSHOT="$OUT_DIR/foxdesk-login.png"
+REPORT="$OUT_DIR/latest.md"
 
 log() {
   printf '[ios:sim:smoke] %s\n' "$1"
@@ -89,5 +90,19 @@ xcrun simctl io "$SIMULATOR_UDID" screenshot "$SCREENSHOT" >/dev/null
 
 DIMENSIONS="$(sips -g pixelWidth -g pixelHeight "$SCREENSHOT" 2>/dev/null | awk '/pixel/{print $2}' | paste -sdx -)"
 [[ "$DIMENSIONS" =~ ^[0-9]+x[0-9]+$ ]] || fail "Unable to read screenshot dimensions."
+
+cat > "$REPORT" <<MD
+# FoxDesk iOS Simulator Smoke
+
+- Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+- Simulator UDID: \`$SIMULATOR_UDID\`
+- Bundle ID: \`$BUNDLE_ID\`
+- Configuration: \`Debug\`
+- Screenshot: \`tmp/ios-smoke/foxdesk-login.png\`
+- Screenshot dimensions: \`$DIMENSIONS\`
+- Launch log: \`tmp/ios-smoke/launch.log\`
+- Status: ready
+
+MD
 
 log "OK screenshot=$SCREENSHOT dimensions=$DIMENSIONS"
