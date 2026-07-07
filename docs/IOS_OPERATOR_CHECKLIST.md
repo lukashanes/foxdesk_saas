@@ -118,7 +118,9 @@ local `.env.ios-release` file. If the account uses 2FA, also set
 
 ### 4. Live Mobile API Smoke
 
-Use a staging or disposable production workspace. Put
+Use a staging workspace when possible. If you must use production, use only a
+disposable production workspace and set
+`FOXDESK_IOS_ALLOW_PRODUCTION_WRITE_SMOKE=1` for that run. Put
 `FOXDESK_IOS_SMOKE_EMAIL`, `FOXDESK_IOS_SMOKE_PASSWORD`, and
 `FOXDESK_IOS_SMOKE_BASE_URL` in the ignored local `.env.ios-release` file.
 

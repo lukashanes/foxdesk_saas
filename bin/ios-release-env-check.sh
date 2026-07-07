@@ -53,6 +53,11 @@ value_present() {
   [[ -n "${!name:-}" ]]
 }
 
+smoke_base_is_production() {
+  local value="${FOXDESK_IOS_SMOKE_BASE_URL:-}"
+  [[ "$value" == "https://app.foxdesk.net/api/mobile/v1" || "$value" == "https://app.foxdesk.net/index.php" ]]
+}
+
 file_mode() {
   if stat -f "%Lp" "$env_file" >/dev/null 2>&1; then
     stat -f "%Lp" "$env_file"
@@ -156,6 +161,13 @@ fi
 
 if value_is_one FOXDESK_IOS_SMOKE_WRITE; then
   mark 1 "Opt-in write smoke"
+  if smoke_base_is_production && ! value_is_one FOXDESK_IOS_ALLOW_PRODUCTION_WRITE_SMOKE; then
+    mark 0 "Production write-smoke acknowledgement" "set FOXDESK_IOS_ALLOW_PRODUCTION_WRITE_SMOKE=1 only for a disposable production workspace"
+  elif smoke_base_is_production; then
+    mark 1 "Production write-smoke acknowledgement" "explicitly allowed for a disposable production workspace"
+  else
+    mark 1 "Production write-smoke acknowledgement" "not needed for non-production smoke base"
+  fi
 else
   mark 0 "Opt-in write smoke" "set FOXDESK_IOS_SMOKE_WRITE=1 only for a safe disposable workspace"
 fi

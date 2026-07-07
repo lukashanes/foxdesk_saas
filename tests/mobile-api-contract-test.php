@@ -584,6 +584,7 @@ $assert(str_contains($iosReleaseEnvCheck, 'identity context only'), 'iOS release
 $assert(str_contains($iosReleaseEnvCheck, 'not a substitute for App Store Connect or Developer signing'), 'iOS release env check must explain that Apple Business does not satisfy signing/upload gates.');
 $assert(str_contains($iosReleaseEnvCheck, 'FOXDESK_IOS_DEMO_EMAIL'), 'iOS release env check must report demo reviewer credentials without printing values.');
 $assert(str_contains($iosReleaseEnvCheck, 'FOXDESK_IOS_DEMO_WRITE'), 'iOS release env check must report demo reviewer write proof readiness.');
+$assert(str_contains($iosReleaseEnvCheck, 'FOXDESK_IOS_ALLOW_PRODUCTION_WRITE_SMOKE'), 'iOS release env check must require explicit acknowledgement for production write smoke.');
 $assert(str_contains($iosReleaseEnvCheck, 'APNS_TEST_DEVICE_TOKEN'), 'iOS release env check must report the physical APNs token gate without printing values.');
 $assert(str_contains($iosExternalGates, 'ios-release-env.sh'), 'iOS external gates must auto-load the local release env.');
 $assert(str_contains($iosNextActions, 'ios-release-env.sh'), 'iOS next-actions must auto-load the local release env.');
@@ -607,6 +608,7 @@ $assert(str_contains($iosReleaseEnvExample, 'FOXDESK_IOS_DEMO_EMAIL='), 'iOS rel
 $assert(str_contains($iosReleaseEnvExample, 'FOXDESK_IOS_DEMO_WRITE=0'), 'iOS release env template must keep demo write proof disabled by default.');
 $assert(str_contains($iosReleaseEnvExample, 'FOXDESK_IOS_SMOKE_BASE_URL=https://app.foxdesk.net/api/mobile/v1'), 'iOS release env template must include the production mobile API base.');
 $assert(str_contains($iosReleaseEnvExample, 'FOXDESK_IOS_SMOKE_WRITE=0'), 'iOS release env template must keep write smoke disabled by default.');
+$assert(str_contains($iosReleaseEnvExample, 'FOXDESK_IOS_ALLOW_PRODUCTION_WRITE_SMOKE=0'), 'iOS release env template must keep production write smoke acknowledgement disabled by default.');
 $assert(str_contains($iosReleaseEnvExample, 'APNS_TEST_DEVICE_TOKEN='), 'iOS release env template must include the physical-device APNs token.');
 $assert(str_contains($iosReleaseEnvExample, 'Account -> Push diagnostics'), 'iOS release env template must point APNs testers to Account, not the old Settings screen.');
 $assert(!str_contains($iosReleaseEnvExample, 'Settings -> Push diagnostics'), 'iOS release env template must not mention the old Settings screen for APNs diagnostics.');
@@ -688,6 +690,7 @@ $assert(str_contains($iosSubmissionGate, 'npm run ios:demo:check'), 'iOS submiss
 $assert(str_contains($iosSubmissionGate, 'FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check'), 'iOS submission gate must run the demo account check in write-proof mode.');
 $assert(str_contains($iosSubmissionGate, 'FOXDESK_IOS_SMOKE_EMAIL'), 'iOS submission gate must require live mobile API smoke credentials.');
 $assert(str_contains($iosSubmissionGate, 'FOXDESK_IOS_SMOKE_WRITE'), 'iOS submission gate must require opt-in write smoke.');
+$assert(str_contains($iosSubmissionGate, 'FOXDESK_IOS_ALLOW_PRODUCTION_WRITE_SMOKE'), 'iOS submission gate must block production write smoke unless explicitly acknowledged.');
 $assert(str_contains($iosSubmissionGate, 'APNS_TEST_DEVICE_TOKEN'), 'iOS submission gate must require a physical-device APNs token.');
 $assert(str_contains($iosSubmissionGate, 'tmp/ios-app-store-screenshots'), 'iOS submission gate must require populated screenshot evidence.');
 $assert(str_contains($iosSubmissionGate, 'manifest.md'), 'iOS submission gate must require a screenshot manifest.');

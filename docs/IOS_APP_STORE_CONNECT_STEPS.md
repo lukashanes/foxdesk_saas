@@ -171,7 +171,9 @@ Only upload screenshots that:
 
 ## 6. Run Live Smoke
 
-Use a staging or disposable production workspace.
+Use a staging workspace when possible. If this must run on production, use only
+a disposable production workspace and set
+`FOXDESK_IOS_ALLOW_PRODUCTION_WRITE_SMOKE=1` for that explicit run.
 
 Read-only smoke:
 

@@ -31,6 +31,11 @@ require_env_value() {
   fi
 }
 
+smoke_base_is_production() {
+  local value="${FOXDESK_IOS_SMOKE_BASE_URL:-}"
+  [[ "$value" == "https://app.foxdesk.net/api/mobile/v1" || "$value" == "https://app.foxdesk.net/index.php" ]]
+}
+
 log "Running local MVP audit first"
 (cd "$ROOT_DIR" && npm run ios:mvp:audit)
 
@@ -52,6 +57,9 @@ require_env_flag "FOXDESK_IOS_DEMO_WRITE" "Set FOXDESK_IOS_DEMO_WRITE=1 to prove
 require_env_value "FOXDESK_IOS_SMOKE_EMAIL" "Set FOXDESK_IOS_SMOKE_EMAIL for the live mobile API smoke."
 require_env_value "FOXDESK_IOS_SMOKE_PASSWORD" "Set FOXDESK_IOS_SMOKE_PASSWORD for the live mobile API smoke."
 require_env_flag "FOXDESK_IOS_SMOKE_WRITE" "Set FOXDESK_IOS_SMOKE_WRITE=1 and run the write smoke against staging or a disposable workspace."
+if smoke_base_is_production && [[ "${FOXDESK_IOS_ALLOW_PRODUCTION_WRITE_SMOKE:-}" != "1" ]]; then
+  failures+=("Production write smoke needs explicit acknowledgement: set FOXDESK_IOS_ALLOW_PRODUCTION_WRITE_SMOKE=1 only for a disposable production workspace, or use staging.app.foxdesk.net.")
+fi
 require_env_value "APNS_TEST_DEVICE_TOKEN" "Set APNS_TEST_DEVICE_TOKEN from Account → Push diagnostics on a physical iPhone."
 
 if ! grep -Fq 'Demo reviewer account:' "$SUBMISSION_PACKET" || ! grep -Fq 'docs/IOS_DEMO_REVIEWER_ACCOUNT.md' "$SUBMISSION_PACKET"; then

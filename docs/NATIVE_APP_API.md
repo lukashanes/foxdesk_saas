@@ -720,7 +720,9 @@ environment variables. With credentials it calls only the versioned
 search, and logout.
 
 The default live smoke is read-only. For the final agent workflow proof before
-TestFlight, explicitly enable the write smoke:
+TestFlight, explicitly enable the write smoke. Use staging when possible. If
+the smoke runs on production, use a disposable workspace and set
+`FOXDESK_IOS_ALLOW_PRODUCTION_WRITE_SMOKE=1` for that run.
 
 ```bash
 FOXDESK_IOS_SMOKE_EMAIL=<agent@example.com> \
