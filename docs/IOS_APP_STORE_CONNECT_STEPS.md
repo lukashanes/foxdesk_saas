@@ -210,12 +210,15 @@ In the app:
 Then run:
 
 ```bash
+npm run ios:apns:smoke -- --json
 npm run ios:apns:smoke -- --send --environment=production
 ```
 
 Put `APNS_TEST_DEVICE_TOKEN` in `.env.ios-release` for this step.
 Pass criteria:
 
+- the dry-run validates every first-release ticket push payload type without
+  sending a notification,
 - iPhone receives the push,
 - tapping the push opens the correct ticket,
 - notification payload contains a valid `ticket_id`,

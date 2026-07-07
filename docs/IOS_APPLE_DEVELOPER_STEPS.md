@@ -105,11 +105,14 @@ Use a real iPhone. The simulator cannot validate production APNs delivery.
 
 ```bash
 npm run ios:release:env
+npm run ios:apns:smoke -- --json
 npm run ios:apns:smoke -- --send --environment=production
 ```
 
 Pass criteria:
 
+- the dry-run validates every first-release ticket push payload type without
+  sending a notification,
 - the iPhone receives the push notification,
 - tapping the notification opens the matching ticket,
 - the payload contains `ticket_id`,
