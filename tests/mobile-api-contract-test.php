@@ -809,6 +809,8 @@ $assert(str_contains($iosAppPrivacyAnswers, 'Photos or Videos'), 'iOS App Privac
 $assert(str_contains($iosAppPrivacyAnswers, 'APP_STORE_PRIVACY_REVIEWED=1'), 'iOS App Privacy answers must document the privacy review gate.');
 $assert(str_contains($iosAppPrivacyAnswers, 'account deletion from Account'), 'iOS App Privacy answers must point account deletion to Account.');
 $assert(!str_contains($iosAppPrivacyAnswers, 'account deletion from Settings'), 'iOS App Privacy answers must not point account deletion to the old Settings surface.');
+$assert(str_contains($iosAppPrivacyAnswers, 'Production/App Store UI does not show Push diagnostics.'), 'iOS App Privacy answers must use precise Production/App Store diagnostics wording.');
+$assert(!str_contains($iosAppPrivacyAnswers, 'Release UI does not show Push diagnostics.'), 'iOS App Privacy answers must not use ambiguous Release UI diagnostics wording.');
 $assert(str_contains($iosDemoReviewerAccount, 'npm run ios:demo:check -- --require-credentials --json'), 'iOS demo reviewer account runbook must document the live verification command.');
 $assert(str_contains($iosDemoReviewerAccount, 'npm run ios:release:init'), 'iOS demo reviewer account runbook must document the safe release env initializer.');
 $assert(str_contains($iosDemoReviewerAccount, 'npm run ios:release:env'), 'iOS demo reviewer account runbook must document the redacted release env check.');
@@ -845,6 +847,8 @@ $assert(str_contains($nativeDocs, 'Account → Push diagnostics'), 'Native API d
 $assert(str_contains($nativeDocs, 'Copy APNs token'), 'Native API docs must document the iOS APNs token copy action.');
 $assert(str_contains($iosProject, 'CODE_SIGN_ENTITLEMENTS: FoxDesk/FoxDesk.entitlements'), 'iOS app target must include push entitlements.');
 $assert(str_contains($iosProject, 'Production: release'), 'iOS project must define a Production release configuration for App Store archives.');
+$assert(str_contains($iosProject, 'Release: release'), 'iOS project must keep the generic Release configuration as release.');
+$assert(str_contains($iosProject, 'Staging: debug'), 'iOS Staging config must stay debug so Account push diagnostics are available for physical-device smoke tests.');
 $assert(str_contains($iosProject, 'config: Production'), 'iOS scheme archive action must use the Production configuration.');
 $assert(str_contains($iosProject, 'APS_ENVIRONMENT: production'), 'iOS Production/Release configs must set production APNs entitlement.');
 $assert(str_contains($iosProject, 'INFOPLIST_KEY_FOXDESK_API_BASE_URL: $(FOXDESK_API_BASE_URL)'), 'iOS app target must pass the API base URL through Info.plist.');
@@ -890,6 +894,7 @@ $assert(str_contains($iosAccountView, 'Copy APNs token'), 'iOS Account must let 
 $assert(str_contains($iosAccountView, 'UIPasteboard.general.string'), 'iOS Account must copy the APNs token to the clipboard.');
 $assert(str_contains($iosAccountView, '.textSelection(.enabled)'), 'iOS Account must make APNs token text selectable.');
 $assert(str_contains($iosAccountView, '#if DEBUG'), 'iOS APNs token diagnostics must be limited to debug/staging builds.');
+$assert(str_contains($iosProject, 'Staging: debug') && str_contains($iosAccountView, '#if DEBUG'), 'iOS Staging builds must expose debug-gated Push diagnostics for APNs smoke testing.');
 $assert(str_contains($iosAccountView, 'FoxDeskAccountLinks'), 'iOS Account links must use Account naming internally.');
 $assert(str_contains($iosAccountView, 'AccountLinkRow'), 'iOS Account link rows must use Account naming internally.');
 $assert(!str_contains($iosAccountView, 'FoxDeskSettingsLinks'), 'iOS Account view must not keep legacy Settings link naming.');

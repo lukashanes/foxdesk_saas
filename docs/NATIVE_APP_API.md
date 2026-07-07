@@ -596,7 +596,7 @@ command sends one real push for the selected `--type` and must use a token
 captured from a physical device. In an internal debug/staging build, enable
 notifications, open FoxDesk Account → Push diagnostics, and use
 `Copy APNs token`. That diagnostics section is guarded behind debug builds and
-must not appear in the Release UI.
+must not appear in Production/App Store UI.
 
 ### Notification List
 

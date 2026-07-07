@@ -145,7 +145,7 @@ Out of scope for first release:
   production APNs credentials plus real-device smoke testing. Internal
   debug/staging builds expose Account → Push diagnostics so testers can verify
   the active API base URL and copy the physical-device APNs token for the smoke
-  command; this diagnostic surface is excluded from Release UI.
+  command; this diagnostic surface is excluded from Production/App Store UI.
 - Production SaaS evidence currently verifies deployment evidence, R2 storage,
   Cloudflare outbound email, inbound email archive, and Stripe live meter
   configuration. Legal review and full Stripe live-flow acknowledgement remain

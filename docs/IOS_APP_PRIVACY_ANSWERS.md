@@ -61,7 +61,8 @@ Connect requires a category, include it with app functionality / notifications,
 not tracking.
 
 The app should disclose push notification delivery in review notes, but the
-token is not a customer-facing identifier and must not be exposed in Release UI.
+token is not a customer-facing identifier and must not be exposed in
+Production/App Store UI.
 
 ## Account Deletion
 
@@ -79,9 +80,9 @@ dedicated deletion request endpoint before resubmission.
 
 Before setting `APP_STORE_PRIVACY_REVIEWED=1`, verify:
 
-- Release UI does not show Push diagnostics.
-- Release UI links to Privacy Policy and Terms.
-- Release UI links to support/account deletion request.
+- Production/App Store UI does not show Push diagnostics.
+- Production/App Store UI links to Privacy Policy and Terms.
+- Production/App Store UI links to support/account deletion request.
 - The app has no billing, checkout, or subscription purchase UI.
 - The app has no analytics/tracking SDK.
 - The privacy manifest still declares no tracking.

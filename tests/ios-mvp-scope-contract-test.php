@@ -5,8 +5,9 @@ $iosSources = $root . '/ios/FoxDesk/FoxDesk/Sources';
 $kitSources = $root . '/ios/FoxDesk/FoxDeskKit/Sources';
 $runbook = file_get_contents($root . '/docs/IOS_TESTFLIGHT_RUNBOOK.md');
 $handoff = file_get_contents($root . '/docs/IOS_HANDOFF.md');
+$project = file_get_contents($root . '/ios/FoxDesk/project.yml');
 
-if (!is_dir($iosSources) || !is_dir($kitSources) || $runbook === false || $handoff === false) {
+if (!is_dir($iosSources) || !is_dir($kitSources) || $runbook === false || $handoff === false || $project === false) {
     fwrite(STDERR, "Unable to read iOS scope files.\n");
     exit(1);
 }
@@ -100,6 +101,8 @@ $assert(str_contains($accountView, 'Privacy Policy'), 'iOS Account must keep pri
 $assert(str_contains($accountView, 'Request account deletion'), 'iOS Account must keep account deletion available.');
 $assert(str_contains($accountView, '#if DEBUG'), 'Push diagnostics must stay debug-only.');
 $assert(str_contains($accountView, 'Copy APNs token'), 'Debug/staging Account must still let testers copy the APNs token.');
+$assert(str_contains($project, 'Staging: debug'), 'Staging must stay a debug config so APNs diagnostics are available for physical-device smoke testing.');
+$assert(str_contains($project, 'Production: release'), 'Production must stay a release config for App Store builds.');
 
 $assert(str_contains($tenantModels, 'TenantBillingActions'), 'Tenant state model must keep billing notice fields for access-state messages.');
 $assert(str_contains($tenantModels, 'showCheckout'), 'Tenant state model must decode checkout flags from the backend even though iOS does not render them.');
