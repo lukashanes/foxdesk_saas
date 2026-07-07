@@ -201,7 +201,8 @@ These cannot be completed from code alone:
 - App Store Connect app record for `net.foxdesk.ios`
 - Apple Developer bundle id `net.foxdesk.ios` confirmed under `Aenze s.r.o.`
   with Push Notifications enabled
-- demo reviewer account filled in `docs/IOS_APP_STORE_SUBMISSION.md`
+- demo reviewer account credentials filled in App Store Connect review notes
+  and the ignored local `.env.ios-release`
 - demo reviewer account verified with `npm run ios:demo:check`
 - live mobile API smoke credentials
 - opt-in write smoke on staging or a disposable workspace

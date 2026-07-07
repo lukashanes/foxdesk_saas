@@ -7,8 +7,8 @@ account must demonstrate the app without exposing real customer data.
 
 - Role: agent or workspace admin
 - Workspace: disposable or curated demo workspace
-- Email: fill in `docs/IOS_APP_STORE_SUBMISSION.md`
-- Password: fill in `docs/IOS_APP_STORE_SUBMISSION.md`
+- Email: fill in App Store Connect review notes and the ignored local `.env.ios-release`
+- Password: fill in App Store Connect review notes and the ignored local `.env.ios-release`
 - 2FA: disabled if possible, or provide `FOXDESK_IOS_DEMO_2FA_CODE`
 
 ## Required Demo Data

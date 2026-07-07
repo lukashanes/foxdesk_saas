@@ -74,8 +74,9 @@ The demo account should include:
 
 ## App Review Demo Account
 
-Fill these values in App Store Connect and in
-`docs/IOS_APP_STORE_SUBMISSION.md` before submission:
+Fill these values in App Store Connect review notes before submission. For
+local verification, put the same credentials in the ignored `.env.ios-release`
+file. Do not commit real demo credentials to any Markdown file:
 
 - URL: `https://app.foxdesk.net`
 - Email: `[fill before submission]`

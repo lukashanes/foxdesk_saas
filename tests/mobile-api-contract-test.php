@@ -900,6 +900,8 @@ $assert(str_contains($iosAppStoreMetadata, 'FoxDesk Cloud agents and workspace a
 $assert(str_contains($iosAppStoreMetadata, 'does not include in-app purchases'), 'iOS App Store metadata must keep billing outside the iOS app.');
 $assert(str_contains($iosAppStoreMetadata, 'not part of the first iOS release'), 'iOS App Store metadata must include the explicit scope guard.');
 $assert(str_contains($iosAppStoreMetadata, 'Data linked to the user'), 'iOS App Store metadata must include privacy summary.');
+$assert(str_contains($iosAppStoreMetadata, 'Do not commit real demo credentials to any Markdown file'), 'iOS App Store metadata must keep real demo credentials out of committed docs.');
+$assert(!str_contains($iosAppStoreMetadata, 'Fill these values in App Store Connect and in'), 'iOS App Store metadata must not tell operators to fill demo credentials into committed Markdown.');
 $assert(str_contains($iosAppStoreMetadataCheck, 'docs/IOS_APP_STORE_CONNECT_METADATA.md'), 'iOS metadata check must validate the metadata packet.');
 $assert(str_contains($iosAppStoreMetadataCheck, 'not_contains'), 'iOS metadata check must guard against out-of-scope App Store claims.');
 $assert(str_contains($iosAppStoreMetadataCheck, 'npm run ios:production:check'), 'iOS metadata check must require the submission packet to include Production build check.');
@@ -951,6 +953,7 @@ $assert(str_contains($iosDemoReviewerAccount, 'npm run ios:release:init'), 'iOS 
 $assert(str_contains($iosDemoReviewerAccount, 'npm run ios:release:env'), 'iOS demo reviewer account runbook must document the redacted release env check.');
 $assert(str_contains($iosDemoReviewerAccount, '.env.ios-release'), 'iOS demo reviewer account runbook must keep demo credentials in the ignored local env file.');
 $assert(!str_contains($iosDemoReviewerAccount, 'FOXDESK_IOS_DEMO_PASSWORD=<password>'), 'iOS demo reviewer account runbook must not encourage pasting demo passwords into shell history.');
+$assert(!str_contains($iosDemoReviewerAccount, 'Password: fill in `docs/IOS_APP_STORE_SUBMISSION.md`'), 'iOS demo reviewer account runbook must not send real demo passwords into committed Markdown.');
 $assert(str_contains($iosDemoReviewerAccount, 'FOXDESK_IOS_DEMO_WRITE=1'), 'iOS demo reviewer account runbook must document the opt-in write proof command.');
 $assert(str_contains($iosDemoReviewerAccount, 'permission to add comment-with-time records'), 'iOS demo reviewer account runbook must require timed-comment permission.');
 $assert(str_contains($iosDemoReviewerAccount, 'creates one internal demo ticket'), 'iOS demo reviewer account runbook must document that write proof creates a demo ticket first.');
@@ -960,6 +963,7 @@ $assert(str_contains($iosHandoff, 'docs/IOS_APP_STORE_CONNECT_STEPS.md'), 'iOS h
 $assert(str_contains($iosHandoff, 'docs/IOS_APPLE_DEVELOPER_STEPS.md'), 'iOS handoff must link the Apple Developer steps runbook.');
 $assert(str_contains($iosHandoff, 'docs/IOS_APP_PRIVACY_ANSWERS.md'), 'iOS handoff must link the App Privacy answers runbook.');
 $assert(str_contains($iosHandoff, 'docs/IOS_DEMO_REVIEWER_ACCOUNT.md'), 'iOS handoff must link the demo reviewer account runbook.');
+$assert(str_contains($iosHandoff, 'ignored local `.env.ios-release`'), 'iOS handoff must keep demo reviewer credentials out of committed docs.');
 $assert(str_contains($iosOperatorChecklist, 'Apple Business organization verification is done'), 'iOS operator checklist must record Apple Business verification status.');
 $assert(str_contains($iosOperatorChecklist, 'docs/IOS_APP_STORE_CONNECT_STEPS.md'), 'iOS operator checklist must link the App Store Connect steps runbook.');
 $assert(str_contains($iosOperatorChecklist, 'docs/IOS_APPLE_DEVELOPER_STEPS.md'), 'iOS operator checklist must link the Apple Developer steps runbook.');
