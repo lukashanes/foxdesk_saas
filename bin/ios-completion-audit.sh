@@ -72,6 +72,25 @@ evidence_ready() {
   [[ "$(json_field "$file" mode 2>/dev/null || true)" == "$mode" ]] || return 1
 }
 
+demo_write_ready() {
+  local file="$1"
+
+  [[ -f "$file" ]] || return 1
+  [[ "$(json_field "$file" ok 2>/dev/null || true)" == "true" ]] || return 1
+  [[ "$(json_field "$file" mode 2>/dev/null || true)" == "live-demo-account" ]] || return 1
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const step = Array.isArray(data.steps)
+      ? data.steps.find((row) => row && row.name === "demo-write-comment-with-time")
+      : null;
+    const hasId = (value) => Number.isInteger(Number(value)) && Number(value) > 0;
+    if (!step || step.ok !== true || !hasId(step.comment_id) || !hasId(step.time_entry_id)) {
+      process.exit(1);
+    }
+  ' "$file"
+}
+
 live_smoke_status="missing"
 if evidence_ready "$api_read_evidence" "live-read-only"; then
   live_smoke_status="ready"
@@ -91,6 +110,13 @@ if evidence_ready "$demo_evidence" "live-demo-account"; then
   demo_status="ready"
 elif [[ -n "${FOXDESK_IOS_DEMO_EMAIL:-}" && -n "${FOXDESK_IOS_DEMO_PASSWORD:-}" ]]; then
   demo_status="needs verification"
+fi
+
+demo_write_status="missing"
+if demo_write_ready "$demo_evidence"; then
+  demo_write_status="ready"
+elif [[ "${FOXDESK_IOS_DEMO_WRITE:-}" == "1" && "$demo_status" != "missing" ]]; then
+  demo_write_status="needs verification"
 fi
 
 apns_status="missing"
@@ -149,6 +175,7 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 | App Store Connect app record | $app_record_status |
 | Apple Developer bundle id + Push Notifications | $developer_status |
 | App Review demo credentials | $demo_status |
+| Demo reviewer write proof | $demo_write_status |
 | Live mobile API smoke credentials | $live_smoke_status |
 | Opt-in write smoke | $write_smoke_status |
 | Physical iPhone APNs token | $apns_status |
@@ -175,11 +202,12 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 1. Create App Store Connect app record for \`net.foxdesk.ios\`.
 2. Confirm Apple Developer explicit App ID \`net.foxdesk.ios\` and enable Push Notifications.
 3. Verify App Review demo account with \`npm run ios:demo:check -- --require-credentials --json\`.
-4. Run live mobile API read smoke with \`npm run ios:api:smoke -- --require-credentials --json\`.
-5. Run one opt-in write smoke with \`FOXDESK_IOS_SMOKE_WRITE=1\`.
-6. Run physical-device APNs smoke with \`APNS_TEST_DEVICE_TOKEN\`.
-7. Human-review App Store screenshots and privacy answers.
-8. Run \`npm run ios:submission:gate\` and require it to pass.
+4. Prove App Review demo write permission with \`FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json\`.
+5. Run live mobile API read smoke with \`npm run ios:api:smoke -- --require-credentials --json\`.
+6. Run one opt-in write smoke with \`FOXDESK_IOS_SMOKE_WRITE=1\`.
+7. Run physical-device APNs smoke with \`APNS_TEST_DEVICE_TOKEN\`.
+8. Human-review App Store screenshots and privacy answers.
+9. Run \`npm run ios:submission:gate\` and require it to pass.
 
 REPORT
 
@@ -189,6 +217,7 @@ if [[ "$app_record_status" == "ready" \
   && "$developer_status" == "ready" \
   && "$privacy_status" == "ready" \
   && "$demo_status" == "ready" \
+  && "$demo_write_status" == "ready" \
   && "$live_smoke_status" == "ready" \
   && "$write_smoke_status" == "ready" \
   && "$apns_status" == "ready" \

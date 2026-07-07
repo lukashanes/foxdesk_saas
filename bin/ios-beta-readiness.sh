@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT_DIR/bin/ios-release-env.sh"
 EVIDENCE_DIR="$ROOT_DIR/tmp/ios-beta-readiness"
 EVIDENCE_REPORT="$EVIDENCE_DIR/latest.md"
+DEMO_EVIDENCE="$ROOT_DIR/tmp/ios-demo-account-check/latest-live-demo-account.json"
 
 mkdir -p "$EVIDENCE_DIR"
 cat > "$EVIDENCE_REPORT" <<REPORT
@@ -46,6 +47,59 @@ human_gate_status() {
 
 missing_human_gates=()
 
+json_field() {
+  local file="$1"
+  local path="$2"
+
+  [[ -f "$file" ]] || return 1
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    let value = data;
+    for (const key of process.argv[2].split(".")) {
+      if (!value || typeof value !== "object" || !(key in value)) {
+        process.exit(3);
+      }
+      value = value[key];
+    }
+    if (typeof value === "boolean") {
+      process.stdout.write(value ? "true" : "false");
+    } else if (value === null || value === undefined) {
+      process.stdout.write("");
+    } else {
+      process.stdout.write(String(value));
+    }
+  ' "$file" "$path"
+}
+
+evidence_ready() {
+  local file="$1"
+  local mode="$2"
+
+  [[ -f "$file" ]] || return 1
+  [[ "$(json_field "$file" ok 2>/dev/null || true)" == "true" ]] || return 1
+  [[ "$(json_field "$file" mode 2>/dev/null || true)" == "$mode" ]] || return 1
+}
+
+demo_write_ready() {
+  local file="$1"
+
+  [[ -f "$file" ]] || return 1
+  [[ "$(json_field "$file" ok 2>/dev/null || true)" == "true" ]] || return 1
+  [[ "$(json_field "$file" mode 2>/dev/null || true)" == "live-demo-account" ]] || return 1
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const step = Array.isArray(data.steps)
+      ? data.steps.find((row) => row && row.name === "demo-write-comment-with-time")
+      : null;
+    const hasId = (value) => Number.isInteger(Number(value)) && Number(value) > 0;
+    if (!step || step.ok !== true || !hasId(step.comment_id) || !hasId(step.time_entry_id)) {
+      process.exit(1);
+    }
+  ' "$file"
+}
+
 mark_human_gate() {
   local label="$1"
   local status="$2"
@@ -75,6 +129,17 @@ if [[ -n "${FOXDESK_IOS_SMOKE_EMAIL:-}" && -n "${FOXDESK_IOS_SMOKE_PASSWORD:-}" 
   run_step "Live mobile API read-only smoke with provided credentials" env FOXDESK_IOS_SMOKE_WRITE=0 npm run ios:api:smoke -- --require-credentials --json
 else
   log "Skipped live mobile API smoke: set FOXDESK_IOS_SMOKE_EMAIL and FOXDESK_IOS_SMOKE_PASSWORD."
+  printf -- '  - Result: skipped\n' >> "$EVIDENCE_REPORT"
+fi
+
+if [[ -n "${FOXDESK_IOS_DEMO_EMAIL:-}" && -n "${FOXDESK_IOS_DEMO_PASSWORD:-}" ]]; then
+  if [[ "${FOXDESK_IOS_DEMO_WRITE:-}" == "1" ]]; then
+    run_step "Demo reviewer account write proof with provided credentials" env FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json
+  else
+    run_step "Demo reviewer account check with provided credentials" npm run ios:demo:check -- --require-credentials --json
+  fi
+else
+  log "Skipped demo reviewer account check: set FOXDESK_IOS_DEMO_EMAIL and FOXDESK_IOS_DEMO_PASSWORD."
   printf -- '  - Result: skipped\n' >> "$EVIDENCE_REPORT"
 fi
 
@@ -122,6 +187,22 @@ if grep -Fq 'Demo reviewer account:' "$ROOT_DIR/docs/IOS_APP_STORE_SUBMISSION.md
   mark_human_gate "App Review notes template" "ready" "submission packet includes demo account notes and setup runbook"
 else
   mark_human_gate "App Review notes template" "missing" "add demo account notes and docs/IOS_DEMO_REVIEWER_ACCOUNT.md link"
+fi
+
+if evidence_ready "$DEMO_EVIDENCE" "live-demo-account"; then
+  mark_human_gate "Demo reviewer account credentials" "ready" "passing live demo check evidence exists at tmp/ios-demo-account-check/latest-live-demo-account.json"
+elif [[ -n "${FOXDESK_IOS_DEMO_EMAIL:-}" && -n "${FOXDESK_IOS_DEMO_PASSWORD:-}" ]]; then
+  mark_human_gate "Demo reviewer account credentials" "missing" "demo credentials are set, but no passing live demo evidence exists; run npm run ios:demo:check -- --require-credentials --json"
+else
+  mark_human_gate "Demo reviewer account credentials" "missing" "set FOXDESK_IOS_DEMO_EMAIL and FOXDESK_IOS_DEMO_PASSWORD, then run npm run ios:demo:check -- --require-credentials --json"
+fi
+
+if demo_write_ready "$DEMO_EVIDENCE"; then
+  mark_human_gate "Demo reviewer write proof" "ready" "passing demo evidence includes an internal comment-with-time write check"
+elif [[ "${FOXDESK_IOS_DEMO_WRITE:-}" == "1" ]]; then
+  mark_human_gate "Demo reviewer write proof" "missing" "FOXDESK_IOS_DEMO_WRITE=1 is set, but demo evidence does not include linked comment_id/time_entry_id"
+else
+  mark_human_gate "Demo reviewer write proof" "missing" "run once with FOXDESK_IOS_DEMO_WRITE=1 to prove the App Review account can add an internal timed comment"
 fi
 
 if [[ -n "${FOXDESK_IOS_SMOKE_EMAIL:-}" && -n "${FOXDESK_IOS_SMOKE_PASSWORD:-}" ]]; then

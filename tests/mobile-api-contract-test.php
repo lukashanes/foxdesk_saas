@@ -499,6 +499,9 @@ $assert(str_contains($iosCompletionAudit, 'tmp/ios-completion-audit/latest.md'),
 $assert(str_contains($iosCompletionAudit, 'Strict conclusion'), 'iOS completion audit must state whether the full release objective is complete.');
 $assert(str_contains($iosCompletionAudit, 'not complete for TestFlight/App Store'), 'iOS completion audit must avoid false completion while live gates are missing.');
 $assert(str_contains($iosCompletionAudit, 'Opt-in write smoke'), 'iOS completion audit must track comment/time/attachment write proof.');
+$assert(str_contains($iosCompletionAudit, 'Demo reviewer write proof'), 'iOS completion audit must track App Review demo account write proof separately from credentials.');
+$assert(str_contains($iosCompletionAudit, 'FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check'), 'iOS completion audit must document the demo reviewer write proof command.');
+$assert(str_contains($iosCompletionAudit, 'demo-write-comment-with-time'), 'iOS completion audit must inspect demo write proof evidence, not just env flags.');
 $assert(str_contains($iosCompletionAudit, 'Basic reply formatting'), 'iOS completion audit must track rich-text reply formatting proof.');
 $assert(str_contains($iosCompletionAudit, 'MobileRichTextFormatter'), 'iOS completion audit must cite the native rich text formatter evidence.');
 $assert(str_contains($iosCompletionAudit, 'Physical iPhone APNs token'), 'iOS completion audit must track physical APNs proof.');
@@ -649,6 +652,10 @@ $assert(str_contains($iosDemoAccountCheck, 'demo-rich-ticket'), 'iOS demo accoun
 $assert(str_contains($iosDemoAccountCheck, 'demo-client-context'), 'iOS demo account check must verify readable client context demo data.');
 $assert(str_contains($iosDemoAccountCheck, 'request(`clients/${clientId}`'), 'iOS demo account check must load client context through the mobile client endpoint.');
 $assert(str_contains($iosBetaGate, 'npm run ios:gate'), 'iOS beta readiness gate must run the MVP gate.');
+$assert(str_contains($iosBetaGate, 'npm run ios:demo:check'), 'iOS beta readiness gate must optionally run the demo reviewer account check when credentials are present.');
+$assert(str_contains($iosBetaGate, 'Demo reviewer account credentials'), 'iOS beta readiness gate must distinguish demo credentials from App Review notes.');
+$assert(str_contains($iosBetaGate, 'Demo reviewer write proof'), 'iOS beta readiness gate must report demo reviewer write proof as a separate human gate.');
+$assert(str_contains($iosBetaGate, 'demo-write-comment-with-time'), 'iOS beta readiness gate must inspect demo write proof evidence for linked ids.');
 $assert(str_contains($iosBetaGate, 'npm run ios:release:check'), 'iOS beta readiness gate must run the Release build check.');
 $assert(str_contains($iosBetaGate, 'npm run ios:staging:check'), 'iOS beta readiness gate must run the Staging build check.');
 $assert(str_contains($iosBetaGate, 'npm run ios:sim:smoke'), 'iOS beta readiness gate must run simulator launch smoke.');
