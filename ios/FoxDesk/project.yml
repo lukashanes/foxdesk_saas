@@ -43,6 +43,7 @@ targets:
         CURRENT_PROJECT_VERSION: 1
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_ENTITLEMENTS: FoxDesk/FoxDesk.entitlements
+        DEVELOPMENT_TEAM: XS4ZQYPKLB
         INFOPLIST_KEY_CFBundleDisplayName: FoxDesk
         INFOPLIST_KEY_FOXDESK_API_BASE_URL: $(FOXDESK_API_BASE_URL)
         INFOPLIST_KEY_NSCameraUsageDescription: Take photos and attach them to FoxDesk tickets.

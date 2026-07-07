@@ -440,6 +440,7 @@
 						ProvisioningStyle = Automatic;
 					};
 					BD9770552EA981425208C523 = {
+						DevelopmentTeam = XS4ZQYPKLB;
 						ProvisioningStyle = Automatic;
 					};
 					CED1619BE39F2A58D4797E37 = {
@@ -593,6 +594,7 @@
 				CODE_SIGN_ENTITLEMENTS = FoxDesk/FoxDesk.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XS4ZQYPKLB;
 				FOXDESK_API_BASE_URL = "https://app.foxdesk.net/index.php";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = FoxDesk;
@@ -619,6 +621,7 @@
 				CODE_SIGN_ENTITLEMENTS = FoxDesk/FoxDesk.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XS4ZQYPKLB;
 				FOXDESK_API_BASE_URL = "https://app.foxdesk.net/index.php";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = FoxDesk;
@@ -873,6 +876,7 @@
 				CODE_SIGN_ENTITLEMENTS = FoxDesk/FoxDesk.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XS4ZQYPKLB;
 				FOXDESK_API_BASE_URL = "https://app.foxdesk.net/index.php";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = FoxDesk;
@@ -963,6 +967,7 @@
 				CODE_SIGN_ENTITLEMENTS = FoxDesk/FoxDesk.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = XS4ZQYPKLB;
 				FOXDESK_API_BASE_URL = "https://staging.app.foxdesk.net/index.php";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = FoxDesk;

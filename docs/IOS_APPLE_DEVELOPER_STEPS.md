@@ -2,7 +2,7 @@
 
 This runbook covers the Apple Developer work that cannot be completed from the
 local repository. Apple Business verification for `Aenze s.r.o.` is already
-recorded, but it does not create the App ID, signing profile, or push capability.
+recorded, and the FoxDesk App ID / APNs key setup below has been completed.
 
 Use an Apple Developer account with Account Holder or Admin access.
 
@@ -14,13 +14,19 @@ Open:
 https://developer.apple.com/account/resources/identifiers/list
 ```
 
-Search for:
+Current production identifier:
 
 ```text
 net.foxdesk.ios
 ```
 
-If it does not exist, create a new identifier:
+Verified Apple team:
+
+```text
+XS4ZQYPKLB
+```
+
+If the identifier ever needs to be recreated, use:
 
 - Identifier type: App IDs
 - Type: App
@@ -33,10 +39,11 @@ The Xcode project already expects this exact bundle id.
 
 ## 2. Enable Push Notifications
 
-Open the `net.foxdesk.ios` identifier and enable:
+Open the `net.foxdesk.ios` identifier and confirm:
 
 ```text
 Push Notifications
+Associated Domains
 ```
 
 Expected build behavior:
@@ -47,8 +54,8 @@ Expected build behavior:
 - Release compatibility APNs environment: production
 - Entitlement: `aps-environment`
 
-Do not mark this gate ready until Push Notifications are enabled on the explicit
-App ID.
+Do not mark this gate ready unless Push Notifications and Associated Domains are
+enabled on the explicit App ID.
 
 ## 3. Create Or Reuse An APNs Auth Key
 
@@ -58,19 +65,27 @@ Open:
 https://developer.apple.com/account/resources/authkeys/list
 ```
 
-Create or reuse a key with:
+Current APNs key:
 
-- Name: FoxDesk APNs
+- Name: FoxDesk APNs Production
+- Key ID: `UQX5NGK25C`
+- Team ID: `XS4ZQYPKLB`
 - Capability: Apple Push Notifications service (APNs)
 
-Download the `.p8` file immediately. Apple only allows downloading it once.
-Never commit the `.p8` file to Git.
+The `.p8` file was downloaded once and stored locally at:
+
+```text
+/Users/mac/.foxdesk/secrets/AuthKey_UQX5NGK25C.p8
+```
+
+Never commit the `.p8` file to Git. Copy it to the production secret store or
+server with mode `600`.
 
 Production backend values:
 
 ```bash
-APNS_TEAM_ID=<Apple team id>
-APNS_KEY_ID=<key id from Apple Developer>
+APNS_TEAM_ID=XS4ZQYPKLB
+APNS_KEY_ID=UQX5NGK25C
 APNS_AUTH_KEY_PATH=<server path to the .p8 file>
 APNS_BUNDLE_ID=net.foxdesk.ios
 ```
@@ -78,11 +93,18 @@ APNS_BUNDLE_ID=net.foxdesk.ios
 `APNS_AUTH_KEY` can be used instead of `APNS_AUTH_KEY_PATH` only when the secret
 storage system supports multiline secrets safely.
 
+For local Docker-backed smoke tests, a host path such as
+`/Users/mac/.foxdesk/secrets/AuthKey_UQX5NGK25C.p8` is not visible inside the
+PHP container unless it is mounted. Use the multiline `APNS_AUTH_KEY` value for
+local dry-runs, or mount the secret and point `APNS_AUTH_KEY_PATH` at the
+container-visible path.
+
 ## 4. Confirm Signing And Provisioning
 
 In Xcode or Apple Developer:
 
 - Team: `Aenze s.r.o.`
+- Team ID: `XS4ZQYPKLB`
 - Bundle ID: `net.foxdesk.ios`
 - Production archive signing can use the App Store distribution identity/profile
 - Production archive entitlement resolves to production APNs

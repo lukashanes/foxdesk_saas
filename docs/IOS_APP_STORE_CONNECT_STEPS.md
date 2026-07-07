@@ -16,7 +16,18 @@ Open App Store Connect:
 https://appstoreconnect.apple.com/apps
 ```
 
-Create a new app:
+The production app record has been created. Current values:
+
+```text
+App name: FoxDesk
+App Store ID: 6788441555
+Bundle ID: net.foxdesk.ios
+SKU: foxdesk-ios-2026
+Primary language: English (U.S.)
+Team ID: XS4ZQYPKLB
+```
+
+If it ever needs to be recreated, create a new app:
 
 1. Open `Apps`.
 2. Click the add button.
@@ -26,7 +37,7 @@ Create a new app:
    - Name: `FoxDesk`
    - Primary language: `English`
    - Bundle ID: `net.foxdesk.ios`
-   - SKU: `foxdesk-ios`
+   - SKU: `foxdesk-ios-2026`
    - User access: `Full Access`, unless you intentionally restrict app access.
 5. Click `Create`.
 
@@ -54,7 +65,9 @@ In Apple Developer / Certificates, Identifiers & Profiles, confirm:
 
 - Bundle ID exists: `net.foxdesk.ios`
 - Team/organization: `Aenze s.r.o.`
+- Team ID: `XS4ZQYPKLB`
 - Push Notifications capability is enabled.
+- Associated Domains capability is enabled.
 
 The Xcode project already expects:
 

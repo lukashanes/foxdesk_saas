@@ -568,6 +568,11 @@ Give the next agent or Mac this exact checklist:
    `FOXDESK_IOS_SMOKE_WRITE=1`.
 5. Install the app on a physical iPhone, copy the APNs token from Push
    diagnostics, and run the APNs send smoke.
+   Current Apple setup values are `Team ID XS4ZQYPKLB`, bundle
+   `net.foxdesk.ios`, App Store ID `6788441555`, and APNs Key ID
+   `UQX5NGK25C`. The private key is stored locally at
+   `/Users/mac/.foxdesk/secrets/AuthKey_UQX5NGK25C.p8` and must not be
+   committed.
 6. Regenerate screenshots, review them manually, then fill App Store Connect
    metadata from `docs/IOS_APP_STORE_CONNECT_METADATA.md`, following
    `docs/IOS_APP_STORE_CONNECT_STEPS.md`, and privacy answers.

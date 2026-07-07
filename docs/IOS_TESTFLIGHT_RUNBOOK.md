@@ -159,7 +159,9 @@ variables, and the exact condition for calling the iOS release ready.
 3. Confirm Apple Developer account:
    - Follow `docs/IOS_APPLE_DEVELOPER_STEPS.md`.
    - Bundle ID `net.foxdesk.ios` exists.
+   - Team ID is `XS4ZQYPKLB`.
    - Push Notifications capability is enabled.
+   - Associated Domains capability is enabled for `applinks:app.foxdesk.net`.
    - Automatic signing is available for the selected team.
    - Production archive configuration can use production APNs entitlement.
    - Release compatibility build can still use production APNs entitlement.
