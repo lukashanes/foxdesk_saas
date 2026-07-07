@@ -937,6 +937,14 @@ $assert(str_contains($iosOperatorChecklist, 'docs/IOS_APPLE_DEVELOPER_STEPS.md')
 $assert(str_contains($iosOperatorChecklist, 'docs/IOS_APP_PRIVACY_ANSWERS.md'), 'iOS operator checklist must link the App Privacy answers runbook.');
 $assert(str_contains($iosOperatorChecklist, 'docs/IOS_DEMO_REVIEWER_ACCOUNT.md'), 'iOS operator checklist must link the demo reviewer account runbook.');
 $assert(str_contains($iosOperatorChecklist, 'does not replace the App Store Connect app record'), 'iOS operator checklist must distinguish Apple Business from App Store Connect release gates.');
+$assert(str_contains($iosOperatorChecklist, 'safe APNs dry-run validates every first-release ticket push type'), 'iOS operator checklist must distinguish APNs dry-run payload validation from live physical-device delivery.');
+$assert(str_contains($iosOperatorChecklist, 'Do not spam the device with every notification type'), 'iOS operator checklist must keep the physical APNs smoke to one live notification.');
+$assert(str_contains($iosAPNsSmoke, "'validated_types'"), 'APNs smoke must report validated notification types.');
+$assert(str_contains($iosAPNsSmoke, "'new_ticket'"), 'APNs smoke must validate new-ticket payloads.');
+$assert(str_contains($iosAPNsSmoke, "'new_comment'"), 'APNs smoke must validate reply/comment payloads.');
+$assert(str_contains($iosAPNsSmoke, "'assigned_to_you'"), 'APNs smoke must validate assignment payloads.');
+$assert(str_contains($iosAPNsSmoke, "'mentioned'"), 'APNs smoke must validate mention payloads.');
+$assert(str_contains($iosAPNsSmoke, "'ticket_updated'"), 'APNs smoke must validate important ticket-update payloads.');
 $assert(str_contains($iosTestFlightPreflight, 'IOS_APP_STORE_SUBMISSION.md'), 'iOS TestFlight preflight must require the submission packet.');
 $assert(str_contains($iosTestFlightPreflight, 'IOS_APP_PLAN.md'), 'iOS TestFlight preflight must require the iOS app plan.');
 $assert(str_contains($iosTestFlightPreflight, 'IOS_HANDOFF.md'), 'iOS TestFlight preflight must require the handoff document.');

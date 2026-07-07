@@ -171,8 +171,16 @@ Pass criteria:
 
 - the iPhone receives the push,
 - tapping it opens the matching ticket,
-- new ticket, reply, assignment, mention, and important update payloads are
-  valid.
+- the live notification payload contains a valid `ticket_id`,
+- the safe APNs dry-run validates every first-release ticket push type:
+  `new_ticket`, `new_comment`, `assigned_to_you`, `mentioned`,
+  `ticket_updated`, `status_changed`, `priority_changed`, and
+  `due_date_reminder`.
+
+The physical-device smoke sends one real notification for the selected
+`--type`. Do not spam the device with every notification type; the dry-run
+evidence covers payload shape for the full first-release event set, while the
+live send proves Apple delivery and tap-to-ticket routing.
 
 ### 6. Screenshot Review
 
