@@ -461,6 +461,15 @@ re-running the native simulator suite:
   - `./bin/run-php.sh tests/mobile-api-contract-test.php`
   - `npm run ios:beta:gate`
   - `npm run ios:release:packet`
+- As of 2026-07-07, the operator shared the Apple Business verification email
+  for `Aenze s.r.o.` again. Treat this as confirmed organization identity
+  evidence only. It does not replace the App Store Connect app record, Apple
+  Developer explicit App ID, Push Notifications capability, demo credentials,
+  live write smoke, physical APNs proof, or App Store privacy review.
+- As of 2026-07-07, the completion audit tracks native ticket creation as its
+  own MVP release row: `Create ticket from iPhone`. This must stay separate
+  from read-only ticket queues because the first release must prove that agents
+  can create and reload a real ticket from the iPhone app.
 - As of 2026-07-06 20:31 UTC, `.env.ios-release.example` is the committed
   template for local, ignored final-gate variables. Run
   `npm run ios:release:init`, edit `.env.ios-release`, and keep that file

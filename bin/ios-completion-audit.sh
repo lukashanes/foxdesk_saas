@@ -187,15 +187,16 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 | 1. Sign in to \`app.foxdesk.net\` | Mobile login/refresh/me contracts, \`LoginView\`, \`AppSession\`, Keychain storage, Xcode tests | Demo reviewer and live smoke credentials: $demo_status / $live_smoke_status |
 | 2. Work dashboard | \`GET /api/mobile/v1/work\`, \`DashboardView\`, worked-time, queues, recent updates, beta gate | Live smoke against real workspace: $live_smoke_status |
 | 3. My tickets | \`TicketsView\`, Mine/New/Waiting/Done/All tabs, mobile tickets contract | Live smoke against real workspace: $live_smoke_status |
-| 4. Ticket detail | \`TicketDetailView\`, activity/timer/attachments/actions, mobile ticket detail contract | Live smoke against real workspace: $live_smoke_status |
-| 5. Reply / internal note | Mobile comments endpoint and native composer are implemented | Opt-in write smoke: $write_smoke_status |
-| 6. Comment with time | \`comment-with-time\` endpoint, exact/manual time controls, linked time-entry contracts | Opt-in write smoke: $write_smoke_status |
-| 7. Basic reply formatting | \`MobileRichTextFormatter\` and Xcode tests preserve paragraphs, lists, bold/italic, and HTML escaping | Covered locally; verify visually during write smoke: $write_smoke_status |
-| 8. Attachments and photos | Camera/file picker, upload, preview/download, attachment contracts | Real-device or live smoke attachment upload and authorized download: $write_smoke_status |
-| 9. Push notifications | Device-token endpoints, APNs payload dry-run, native routing tests | Apple Developer Push capability: $developer_status; physical iPhone APNs token: $apns_status |
-| 10. Global search | \`SearchView\`, mobile search contract, global search tests | Live smoke against real workspace: $live_smoke_status |
-| 11. Client context | \`ClientContextView\`, mobile client endpoint, demo-account contract expectations | Demo reviewer account populated with client context: $demo_status |
-| 12. Offline/speed fallback | dashboard/list/detail caches, reply drafts, attachment retry state, Xcode tests | No external gate; validate again after live smoke if API payloads change |
+| 4. Create ticket from iPhone | \`NewTicketView\`, \`POST /api/mobile/v1/tickets\`, create-ticket options, attachment upload staging, New ticket tab contract | Opt-in write smoke must create and reload a real ticket: $write_smoke_status |
+| 5. Ticket detail | \`TicketDetailView\`, activity/timer/attachments/actions, mobile ticket detail contract | Live smoke against real workspace: $live_smoke_status |
+| 6. Reply / internal note | Mobile comments endpoint and native composer are implemented | Opt-in write smoke: $write_smoke_status |
+| 7. Comment with time | \`comment-with-time\` endpoint, exact/manual time controls, linked time-entry contracts | Opt-in write smoke: $write_smoke_status |
+| 8. Basic reply formatting | \`MobileRichTextFormatter\` and Xcode tests preserve paragraphs, lists, bold/italic, and HTML escaping | Covered locally; verify visually during write smoke: $write_smoke_status |
+| 9. Attachments and photos | Camera/file picker, upload, preview/download, attachment contracts | Real-device or live smoke attachment upload and authorized download: $write_smoke_status |
+| 10. Push notifications | Device-token endpoints, APNs payload dry-run, native routing tests | Apple Developer Push capability: $developer_status; physical iPhone APNs token: $apns_status |
+| 11. Global search | \`SearchView\`, mobile search contract, global search tests | Live smoke against real workspace: $live_smoke_status |
+| 12. Client context | \`ClientContextView\`, mobile client endpoint, demo-account contract expectations | Demo reviewer account populated with client context: $demo_status |
+| 13. Offline/speed fallback | dashboard/list/detail caches, reply drafts, attachment retry state, Xcode tests | No external gate; validate again after live smoke if API payloads change |
 
 ## Apple And Submission Gates
 
