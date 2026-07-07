@@ -54,6 +54,7 @@ $assert($contains('validated_payloads'), 'APNs dry-run proof must inspect valida
 $assert($contains('payload.type !== type'), 'APNs dry-run proof must verify each payload type matches the expected notification type.');
 
 $assert($contains('FOXDESK_IOS_ALLOW_PRODUCTION_WRITE_SMOKE'), 'Production write smoke must require an explicit acknowledgement.');
+$assert($contains('[[ "${FOXDESK_IOS_SMOKE_WRITE:-}" == "1" ]] && smoke_base_is_production'), 'Production write smoke acknowledgement should only be required when write smoke is enabled.');
 $assert($contains('staging.app.foxdesk.net'), 'Submission gate should recommend staging or a disposable workspace for write smoke.');
 
 $assert($contains('npm run ios:demo:check -- --require-credentials --json'), 'Submission gate must run the App Review demo account check with credentials.');
