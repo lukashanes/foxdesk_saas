@@ -480,7 +480,7 @@ $assert(str_contains($iosTestFlightRunbook, 'net.foxdesk.ios'), 'iOS TestFlight 
 $assert(str_contains($iosTestFlightRunbook, 'https://app.foxdesk.net/api/mobile/v1'), 'iOS TestFlight runbook must document the production mobile API base.');
 $assert(str_contains($iosTestFlightRunbook, 'npm run ios:external:gates'), 'iOS TestFlight runbook must document the external gate status command.');
 $assert(str_contains($iosTestFlightRunbook, 'tmp/ios-external-gates/latest.md'), 'iOS TestFlight runbook must document the external gate evidence report.');
-$assert(str_contains($iosTestFlightRunbook, 'npm run ios:next'), 'iOS TestFlight runbook must document the next-actions report command.');
+$assert(str_contains($iosTestFlightRunbook, 'npm run ios:next-actions'), 'iOS TestFlight runbook must document the next-actions report command.');
 $assert(str_contains($iosTestFlightRunbook, 'tmp/ios-next-actions/latest.md'), 'iOS TestFlight runbook must document the next-actions evidence report.');
 $assert(str_contains($iosTestFlightPreflight, 'ios/FoxDesk'), 'iOS TestFlight preflight must check the generated iOS project.');
 $assert(str_contains($iosTestFlightPreflight, 'ios-mvp-local-audit.sh'), 'iOS TestFlight preflight must require the fast MVP audit script.');
@@ -509,7 +509,7 @@ $assert(str_contains($packageJson, '"ios:completion:audit": "./bin/ios-completio
 $assert(str_contains($iosCompletionAudit, 'tmp/ios-completion-audit/latest.md'), 'iOS completion audit must write a durable report.');
 $assert(str_contains($iosCompletionAudit, 'npm run ios:release:env'), 'iOS completion audit must refresh release env evidence before reporting.');
 $assert(str_contains($iosCompletionAudit, 'npm run ios:external:gates'), 'iOS completion audit must refresh external gate evidence before reporting.');
-$assert(str_contains($iosCompletionAudit, 'npm run ios:next'), 'iOS completion audit must refresh next-action evidence before reporting.');
+$assert(str_contains($iosCompletionAudit, 'npm run ios:next-actions'), 'iOS completion audit must refresh next-action evidence before reporting.');
 $assert(str_contains($iosCompletionAudit, 'npm run ios:apns:smoke -- --json'), 'iOS completion audit must refresh APNs dry-run evidence before reporting.');
 $assert(str_contains($iosCompletionAudit, 'Strict conclusion'), 'iOS completion audit must state whether the full release objective is complete.');
 $assert(str_contains($iosCompletionAudit, 'not complete for TestFlight/App Store'), 'iOS completion audit must avoid false completion while live gates are missing.');
@@ -593,7 +593,7 @@ $assert(str_contains($iosReleasePacket, 'tmp/ios-release-packet/latest.md'), 'iO
 $assert(str_contains($iosReleasePacket, 'npm run ios:external:gates'), 'iOS release packet must refresh external gate evidence.');
 $assert(str_contains($iosReleasePacket, '## Current Gate Snapshot'), 'iOS release packet must include the current external gate snapshot.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-external-gates/latest.md'), 'iOS release packet must read the current external gate report.');
-$assert(str_contains($iosReleasePacket, 'npm run ios:next'), 'iOS release packet must refresh the next-action checklist.');
+$assert(str_contains($iosReleasePacket, 'npm run ios:next-actions'), 'iOS release packet must refresh the next-action checklist.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-beta-readiness/latest.md'), 'iOS release packet must link beta readiness evidence.');
 $assert(str_contains($iosReleasePacket, 'tmp/ios-smoke/latest.md'), 'iOS release packet must link simulator launch smoke evidence.');
 $assert(str_contains($iosReleasePacket, 'npm run ios:sim:smoke'), 'iOS release packet must include the simulator launch smoke command.');

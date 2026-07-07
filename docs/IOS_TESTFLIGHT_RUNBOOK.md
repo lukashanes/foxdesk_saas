@@ -91,7 +91,7 @@ variables, and the exact condition for calling the iOS release ready.
    For a short operator-facing checklist of the remaining actions, run:
 
    ```bash
-   npm run ios:next
+   npm run ios:next-actions
    ```
 
    It writes `tmp/ios-next-actions/latest.md` and links each missing gate to the

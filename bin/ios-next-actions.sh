@@ -231,4 +231,4 @@ if [[ -f "$SCREENSHOT_MANIFEST" ]]; then
 REPORT
 fi
 
-printf '[ios:next] Wrote tmp/ios-next-actions/latest.md\n'
+printf '[ios:next-actions] Wrote tmp/ios-next-actions/latest.md\n'

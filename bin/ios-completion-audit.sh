@@ -31,7 +31,7 @@ refresh_report() {
 
 refresh_report "release env status" "npm run ios:release:env"
 refresh_report "external gate snapshot" "npm run ios:external:gates"
-refresh_report "next-action checklist" "npm run ios:next"
+refresh_report "next-action checklist" "npm run ios:next-actions"
 refresh_report "APNs dry-run smoke" "npm run ios:apns:smoke -- --json"
 
 status_from_env_flag() {

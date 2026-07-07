@@ -19,7 +19,7 @@ refresh_report() {
 }
 
 refresh_report "external gate snapshot" "npm run ios:external:gates"
-refresh_report "next-action checklist" "npm run ios:next"
+refresh_report "next-action checklist" "npm run ios:next-actions"
 refresh_report "completion audit" "npm run ios:completion:audit"
 
 timestamp="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"

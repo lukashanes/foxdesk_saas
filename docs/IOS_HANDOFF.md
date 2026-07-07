@@ -42,7 +42,7 @@ focused iOS gate have passed in this release run:
 - `npm run ios:testflight:preflight`
 - `npm run ios:gate`
 - `npm run ios:release:env`
-- `npm run ios:next`
+- `npm run ios:next-actions`
 - `npm run ios:release:packet`
 
 The latest local evidence verifies the iOS MVP gate, Xcode tests, TestFlight
@@ -179,7 +179,7 @@ For a shorter operator-facing checklist that turns those gates into ordered
 actions, run:
 
 ```bash
-npm run ios:next
+npm run ios:next-actions
 ```
 
 This writes `tmp/ios-next-actions/latest.md`.
@@ -353,7 +353,7 @@ re-running the native simulator suite:
   - Archive preflight verifies the generated `FoxDesk` scheme, `Production`
     archive configuration, bundle id `net.foxdesk.ios`, AppIcon, PrivacyInfo,
     production API base, and production APNs entitlement before manual upload.
-- As of 2026-07-06 19:05 UTC, `npm run ios:next` writes
+- As of 2026-07-06 19:05 UTC, `npm run ios:next-actions` writes
   `tmp/ios-next-actions/latest.md` with the ordered operator checklist. Current
   status: Apple Business verification and populated screenshots are ready;
   App Store Connect app record, Apple Developer bundle/push capability, demo
@@ -455,7 +455,7 @@ re-running the native simulator suite:
   - `npm run ios:archive:preflight`
   - `npm run ios:testflight:preflight`
   - `npm run ios:mvp:audit`
-  - `npm run ios:next`
+  - `npm run ios:next-actions`
   - `npm run ios:beta:gate`
 - As of 2026-07-06 20:11 UTC, Apple Business verification for `Aenze s.r.o.`
   is recorded as ready, the release packet was regenerated, and the native iOS
@@ -463,14 +463,14 @@ re-running the native simulator suite:
   (`FoxDesk` scheme, `iPhone 17` simulator): 47 passed, 0 failed. Verified
   commands:
   - `npm run ios:external:gates`
-  - `npm run ios:next`
+  - `npm run ios:next-actions`
   - `npm run ios:release:packet`
   - `./bin/run-php.sh tests/mobile-api-contract-test.php`
   - `npm run ios:demo:check -- --json`
   - XcodeBuildMCP `test_sim` on profile `foxdesk-ios`
 - As of 2026-07-06 20:24 UTC, `npm run ios:beta:gate` now reports Apple
   Business verification as an informational ready gate from the operator
-  checklist, matching `npm run ios:external:gates` and `npm run ios:next`.
+  checklist, matching `npm run ios:external:gates` and `npm run ios:next-actions`.
   This keeps the beta readiness report from looking stale while still leaving
   App Store Connect and Apple Developer signing/push as the real release gates.
   Verified commands:
