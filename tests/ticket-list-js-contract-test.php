@@ -31,10 +31,22 @@ foreach ([
     'window.inlineUpdateAssign = function',
     'function bindSearchSuggestions',
     'function bindInlineLogTime',
+    'document.body.appendChild(dropdown)',
+    'restoreOpenDropdown()',
+    'clearDropdownPosition(openDropdown)',
     "document.addEventListener('DOMContentLoaded'",
 ] as $needle) {
     $assert(str_contains($asset, $needle), 'Ticket list JS asset missing behavior: ' . $needle);
 }
+
+$assert(
+    strpos($asset, 'document.body.appendChild(dropdown)') < strpos($asset, "dropdown.style.position = 'fixed';"),
+    'Ticket inline dropdowns must be portaled to body before fixed positioning.'
+);
+$assert(
+    str_contains($asset, 'openOriginalParent.insertBefore(openDropdown, openOriginalNextSibling)'),
+    'Ticket inline dropdowns must restore to their original table cell after close.'
+);
 
 foreach ([
     'function applyHeaderSort',

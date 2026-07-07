@@ -306,12 +306,44 @@
     function bindInlineDropdowns() {
         var openDropdown = null;
         var openTrigger = null;
+        var openOriginalParent = null;
+        var openOriginalNextSibling = null;
+
+        function restoreOpenDropdown() {
+            if (!openDropdown || !openOriginalParent) return;
+            if (openOriginalNextSibling && openOriginalNextSibling.parentNode === openOriginalParent) {
+                openOriginalParent.insertBefore(openDropdown, openOriginalNextSibling);
+            } else {
+                openOriginalParent.appendChild(openDropdown);
+            }
+        }
+
+        function clearDropdownPosition(dropdown) {
+            dropdown.style.position = '';
+            dropdown.style.left = '';
+            dropdown.style.top = '';
+            dropdown.style.right = '';
+            dropdown.style.bottom = '';
+            dropdown.style.minWidth = '';
+            dropdown.style.zIndex = '';
+            dropdown.style.visibility = '';
+        }
 
         function positionDropdown(dropdown, trigger) {
             var rect = trigger.getBoundingClientRect();
+            if (dropdown.parentNode !== document.body) {
+                openOriginalParent = dropdown.parentNode;
+                openOriginalNextSibling = dropdown.nextSibling;
+                document.body.appendChild(dropdown);
+            }
+
             dropdown.style.position = 'fixed';
-            dropdown.style.left = 'auto';
-            dropdown.style.top = 'auto';
+            dropdown.style.left = '0px';
+            dropdown.style.top = '0px';
+            dropdown.style.right = 'auto';
+            dropdown.style.bottom = 'auto';
+            dropdown.style.minWidth = Math.max(trigger.offsetWidth, 176) + 'px';
+            dropdown.style.zIndex = '1200';
             var previousVisibility = dropdown.style.visibility;
             dropdown.style.visibility = 'hidden';
             dropdown.classList.remove('hidden');
@@ -342,12 +374,13 @@
         function closeAll() {
             if (openDropdown) {
                 openDropdown.classList.add('hidden');
-                openDropdown.style.position = '';
-                openDropdown.style.left = '';
-                openDropdown.style.top = '';
+                restoreOpenDropdown();
+                clearDropdownPosition(openDropdown);
                 openDropdown = null;
             }
             openTrigger = null;
+            openOriginalParent = null;
+            openOriginalNextSibling = null;
             window.removeEventListener('scroll', onReposition, true);
             window.removeEventListener('resize', onReposition);
         }
