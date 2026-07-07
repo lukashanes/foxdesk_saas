@@ -506,6 +506,9 @@ $assert(str_contains($iosMVPLocalAudit, 'Apple Developer explicit App ID') && st
 $assert(str_contains($iosMVPLocalAudit, 'npm run ios:demo:check -- --require-credentials --json'), 'iOS MVP audit must require live demo reviewer credential verification.');
 $assert(str_contains($packageJson, '"ios:completion:audit": "./bin/ios-completion-audit.sh"'), 'package.json must expose the iOS completion audit.');
 $assert(str_contains($iosCompletionAudit, 'tmp/ios-completion-audit/latest.md'), 'iOS completion audit must write a durable report.');
+$assert(str_contains($iosCompletionAudit, 'npm run ios:release:env'), 'iOS completion audit must refresh release env evidence before reporting.');
+$assert(str_contains($iosCompletionAudit, 'npm run ios:external:gates'), 'iOS completion audit must refresh external gate evidence before reporting.');
+$assert(str_contains($iosCompletionAudit, 'npm run ios:next'), 'iOS completion audit must refresh next-action evidence before reporting.');
 $assert(str_contains($iosCompletionAudit, 'Strict conclusion'), 'iOS completion audit must state whether the full release objective is complete.');
 $assert(str_contains($iosCompletionAudit, 'not complete for TestFlight/App Store'), 'iOS completion audit must avoid false completion while live gates are missing.');
 $assert(str_contains($iosCompletionAudit, 'Opt-in write smoke'), 'iOS completion audit must track comment/time/attachment write proof.');

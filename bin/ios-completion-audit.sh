@@ -20,6 +20,18 @@ api_write_evidence="$ROOT_DIR/tmp/ios-api-smoke/latest-live-write.json"
 api_preflight_evidence="$ROOT_DIR/tmp/ios-api-smoke/latest-preflight.json"
 apns_send_evidence="$ROOT_DIR/tmp/ios-apns-smoke/latest-send.json"
 
+refresh_report() {
+  local name="$1"
+  local command="$2"
+
+  printf '[ios:completion:audit] Refreshing %s\n' "$name"
+  (cd "$ROOT_DIR" && eval "$command" >/dev/null)
+}
+
+refresh_report "release env status" "npm run ios:release:env"
+refresh_report "external gate snapshot" "npm run ios:external:gates"
+refresh_report "next-action checklist" "npm run ios:next"
+
 status_from_env_flag() {
   local name="$1"
   if [[ "${!name:-}" == "1" ]]; then
