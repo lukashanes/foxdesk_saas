@@ -33,6 +33,7 @@ $requiredRows = [
     'Admin ticket management' => ['TicketManageSheet', 'GET /api/mobile/v1/tickets/{id}/actions', 'POST /api/mobile/v1/tickets/{id}'],
     'Public reply / internal note' => ['CommentComposerSection'],
     'Comment with time' => ['comment-with-time', 'exact/manual time controls'],
+    'Basic reply formatting' => ['MobileRichTextFormatter', 'MobileRichTextFormatterTests'],
     'Timer controls' => ['TimerControlSection', 'ActiveTimersSection'],
     'Photos, files, and previews' => ['AttachmentUploadSection', 'CameraCaptureView', 'AttachmentPreviewView'],
     'Push notifications' => ['PushRegistrationService', 'NotificationsView', 'PushNavigationRouter'],

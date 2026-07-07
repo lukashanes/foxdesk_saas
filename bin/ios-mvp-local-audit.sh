@@ -69,6 +69,7 @@ cat >> "$EVIDENCE_REPORT" <<'REPORT'
 | Ticket detail | `TicketDetailView`, activity, timer, attachments, actions, `GET /api/mobile/v1/tickets/{id}` |
 | Public reply and internal note | `CommentComposerSection`, `POST /api/mobile/v1/tickets/{id}/comments` |
 | Comment with time | exact/manual time controls, `POST /api/mobile/v1/tickets/{id}/comment-with-time` |
+| Basic reply formatting | `MobileRichTextFormatter` and `MobileRichTextFormatterTests` preserve paragraphs, lists, bold/italic, and HTML escaping |
 | Photos, files, previews | `CameraCaptureView`, attachment upload/metadata, image preview/download |
 | Push notifications | device-token registration, APNs payloads, `PushNavigationRouter` |
 | Global search | `SearchView`, `GET /api/mobile/v1/search` |

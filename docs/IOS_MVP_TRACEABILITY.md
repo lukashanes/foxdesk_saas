@@ -17,6 +17,7 @@ customer portal, or full workspace settings app.
 | Admin ticket management | `GET /api/mobile/v1/tickets/{id}/actions`, `POST /api/mobile/v1/tickets/{id}` | `TicketManageSheet` from `TicketDetailView` | `FoxDeskAPIClientTests`, `tests/mobile-api-contract-test.php`, `tests/ios-mvp-scope-contract-test.php` |
 | Public reply / internal note | `POST /api/mobile/v1/tickets/{id}/comments` | `CommentComposerSection` | `FoxDeskAPIClientTests`, `tests/mobile-api-contract-test.php` |
 | Comment with time | `POST /api/mobile/v1/tickets/{id}/comment-with-time` | `CommentComposerSection` exact/manual time controls | `FoxDeskAPIClientTests`, `tests/mobile-api-contract-test.php` |
+| Basic reply formatting | comment payload HTML accepted by mobile ticket endpoints | `MobileRichTextFormatter` used by `CommentComposerSection` | `MobileRichTextFormatterTests`, `tests/mobile-api-contract-test.php`, `npm run ios:gate` |
 | Timer controls | `GET /api/mobile/v1/tickets/{id}/timer`, `POST /api/mobile/v1/tickets/{id}/timer` | `TimerControlSection`, `ActiveTimersSection` | `FoxDeskAPIClientTests`, `tests/mobile-api-contract-test.php` |
 | Photos, files, and previews | `POST /api/mobile/v1/attachments`, `GET /api/mobile/v1/attachments/{id}` | `AttachmentUploadSection`, `CameraCaptureView`, `AttachmentPreviewView` | `FoxDeskAPIClientTests`, `tests/mobile-api-contract-test.php` |
 | Push notifications | `POST /api/mobile/v1/device-token`, `POST /api/mobile/v1/device-token/unregister`, APNs payload | `PushRegistrationService`, `NotificationsView`, `PushNavigationRouter` | `PushRegistrationServiceTests`, `PushNavigationRouterTests`, `tests/ios-mvp-endpoint-matrix-contract-test.php`, `bin/test-apns-push.php` |
@@ -47,7 +48,10 @@ Before TestFlight or App Store submission:
 3. Confirm `tests/ios-mvp-endpoint-matrix-contract-test.php` passes as part of
    `npm run ios:gate`; this locks router paths, native API docs, and the Swift
    client into the same first-release endpoint matrix.
-4. Run `npm run ios:beta:gate`.
-5. Confirm `tmp/ios-beta-readiness/latest.md` lists local gates as passed.
-6. Run `npm run ios:submission:gate` only after the human/live gates in
+4. Confirm `MobileRichTextFormatterTests` passes as part of `npm run ios:gate`;
+   this protects mobile replies from collapsing paragraphs, lists, and basic
+   inline formatting into plain text.
+5. Run `npm run ios:beta:gate`.
+6. Confirm `tmp/ios-beta-readiness/latest.md` lists local gates as passed.
+7. Run `npm run ios:submission:gate` only after the human/live gates in
    `docs/IOS_HANDOFF.md` are ready.
