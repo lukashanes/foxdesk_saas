@@ -215,7 +215,7 @@ Pass criteria:
 - iPhone receives the push,
 - tapping the push opens the correct ticket,
 - notification payload contains a valid `ticket_id`,
-- release UI does not show Push diagnostics.
+- Production/App Store UI does not show Push diagnostics.
 
 ## 8. Final Local Gate
 

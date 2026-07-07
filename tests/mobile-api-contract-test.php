@@ -800,6 +800,8 @@ $assert(str_contains($iosAppleDeveloperSteps, 'APNS_TEST_DEVICE_TOKEN'), 'iOS Ap
 $assert(str_contains($iosAppleDeveloperSteps, 'APPLE_DEVELOPER_BUNDLE_READY=1'), 'iOS Apple Developer steps must document the external readiness flag.');
 $assert(str_contains($iosAppStoreSteps, 'Production archive APNs: production'), 'iOS App Store Connect steps must document Production archive APNs.');
 $assert(str_contains($iosAppStoreSteps, 'Production archive will use bundle id `net.foxdesk.ios`'), 'iOS App Store Connect steps must document Production archive bundle id.');
+$assert(str_contains($iosAppStoreSteps, 'Production/App Store UI does not show Push diagnostics.'), 'iOS App Store Connect steps must use precise Production/App Store diagnostics wording.');
+$assert(!str_contains($iosAppStoreSteps, 'release UI does not show Push diagnostics.'), 'iOS App Store Connect steps must not use ambiguous release UI diagnostics wording.');
 $assert(str_contains($iosOperatorChecklist, 'Production bundle id is `net.foxdesk.ios`'), 'iOS operator checklist must document Production archive bundle id.');
 $assert(str_contains($iosOperatorChecklist, 'Production APNs environment is `production`'), 'iOS operator checklist must document Production APNs.');
 $assert(str_contains($iosAppPrivacyAnswers, 'Does the app track users across apps or websites owned by other companies? No.'), 'iOS App Privacy answers must explicitly rule out tracking.');
