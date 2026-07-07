@@ -897,9 +897,13 @@ $assert(str_contains($iosAccountView, 'https://foxdesk.net/index.php?page=legal&
 $assert(str_contains($iosAccountView, 'https://foxdesk.net/index.php?page=legal&type=terms'), 'iOS Account terms link must point to the live FoxDesk terms document.');
 $assert(str_contains($iosPrivacyManifest, '<key>NSPrivacyTracking</key>'), 'iOS privacy manifest must declare tracking state.');
 $assert(str_contains($iosPrivacyManifest, '<false/>'), 'iOS privacy manifest must declare no tracking.');
+$assert(str_contains($iosPrivacyManifest, 'NSPrivacyAccessedAPICategoryUserDefaults'), 'iOS privacy manifest must declare UserDefaults required reason API.');
+$assert(str_contains($iosPrivacyManifest, 'CA92.1'), 'iOS privacy manifest must declare app-only UserDefaults reason CA92.1.');
 $assert(str_contains($iosPrivacyManifest, 'NSPrivacyCollectedDataTypeEmailAddress'), 'iOS privacy manifest must disclose email address collection.');
 $assert(str_contains($iosPrivacyManifest, 'NSPrivacyCollectedDataTypeCustomerSupport'), 'iOS privacy manifest must disclose customer support data.');
 $assert(str_contains($iosPrivacyManifest, 'NSPrivacyCollectedDataTypePhotosorVideos'), 'iOS privacy manifest must disclose uploaded photo/video data.');
+$assert(str_contains($iosAppPrivacyAnswers, 'UserDefaults'), 'iOS privacy answer sheet must document UserDefaults required reason API usage.');
+$assert(str_contains($iosAppPrivacyAnswers, 'CA92.1'), 'iOS privacy answer sheet must document the CA92.1 UserDefaults reason.');
 $assert(str_contains($iosAccountView, 'Push diagnostics'), 'iOS Account must include debug/staging APNs diagnostics for physical-device smoke testing.');
 $assert(str_contains($iosAccountView, 'session.client.environment.baseURL.absoluteString'), 'iOS debug Account must show the active API base URL for TestFlight/backend verification.');
 $assert(str_contains($iosAccountView, 'Copy APNs token'), 'iOS Account must let testers copy the APNs token for live smoke tests.');

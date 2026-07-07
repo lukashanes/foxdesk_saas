@@ -64,6 +64,18 @@ The app should disclose push notification delivery in review notes, but the
 token is not a customer-facing identifier and must not be exposed in
 Production/App Store UI.
 
+## Required Reason APIs
+
+The app uses `UserDefaults` for app-only local state such as ticket list/detail
+caches, draft comments, and pending push navigation. The privacy manifest must
+declare:
+
+- API category: `NSPrivacyAccessedAPICategoryUserDefaults`
+- Reason: `CA92.1`
+
+Do not add App Group or cross-app reasons unless the iOS app starts sharing
+defaults with an extension, widget, App Clip, or another app.
+
 ## Account Deletion
 
 The app links to a support request for account deletion from Account:
@@ -86,6 +98,8 @@ Before setting `APP_STORE_PRIVACY_REVIEWED=1`, verify:
 - The app has no billing, checkout, or subscription purchase UI.
 - The app has no analytics/tracking SDK.
 - The privacy manifest still declares no tracking.
+- The privacy manifest still declares the `UserDefaults` required reason API
+  with reason `CA92.1`.
 
 ## Related Files
 

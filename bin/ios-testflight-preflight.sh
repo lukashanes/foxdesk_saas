@@ -93,6 +93,8 @@ contains "$MANIFEST" "APS_ENVIRONMENT: production" "Production APNs environment 
 contains "$ENTITLEMENTS" "aps-environment" "APNs entitlement is missing."
 contains "$ENTITLEMENTS" '$(APS_ENVIRONMENT)' "APNs entitlement must be build-configuration driven."
 contains "$PRIVACY" "NSPrivacyAccessedAPITypes" "Privacy manifest must declare accessed API types."
+contains "$PRIVACY" "NSPrivacyAccessedAPICategoryUserDefaults" "Privacy manifest must declare UserDefaults required reason API."
+contains "$PRIVACY" "CA92.1" "Privacy manifest must declare app-only UserDefaults reason CA92.1."
 contains "$PRIVACY" "NSPrivacyCollectedDataTypes" "Privacy manifest must declare collected data."
 contains "$APP_TESTS" "testNotificationCenterEventStoresPendingTicket" "App tests must cover push notification ticket routing."
 contains "$APP_TESTS" "testLaunchStorePendingTicketSurvivesBeforeRouterInit" "App tests must cover cold-start push notification ticket routing."
