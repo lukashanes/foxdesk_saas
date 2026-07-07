@@ -132,6 +132,20 @@ api_write_ready() {
       const step = steps.find((row) => row && row.name === name);
       if (!step || step.ok !== true) process.exit(1);
     }
+    const comment = steps.find((row) => row && row.name === "comment-with-time");
+    const detail = steps.find((row) => row && row.name === "created-ticket-detail");
+    const hasText = (value) => typeof value === "string" && value.trim().length > 0;
+    const hasManualTimes = comment
+      && hasText(comment.manual_date)
+      && hasText(comment.manual_start_time)
+      && hasText(comment.manual_end_time)
+      && comment.exact_time_returned === true;
+    const detailHasExactTime = detail
+      && detail.exact_time_visible === true
+      && detail.manual_date === comment.manual_date
+      && detail.manual_start_time === comment.manual_start_time
+      && detail.manual_end_time === comment.manual_end_time;
+    if (!hasManualTimes || !detailHasExactTime) process.exit(1);
     const download = steps.find((row) => row && row.name === "attachment-download");
     if (!Number.isInteger(Number(download.bytes)) || Number(download.bytes) <= 0) process.exit(1);
   ' "$file"
@@ -285,7 +299,7 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 3. Verify App Review demo account with \`npm run ios:demo:check -- --require-credentials --json\`.
 4. Prove App Review demo write permission by creating a demo ticket and linked timed internal comment with manual date/start/end using \`FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json\`.
 5. Run live mobile API read smoke with \`npm run ios:api:smoke -- --require-credentials --json\`.
-6. Run one opt-in write smoke with \`FOXDESK_IOS_SMOKE_WRITE=1\`; it must prove ticket creation, timed comment, attachment upload, and authorized attachment download.
+6. Run one opt-in write smoke with \`FOXDESK_IOS_SMOKE_WRITE=1\`; it must prove ticket creation, a timed comment with manual date/start/end, attachment upload, and authorized attachment download.
 7. Run physical-device APNs smoke with \`APNS_TEST_DEVICE_TOKEN\`.
 8. Human-review App Store screenshots and privacy answers.
 9. Run \`npm run ios:submission:gate\` and require it to pass.

@@ -90,6 +90,20 @@ api_write_ready() {
       const step = steps.find((row) => row && row.name === name);
       if (!step || step.ok !== true) process.exit(1);
     }
+    const comment = steps.find((row) => row && row.name === "comment-with-time");
+    const detail = steps.find((row) => row && row.name === "created-ticket-detail");
+    const hasText = (value) => typeof value === "string" && value.trim().length > 0;
+    const hasManualTimes = comment
+      && hasText(comment.manual_date)
+      && hasText(comment.manual_start_time)
+      && hasText(comment.manual_end_time)
+      && comment.exact_time_returned === true;
+    const detailHasExactTime = detail
+      && detail.exact_time_visible === true
+      && detail.manual_date === comment.manual_date
+      && detail.manual_start_time === comment.manual_start_time
+      && detail.manual_end_time === comment.manual_end_time;
+    if (!hasManualTimes || !detailHasExactTime) process.exit(1);
     const download = steps.find((row) => row && row.name === "attachment-download");
     if (!Number.isInteger(Number(download.bytes)) || Number(download.bytes) <= 0) process.exit(1);
   ' "$file"
@@ -246,7 +260,7 @@ assert_evidence "Live mobile API read-only smoke" api_read_ready "$API_READ_EVID
 
 log "Running required opt-in write smoke"
 (cd "$ROOT_DIR" && FOXDESK_IOS_SMOKE_WRITE=1 npm run ios:api:smoke -- --require-credentials --json)
-assert_evidence "Opt-in mobile API write smoke" api_write_ready "$API_WRITE_EVIDENCE" "expected latest-live-write.json with ticket, timed comment, attachment upload, metadata, authorized download, and detail reload proof."
+assert_evidence "Opt-in mobile API write smoke" api_write_ready "$API_WRITE_EVIDENCE" "expected latest-live-write.json with ticket, timed comment carrying manual date/start/end, attachment upload, metadata, authorized download, and detail reload proof."
 
 log "Checking complete APNs dry-run payload coverage"
 (cd "$ROOT_DIR" && npm run ios:apns:smoke -- --json)

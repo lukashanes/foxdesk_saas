@@ -84,6 +84,20 @@ api_write_ready() {
       const step = steps.find((row) => row && row.name === name);
       if (!step || step.ok !== true) process.exit(1);
     }
+    const comment = steps.find((row) => row && row.name === "comment-with-time");
+    const detail = steps.find((row) => row && row.name === "created-ticket-detail");
+    const hasText = (value) => typeof value === "string" && value.trim().length > 0;
+    const hasManualTimes = comment
+      && hasText(comment.manual_date)
+      && hasText(comment.manual_start_time)
+      && hasText(comment.manual_end_time)
+      && comment.exact_time_returned === true;
+    const detailHasExactTime = detail
+      && detail.exact_time_visible === true
+      && detail.manual_date === comment.manual_date
+      && detail.manual_start_time === comment.manual_start_time
+      && detail.manual_end_time === comment.manual_end_time;
+    if (!hasManualTimes || !detailHasExactTime) process.exit(1);
     const download = steps.find((row) => row && row.name === "attachment-download");
     if (!Number.isInteger(Number(download.bytes)) || Number(download.bytes) <= 0) process.exit(1);
   ' "$file"
@@ -183,11 +197,11 @@ else
 fi
 
 if api_write_ready "$API_WRITE_EVIDENCE"; then
-  gate_status "Opt-in write smoke" "ready" "Passing write smoke evidence includes ticket creation, timed comment, attachment upload, and authorized attachment download."
+  gate_status "Opt-in write smoke" "ready" "Passing write smoke evidence includes ticket creation, a timed comment with manual date/start/end, attachment upload, and authorized attachment download."
 elif [[ "${FOXDESK_IOS_SMOKE_WRITE:-}" == "1" ]]; then
-  gate_status "Opt-in write smoke" "needs verification" "FOXDESK_IOS_SMOKE_WRITE=1 is set, but write evidence does not include ticket/comment/attachment upload plus authorized download proof; rerun npm run ios:api:smoke -- --require-credentials --json."
+  gate_status "Opt-in write smoke" "needs verification" "FOXDESK_IOS_SMOKE_WRITE=1 is set, but write evidence does not include ticket/comment with manual date/start/end, attachment upload, plus authorized download proof; rerun npm run ios:api:smoke -- --require-credentials --json."
 else
-  gate_status "Opt-in write smoke" "missing" "Run the write smoke once with FOXDESK_IOS_SMOKE_WRITE=1 on staging or a disposable workspace; it must prove attachment download after upload."
+  gate_status "Opt-in write smoke" "missing" "Run the write smoke once with FOXDESK_IOS_SMOKE_WRITE=1 on staging or a disposable workspace; it must prove manual date/start/end and attachment download after upload."
 fi
 
 if evidence_ready "$APNS_SEND_EVIDENCE" "send" && [[ "$(json_field "$APNS_SEND_EVIDENCE" sent 2>/dev/null || true)" == "true" ]]; then

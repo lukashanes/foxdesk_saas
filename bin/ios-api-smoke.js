@@ -260,6 +260,9 @@ async function runWriteSmoke(accessToken) {
   });
 
   const now = new Date();
+  const manualDate = now.toISOString().slice(0, 10);
+  const manualStartTime = '09:00';
+  const manualEndTime = '09:05';
   const title = `[iOS smoke] ${now.toISOString()}`;
   const clientId = asPositiveInt(config.clientId) || asPositiveInt(options?.defaults?.organization_id) || firstId(clients);
   const statusId = asPositiveInt(config.statusId) || asPositiveInt(options?.defaults?.status_id) || firstId(statuses);
@@ -299,6 +302,9 @@ async function runWriteSmoke(accessToken) {
       content: '<p><strong>iOS smoke timed reply</strong></p><p>Verified comment-with-time from the native mobile API.</p>',
       is_internal: true,
       skip_notification: true,
+      manual_date: manualDate,
+      manual_start_time: manualStartTime,
+      manual_end_time: manualEndTime,
       duration_minutes: 5,
       is_billable: false,
       time_summary: 'iOS smoke timed reply',
@@ -306,13 +312,25 @@ async function runWriteSmoke(accessToken) {
   }));
   const commentId = asPositiveInt(comment?.comment_id);
   const timeEntryId = asPositiveInt(comment?.time_entry_id);
-  record('comment-with-time', !!commentId && !!timeEntryId, {
+  const returnedStartedAt = String(comment?.started_at || '');
+  const returnedEndedAt = String(comment?.ended_at || '');
+  const exactTimeReturned = returnedStartedAt.includes(manualDate)
+    && returnedStartedAt.includes(manualStartTime)
+    && returnedEndedAt.includes(manualDate)
+    && returnedEndedAt.includes(manualEndTime);
+  record('comment-with-time', !!commentId && !!timeEntryId && exactTimeReturned, {
     ticket_id: ticketId,
     comment_id: commentId || null,
     time_entry_id: timeEntryId || null,
+    manual_date: manualDate,
+    manual_start_time: manualStartTime,
+    manual_end_time: manualEndTime,
+    started_at: returnedStartedAt || null,
+    ended_at: returnedEndedAt || null,
+    exact_time_returned: exactTimeReturned,
   });
-  if (!commentId || !timeEntryId) {
-    throw new Error('Comment-with-time response did not include linked comment_id and time_entry_id.');
+  if (!commentId || !timeEntryId || !exactTimeReturned) {
+    throw new Error('Comment-with-time response did not include linked ids and exact manual date/start/end evidence.');
   }
 
   const attachmentBody = `FoxDesk iOS smoke attachment\nTicket: ${ticketId}\nCreated: ${now.toISOString()}\n`;
@@ -371,6 +389,10 @@ async function runWriteSmoke(accessToken) {
   const commentText = JSON.stringify(commentRow || {}).toLowerCase();
   const commentContentVisible = commentText.includes('verified comment-with-time');
   const hasLinkedTime = !!linkedTimeRow;
+  const linkedTimeText = JSON.stringify(linkedTimeRow || {});
+  const exactTimeVisible = linkedTimeText.includes(manualDate)
+    && linkedTimeText.includes(manualStartTime)
+    && linkedTimeText.includes(manualEndTime);
   const linkedDuration = asPositiveInt(
     linkedTimeRow?.duration_minutes
     || linkedTimeRow?.minutes
@@ -383,6 +405,7 @@ async function runWriteSmoke(accessToken) {
     && hasComment
     && commentContentVisible
     && hasLinkedTime
+    && exactTimeVisible
     && durationMatches
     && hasAttachment;
   record('created-ticket-detail', detailOK, {
@@ -390,12 +413,16 @@ async function runWriteSmoke(accessToken) {
     comment_visible: hasComment,
     comment_content_visible: commentContentVisible,
     linked_time_visible: hasLinkedTime,
+    exact_time_visible: exactTimeVisible,
+    manual_date: manualDate,
+    manual_start_time: manualStartTime,
+    manual_end_time: manualEndTime,
     duration_minutes: linkedDuration || null,
     duration_matches: durationMatches,
     attachment_visible: hasAttachment,
   });
   if (!detailOK) {
-    throw new Error('Created ticket detail did not expose the smoke comment, linked 5-minute time entry, and attachment together.');
+    throw new Error('Created ticket detail did not expose the smoke comment, linked 5-minute exact manual time entry, and attachment together.');
   }
 }
 

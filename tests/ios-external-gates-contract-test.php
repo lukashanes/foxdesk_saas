@@ -67,5 +67,15 @@ $assert(
     str_contains($reportBody, 'manual date/start/end'),
     'External gate report must require manual date/start/end for the demo reviewer write proof.'
 );
+$scriptBody = file_get_contents($script);
+$assert($scriptBody !== false, 'Unable to read iOS external gates script.');
+$assert(
+    str_contains($scriptBody, 'exact_time_returned') && str_contains($scriptBody, 'exact_time_visible'),
+    'External gates must require exact manual time evidence for the live write smoke.'
+);
+$assert(
+    str_contains($scriptBody, 'detail.manual_date === comment.manual_date'),
+    'External gates must compare live write smoke manual time evidence between comment response and detail reload.'
+);
 
 echo "iOS external gates contract OK\n";

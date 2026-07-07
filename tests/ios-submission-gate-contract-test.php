@@ -46,6 +46,11 @@ foreach ([
 }
 
 $assert($contains('Number(download.bytes) <= 0'), 'Attachment download proof must include a positive byte count.');
+$assert($contains('comment.exact_time_returned === true'), 'Live write smoke proof must require API response evidence for exact manual time.');
+$assert($contains('detail.exact_time_visible === true'), 'Live write smoke proof must require reloaded ticket detail evidence for exact manual time.');
+$assert($contains('detail.manual_date === comment.manual_date'), 'Live write smoke proof must compare manual date between comment and reload evidence.');
+$assert($contains('detail.manual_start_time === comment.manual_start_time'), 'Live write smoke proof must compare manual start time between comment and reload evidence.');
+$assert($contains('detail.manual_end_time === comment.manual_end_time'), 'Live write smoke proof must compare manual end time between comment and reload evidence.');
 $assert($contains('comment_visible !== true'), 'Demo account proof must require the timed comment to be visible after reload.');
 $assert($contains('linked_time_visible !== true'), 'Demo account proof must require linked time to be visible after reload.');
 $assert($contains('manual_date'), 'Demo account proof must require manual_date in the timed comment evidence.');

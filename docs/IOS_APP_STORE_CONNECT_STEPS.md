@@ -192,9 +192,10 @@ Put `FOXDESK_IOS_SMOKE_EMAIL` and `FOXDESK_IOS_SMOKE_PASSWORD` in
 `.env.ios-release` for this step. Keep `FOXDESK_IOS_SMOKE_WRITE=0` by default
 and enable write mode only for this explicit smoke run.
 The write smoke creates one internal smoke ticket, adds one timed internal
-comment, uploads one small attachment, downloads that attachment through the
-authorized URL, reloads ticket detail, verifies the linked time entry, and
-suppresses notifications.
+comment with an explicit manual date, start time, and end time, uploads one
+small attachment, downloads that attachment through the authorized URL, reloads
+ticket detail, verifies the linked exact time entry, and suppresses
+notifications.
 
 ## 7. Run Physical iPhone APNs Smoke
 

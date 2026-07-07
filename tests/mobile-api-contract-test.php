@@ -651,6 +651,7 @@ $assert(str_contains($iosSubmissionGate, 'npm run ios:completion:audit'), 'iOS s
 $assert(str_contains($iosSubmissionGate, 'api_read_ready'), 'iOS submission gate must verify read-only live API evidence after running the live smoke.');
 $assert(str_contains($iosSubmissionGate, 'api_write_ready'), 'iOS submission gate must verify write-smoke evidence after running the write smoke.');
 $assert(str_contains($iosSubmissionGate, 'demo_write_ready'), 'iOS submission gate must verify demo write evidence after running the demo account check.');
+$assert(str_contains($iosSubmissionGate, 'exact_time_returned') && str_contains($iosSubmissionGate, 'exact_time_visible'), 'iOS submission gate must require exact manual time evidence in live write smoke.');
 $assert(str_contains($iosSubmissionGate, 'manual_date') && str_contains($iosSubmissionGate, 'manual_start_time') && str_contains($iosSubmissionGate, 'manual_end_time'), 'iOS submission gate must require manual date/start/end in demo write proof evidence.');
 $assert(str_contains($iosSubmissionGate, 'apns_send_ready'), 'iOS submission gate must verify APNs send evidence after running the live APNs smoke.');
 $assert(str_contains($iosSubmissionGate, 'assert_evidence'), 'iOS submission gate must fail if a live command does not leave passing evidence.');
@@ -852,11 +853,16 @@ $assert(str_contains($iosAPISmoke, 'requestBinary(downloadUrl'), 'iOS API write 
 $assert(str_contains($iosAPISmoke, "record('attachment-download'"), 'iOS API write smoke must record attachment download evidence.');
 $assert(str_contains($iosAPISmoke, 'Attachment download did not return the uploaded smoke file contents'), 'iOS API write smoke must fail clearly when the attachment cannot be downloaded back.');
 $assert(str_contains($iosAPISmoke, 'skip_notification: true'), 'iOS API write smoke must avoid customer notification spam.');
+$assert(str_contains($iosAPISmoke, 'manual_date: manualDate'), 'iOS API write smoke must send manual_date for exact work records.');
+$assert(str_contains($iosAPISmoke, 'manual_start_time: manualStartTime'), 'iOS API write smoke must send manual_start_time for exact work records.');
+$assert(str_contains($iosAPISmoke, 'manual_end_time: manualEndTime'), 'iOS API write smoke must send manual_end_time for exact work records.');
+$assert(str_contains($iosAPISmoke, 'exact_time_returned'), 'iOS API write smoke must prove the API response returns exact manual time evidence.');
+$assert(str_contains($iosAPISmoke, 'exact_time_visible'), 'iOS API write smoke must prove the reloaded ticket detail exposes exact manual time evidence.');
 $assert(str_contains($iosAPISmoke, 'linked_time_visible'), 'iOS API write smoke must prove the created time entry remains linked to its comment.');
 $assert(str_contains($iosAPISmoke, 'asPositiveInt(row?.comment_id) === commentId'), 'iOS API write smoke must require time_entries.comment_id to match the created comment.');
 $assert(str_contains($iosAPISmoke, 'comment_content_visible'), 'iOS API write smoke must prove the created timed comment content is visible after detail reload.');
 $assert(str_contains($iosAPISmoke, 'duration_matches'), 'iOS API write smoke must prove the created linked time entry keeps the expected duration.');
-$assert(str_contains($iosAPISmoke, 'linked 5-minute time entry'), 'iOS API write smoke must fail clearly when linked timed-comment evidence is incomplete.');
+$assert(str_contains($iosAPISmoke, 'linked 5-minute exact manual time entry'), 'iOS API write smoke must fail clearly when linked exact timed-comment evidence is incomplete.');
 $assert(str_contains($iosAPISmoke, '/api/mobile/v1'), 'iOS API smoke script must call versioned mobile API paths.');
 $assert(!str_contains($iosAPISmoke, 'page=api'), 'iOS API smoke script must not use legacy query-string API paths.');
 $assert(str_contains($iosAPISmoke, "request('work'"), 'iOS API smoke script must verify the native work feed.');

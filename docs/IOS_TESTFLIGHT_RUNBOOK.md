@@ -122,8 +122,9 @@ variables, and the exact condition for calling the iOS release ready.
 
    Before TestFlight handoff, run the opt-in write smoke once against a staging
    or disposable production workspace. It creates one internal smoke ticket,
-   adds a timed internal comment, uploads one small attachment, verifies the
-   created ticket detail, and uses `skip_notification: true`:
+   adds a timed internal comment with an explicit manual date, start time, and
+   end time, uploads one small attachment, verifies the created ticket detail,
+   and uses `skip_notification: true`:
    set `FOXDESK_IOS_SMOKE_WRITE=1` in `.env.ios-release` before this run.
 
    ```bash
