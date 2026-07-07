@@ -299,18 +299,41 @@ async function runWriteSmoke(accessToken) {
   const comments = Array.isArray(detail?.comments) ? detail.comments : [];
   const timeEntries = Array.isArray(detail?.time_entries) ? detail.time_entries : [];
   const attachments = Array.isArray(detail?.attachments) ? detail.attachments : [];
-  const hasComment = comments.some((row) => asPositiveInt(row?.id || row?.comment_id) === commentId);
-  const hasLinkedTime = timeEntries.some((row) => (
+  const commentRow = comments.find((row) => asPositiveInt(row?.id || row?.comment_id) === commentId);
+  const linkedTimeRow = timeEntries.find((row) => (
     asPositiveInt(row?.id || row?.time_entry_id) === timeEntryId
     && asPositiveInt(row?.comment_id) === commentId
   ));
+  const hasComment = !!commentRow;
+  const commentText = JSON.stringify(commentRow || {}).toLowerCase();
+  const commentContentVisible = commentText.includes('verified comment-with-time');
+  const hasLinkedTime = !!linkedTimeRow;
+  const linkedDuration = asPositiveInt(
+    linkedTimeRow?.duration_minutes
+    || linkedTimeRow?.minutes
+    || linkedTimeRow?.time_spent
+    || linkedTimeRow?.time_spent_minutes
+  );
+  const durationMatches = linkedDuration === 5;
   const hasAttachment = attachments.some((row) => asPositiveInt(row?.id || row?.attachment_id) === attachmentId);
-  record('created-ticket-detail', !!detail?.ticket && hasComment && hasLinkedTime && hasAttachment, {
+  const detailOK = !!detail?.ticket
+    && hasComment
+    && commentContentVisible
+    && hasLinkedTime
+    && durationMatches
+    && hasAttachment;
+  record('created-ticket-detail', detailOK, {
     ticket_id: ticketId,
     comment_visible: hasComment,
+    comment_content_visible: commentContentVisible,
     linked_time_visible: hasLinkedTime,
+    duration_minutes: linkedDuration || null,
+    duration_matches: durationMatches,
     attachment_visible: hasAttachment,
   });
+  if (!detailOK) {
+    throw new Error('Created ticket detail did not expose the smoke comment, linked 5-minute time entry, and attachment together.');
+  }
 }
 
 async function main() {

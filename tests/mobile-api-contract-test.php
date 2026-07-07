@@ -739,6 +739,9 @@ $assert(str_contains($iosAPISmoke, 'file.attachment_id'), 'iOS API write smoke m
 $assert(str_contains($iosAPISmoke, 'skip_notification: true'), 'iOS API write smoke must avoid customer notification spam.');
 $assert(str_contains($iosAPISmoke, 'linked_time_visible'), 'iOS API write smoke must prove the created time entry remains linked to its comment.');
 $assert(str_contains($iosAPISmoke, 'asPositiveInt(row?.comment_id) === commentId'), 'iOS API write smoke must require time_entries.comment_id to match the created comment.');
+$assert(str_contains($iosAPISmoke, 'comment_content_visible'), 'iOS API write smoke must prove the created timed comment content is visible after detail reload.');
+$assert(str_contains($iosAPISmoke, 'duration_matches'), 'iOS API write smoke must prove the created linked time entry keeps the expected duration.');
+$assert(str_contains($iosAPISmoke, 'linked 5-minute time entry'), 'iOS API write smoke must fail clearly when linked timed-comment evidence is incomplete.');
 $assert(str_contains($iosAPISmoke, '/api/mobile/v1'), 'iOS API smoke script must call versioned mobile API paths.');
 $assert(!str_contains($iosAPISmoke, 'page=api'), 'iOS API smoke script must not use legacy query-string API paths.');
 $assert(str_contains($iosAPISmoke, "request('work'"), 'iOS API smoke script must verify the native work feed.');
