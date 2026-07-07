@@ -23,7 +23,6 @@ struct TicketsView: View {
 
     private let viewOptions: [(id: String, title: String)] = [
         ("all", "All"),
-        ("open", "Open"),
         ("mine", "Mine"),
         ("new", "New"),
         ("waiting", "Waiting"),
@@ -167,8 +166,8 @@ struct TicketsView: View {
 
         if selectedView == "mine" {
             return account.isEmpty
-                ? "Mine only shows tickets assigned to you. Switch to Open to see workspace tickets."
-                : "Mine only shows tickets assigned to you. \(account). Switch to Open to see workspace tickets."
+                ? "Mine only shows tickets assigned to you. Switch to All to see workspace tickets."
+                : "Mine only shows tickets assigned to you. \(account). Switch to All to see workspace tickets."
         }
 
         let view = currentViewTitle.lowercased()

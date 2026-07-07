@@ -53,10 +53,9 @@ assert_email_ingest_notifications(
 );
 
 assert_email_ingest_notifications(
-    str_contains($notifications, "(\$notification['type'] ?? '') === 'new_ticket'") &&
-    str_contains($notifications, "(\$data['source'] ?? '') === 'email'") &&
-    str_contains($notifications, "empty(\$ticket['assignee_id'])"),
-    'Agents must be able to see email-created unassigned ticket notifications for triage.'
+    str_contains($notifications, "can_see_ticket(\$ticket, \$user)") &&
+    strpos($notifications, "can_see_ticket(\$ticket, \$user)") < strpos($notifications, "if ((\$user['role'] ?? '') === 'admin')"),
+    'Ticket notifications must only be visible when the same user can open the ticket detail.'
 );
 
 echo "Email ingest in-app notifications contract passed\n";
