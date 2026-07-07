@@ -83,6 +83,11 @@ final class PushRegistrationService {
         }
     }
 
+    func resetAfterSignOut() {
+        state = .idle
+        apnsToken = nil
+    }
+
     private var currentAPNsEnvironment: APNsEnvironment {
         #if DEBUG
         return .sandbox

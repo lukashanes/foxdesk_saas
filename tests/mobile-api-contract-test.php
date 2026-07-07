@@ -200,6 +200,7 @@ $iosDashboardWorkedTimeView = file_get_contents($root . '/ios/FoxDesk/FoxDesk/So
 $iosDashboardWorkQueuesView = file_get_contents($root . '/ios/FoxDesk/FoxDesk/Sources/DashboardWorkQueuesView.swift');
 $iosDashboardQuickActionsView = file_get_contents($root . '/ios/FoxDesk/FoxDesk/Sources/DashboardQuickActionsView.swift');
 $iosPushRouter = file_get_contents($root . '/ios/FoxDesk/FoxDesk/Sources/PushNavigationRouter.swift');
+$iosPushRegistrationService = file_get_contents($root . '/ios/FoxDesk/FoxDesk/Sources/PushRegistrationService.swift');
 $iosNotificationsView = file_get_contents($root . '/ios/FoxDesk/FoxDesk/Sources/NotificationsView.swift');
 $iosAccountView = file_get_contents($root . '/ios/FoxDesk/FoxDesk/Sources/AccountView.swift');
 $iosSearchView = file_get_contents($root . '/ios/FoxDesk/FoxDesk/Sources/SearchView.swift');
@@ -279,6 +280,7 @@ $assert($iosDashboardWorkedTimeView !== false, 'iOS Dashboard worked-time view i
 $assert($iosDashboardWorkQueuesView !== false, 'iOS Dashboard work queues view is missing.');
 $assert($iosDashboardQuickActionsView !== false, 'iOS Dashboard quick actions view is missing.');
 $assert($iosPushRouter !== false, 'iOS push navigation router is missing.');
+$assert($iosPushRegistrationService !== false, 'iOS push registration service is missing.');
 $assert($iosNotificationsView !== false, 'iOS Notifications view is missing.');
 $assert($iosAccountView !== false, 'iOS Account view is missing.');
 $assert($iosSearchView !== false, 'iOS Search view is missing.');
@@ -1007,6 +1009,7 @@ $assert(str_contains($iosAccountView, 'UIPasteboard.general.string'), 'iOS Accou
 $assert(str_contains($iosAccountView, '.textSelection(.enabled)'), 'iOS Account must make APNs token text selectable.');
 $assert(str_contains($iosAccountView, '#if DEBUG'), 'iOS APNs token diagnostics must be limited to debug/staging builds.');
 $assert(str_contains($iosProject, 'Staging: debug') && str_contains($iosAccountView, '#if DEBUG'), 'iOS Staging builds must expose debug-gated Push diagnostics for APNs smoke testing.');
+$assert(str_contains($iosAccountView, 'pushRegistration.resetAfterSignOut()'), 'iOS Account sign-out must clear local push registration state after server unregister/logout.');
 $assert(str_contains($iosAccountView, 'FoxDeskAccountLinks'), 'iOS Account links must use Account naming internally.');
 $assert(str_contains($iosAccountView, 'AccountLinkRow'), 'iOS Account link rows must use Account naming internally.');
 $assert(!str_contains($iosAccountView, 'FoxDeskSettingsLinks'), 'iOS Account view must not keep legacy Settings link naming.');
@@ -1029,6 +1032,8 @@ $assert(str_contains($iosAPIClientTests, 'testUnregisterDevicePostsDeviceID'), '
 $assert(str_contains($iosAPIClientTests, 'testAppSessionSignOutUnregistersDeviceBeforeLogout'), 'iOS session tests must cover unregister before logout.');
 $assert(str_contains($iosAPIClient, 'session: URLSession = FoxDeskAPIClient.makeDefaultSession()'), 'iOS API client must not default to URLSession.shared.');
 $assert(str_contains($iosAPIClient, 'public static func makeDefaultSession() -> URLSession'), 'iOS API client must expose its cookie-less default session factory.');
+$assert(str_contains($iosPushRegistrationService, 'func resetAfterSignOut()'), 'iOS push registration service must expose an explicit local reset after sign-out.');
+$assert(str_contains($iosPushRegistrationService, 'apnsToken = nil'), 'iOS push sign-out reset must clear the local APNs token preview/state.');
 $assert(str_contains($iosAPIClient, 'configuration.httpCookieStorage = nil'), 'iOS API client default session must not keep browser cookie storage.');
 $assert(str_contains($iosAPIClient, 'configuration.httpShouldSetCookies = false'), 'iOS API client default session must not accept web session cookies.');
 $assert(str_contains($iosAPIClient, 'configuration.requestCachePolicy = .reloadIgnoringLocalCacheData'), 'iOS API client default session should rely on app-level caches rather than URL cache.');

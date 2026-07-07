@@ -91,6 +91,7 @@ struct AccountView: View {
                 Button("Sign out", role: .destructive) {
                     Task {
                         await session.signOut()
+                        pushRegistration.resetAfterSignOut()
                     }
                 }
             }
