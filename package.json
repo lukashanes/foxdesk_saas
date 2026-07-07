@@ -103,6 +103,7 @@
     "ios:gate": "./bin/ios-mvp-gate.sh",
     "ios:completion:audit": "./bin/ios-completion-audit.sh",
     "ios:next": "./bin/ios-next-actions.sh",
+    "ios:next-actions": "./bin/ios-next-actions.sh",
     "ios:mvp:audit": "./bin/ios-mvp-local-audit.sh",
     "ios:beta:gate": "./bin/ios-beta-readiness.sh",
     "ios:external:gates": "./bin/ios-external-gates.sh",

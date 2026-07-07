@@ -9,6 +9,7 @@ $scopeTest = file_get_contents($root . '/tests/ios-mvp-scope-contract-test.php')
 $gate = file_get_contents($root . '/bin/ios-mvp-gate.sh');
 $submissionGate = file_get_contents($root . '/bin/ios-submission-gate.sh');
 $completionAudit = file_get_contents($root . '/bin/ios-completion-audit.sh');
+$package = file_get_contents($root . '/package.json');
 
 $assert = static function (bool $condition, string $message): void {
     if (!$condition) {
@@ -25,6 +26,7 @@ $assert($scopeTest !== false, 'iOS MVP scope contract is missing.');
 $assert($gate !== false, 'iOS MVP gate is missing.');
 $assert($submissionGate !== false, 'iOS submission gate is missing.');
 $assert($completionAudit !== false, 'iOS completion audit is missing.');
+$assert($package !== false, 'package.json is missing.');
 
 $requiredRows = [
     'Sign in to `app.foxdesk.net`' => ['LoginView', 'AppSession', 'KeychainTokenStore'],
@@ -75,6 +77,7 @@ $assert(str_contains($trace, 'npm run ios:mvp:audit'), 'Traceability must start 
 $assert(str_contains($trace, 'tmp/ios-mvp-local-audit/latest.md'), 'Traceability must document the MVP audit evidence report.');
 $assert(str_contains($submissionGate, 'npm run ios:mvp:audit'), 'Submission gate must run the fast MVP audit before final checks.');
 $assert(str_contains($submissionGate, 'npm run ios:completion:audit'), 'Submission gate must run the completion audit before final checks.');
+$assert(str_contains($package, '"ios:next-actions": "./bin/ios-next-actions.sh"'), 'package.json must expose the iOS next-action handoff script as npm run ios:next-actions.');
 $assert(str_contains($completionAudit, 'Create ticket from iPhone'), 'Completion audit must track native iPhone ticket creation separately.');
 $assert(str_contains($completionAudit, 'NewTicketView'), 'Completion audit must cite NewTicketView as native create-ticket evidence.');
 $assert(str_contains($completionAudit, 'POST /api/mobile/v1/tickets'), 'Completion audit must cite the mobile create-ticket API.');
