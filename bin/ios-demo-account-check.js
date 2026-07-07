@@ -89,6 +89,21 @@ function asPositiveInt(value) {
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
+function firstId(rows) {
+  if (!Array.isArray(rows)) return null;
+  for (const row of rows) {
+    const id = asPositiveInt(row?.id || row?.organization_id || row?.user_id || row?.value);
+    if (id) return id;
+  }
+  return null;
+}
+
+function compactObject(value) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entry]) => entry !== undefined && entry !== null && entry !== '')
+  );
+}
+
 async function request(path, { method = 'GET', token = '', body = undefined, query = undefined } = {}) {
   const url = new URL(`${config.baseURL}/${path.replace(/^\/+/, '')}`);
   if (query) {
@@ -189,21 +204,43 @@ async function listTickets(accessToken, view) {
   return tickets;
 }
 
-async function verifyDemoWrite(accessToken, candidateMap) {
+async function verifyDemoWrite(accessToken, createOptions) {
   if (!config.writeEnabled) {
+    record('demo-write-create-ticket', true, {
+      message: 'Skipped. Set FOXDESK_IOS_DEMO_WRITE=1 to prove the reviewer account can create a ticket.',
+    });
     record('demo-write-comment-with-time', true, {
-      message: 'Skipped. Set FOXDESK_IOS_DEMO_WRITE=1 to prove the reviewer account can add an internal timed comment.',
+      message: 'Skipped. Set FOXDESK_IOS_DEMO_WRITE=1 to prove the reviewer account can add a linked internal timed comment.',
     });
     return;
   }
 
-  const ticketId = [...candidateMap.keys()][0];
-  record('demo-write-candidate', !!ticketId, {
+  const clients = Array.isArray(createOptions?.clients) ? createOptions.clients : [];
+  const statuses = Array.isArray(createOptions?.statuses) ? createOptions.statuses : [];
+  const priorities = Array.isArray(createOptions?.priorities) ? createOptions.priorities : [];
+  const now = new Date();
+  const createBody = compactObject({
+    title: `[App Review write check] ${now.toISOString()}`,
+    description: '<p>Internal App Review write check created by the FoxDesk iOS demo account verifier.</p>',
+    organization_id: asPositiveInt(createOptions?.defaults?.organization_id) || firstId(clients),
+    status_id: asPositiveInt(createOptions?.defaults?.status_id) || firstId(statuses),
+    priority_id: asPositiveInt(createOptions?.defaults?.priority_id) || firstId(priorities),
+    tags: 'ios-demo-review',
+    skip_notification: true,
+  });
+
+  const created = dataOf(await request('tickets', {
+    method: 'POST',
+    token: accessToken,
+    body: createBody,
+  }));
+  const ticketId = asPositiveInt(created?.ticket_id || created?.ticket?.id);
+  record('demo-write-create-ticket', !!ticketId, {
     ticket_id: ticketId || null,
-    message: ticketId ? 'Using existing demo ticket for a safe internal write check.' : 'No demo ticket available for write check.',
+    ticket_code: created?.ticket_code || created?.ticket?.ticket_code || null,
   });
   if (!ticketId) {
-    throw new Error('Demo write check requires at least one accessible ticket.');
+    throw new Error('Demo reviewer write check did not create a ticket.');
   }
 
   const payload = dataOf(await request(`tickets/${ticketId}/comment-with-time`, {
@@ -229,6 +266,23 @@ async function verifyDemoWrite(accessToken, candidateMap) {
   });
   if (!commentId || !timeEntryId) {
     throw new Error('Demo reviewer write check did not return linked comment_id and time_entry_id.');
+  }
+
+  const detail = dataOf(await request(`tickets/${ticketId}`, { token: accessToken }));
+  const comments = Array.isArray(detail?.comments) ? detail.comments : [];
+  const timeEntries = Array.isArray(detail?.time_entries) ? detail.time_entries : [];
+  const commentRow = comments.find((row) => asPositiveInt(row?.id || row?.comment_id) === commentId);
+  const linkedTimeRow = timeEntries.find((row) => (
+    asPositiveInt(row?.id || row?.time_entry_id) === timeEntryId
+    && asPositiveInt(row?.comment_id) === commentId
+  ));
+  record('demo-write-detail-reload', !!detail?.ticket && !!commentRow && !!linkedTimeRow, {
+    ticket_id: ticketId,
+    comment_visible: !!commentRow,
+    linked_time_visible: !!linkedTimeRow,
+  });
+  if (!detail?.ticket || !commentRow || !linkedTimeRow) {
+    throw new Error('Demo reviewer write check did not reload the created ticket with its linked timed comment.');
   }
 }
 
@@ -344,7 +398,7 @@ async function main() {
       message: clientContext ? 'At least one ticket opens a readable client context.' : 'Add one ticket linked to a client with related tickets or contacts visible.',
     });
 
-    await verifyDemoWrite(accessToken, candidateMap);
+    await verifyDemoWrite(accessToken, createOptions);
   } finally {
     if (refreshToken) {
       try {

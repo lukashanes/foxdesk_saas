@@ -81,8 +81,8 @@ FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json
 Put `FOXDESK_IOS_DEMO_EMAIL` and `FOXDESK_IOS_DEMO_PASSWORD` in the ignored
 local `.env.ios-release` file. If 2FA is enabled, also set
 `FOXDESK_IOS_DEMO_2FA_CODE`. Set `FOXDESK_IOS_DEMO_WRITE=1` only for the final
-safe write proof; it creates one internal timed comment with notifications
-suppressed.
+safe write proof; it creates one internal demo ticket, adds a linked internal
+timed comment, reloads the ticket detail, and keeps notifications suppressed.
 
 Detailed setup is in `docs/IOS_DEMO_REVIEWER_ACCOUNT.md`.
 

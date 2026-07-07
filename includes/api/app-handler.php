@@ -720,6 +720,7 @@ function api_app_create_ticket()
     if ($title === '') {
         api_error('Ticket title is required.', 422);
     }
+    $skip_notification = api_app_bool($input, 'skip_notification', false);
 
     $owner_id = isset($input['user_id']) ? (int) $input['user_id'] : (int) $user['id'];
     $owner = get_user($owner_id);
@@ -797,7 +798,7 @@ function api_app_create_ticket()
     }
 
     $ticket = get_ticket((int) $ticket_id);
-    if (function_exists('ticket_event_dispatch_in_app')) {
+    if (!$skip_notification && function_exists('ticket_event_dispatch_in_app')) {
         ticket_event_dispatch_in_app('ticket.created', (int) $ticket_id, (int) $user['id'], [
             'comment_preview' => mb_substr(trim(strip_tags((string) ($input['description'] ?? ''))), 0, 80),
         ]);

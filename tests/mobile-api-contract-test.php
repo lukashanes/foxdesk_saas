@@ -6,11 +6,12 @@ $schema = file_get_contents($root . '/includes/schema.sql');
 $router = file_get_contents($root . '/includes/api/router.php');
 $auth = file_get_contents($root . '/includes/auth.php');
 $handler = file_get_contents($root . '/includes/api/mobile-handler.php');
+$appHandler = file_get_contents($root . '/includes/api/app-handler.php');
 $tenant = file_get_contents($root . '/includes/tenant-functions.php');
 $apns = file_get_contents($root . '/includes/apns-push.php');
 $notifications = file_get_contents($root . '/includes/notification-functions.php');
 
-if ($schema === false || $router === false || $auth === false || $handler === false || $tenant === false || $apns === false || $notifications === false) {
+if ($schema === false || $router === false || $auth === false || $handler === false || $appHandler === false || $tenant === false || $apns === false || $notifications === false) {
     fwrite(STDERR, "Unable to read mobile API files.\n");
     exit(1);
 }
@@ -502,6 +503,8 @@ $assert(str_contains($iosCompletionAudit, 'Opt-in write smoke'), 'iOS completion
 $assert(str_contains($iosCompletionAudit, 'Demo reviewer write proof'), 'iOS completion audit must track App Review demo account write proof separately from credentials.');
 $assert(str_contains($iosCompletionAudit, 'FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check'), 'iOS completion audit must document the demo reviewer write proof command.');
 $assert(str_contains($iosCompletionAudit, 'demo-write-comment-with-time'), 'iOS completion audit must inspect demo write proof evidence, not just env flags.');
+$assert(str_contains($iosCompletionAudit, 'demo-write-create-ticket'), 'iOS completion audit must require demo write proof to create a ticket.');
+$assert(str_contains($iosCompletionAudit, 'demo-write-detail-reload'), 'iOS completion audit must require demo write proof to reload the created ticket detail.');
 $assert(str_contains($iosCompletionAudit, 'Basic reply formatting'), 'iOS completion audit must track rich-text reply formatting proof.');
 $assert(str_contains($iosCompletionAudit, 'MobileRichTextFormatter'), 'iOS completion audit must cite the native rich text formatter evidence.');
 $assert(str_contains($iosCompletionAudit, 'Physical iPhone APNs token'), 'iOS completion audit must track physical APNs proof.');
@@ -518,14 +521,21 @@ $assert(str_contains($iosExternalGates, 'tmp/ios-external-gates/latest.md'), 'iO
 $assert(file_exists($root . '/tests/ios-external-gates-contract-test.php'), 'iOS MVP gate must include an executable external gate independence contract.');
 $assert(str_contains($iosDemoAccountCheck, 'ios-demo-account-check'), 'iOS demo account check must write durable redacted evidence.');
 $assert(str_contains($iosDemoAccountCheck, 'FOXDESK_IOS_DEMO_WRITE'), 'iOS demo account check must support an opt-in write proof for reviewer permissions.');
+$assert(str_contains($iosDemoAccountCheck, "request('tickets'"), 'iOS demo account write proof must create a safe internal demo ticket.');
+$assert(str_contains($iosDemoAccountCheck, 'demo-write-create-ticket'), 'iOS demo account write proof must record created ticket evidence.');
 $assert(str_contains($iosDemoAccountCheck, '`tickets/${ticketId}/comment-with-time`'), 'iOS demo account write proof must use the versioned comment-with-time endpoint.');
 $assert(str_contains($iosDemoAccountCheck, 'skip_notification: true'), 'iOS demo account write proof must avoid customer notification spam.');
 $assert(str_contains($iosDemoAccountCheck, 'comment_id') && str_contains($iosDemoAccountCheck, 'time_entry_id'), 'iOS demo account write proof must require linked comment and time ids.');
+$assert(str_contains($iosDemoAccountCheck, 'demo-write-detail-reload'), 'iOS demo account write proof must reload the ticket and verify linked timed comment visibility.');
+$assert(str_contains($appHandler, "\$skip_notification = api_app_bool(\$input, 'skip_notification', false);"), 'Mobile create-ticket API must accept skip_notification.');
+$assert(str_contains($appHandler, "if (!\$skip_notification && function_exists('ticket_event_dispatch_in_app'))"), 'Mobile create-ticket API must honor skip_notification before dispatching in-app events.');
 $assert(str_contains($iosAPISmoke, 'ios-api-smoke'), 'iOS API smoke must write durable redacted evidence.');
 $assert(str_contains($iosAPNsSmoke, 'tmp/ios-apns-smoke'), 'iOS APNs smoke must write durable redacted evidence.');
 $assert(str_contains($iosExternalGates, 'latest-live-demo-account.json'), 'iOS external gates must require passing demo account evidence, not only env values.');
 $assert(str_contains($iosExternalGates, 'Demo reviewer write proof'), 'iOS external gates must report the App Review demo account write proof separately.');
 $assert(str_contains($iosExternalGates, 'demo-write-comment-with-time'), 'iOS external gates must inspect demo write proof evidence, not only credentials.');
+$assert(str_contains($iosExternalGates, 'demo-write-create-ticket'), 'iOS external gates must require demo write proof to create a ticket.');
+$assert(str_contains($iosExternalGates, 'demo-write-detail-reload'), 'iOS external gates must require demo write proof to reload linked detail evidence.');
 $assert(str_contains($iosExternalGates, 'latest-live-read-only.json'), 'iOS external gates must require passing read-only live API smoke evidence.');
 $assert(str_contains($iosExternalGates, 'latest-live-write.json'), 'iOS external gates must require passing write smoke evidence.');
 $assert(str_contains($iosExternalGates, 'latest-send.json'), 'iOS external gates must require passing physical-device APNs send evidence.');
@@ -660,6 +670,8 @@ $assert(str_contains($iosBetaGate, 'npm run ios:demo:check'), 'iOS beta readines
 $assert(str_contains($iosBetaGate, 'Demo reviewer account credentials'), 'iOS beta readiness gate must distinguish demo credentials from App Review notes.');
 $assert(str_contains($iosBetaGate, 'Demo reviewer write proof'), 'iOS beta readiness gate must report demo reviewer write proof as a separate human gate.');
 $assert(str_contains($iosBetaGate, 'demo-write-comment-with-time'), 'iOS beta readiness gate must inspect demo write proof evidence for linked ids.');
+$assert(str_contains($iosBetaGate, 'demo-write-create-ticket'), 'iOS beta readiness gate must require demo write proof to create a ticket.');
+$assert(str_contains($iosBetaGate, 'demo-write-detail-reload'), 'iOS beta readiness gate must require demo write proof to reload linked detail evidence.');
 $assert(str_contains($iosBetaGate, 'npm run ios:release:check'), 'iOS beta readiness gate must run the Release build check.');
 $assert(str_contains($iosBetaGate, 'npm run ios:staging:check'), 'iOS beta readiness gate must run the Staging build check.');
 $assert(str_contains($iosBetaGate, 'npm run ios:sim:smoke'), 'iOS beta readiness gate must run simulator launch smoke.');
@@ -872,6 +884,7 @@ $assert(str_contains($iosDemoReviewerAccount, '.env.ios-release'), 'iOS demo rev
 $assert(!str_contains($iosDemoReviewerAccount, 'FOXDESK_IOS_DEMO_PASSWORD=<password>'), 'iOS demo reviewer account runbook must not encourage pasting demo passwords into shell history.');
 $assert(str_contains($iosDemoReviewerAccount, 'FOXDESK_IOS_DEMO_WRITE=1'), 'iOS demo reviewer account runbook must document the opt-in write proof command.');
 $assert(str_contains($iosDemoReviewerAccount, 'permission to add comment-with-time records'), 'iOS demo reviewer account runbook must require timed-comment permission.');
+$assert(str_contains($iosDemoReviewerAccount, 'creates one internal demo ticket'), 'iOS demo reviewer account runbook must document that write proof creates a demo ticket first.');
 $assert(str_contains($iosDemoReviewerAccount, 'client context opens'), 'iOS demo reviewer account runbook must require readable client context data.');
 $assert(str_contains($iosDemoReviewerAccount, '/api/mobile/v1/clients/{id}'), 'iOS demo reviewer account runbook must document the client context verification endpoint.');
 $assert(str_contains($iosHandoff, 'docs/IOS_APP_STORE_CONNECT_STEPS.md'), 'iOS handoff must link the App Store Connect steps runbook.');

@@ -137,8 +137,9 @@ values. The iOS gate scripts auto-load \`.env.ios-release\` when present.
      \`\`\`
 
 5. **Run demo account write proof** ($(bool_status "$demo_write_status"))
-   - This proves the App Review account can add an internal timed comment
-     without notifying customers. Set \`FOXDESK_IOS_DEMO_WRITE=1\` in
+   - This proves the App Review account can create a demo ticket and add a
+     linked internal timed comment without notifying customers. Set
+     \`FOXDESK_IOS_DEMO_WRITE=1\` in
      \`.env.ios-release\`, then run:
 
      \`\`\`bash

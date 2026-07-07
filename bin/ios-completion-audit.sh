@@ -81,11 +81,16 @@ demo_write_ready() {
   node -e '
     const fs = require("node:fs");
     const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-    const step = Array.isArray(data.steps)
-      ? data.steps.find((row) => row && row.name === "demo-write-comment-with-time")
-      : null;
+    const steps = Array.isArray(data.steps) ? data.steps : [];
+    const create = steps.find((row) => row && row.name === "demo-write-create-ticket");
+    const comment = steps.find((row) => row && row.name === "demo-write-comment-with-time");
+    const reload = steps.find((row) => row && row.name === "demo-write-detail-reload");
     const hasId = (value) => Number.isInteger(Number(value)) && Number(value) > 0;
-    if (!step || step.ok !== true || !hasId(step.comment_id) || !hasId(step.time_entry_id)) {
+    if (
+      !create || create.ok !== true || !hasId(create.ticket_id) ||
+      !comment || comment.ok !== true || !hasId(comment.comment_id) || !hasId(comment.time_entry_id) ||
+      !reload || reload.ok !== true || !hasId(reload.ticket_id) || reload.comment_visible !== true || reload.linked_time_visible !== true
+    ) {
       process.exit(1);
     }
   ' "$file"
@@ -202,7 +207,7 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 1. Create App Store Connect app record for \`net.foxdesk.ios\`.
 2. Confirm Apple Developer explicit App ID \`net.foxdesk.ios\` and enable Push Notifications.
 3. Verify App Review demo account with \`npm run ios:demo:check -- --require-credentials --json\`.
-4. Prove App Review demo write permission with \`FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json\`.
+4. Prove App Review demo write permission by creating a demo ticket and linked timed internal comment with \`FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json\`.
 5. Run live mobile API read smoke with \`npm run ios:api:smoke -- --require-credentials --json\`.
 6. Run one opt-in write smoke with \`FOXDESK_IOS_SMOKE_WRITE=1\`.
 7. Run physical-device APNs smoke with \`APNS_TEST_DEVICE_TOKEN\`.

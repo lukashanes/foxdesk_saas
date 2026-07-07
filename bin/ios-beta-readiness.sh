@@ -90,11 +90,16 @@ demo_write_ready() {
   node -e '
     const fs = require("node:fs");
     const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-    const step = Array.isArray(data.steps)
-      ? data.steps.find((row) => row && row.name === "demo-write-comment-with-time")
-      : null;
+    const steps = Array.isArray(data.steps) ? data.steps : [];
+    const create = steps.find((row) => row && row.name === "demo-write-create-ticket");
+    const comment = steps.find((row) => row && row.name === "demo-write-comment-with-time");
+    const reload = steps.find((row) => row && row.name === "demo-write-detail-reload");
     const hasId = (value) => Number.isInteger(Number(value)) && Number(value) > 0;
-    if (!step || step.ok !== true || !hasId(step.comment_id) || !hasId(step.time_entry_id)) {
+    if (
+      !create || create.ok !== true || !hasId(create.ticket_id) ||
+      !comment || comment.ok !== true || !hasId(comment.comment_id) || !hasId(comment.time_entry_id) ||
+      !reload || reload.ok !== true || !hasId(reload.ticket_id) || reload.comment_visible !== true || reload.linked_time_visible !== true
+    ) {
       process.exit(1);
     }
   ' "$file"
@@ -198,11 +203,11 @@ else
 fi
 
 if demo_write_ready "$DEMO_EVIDENCE"; then
-  mark_human_gate "Demo reviewer write proof" "ready" "passing demo evidence includes an internal comment-with-time write check"
+  mark_human_gate "Demo reviewer write proof" "ready" "passing demo evidence includes ticket creation plus an internal comment-with-time reload check"
 elif [[ "${FOXDESK_IOS_DEMO_WRITE:-}" == "1" ]]; then
-  mark_human_gate "Demo reviewer write proof" "missing" "FOXDESK_IOS_DEMO_WRITE=1 is set, but demo evidence does not include linked comment_id/time_entry_id"
+  mark_human_gate "Demo reviewer write proof" "missing" "FOXDESK_IOS_DEMO_WRITE=1 is set, but demo evidence does not include created ticket plus linked comment/time reload proof"
 else
-  mark_human_gate "Demo reviewer write proof" "missing" "run once with FOXDESK_IOS_DEMO_WRITE=1 to prove the App Review account can add an internal timed comment"
+  mark_human_gate "Demo reviewer write proof" "missing" "run once with FOXDESK_IOS_DEMO_WRITE=1 to prove the App Review account can create a ticket and add an internal timed comment"
 fi
 
 if [[ -n "${FOXDESK_IOS_SMOKE_EMAIL:-}" && -n "${FOXDESK_IOS_SMOKE_PASSWORD:-}" ]]; then

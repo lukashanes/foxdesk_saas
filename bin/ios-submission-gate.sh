@@ -53,7 +53,7 @@ require_env_flag "APPLE_BUSINESS_VERIFIED" "Set APPLE_BUSINESS_VERIFIED=1 after 
 require_env_flag "APP_STORE_PRIVACY_REVIEWED" "Set APP_STORE_PRIVACY_REVIEWED=1 after a human reviews App Store privacy answers."
 require_env_value "FOXDESK_IOS_DEMO_EMAIL" "Set FOXDESK_IOS_DEMO_EMAIL for the App Review demo account verification."
 require_env_value "FOXDESK_IOS_DEMO_PASSWORD" "Set FOXDESK_IOS_DEMO_PASSWORD for the App Review demo account verification."
-require_env_flag "FOXDESK_IOS_DEMO_WRITE" "Set FOXDESK_IOS_DEMO_WRITE=1 to prove the App Review demo account can add an internal timed comment without notifying customers."
+require_env_flag "FOXDESK_IOS_DEMO_WRITE" "Set FOXDESK_IOS_DEMO_WRITE=1 to prove the App Review demo account can create a demo ticket and add a linked internal timed comment without notifying customers."
 require_env_value "FOXDESK_IOS_SMOKE_EMAIL" "Set FOXDESK_IOS_SMOKE_EMAIL for the live mobile API smoke."
 require_env_value "FOXDESK_IOS_SMOKE_PASSWORD" "Set FOXDESK_IOS_SMOKE_PASSWORD for the live mobile API smoke."
 require_env_flag "FOXDESK_IOS_SMOKE_WRITE" "Set FOXDESK_IOS_SMOKE_WRITE=1 and run the write smoke against staging or a disposable workspace."
