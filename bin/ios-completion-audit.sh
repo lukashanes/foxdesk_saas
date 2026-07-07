@@ -18,6 +18,7 @@ demo_preflight_evidence="$ROOT_DIR/tmp/ios-demo-account-check/latest-preflight.j
 api_read_evidence="$ROOT_DIR/tmp/ios-api-smoke/latest-live-read-only.json"
 api_write_evidence="$ROOT_DIR/tmp/ios-api-smoke/latest-live-write.json"
 api_preflight_evidence="$ROOT_DIR/tmp/ios-api-smoke/latest-preflight.json"
+apns_dry_evidence="$ROOT_DIR/tmp/ios-apns-smoke/latest-dry-run.json"
 apns_send_evidence="$ROOT_DIR/tmp/ios-apns-smoke/latest-send.json"
 
 refresh_report() {
@@ -31,6 +32,7 @@ refresh_report() {
 refresh_report "release env status" "npm run ios:release:env"
 refresh_report "external gate snapshot" "npm run ios:external:gates"
 refresh_report "next-action checklist" "npm run ios:next"
+refresh_report "APNs dry-run smoke" "npm run ios:apns:smoke -- --json"
 
 status_from_env_flag() {
   local name="$1"
@@ -82,6 +84,32 @@ evidence_ready() {
   [[ -f "$file" ]] || return 1
   [[ "$(json_field "$file" ok 2>/dev/null || true)" == "true" ]] || return 1
   [[ "$(json_field "$file" mode 2>/dev/null || true)" == "$mode" ]] || return 1
+}
+
+apns_dry_ready() {
+  local file="$1"
+
+  evidence_ready "$file" "dry-run" || return 1
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const required = [
+      "new_ticket",
+      "new_comment",
+      "assigned_to_you",
+      "mentioned",
+      "ticket_updated",
+      "status_changed",
+      "priority_changed",
+      "due_date_reminder",
+    ];
+    const types = Array.isArray(data.validated_types) ? data.validated_types : [];
+    for (const type of required) {
+      if (!types.includes(type)) process.exit(1);
+      const payload = data.validated_payloads && data.validated_payloads[type];
+      if (!payload || Number(payload.ticket_id) <= 0 || payload.type !== type) process.exit(1);
+    }
+  ' "$file"
 }
 
 api_write_ready() {
@@ -168,6 +196,11 @@ elif [[ -n "${APNS_TEST_DEVICE_TOKEN:-}" ]]; then
   apns_status="needs verification"
 fi
 
+apns_dry_status="missing"
+if apns_dry_ready "$apns_dry_evidence"; then
+  apns_dry_status="ready"
+fi
+
 app_record_status="$(status_from_env_flag APP_STORE_CONNECT_APP_RECORD_READY)"
 developer_status="$(status_from_env_flag APPLE_DEVELOPER_BUNDLE_READY)"
 privacy_status="$(status_from_env_flag APP_STORE_PRIVACY_REVIEWED)"
@@ -205,7 +238,7 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 | 7. Comment with time | \`comment-with-time\` endpoint, exact/manual time controls, linked time-entry contracts | Opt-in write smoke: $write_smoke_status |
 | 8. Basic reply formatting | \`MobileRichTextFormatter\` and Xcode tests preserve paragraphs, lists, bold/italic, and HTML escaping | Covered locally; verify visually during write smoke: $write_smoke_status |
 | 9. Attachments and photos | Camera/file picker, upload, preview/download, attachment contracts | Real-device or live smoke attachment upload and authorized download: $write_smoke_status |
-| 10. Push notifications | Device-token endpoints, APNs payload dry-run, native routing tests | Apple Developer Push capability: $developer_status; physical iPhone APNs token: $apns_status |
+| 10. Push notifications | Device-token endpoints, APNs payload dry-run: $apns_dry_status, native routing tests | Apple Developer Push capability: $developer_status; physical iPhone APNs token: $apns_status |
 | 11. Global search | \`SearchView\`, mobile search contract, global search tests | Live smoke against real workspace: $live_smoke_status |
 | 12. Client context | \`ClientContextView\`, mobile client endpoint, demo-account contract expectations | Demo reviewer account populated with client context: $demo_status |
 | 13. Offline/speed fallback | dashboard/list/detail caches, reply drafts, attachment retry state, Xcode tests | No external gate; validate again after live smoke if API payloads change |
@@ -221,6 +254,7 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 | Demo reviewer write proof | $demo_write_status |
 | Live mobile API smoke credentials | $live_smoke_status |
 | Opt-in write smoke | $write_smoke_status |
+| APNs dry-run payload validation | $apns_dry_status |
 | Physical iPhone APNs token | $apns_status |
 | Populated screenshots | $screenshots_status |
 | App Store privacy review | $privacy_status |
@@ -236,6 +270,7 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 - API smoke preflight evidence: $(if [[ -f "$api_preflight_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-api-smoke/latest-preflight.json\`
 - API read live evidence: $(if [[ -f "$api_read_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-api-smoke/latest-live-read-only.json\`
 - API write live evidence: $(if [[ -f "$api_write_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-api-smoke/latest-live-write.json\`
+- APNs dry-run evidence: $(if [[ -f "$apns_dry_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-apns-smoke/latest-dry-run.json\`
 - APNs live-send evidence: $(if [[ -f "$apns_send_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-apns-smoke/latest-send.json\`
 - MVP traceability: \`docs/IOS_MVP_TRACEABILITY.md\`
 - Handoff: \`docs/IOS_HANDOFF.md\`
@@ -263,6 +298,7 @@ if [[ "$app_record_status" == "ready" \
   && "$demo_write_status" == "ready" \
   && "$live_smoke_status" == "ready" \
   && "$write_smoke_status" == "ready" \
+  && "$apns_dry_status" == "ready" \
   && "$apns_status" == "ready" \
   && "$screenshots_status" == "ready" ]]; then
   printf '[ios:completion:audit] Completion evidence is ready for strict submission gate.\n'

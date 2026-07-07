@@ -509,6 +509,7 @@ $assert(str_contains($iosCompletionAudit, 'tmp/ios-completion-audit/latest.md'),
 $assert(str_contains($iosCompletionAudit, 'npm run ios:release:env'), 'iOS completion audit must refresh release env evidence before reporting.');
 $assert(str_contains($iosCompletionAudit, 'npm run ios:external:gates'), 'iOS completion audit must refresh external gate evidence before reporting.');
 $assert(str_contains($iosCompletionAudit, 'npm run ios:next'), 'iOS completion audit must refresh next-action evidence before reporting.');
+$assert(str_contains($iosCompletionAudit, 'npm run ios:apns:smoke -- --json'), 'iOS completion audit must refresh APNs dry-run evidence before reporting.');
 $assert(str_contains($iosCompletionAudit, 'Strict conclusion'), 'iOS completion audit must state whether the full release objective is complete.');
 $assert(str_contains($iosCompletionAudit, 'not complete for TestFlight/App Store'), 'iOS completion audit must avoid false completion while live gates are missing.');
 $assert(str_contains($iosCompletionAudit, 'Opt-in write smoke'), 'iOS completion audit must track comment/time/attachment write proof.');
@@ -522,6 +523,10 @@ $assert(str_contains($iosCompletionAudit, 'demo-write-detail-reload'), 'iOS comp
 $assert(str_contains($iosCompletionAudit, 'Basic reply formatting'), 'iOS completion audit must track rich-text reply formatting proof.');
 $assert(str_contains($iosCompletionAudit, 'MobileRichTextFormatter'), 'iOS completion audit must cite the native rich text formatter evidence.');
 $assert(str_contains($iosCompletionAudit, 'Physical iPhone APNs token'), 'iOS completion audit must track physical APNs proof.');
+$assert(str_contains($iosCompletionAudit, 'APNs dry-run payload validation'), 'iOS completion audit must track APNs dry-run payload validation separately from live send.');
+$assert(str_contains($iosCompletionAudit, 'apns_dry_ready'), 'iOS completion audit must inspect APNs dry-run payload evidence quality.');
+$assert(str_contains($iosCompletionAudit, 'validated_types'), 'iOS completion audit must inspect APNs dry-run validated notification types.');
+$assert(str_contains($iosCompletionAudit, 'latest-dry-run.json'), 'iOS completion audit must report APNs dry-run evidence.');
 $assert(str_contains($iosCompletionAudit, 'App Store Connect app record'), 'iOS completion audit must track App Store Connect proof.');
 $assert(str_contains($iosCompletionAudit, 'Apple Developer explicit App ID'), 'iOS completion audit must track Apple Developer App ID proof.');
 $assert(str_contains($iosCompletionAudit, 'tmp/ios-smoke/latest.md'), 'iOS completion audit must report simulator launch smoke evidence.');
