@@ -113,6 +113,8 @@ $assert(str_contains($appHandler, 'function api_app_create_ticket'), 'Native cre
 $assert(str_contains($appHandler, 'function api_app_add_comment'), 'Native add comment handler is missing.');
 $assert(str_contains($appHandler, 'function api_app_add_comment_with_time'), 'Native add comment with time handler is missing.');
 $assert(str_contains($appHandler, "'comment_id' => !empty(\$entry['comment_id']) ? (int) \$entry['comment_id'] : null"), 'Native ticket time entries must expose comment_id so iOS can render comment-with-time as one activity.');
+$assert(str_contains($appHandler, "'started_at' => \$entry['started_at'] ?? null"), 'Native ticket time entries must expose started_at so iOS can verify exact work records after reload.');
+$assert(str_contains($appHandler, "'ended_at' => \$entry['ended_at'] ?? null"), 'Native ticket time entries must expose ended_at so iOS can verify exact work records after reload.');
 $assert(str_contains($appHandler, 'api_app_resolve_ticket'), 'Native ticket endpoints must share access checks.');
 $assert(str_contains($appHandler, 'can_see_ticket'), 'Native ticket endpoints must enforce ticket access.');
 $assert(str_contains($appHandler, 'function api_app_require_write_auth'), 'Native write endpoints must share app write auth.');
