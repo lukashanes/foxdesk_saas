@@ -1030,6 +1030,7 @@ $assert(str_contains($iosAPIClient, 'path: "device-token/unregister"'), 'iOS API
 $assert(str_contains($iosAppSession, 'client.unregisterDevice'), 'iOS AppSession sign-out must unregister the device before logout.');
 $assert(str_contains($iosAPIClientTests, 'testUnregisterDevicePostsDeviceID'), 'iOS API tests must cover device unregister request shape.');
 $assert(str_contains($iosAPIClientTests, 'testAppSessionSignOutUnregistersDeviceBeforeLogout'), 'iOS session tests must cover unregister before logout.');
+$assert(str_contains($iosPushRegistrationTests, 'testResetAfterSignOutClearsLocalPushState'), 'iOS push registration tests must cover local push-state reset after sign-out.');
 $assert(str_contains($iosAPIClient, 'session: URLSession = FoxDeskAPIClient.makeDefaultSession()'), 'iOS API client must not default to URLSession.shared.');
 $assert(str_contains($iosAPIClient, 'public static func makeDefaultSession() -> URLSession'), 'iOS API client must expose its cookie-less default session factory.');
 $assert(str_contains($iosPushRegistrationService, 'func resetAfterSignOut()'), 'iOS push registration service must expose an explicit local reset after sign-out.');
