@@ -10,17 +10,9 @@ struct DashboardView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var cacheMessage: String?
-    @State private var createdTicketRoute: DashboardTicketRoute?
-    @State private var isNewTicketPresented = false
 
     var body: some View {
         List {
-            AccountSummarySection(
-                userName: displayName,
-                email: session.user?.email ?? "",
-                avatarURL: session.client.resourceURL(from: session.user?.avatar)
-            )
-
             if let cacheMessage {
                 Section {
                     Label(cacheMessage, systemImage: "clock.arrow.circlepath")
@@ -40,19 +32,17 @@ struct DashboardView: View {
             }
 
             if let home {
-                ActiveTimersSection(timers: home.timers ?? [])
-
                 if let time = home.time {
                     WorkedTimeSection(time: time)
                 }
+
+                ActiveTimersSection(timers: home.timers ?? [])
 
                 WorkQueueSections(home: home)
 
                 if let notifications = home.notifications?.items, !notifications.isEmpty {
                     RecentUpdatesSection(notifications: Array(notifications.prefix(3)))
                 }
-
-                QuickActionsSection(unreadCount: home.notifications?.unreadCount ?? 0)
             } else if isLoading {
                 Section {
                     HStack {
@@ -64,45 +54,12 @@ struct DashboardView: View {
             }
         }
         .navigationTitle("Dashboard")
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    isNewTicketPresented = true
-                } label: {
-                    Label("New ticket", systemImage: "plus")
-                }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    Task { await loadHome() }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                }
-                .disabled(isLoading)
-            }
-        }
-        .navigationDestination(item: $createdTicketRoute) { route in
-            TicketDetailView(ticketID: route.id)
-        }
-        .sheet(isPresented: $isNewTicketPresented) {
-            NewTicketView { ticketID in
-                createdTicketRoute = DashboardTicketRoute(id: ticketID)
-                await loadHome()
-            }
-        }
         .task {
             await loadHome()
         }
         .refreshable {
             await loadHome()
         }
-    }
-
-    private var displayName: String {
-        guard let name = session.user?.name, !name.isEmpty else {
-            return "FoxDesk user"
-        }
-        return name
     }
 
     private func loadHome() async {
@@ -142,8 +99,4 @@ struct DashboardView: View {
         home = cached.home
         cacheMessage = message
     }
-}
-
-private struct DashboardTicketRoute: Identifiable, Hashable {
-    let id: Int
 }

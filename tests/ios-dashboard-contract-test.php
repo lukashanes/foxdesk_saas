@@ -35,16 +35,28 @@ $queues = $sources['queues'];
 $quickActions = $sources['quick_actions'];
 $homeModels = $sources['home_models'];
 
+$workedTimePosition = strpos($dashboard, 'WorkedTimeSection(time: time)');
+$activeTimersPosition = strpos($dashboard, 'ActiveTimersSection(timers: home.timers ?? [])');
+$queuesPosition = strpos($dashboard, 'WorkQueueSections(home: home)');
+$recentUpdatesPosition = strpos($dashboard, 'RecentUpdatesSection(notifications:');
+
 $assert(str_contains($dashboard, 'ActiveTimersSection(timers: home.timers ?? [])'), 'iOS Dashboard must surface active timers.');
 $assert(str_contains($dashboard, 'WorkedTimeSection(time: time)'), 'iOS Dashboard must surface worked-time summary.');
 $assert(str_contains($dashboard, 'WorkQueueSections(home: home)'), 'iOS Dashboard must surface ticket work queues.');
 $assert(str_contains($dashboard, 'RecentUpdatesSection(notifications:'), 'iOS Dashboard must surface recent ticket updates.');
-$assert(str_contains($dashboard, 'QuickActionsSection(unreadCount:'), 'iOS Dashboard must keep quick links to work surfaces.');
+$assert(!str_contains($dashboard, 'QuickActionsSection('), 'iOS Dashboard must not duplicate bottom-tab destinations as quick actions.');
+$assert(!str_contains($dashboard, 'NewTicketView'), 'iOS Dashboard must not duplicate the bottom New ticket tab.');
+$assert(!str_contains($dashboard, 'DashboardTicketRoute'), 'iOS Dashboard must not own a dashboard-only created-ticket route.');
+$assert(!str_contains($dashboard, 'ToolbarItem'), 'iOS Dashboard must not show top add/reload toolbar buttons.');
+$assert(str_contains($dashboard, '.refreshable'), 'iOS Dashboard must keep pull-to-refresh.');
+$assert($workedTimePosition !== false && $activeTimersPosition !== false && $workedTimePosition < $activeTimersPosition, 'iOS Dashboard must show KPI/chart before in-progress work.');
+$assert($activeTimersPosition !== false && $queuesPosition !== false && $activeTimersPosition < $queuesPosition, 'iOS Dashboard must show in-progress work before ticket queues.');
+$assert($queuesPosition !== false && $recentUpdatesPosition !== false && $queuesPosition < $recentUpdatesPosition, 'iOS Dashboard must show ticket queues before recent updates.');
 $assert(str_contains($dashboard, 'HomeFeedCacheStore'), 'iOS Dashboard must keep cached fallback for fast/offline launch.');
 $assert(str_contains($dashboard, 'await homeCache.save'), 'iOS Dashboard must persist refreshed home data.');
 $assert(str_contains($dashboard, 'await homeCache.load'), 'iOS Dashboard must load cached home data when offline.');
 
-$assert(str_contains($identity, 'Section("Active timers")'), 'Active timers section title is missing.');
+$assert(str_contains($identity, 'Section("In progress now")'), 'In-progress section title is missing.');
 $assert(str_contains($identity, 'TicketDetailView(ticketID: timer.ticketId)'), 'Active timers must deep-link to the running ticket.');
 $assert(str_contains($identity, 'timer.elapsedLabel'), 'Active timers must show elapsed time.');
 
@@ -66,9 +78,10 @@ $assert(str_contains($workedTime, 'TicketDetailView(ticketID: entry.ticketId)'),
 
 $assert(str_contains($quickActions, 'Section("Recent updates")'), 'Recent updates section title is missing.');
 $assert(str_contains($quickActions, 'TicketDetailView(ticketID: ticketID)'), 'Recent updates with ticket ids must open ticket detail.');
-$assert(str_contains($quickActions, 'TicketsView()'), 'Dashboard quick actions must link to tickets.');
-$assert(str_contains($quickActions, 'SearchView()'), 'Dashboard quick actions must link to global search.');
-$assert(str_contains($quickActions, 'NotificationsView()'), 'Dashboard quick actions must link to notifications.');
+$assert(!str_contains($quickActions, 'struct QuickActionsSection'), 'Dashboard quick actions must be removed in favor of the bottom tab bar.');
+$assert(!str_contains($quickActions, 'TicketsView()'), 'Dashboard quick actions must not duplicate the bottom Tickets tab.');
+$assert(!str_contains($quickActions, 'SearchView()'), 'Dashboard quick actions must not duplicate the bottom Search tab.');
+$assert(!str_contains($quickActions, 'NotificationsView()'), 'Dashboard quick actions must not duplicate notification navigation.');
 
 foreach (['public let work', 'public let timers', 'public let time', 'public let notifications'] as $modelNeedle) {
     $assert(str_contains($homeModels, $modelNeedle), "HomeFeed model must keep {$modelNeedle}.");

@@ -77,9 +77,9 @@ struct ActiveTimersSection: View {
     let timers: [HomeTimer]
 
     var body: some View {
-        Section("Active timers") {
+        Section("In progress now") {
             if timers.isEmpty {
-                Text("No active timers")
+                Text("Nothing running right now")
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(timers) { timer in

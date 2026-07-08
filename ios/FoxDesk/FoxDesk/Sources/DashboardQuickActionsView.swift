@@ -57,30 +57,3 @@ private struct RecentUpdateRow: View {
         .padding(.vertical, 3)
     }
 }
-
-struct QuickActionsSection: View {
-    let unreadCount: Int
-
-    var body: some View {
-        Section("Quick actions") {
-            NavigationLink {
-                TicketsView()
-            } label: {
-                Label("Open tickets", systemImage: "tray.full")
-            }
-
-            NavigationLink {
-                SearchView()
-            } label: {
-                Label("Search tickets and clients", systemImage: "magnifyingglass")
-            }
-
-            NavigationLink {
-                NotificationsView()
-            } label: {
-                Label("Unread notifications", systemImage: "bell")
-            }
-            .badge(unreadCount)
-        }
-    }
-}
