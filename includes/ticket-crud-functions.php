@@ -69,6 +69,34 @@ function get_ticket_by_hash($hash) {
 }
 
 /**
+ * Resolve a ticket by hash without applying the current session tenant.
+ *
+ * Use this only when the caller immediately runs an explicit permission check
+ * against the returned ticket. Regular product code should keep using
+ * get_ticket_by_hash() so tenant boundaries stay enforced at query time.
+ */
+function get_ticket_by_hash_unscoped($hash) {
+    if (empty($hash) || strlen($hash) < 8) {
+        return null;
+    }
+
+    return db_fetch_one("SELECT t.*,
+                                s.name as status_name, s.color as status_color,
+                                u.first_name, u.last_name, u.email, u.avatar,
+                                o.name as organization_name,
+                                p.name as priority_name, p.color as priority_color,
+                                a.first_name as assignee_first_name, a.last_name as assignee_last_name
+                         FROM tickets t
+                         LEFT JOIN statuses s ON t.status_id = s.id
+                         LEFT JOIN users u ON t.user_id = u.id
+                         LEFT JOIN organizations o ON t.organization_id = o.id
+                         LEFT JOIN priorities p ON t.priority_id = p.id
+                         LEFT JOIN users a ON t.assignee_id = a.id
+                         WHERE t.hash = ?
+                         LIMIT 1", [$hash]);
+}
+
+/**
  * Get ticket ID by hash (for internal use)
  */
 function get_ticket_id_by_hash($hash) {
@@ -343,6 +371,34 @@ function get_ticket($id) {
     }
 
     return db_fetch_one($sql, $params);
+}
+
+/**
+ * Resolve a ticket by id without applying the current session tenant.
+ *
+ * Use this only for cross-tenant validation paths that immediately call
+ * can_see_ticket() or perform an equivalent explicit tenant/role check.
+ */
+function get_ticket_unscoped($id) {
+    $ticket_id = (int) $id;
+    if ($ticket_id <= 0) {
+        return null;
+    }
+
+    return db_fetch_one("SELECT t.*,
+                                s.name as status_name, s.color as status_color, s.is_closed,
+                                u.first_name, u.last_name, u.email, u.avatar,
+                                o.name as organization_name,
+                                p.name as priority_name, p.color as priority_color,
+                                a.first_name as assignee_first_name, a.last_name as assignee_last_name
+                         FROM tickets t
+                         LEFT JOIN statuses s ON t.status_id = s.id
+                         LEFT JOIN users u ON t.user_id = u.id
+                         LEFT JOIN organizations o ON t.organization_id = o.id
+                         LEFT JOIN priorities p ON t.priority_id = p.id
+                         LEFT JOIN users a ON t.assignee_id = a.id
+                         WHERE t.id = ?
+                         LIMIT 1", [$ticket_id]);
 }
 
 /**

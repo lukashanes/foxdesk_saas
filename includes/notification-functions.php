@@ -391,7 +391,9 @@ function get_notification_visibility_ticket(int $ticket_id): ?array
 {
     static $cache = [];
     if (!array_key_exists($ticket_id, $cache)) {
-        $cache[$ticket_id] = function_exists('get_ticket') ? get_ticket($ticket_id) : null;
+        $cache[$ticket_id] = function_exists('get_ticket_unscoped')
+            ? get_ticket_unscoped($ticket_id)
+            : (function_exists('get_ticket') ? get_ticket($ticket_id) : null);
     }
 
     return $cache[$ticket_id];

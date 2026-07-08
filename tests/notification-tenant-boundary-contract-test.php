@@ -35,6 +35,12 @@ assert_notification_tenant_boundary(
 );
 
 assert_notification_tenant_boundary(
+    str_contains($notifications, "function_exists('get_ticket_unscoped')")
+        && str_contains($notifications, 'get_ticket_unscoped($ticket_id)'),
+    'Notification visibility must resolve the ticket tenant independently of the current session tenant.'
+);
+
+assert_notification_tenant_boundary(
     !str_contains($notifications, "if ((\$user['role'] ?? '') === 'admin') {\n        return array_values(\$notifications);\n    }"),
     'Admin notification lists must not bypass per-notification tenant visibility checks.'
 );

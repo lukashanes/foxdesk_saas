@@ -111,8 +111,20 @@ function api_app_resolve_ticket(array $source, array $user)
 
     if ($hash !== '') {
         $ticket = get_ticket_by_hash($hash);
+        if (!$ticket
+            && function_exists('is_platform_admin')
+            && is_platform_admin($user)
+            && function_exists('get_ticket_by_hash_unscoped')) {
+            $ticket = get_ticket_by_hash_unscoped($hash);
+        }
     } elseif ($ticket_id > 0) {
         $ticket = get_ticket($ticket_id);
+        if (!$ticket
+            && function_exists('is_platform_admin')
+            && is_platform_admin($user)
+            && function_exists('get_ticket_unscoped')) {
+            $ticket = get_ticket_unscoped($ticket_id);
+        }
     } else {
         api_error('Provide ticket hash or id.', 422);
     }

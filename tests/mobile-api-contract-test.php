@@ -61,6 +61,14 @@ $assert(str_contains($router, $mobileBranch), 'Mobile Bearer auth must not be fl
 $assert(str_contains($auth, "'app-tenant-state' => 'work:read'"), 'API tokens need a read scope for app tenant state.');
 $assert(str_contains($auth, "'app-ticket-create-options' => 'tickets:read'"), 'API tokens need a read scope for native ticket create options.');
 
+$assert(
+    str_contains($appHandler, "function api_app_resolve_ticket")
+        && str_contains($appHandler, "is_platform_admin(\$user)")
+        && str_contains($appHandler, 'get_ticket_unscoped($ticket_id)')
+        && str_contains($appHandler, 'get_ticket_by_hash_unscoped($hash)'),
+    'Mobile ticket detail must avoid false 404s for platform admins while keeping the fallback explicit.'
+);
+
 $assert(str_contains($handler, 'function api_mobile_login'), 'Mobile login handler is missing.');
 $assert(str_contains($handler, 'function api_mobile_verify_2fa'), 'Mobile 2FA verification handler is missing.');
 $assert(str_contains($handler, 'function api_mobile_refresh'), 'Mobile refresh handler is missing.');
