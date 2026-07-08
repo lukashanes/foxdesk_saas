@@ -34,6 +34,16 @@ function ensure_notifications_table(): void
     $done = true;
 
     if (notifications_table_exists()) {
+        if (!column_exists('notifications', 'tenant_id')) {
+            try {
+                db_query("ALTER TABLE notifications ADD COLUMN tenant_id INT NULL AFTER id");
+            } catch (Throwable $e) { /* ignore */ }
+        }
+        if (function_exists('index_exists') && column_exists_uncached('notifications', 'tenant_id') && !index_exists('notifications', 'idx_notifications_tenant_user')) {
+            try {
+                db_query("ALTER TABLE notifications ADD INDEX idx_notifications_tenant_user (tenant_id, user_id)");
+            } catch (Throwable $e) { /* ignore */ }
+        }
         // Ensure actor_id column exists (may be missing from manually created tables)
         if (!column_exists('notifications', 'actor_id')) {
             try {
@@ -68,6 +78,7 @@ function ensure_notifications_table(): void
     try {
         db_query("CREATE TABLE notifications (
             id INT AUTO_INCREMENT PRIMARY KEY,
+            tenant_id INT NULL,
             user_id INT NOT NULL,
             ticket_id INT NULL,
             type VARCHAR(50) NOT NULL DEFAULT 'info',
@@ -76,6 +87,7 @@ function ensure_notifications_table(): void
             is_read TINYINT(1) NOT NULL DEFAULT 0,
             is_resolved TINYINT(1) NOT NULL DEFAULT 0,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_notifications_tenant_user (tenant_id, user_id),
             INDEX idx_user (user_id),
             INDEX idx_user_read (user_id, is_read),
             INDEX idx_ticket (ticket_id),
@@ -109,6 +121,31 @@ function notification_type_meta(string $type): array
     $map = notification_type_meta_map();
 
     return $map[$type] ?? ['icon' => 'bell', 'color' => '#6b7280'];
+}
+
+function notification_tenant_id_for_insert(?int $ticket_id, ?array $ticket = null): ?int
+{
+    if ($ticket && !empty($ticket['tenant_id'])) {
+        return (int) $ticket['tenant_id'];
+    }
+
+    if ($ticket_id && function_exists('column_exists') && column_exists('tickets', 'tenant_id')) {
+        try {
+            $row = db_fetch_one("SELECT tenant_id FROM tickets WHERE id = ? LIMIT 1", [(int) $ticket_id]);
+            if ($row && !empty($row['tenant_id'])) {
+                return (int) $row['tenant_id'];
+            }
+        } catch (Throwable $e) {
+            // Fall through to current tenant fallback.
+        }
+    }
+
+    if (function_exists('current_tenant_id')) {
+        $tenant_id = (int) current_tenant_id();
+        return $tenant_id > 0 ? $tenant_id : null;
+    }
+
+    return null;
 }
 
 // ── Create ───────────────────────────────────────────────────────────────────
@@ -150,6 +187,8 @@ function create_notifications_for_users(array $user_ids, string $type, ?int $tic
         array_values($user_ids)
     );
     $ticket = $ticket_id && function_exists('get_ticket') ? get_ticket((int) $ticket_id) : null;
+    $notification_tenant_id = notification_tenant_id_for_insert($ticket_id, $ticket);
+    $has_tenant_column = function_exists('column_exists') && column_exists('notifications', 'tenant_id');
 
     $now = date('Y-m-d H:i:s');
     $json = json_encode($data, JSON_UNESCAPED_UNICODE);
@@ -173,7 +212,7 @@ function create_notifications_for_users(array $user_ids, string $type, ?int $tic
         }
 
         try {
-            $notification_id = (int) db_insert('notifications', [
+            $insert = [
                 'user_id'    => (int) $u['id'],
                 'ticket_id'  => $ticket_id,
                 'type'       => $type,
@@ -181,7 +220,12 @@ function create_notifications_for_users(array $user_ids, string $type, ?int $tic
                 'data'       => $json,
                 'is_read'    => 0,
                 'created_at' => $now,
-            ]);
+            ];
+            if ($has_tenant_column) {
+                $insert['tenant_id'] = $notification_tenant_id;
+            }
+
+            $notification_id = (int) db_insert('notifications', $insert);
             $notified_user_ids[] = (int) $u['id'];
             if ($notification_id > 0) {
                 $notification_ids_by_user[(int) $u['id']][] = $notification_id;
@@ -446,6 +490,12 @@ function notification_is_relevant_to_regular_user(array $notification, array $us
  */
 function notification_is_visible_to_user(array $notification, array $user): bool
 {
+    $notification_tenant_id = (int) ($notification['tenant_id'] ?? 0);
+    $user_tenant_id = (int) ($user['tenant_id'] ?? 0);
+    if ($notification_tenant_id > 0 && $user_tenant_id > 0 && $notification_tenant_id !== $user_tenant_id) {
+        return false;
+    }
+
     $ticket_id = (int) ($notification['ticket_id'] ?? 0);
     if ($ticket_id <= 0) {
         return true;
@@ -457,6 +507,11 @@ function notification_is_visible_to_user(array $notification, array $user): bool
 
     $ticket = get_notification_visibility_ticket($ticket_id);
     if (!$ticket) {
+        return false;
+    }
+
+    $ticket_tenant_id = (int) ($ticket['tenant_id'] ?? 0);
+    if ($ticket_tenant_id > 0 && $user_tenant_id > 0 && $ticket_tenant_id !== $user_tenant_id) {
         return false;
     }
 
@@ -509,10 +564,6 @@ function filter_notifications_for_user(array $notifications, int $user_id): arra
         return [];
     }
 
-    if (($user['role'] ?? '') === 'admin') {
-        return array_values($notifications);
-    }
-
     $visible = [];
     foreach ($notifications as $notification) {
         if (notification_is_visible_to_user($notification, $user)) {
@@ -539,6 +590,16 @@ function get_user_notifications(int $user_id, int $limit = 50, int $offset = 0, 
 
     $resolved_filter = ($exclude_resolved && column_exists('notifications', 'is_resolved'))
         ? 'AND (n.is_resolved = 0 OR n.is_resolved IS NULL)' : '';
+    $tenant_filter = '';
+    $tenant_params = [];
+    $user = get_notification_visibility_user($user_id);
+    if ($user && column_exists('notifications', 'tenant_id')) {
+        $user_tenant_id = (int) ($user['tenant_id'] ?? 0);
+        if ($user_tenant_id > 0) {
+            $tenant_filter = 'AND (n.tenant_id IS NULL OR n.tenant_id = ?)';
+            $tenant_params[] = $user_tenant_id;
+        }
+    }
 
     $target_count = max(0, $offset) + max(1, $limit);
     $batch_size = max(50, $limit);
@@ -552,10 +613,10 @@ function get_user_notifications(int $user_id, int $limit = 50, int $offset = 0, 
                     u.avatar AS actor_avatar, u.email AS actor_email
              FROM notifications n
              LEFT JOIN users u ON u.id = n.actor_id
-             WHERE n.user_id = ? $resolved_filter
+             WHERE n.user_id = ? $resolved_filter $tenant_filter
              ORDER BY n.created_at DESC
              LIMIT ? OFFSET ?",
-            [$user_id, $batch_size, $scan_offset]
+            array_merge([$user_id], $tenant_params, [$batch_size, $scan_offset])
         );
 
         if (empty($rows)) {
@@ -594,12 +655,22 @@ function get_unread_notification_count(int $user_id): int
 
     $resolved_filter = column_exists('notifications', 'is_resolved')
         ? 'AND is_resolved = 0' : '';
+    $tenant_filter = '';
+    $tenant_params = [];
+    $user = get_notification_visibility_user($user_id);
+    if ($user && column_exists('notifications', 'tenant_id')) {
+        $user_tenant_id = (int) ($user['tenant_id'] ?? 0);
+        if ($user_tenant_id > 0) {
+            $tenant_filter = 'AND (tenant_id IS NULL OR tenant_id = ?)';
+            $tenant_params[] = $user_tenant_id;
+        }
+    }
 
     $rows = db_fetch_all(
-        "SELECT id, ticket_id FROM notifications
-         WHERE user_id = ? AND is_read = 0 $resolved_filter
+        "SELECT id, tenant_id, ticket_id FROM notifications
+         WHERE user_id = ? AND is_read = 0 $resolved_filter $tenant_filter
          ORDER BY created_at DESC",
-        [$user_id]
+        array_merge([$user_id], $tenant_params)
     );
 
     return count(filter_notifications_for_user($rows, $user_id));
