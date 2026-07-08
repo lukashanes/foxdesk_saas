@@ -33,6 +33,55 @@ settings stay on the web for the first release.
 
 ## Latest Verified State
 
+### 2026-07-08 production/mobile verification
+
+Current repository state has these mobile fixes committed and pushed:
+
+- `d9e8d17` updates the native Dashboard to use the same work overview model as
+  the web workspace dashboard: worked-time KPI, graph-ready work data, active
+  work, work queues, team time, and recent updates. The duplicate top add/reload
+  actions were removed because pull-to-refresh and the bottom new-ticket action
+  already cover those flows.
+- `ce54df2` makes iOS local caches tenant-aware, so the same user id in another
+  workspace cannot read stale ticket list/detail/dashboard cache data.
+- `eec9a65` fixes mobile notification ticket resolution for historical
+  notifications whose own tenant column is stale or null. Notification access is
+  now checked against the real ticket tenant boundary. Platform-admin direct
+  ticket detail has an explicit unscoped lookup fallback before permission
+  checks; ordinary workspace users still do not get cross-tenant existence
+  leaks.
+- `585efb8` ignores iOS device build artifacts so local physical-device builds
+  do not dirty the repository.
+
+Production checks completed on 2026-07-08:
+
+```bash
+npm run prod:smoke
+docker compose -f docker-compose.prod.yml exec -T app php tests/notification-tenant-boundary-contract-test.php
+docker compose -f docker-compose.prod.yml exec -T app php tests/mobile-api-v1-routing-contract-test.php
+```
+
+Local iOS simulator test completed on 2026-07-08:
+
+```bash
+xcodebuild test -project ios/FoxDesk/FoxDesk.xcodeproj -scheme FoxDesk -configuration Debug -destination 'id=0DAF69CA-AF63-4F05-A22F-1DF1316BC51E' -derivedDataPath ios/FoxDesk/DerivedData CODE_SIGNING_ALLOWED=NO -quiet
+```
+
+Physical-device build/install completed for paired iPhone
+`5B262097-422F-5576-A3D9-48DD880B038B`. Remote launch can fail when the phone
+is locked; that is an iOS device state issue, not a build failure.
+
+Important production workspace note:
+
+- `hanes.lukas@gmail.com` currently belongs to the default `FoxDesk Cloud`
+  workspace, which has no imported Aenze tickets.
+- The imported Aenze Helpdesk data is under the `Aenze Helpdesk` workspace
+  owned by `lh@aenze.com`.
+- To see the imported tickets in the native app, sign in with an account that
+  belongs to the `Aenze Helpdesk` workspace. Do not move or merge
+  `hanes.lukas@gmail.com` into that workspace without explicit operator approval,
+  because it changes production account/workspace data.
+
 As of 2026-07-07 06:20 UTC, the current checked-in iOS handoff state reflects
 the latest verified local release evidence. The local TestFlight preflight and
 focused iOS gate have passed in this release run:
