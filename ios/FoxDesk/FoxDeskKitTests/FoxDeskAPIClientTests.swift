@@ -2273,7 +2273,7 @@ final class FoxDeskAPIClientTests: XCTestCase {
         XCTAssertNil(clearedDraft)
     }
 
-    func testTicketListCacheStorePersistsPerUserAndList() async throws {
+    func testTicketListCacheStorePersistsPerUserTenantAndList() async throws {
         let suiteName = "FoxDeskTicketListCacheTests-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -2283,19 +2283,22 @@ final class FoxDeskAPIClientTests: XCTestCase {
 
         try await store.save(
             userId: 7,
+            tenantId: 3,
             listKey: "view-open-assigned-me-search-vpn",
             tickets: [ticket],
             totalCount: 1
         )
 
-        let restored = try await store.load(userId: 7, listKey: "view-open-assigned-me-search-vpn")
+        let restored = try await store.load(userId: 7, tenantId: 3, listKey: "view-open-assigned-me-search-vpn")
         XCTAssertEqual(restored?.tickets.first?.id, 42)
         XCTAssertEqual(restored?.tickets.first?.title, "VPN access stopped working")
         XCTAssertEqual(restored?.totalCount, 1)
 
-        let otherList = try await store.load(userId: 7, listKey: "view-open-assigned-all-search-vpn")
-        let otherUser = try await store.load(userId: 8, listKey: "view-open-assigned-me-search-vpn")
+        let otherList = try await store.load(userId: 7, tenantId: 3, listKey: "view-open-assigned-all-search-vpn")
+        let otherTenant = try await store.load(userId: 7, tenantId: 4, listKey: "view-open-assigned-me-search-vpn")
+        let otherUser = try await store.load(userId: 8, tenantId: 3, listKey: "view-open-assigned-me-search-vpn")
         XCTAssertNil(otherList)
+        XCTAssertNil(otherTenant)
         XCTAssertNil(otherUser)
     }
 
@@ -2307,20 +2310,21 @@ final class FoxDeskAPIClientTests: XCTestCase {
         let store = TicketListCacheStore(defaults: defaults)
         try await store.save(
             userId: 7,
+            tenantId: 3,
             listKey: "view-waiting-assigned-all-search-",
             tickets: [cachedTicket(id: 55, title: "Waiting ticket")],
             totalCount: 1
         )
 
-        let saved = try await store.load(userId: 7, listKey: "view-waiting-assigned-all-search-")
+        let saved = try await store.load(userId: 7, tenantId: 3, listKey: "view-waiting-assigned-all-search-")
         XCTAssertNotNil(saved)
 
-        await store.clear(userId: 7, listKey: "view-waiting-assigned-all-search-")
-        let cleared = try await store.load(userId: 7, listKey: "view-waiting-assigned-all-search-")
+        await store.clear(userId: 7, tenantId: 3, listKey: "view-waiting-assigned-all-search-")
+        let cleared = try await store.load(userId: 7, tenantId: 3, listKey: "view-waiting-assigned-all-search-")
         XCTAssertNil(cleared)
     }
 
-    func testTicketDetailCacheStorePersistsPerUserAndTicket() async throws {
+    func testTicketDetailCacheStorePersistsPerUserTenantAndTicket() async throws {
         let suiteName = "FoxDeskTicketDetailCacheTests-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -2328,17 +2332,19 @@ final class FoxDeskAPIClientTests: XCTestCase {
         let store = TicketDetailCacheStore(defaults: defaults)
         let detail = cachedTicketDetail(id: 42, title: "VPN access stopped working")
 
-        try await store.save(userId: 7, ticketId: 42, detail: detail)
+        try await store.save(userId: 7, tenantId: 3, ticketId: 42, detail: detail)
 
-        let restored = try await store.load(userId: 7, ticketId: 42)
+        let restored = try await store.load(userId: 7, tenantId: 3, ticketId: 42)
         XCTAssertEqual(restored?.detail.ticket.id, 42)
         XCTAssertEqual(restored?.detail.comments.first?.contentText, "Checked VPN profile.")
         XCTAssertEqual(restored?.detail.attachments.first?.filename, "vpn.png")
         XCTAssertEqual(restored?.detail.timeEntries.first?.durationMinutes, 48)
 
-        let otherTicket = try await store.load(userId: 7, ticketId: 43)
-        let otherUser = try await store.load(userId: 8, ticketId: 42)
+        let otherTicket = try await store.load(userId: 7, tenantId: 3, ticketId: 43)
+        let otherTenant = try await store.load(userId: 7, tenantId: 4, ticketId: 42)
+        let otherUser = try await store.load(userId: 8, tenantId: 3, ticketId: 42)
         XCTAssertNil(otherTicket)
+        XCTAssertNil(otherTenant)
         XCTAssertNil(otherUser)
     }
 
@@ -2348,17 +2354,17 @@ final class FoxDeskAPIClientTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let store = TicketDetailCacheStore(defaults: defaults)
-        try await store.save(userId: 7, ticketId: 42, detail: cachedTicketDetail(id: 42, title: "VPN"))
+        try await store.save(userId: 7, tenantId: 3, ticketId: 42, detail: cachedTicketDetail(id: 42, title: "VPN"))
 
-        let saved = try await store.load(userId: 7, ticketId: 42)
+        let saved = try await store.load(userId: 7, tenantId: 3, ticketId: 42)
         XCTAssertNotNil(saved)
 
-        await store.clear(userId: 7, ticketId: 42)
-        let cleared = try await store.load(userId: 7, ticketId: 42)
+        await store.clear(userId: 7, tenantId: 3, ticketId: 42)
+        let cleared = try await store.load(userId: 7, tenantId: 3, ticketId: 42)
         XCTAssertNil(cleared)
     }
 
-    func testHomeFeedCacheStorePersistsPerUser() async throws {
+    func testHomeFeedCacheStorePersistsPerUserAndTenant() async throws {
         let suiteName = "FoxDeskHomeFeedCacheTests-\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -2366,15 +2372,17 @@ final class FoxDeskAPIClientTests: XCTestCase {
         let store = HomeFeedCacheStore(defaults: defaults)
         let home = cachedHomeFeed()
 
-        try await store.save(userId: 7, home: home)
+        try await store.save(userId: 7, tenantId: 3, home: home)
 
-        let restored = try await store.load(userId: 7)
+        let restored = try await store.load(userId: 7, tenantId: 3)
         XCTAssertEqual(restored?.home.work?["mine"]?.items?.first?.title, "VPN access stopped working")
         XCTAssertEqual(restored?.home.timers?.first?.elapsedMinutes, 25)
         XCTAssertEqual(restored?.home.time?.chart?.days?.first?.minutes, 35)
         XCTAssertEqual(restored?.home.notifications?.unreadCount, 3)
 
-        let otherUser = try await store.load(userId: 8)
+        let otherTenant = try await store.load(userId: 7, tenantId: 4)
+        let otherUser = try await store.load(userId: 8, tenantId: 3)
+        XCTAssertNil(otherTenant)
         XCTAssertNil(otherUser)
     }
 
@@ -2384,13 +2392,13 @@ final class FoxDeskAPIClientTests: XCTestCase {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let store = HomeFeedCacheStore(defaults: defaults)
-        try await store.save(userId: 7, home: cachedHomeFeed())
+        try await store.save(userId: 7, tenantId: 3, home: cachedHomeFeed())
 
-        let saved = try await store.load(userId: 7)
+        let saved = try await store.load(userId: 7, tenantId: 3)
         XCTAssertNotNil(saved)
 
-        await store.clear(userId: 7)
-        let cleared = try await store.load(userId: 7)
+        await store.clear(userId: 7, tenantId: 3)
+        let cleared = try await store.load(userId: 7, tenantId: 3)
         XCTAssertNil(cleared)
     }
 

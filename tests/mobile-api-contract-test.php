@@ -1205,15 +1205,15 @@ $assert(str_contains($iosTicketModels, 'commentId: Int?'), 'iOS time entry model
 $assert(str_contains($iosTicketDraft, 'TicketCommentDraftStore'), 'iOS app must include a draft store for offline reply continuity.');
 $assert(str_contains($iosTicketDraft, 'user-\\(userId).ticket-\\(ticketId)'), 'iOS comment drafts must be isolated per user and ticket.');
 $assert(str_contains($iosTicketListCache, 'TicketListCacheStore'), 'iOS app must include a ticket list cache store for fast/offline continuity.');
-$assert(str_contains($iosTicketListCache, 'user-\\(userId).\\(safeListKey)'), 'iOS ticket list cache must be isolated per user and list key.');
+$assert(str_contains($iosTicketListCache, 'tenant-\\(tenantId).\\(safeListKey)'), 'iOS ticket list cache must be isolated per user, tenant, and list key.');
 $assert(str_contains($iosHomeFeedCache, 'HomeFeedCacheStore'), 'iOS app must include a home feed cache store for fast first-screen continuity.');
 $assert(str_contains($iosHomeFeedCache, 'home-feed-cache'), 'iOS home feed cache must use a dedicated storage namespace.');
-$assert(str_contains($iosHomeFeedCache, 'user-\\(userId)'), 'iOS home feed cache must be isolated per user.');
+$assert(str_contains($iosHomeFeedCache, 'tenant-\\(tenantId)'), 'iOS home feed cache must be isolated per user and tenant.');
 $assert(str_contains($iosDashboardView, 'HomeFeedCacheStore'), 'iOS Dashboard must use the home feed cache store.');
 $assert(str_contains($iosDashboardView, 'Showing saved dashboard'), 'iOS Dashboard must clearly label cached home feed data.');
 $assert(str_contains($iosDashboardView, 'loadCachedHome'), 'iOS Dashboard must load cached home data before or after network failures.');
 $assert(str_contains($iosTicketDetailCache, 'TicketDetailCacheStore'), 'iOS app must include a ticket detail cache store for fast/offline continuity.');
-$assert(str_contains($iosTicketDetailCache, 'user-\\(userId).ticket-\\(ticketId)'), 'iOS ticket detail cache must be isolated per user and ticket.');
+$assert(str_contains($iosTicketDetailCache, 'tenant-\\(tenantId).ticket-\\(ticketId)'), 'iOS ticket detail cache must be isolated per user, tenant, and ticket.');
 $assert(str_contains($iosTicketsView, 'TicketListCacheStore'), 'iOS ticket list screen must use the ticket list cache store.');
 $assert(str_contains($iosTicketsView, 'Showing saved tickets'), 'iOS ticket list must clearly label cached ticket data.');
 $assert(str_contains($iosTicketDetailView, 'TicketDetailCacheStore'), 'iOS ticket detail screen must use the ticket detail cache store.');
@@ -1232,12 +1232,12 @@ $assert(str_contains($iosTicketComposerView, 'persistDraft'), 'iOS comment compo
 $assert(str_contains($iosTicketComposerView, 'draftStore.clear'), 'iOS comment composer must clear drafts after a successful send.');
 $assert(str_contains($iosAPIClientTests, 'testTicketCommentDraftStorePersistsPerTicketAndUser'), 'iOS tests must cover per-ticket/per-user draft storage.');
 $assert(str_contains($iosAPIClientTests, 'testTicketCommentDraftStoreClearsEmptyAndSubmittedDrafts'), 'iOS tests must cover draft clearing.');
-$assert(str_contains($iosAPIClientTests, 'testTicketListCacheStorePersistsPerUserAndList'), 'iOS tests must cover per-user/per-list ticket cache storage.');
+$assert(str_contains($iosAPIClientTests, 'testTicketListCacheStorePersistsPerUserTenantAndList'), 'iOS tests must cover per-user/per-tenant/per-list ticket cache storage.');
 $assert(str_contains($iosAPIClientTests, 'testTicketListCacheStoreClearsSavedLists'), 'iOS tests must cover ticket cache clearing.');
 $assert(str_contains($iosAPIClientTests, 'testTicketListSendsCustomLimitAndOffsetForPagination'), 'iOS tests must cover ticket list pagination requests.');
-$assert(str_contains($iosAPIClientTests, 'testHomeFeedCacheStorePersistsPerUser'), 'iOS tests must cover per-user home feed cache storage.');
+$assert(str_contains($iosAPIClientTests, 'testHomeFeedCacheStorePersistsPerUserAndTenant'), 'iOS tests must cover per-user/per-tenant home feed cache storage.');
 $assert(str_contains($iosAPIClientTests, 'testHomeFeedCacheStoreClearsSavedFeed'), 'iOS tests must cover home feed cache clearing.');
-$assert(str_contains($iosAPIClientTests, 'testTicketDetailCacheStorePersistsPerUserAndTicket'), 'iOS tests must cover per-user/per-ticket detail cache storage.');
+$assert(str_contains($iosAPIClientTests, 'testTicketDetailCacheStorePersistsPerUserTenantAndTicket'), 'iOS tests must cover per-user/per-tenant/per-ticket detail cache storage.');
 $assert(str_contains($iosAPIClientTests, 'testTicketDetailCacheStoreClearsSavedTicket'), 'iOS tests must cover ticket detail cache clearing.');
 
 echo "Mobile API contract OK\n";

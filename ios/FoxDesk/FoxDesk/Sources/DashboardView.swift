@@ -77,7 +77,7 @@ struct DashboardView: View {
             home = freshHome
             cacheMessage = nil
             if let userId = session.user?.id {
-                try? await homeCache.save(userId: userId, home: freshHome)
+                try? await homeCache.save(userId: userId, tenantId: cacheTenantId, home: freshHome)
             }
         } catch {
             if home == nil {
@@ -93,10 +93,14 @@ struct DashboardView: View {
 
     private func loadCachedHome(message: String) async {
         guard let userId = session.user?.id,
-              let cached = try? await homeCache.load(userId: userId) else {
+              let cached = try? await homeCache.load(userId: userId, tenantId: cacheTenantId) else {
             return
         }
         home = cached.home
         cacheMessage = message
+    }
+
+    private var cacheTenantId: Int {
+        session.tenantState?.tenant.id ?? session.user?.tenantId ?? 0
     }
 }

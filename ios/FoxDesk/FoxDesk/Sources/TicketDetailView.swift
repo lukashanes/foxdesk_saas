@@ -124,7 +124,7 @@ struct TicketDetailView: View {
             detail = freshDetail
             cacheMessage = nil
             if let userId = session.user?.id {
-                try? await detailCache.save(userId: userId, ticketId: ticketID, detail: freshDetail)
+                try? await detailCache.save(userId: userId, tenantId: cacheTenantId, ticketId: ticketID, detail: freshDetail)
             }
         } catch {
             if detail == nil {
@@ -140,11 +140,15 @@ struct TicketDetailView: View {
 
     private func loadCachedDetail(message: String) async {
         guard let userId = session.user?.id,
-              let cached = try? await detailCache.load(userId: userId, ticketId: ticketID) else {
+              let cached = try? await detailCache.load(userId: userId, tenantId: cacheTenantId, ticketId: ticketID) else {
             return
         }
         detail = cached.detail
         cacheMessage = message
+    }
+
+    private var cacheTenantId: Int {
+        session.tenantState?.tenant.id ?? session.user?.tenantId ?? 0
     }
 }
 

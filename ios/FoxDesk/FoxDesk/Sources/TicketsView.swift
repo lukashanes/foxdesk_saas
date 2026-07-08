@@ -294,6 +294,7 @@ struct TicketsView: View {
     private func saveCurrentTicketCache(userId: Int) async {
         try? await ticketCache.save(
             userId: userId,
+            tenantId: cacheTenantId,
             listKey: ticketListCacheKey,
             tickets: tickets,
             totalCount: totalCount
@@ -314,7 +315,7 @@ struct TicketsView: View {
 
     private func loadCachedTickets(userId: Int) async {
         do {
-            if let cached = try await ticketCache.load(userId: userId, listKey: ticketListCacheKey) {
+            if let cached = try await ticketCache.load(userId: userId, tenantId: cacheTenantId, listKey: ticketListCacheKey) {
                 tickets = cached.tickets
                 totalCount = cached.totalCount
                 hasMoreTickets = hasMoreFromTotal
@@ -331,6 +332,10 @@ struct TicketsView: View {
             hasMoreTickets = false
             cacheMessage = nil
         }
+    }
+
+    private var cacheTenantId: Int {
+        session.tenantState?.tenant.id ?? session.user?.tenantId ?? 0
     }
 }
 
