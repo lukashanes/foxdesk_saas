@@ -10,6 +10,7 @@ config.php
 .env.production
 .env.ios-release
 ios/FoxDesk/DerivedData/
+ios/FoxDesk/DeviceDerivedData/
 .stripe.generated.env
 cloudflare/email-router/worker-configuration.d.ts
 deploy/hetzner/.env.prod
