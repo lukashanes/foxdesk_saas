@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // Check if user exists
             $user = null;
-            $user = db_fetch_one("SELECT id, first_name, email FROM users WHERE email = ? AND is_active = 1", [$email]);
+            $user = db_fetch_one("SELECT id, tenant_id, first_name, email FROM users WHERE email = ? AND is_active = 1", [$email]);
 
             if ($user) {
                 // Generate reset token
@@ -52,17 +52,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $token_hash = hash_reset_token($token);
                 $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
-                db_update('users', [
-                    'reset_token' => $token_hash,
-                    'reset_token_expires' => $expires
-                ], 'id = ?', [$user['id']]);
+                $stored = password_reset_store_user_token($user, $token_hash, $expires);
 
                 // Send email
-                $reset_link = APP_URL . '/index.php?page=reset-password&token=' . $token;
+                $base_url = rtrim(function_exists('get_app_url') ? get_app_url() : APP_URL, '/');
+                $reset_link = $base_url . '/index.php?page=reset-password&token=' . urlencode($token);
 
                 // Try to send email
                 require_once BASE_PATH . '/includes/mailer.php';
-                $sent = send_password_reset_email($user['email'], $user['first_name'], $reset_link);
+                $sent = $stored > 0 && send_password_reset_email($user['email'], $user['first_name'], $reset_link);
             }
 
             rate_limit_record($rate_key, 900);

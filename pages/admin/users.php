@@ -307,7 +307,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Send password reset email from admin
     if (isset($_POST['send_reset_email'])) {
         $id = (int) $_POST['id'];
-            $user = db_fetch_one("SELECT id, first_name, email, is_active FROM users WHERE id = ? AND tenant_id = ?", [$id, current_tenant_id()]);
+            $user = db_fetch_one("SELECT id, tenant_id, first_name, email, is_active FROM users WHERE id = ? AND tenant_id = ?", [$id, current_tenant_id()]);
 
         if ($user && $user['is_active']) {
             require_once BASE_PATH . '/includes/mailer.php';
@@ -317,12 +317,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $token_hash = hash_reset_token($token);
             $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
-            db_update('users', [
-                'reset_token' => $token_hash,
-                'reset_token_expires' => $expires
-            ], 'id = ? AND tenant_id = ?', [$user['id'], current_tenant_id()]);
+            password_reset_store_user_token($user, $token_hash, $expires);
 
-            $reset_link = get_app_url() . '/index.php?page=reset-password&token=' . $token;
+            $reset_link = rtrim(get_app_url(), '/') . '/index.php?page=reset-password&token=' . urlencode($token);
             $sent = send_password_reset_email($user['email'], $user['first_name'], $reset_link);
 
             if ($sent) {

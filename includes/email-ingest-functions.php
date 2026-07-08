@@ -1656,14 +1656,13 @@ function email_ingest_prepare_user_password_setup($user_id)
     }
 
     try {
-        $token = bin2hex(random_bytes(32));
-        $token_hash = hash('sha256', $token);
+        require_once BASE_PATH . '/includes/security-helpers.php';
+
+        $token = generate_reset_token();
+        $token_hash = hash_reset_token($token);
         $expires = date('Y-m-d H:i:s', strtotime('+24 hours'));
 
-        db_update('users', [
-            'reset_token' => $token_hash,
-            'reset_token_expires' => $expires,
-        ], 'id = ?', [$user_id]);
+        password_reset_store_user_token(['id' => $user_id], $token_hash, $expires);
 
         return $token;
     } catch (Throwable $e) {
@@ -1772,7 +1771,7 @@ function email_ingest_send_requester_notifications($ticket_id, $ticket_created, 
 
     email_ingest_require_mailer_dependencies();
 
-    $user = db_fetch_one("SELECT id, first_name, last_name, email, language FROM users WHERE id = ? LIMIT 1", [$user_id]);
+    $user = db_fetch_one("SELECT id, tenant_id, first_name, last_name, email, language FROM users WHERE id = ? LIMIT 1", [$user_id]);
     if (!$user || empty($user['email'])) {
         return;
     }

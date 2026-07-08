@@ -108,10 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $token_hash = hash_reset_token($token);
         $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
-        db_update('users', [
-            'reset_token' => $token_hash,
-            'reset_token_expires' => $expires
-        ], 'id = ?', [$user['id']]);
+        password_reset_store_user_token($user, $token_hash, $expires);
 
         require_once BASE_PATH . '/includes/mailer.php';
         $reset_link = rtrim(function_exists('get_app_url') ? get_app_url() : APP_URL, '/') . '/index.php?page=reset-password&token=' . urlencode($token);

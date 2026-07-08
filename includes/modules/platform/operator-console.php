@@ -171,13 +171,13 @@ function platform_create_owner_reset(int $tenant_id, array $owner): array
 
     $token = generate_reset_token();
     $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
-    db_update('users', [
-        'reset_token' => hash_reset_token($token),
-        'reset_token_expires' => $expires,
-    ], 'id = ? AND tenant_id = ?', [$owner_id, $tenant_id]);
+    password_reset_store_user_token([
+        'id' => $owner_id,
+        'tenant_id' => $tenant_id,
+    ], hash_reset_token($token), $expires);
 
     $base_url = function_exists('get_app_url') ? get_app_url() : (defined('APP_URL') ? APP_URL : '');
-    $reset_link = rtrim((string) $base_url, '/') . '/index.php?page=reset-password&token=' . $token;
+    $reset_link = rtrim((string) $base_url, '/') . '/index.php?page=reset-password&token=' . urlencode($token);
 
     return [
         'reset_link' => $reset_link,

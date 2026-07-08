@@ -481,6 +481,92 @@ function hash_reset_token($token)
 }
 
 /**
+ * Resolve a user's tenant for password reset mutations.
+ *
+ * Password reset requests often happen before a user is signed in. In SaaS,
+ * users are tenant-scoped, so relying on current_tenant_id() can write the
+ * reset token to the default tenant instead of the user's real workspace.
+ */
+function password_reset_user_tenant_id(array $user): ?int
+{
+    if (!function_exists('tenant_scoped_table_has_column') || !tenant_scoped_table_has_column('users')) {
+        return null;
+    }
+
+    if (!empty($user['tenant_id'])) {
+        return (int) $user['tenant_id'];
+    }
+
+    $user_id = (int) ($user['id'] ?? 0);
+    if ($user_id <= 0 || !function_exists('db_fetch_one')) {
+        return null;
+    }
+
+    $row = db_fetch_one("SELECT tenant_id FROM users WHERE id = ? LIMIT 1", [$user_id]);
+    if (!$row || empty($row['tenant_id'])) {
+        return null;
+    }
+
+    return (int) $row['tenant_id'];
+}
+
+function password_reset_user_where(array $user, array &$params): string
+{
+    $user_id = (int) ($user['id'] ?? 0);
+    $params = [$user_id];
+
+    $tenant_id = password_reset_user_tenant_id($user);
+    if ($tenant_id !== null) {
+        $params[] = $tenant_id;
+        return 'id = ? AND tenant_id = ?';
+    }
+
+    return 'id = ?';
+}
+
+function password_reset_store_user_token(array $user, string $token_hash, string $expires): int
+{
+    $params = [];
+    $where = password_reset_user_where($user, $params);
+
+    return (int) db_update('users', [
+        'reset_token' => $token_hash,
+        'reset_token_expires' => $expires,
+    ], $where, $params);
+}
+
+function password_reset_clear_user_token(array $user): int
+{
+    $params = [];
+    $where = password_reset_user_where($user, $params);
+
+    return (int) db_update('users', [
+        'reset_token' => null,
+        'reset_token_expires' => null,
+    ], $where, $params);
+}
+
+function password_reset_find_user_by_token(string $token): ?array
+{
+    $token = trim($token);
+    if ($token === '') {
+        return null;
+    }
+
+    $token_hash = hash_reset_token($token);
+    $params = [$token_hash, $token];
+    $sql = "SELECT id, email, tenant_id FROM users WHERE reset_token IN (?, ?) AND reset_token_expires > NOW() AND is_active = 1";
+    if (function_exists('users_deleted_at_column_exists') && users_deleted_at_column_exists()) {
+        $sql .= " AND deleted_at IS NULL";
+    }
+    $sql .= " ORDER BY reset_token = ? DESC, id ASC LIMIT 1";
+    $params[] = $token_hash;
+
+    $user = db_fetch_one($sql, $params);
+    return $user ?: null;
+}
+
+/**
  * Determine client IP address for security logging.
  */
 function get_client_ip()

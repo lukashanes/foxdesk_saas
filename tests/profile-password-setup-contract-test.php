@@ -36,8 +36,7 @@ $assert(str_contains($auth, 'function update_password'), 'Auth layer must expose
 $assert(str_contains($profile, "isset(\$_POST['send_password_setup_link'])"), 'Profile page must expose a password setup link action for magic-link signup users.');
 $assert(str_contains($profile, 'generate_reset_token()'), 'Password setup action must generate a reset token.');
 $assert(str_contains($profile, 'hash_reset_token($token)'), 'Password setup action must store only a hashed reset token.');
-$assert(str_contains($profile, "'reset_token' => \$token_hash"), 'Password setup action must persist reset_token hash.');
-$assert(str_contains($profile, "'reset_token_expires' => \$expires"), 'Password setup action must persist reset_token_expires.');
+$assert(str_contains($profile, 'password_reset_store_user_token($user, $token_hash, $expires)'), 'Password setup action must persist reset_token through the tenant-aware helper.');
 $assert(str_contains($profile, 'send_password_reset_email'), 'Password setup action must send the standard reset email.');
 $assert(str_contains($profile, 'profile_password_setup_requested'), 'Password setup success must be security logged.');
 $assert(str_contains($profile, 'profile_password_setup_failed'), 'Password setup failure must be security logged.');

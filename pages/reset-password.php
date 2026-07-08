@@ -16,7 +16,6 @@ $app_name = $settings['app_name'] ?? (defined('APP_NAME') ? APP_NAME : 'FoxDesk'
 $token = $_GET['token'] ?? '';
 $error = '';
 $valid_token = false;
-$token_hash = '';
 $current_lang = get_app_language();
 $lang_options = [
     'en' => t('English'),
@@ -30,10 +29,10 @@ if (!empty($token)) {
     $lang_params['token'] = $token;
 }
 
-// Verify token (hashed only - no legacy plaintext support)
+// Verify token. Legacy plaintext rows are accepted for old links, but all new
+// reset requests store only hash_reset_token($token).
 if (!empty($token)) {
-    $token_hash = hash_reset_token($token);
-    $user = db_fetch_one("SELECT id, email FROM users WHERE reset_token = ? AND reset_token_expires > NOW() AND is_active = 1", [$token_hash]);
+    $user = password_reset_find_user_by_token($token);
     $valid_token = (bool) $user;
 }
 
@@ -55,11 +54,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
         } else {
             // Update password and clear token
             $hash = password_hash($new_password, PASSWORD_DEFAULT);
-            db_update('users', [
-                'password' => $hash,
-                'reset_token' => null,
-                'reset_token_expires' => null
-            ], 'id = ?', [$user['id']]);
+            $params = [];
+            $where = password_reset_user_where($user, $params);
+            db_update('users', ['password' => $hash], $where, $params);
+            password_reset_clear_user_token($user);
             log_security_event('password_reset_completed', $user['id'], 'email=' . $user['email']);
 
             header('Location: index.php?page=login&reset=success');

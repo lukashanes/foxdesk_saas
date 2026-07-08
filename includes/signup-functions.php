@@ -72,10 +72,7 @@ function signup_send_existing_user_access_email(array $user): bool
     $token_hash = hash_reset_token($token);
     $expires = date('Y-m-d H:i:s', time() + 3600);
 
-    db_update('users', [
-        'reset_token' => $token_hash,
-        'reset_token_expires' => $expires,
-    ], 'id = ?', [$user['id']]);
+    password_reset_store_user_token($user, $token_hash, $expires);
 
     $name = trim((string) (($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')));
     return send_password_reset_email((string) $user['email'], $name !== '' ? $name : 'there', signup_reset_link_url($token));
