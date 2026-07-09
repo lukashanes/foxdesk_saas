@@ -68,7 +68,7 @@ struct TicketsView: View {
                 Section(totalCountLabel) {
                     ForEach(tickets) { ticket in
                         NavigationLink {
-                            TicketDetailView(ticketID: ticket.id)
+                            TicketDetailView(ticketID: ticket.id, ticketHash: ticket.hash)
                         } label: {
                             TicketRow(ticket: ticket)
                         }
@@ -106,11 +106,11 @@ struct TicketsView: View {
             }
         }
         .navigationDestination(item: $createdTicketRoute) { route in
-            TicketDetailView(ticketID: route.id)
+            TicketDetailView(ticketID: route.id, ticketHash: route.hash)
         }
         .sheet(isPresented: $isNewTicketPresented) {
             NewTicketView { ticketID in
-                createdTicketRoute = TicketRoute(id: ticketID)
+                createdTicketRoute = TicketRoute(id: ticketID, hash: nil)
                 await loadTickets(reset: true)
             }
         }
@@ -341,4 +341,5 @@ struct TicketsView: View {
 
 private struct TicketRoute: Identifiable, Hashable {
     let id: Int
+    let hash: String?
 }

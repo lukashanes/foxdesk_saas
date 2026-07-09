@@ -458,6 +458,7 @@ function app_contract_notification_summary_item(array $notification): array
         'id' => (int) ($notification['id'] ?? 0),
         'type' => (string) ($notification['type'] ?? ''),
         'ticket_id' => !empty($notification['ticket_id']) ? (int) $notification['ticket_id'] : null,
+        'ticket_hash' => !empty($notification['ticket_hash']) ? (string) $notification['ticket_hash'] : null,
         'is_read' => !empty($notification['is_read']),
         'is_resolved' => !empty($notification['is_resolved']),
         'created_at' => $notification['created_at'] ?? null,

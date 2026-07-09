@@ -9,7 +9,7 @@ struct RecentUpdatesSection: View {
             ForEach(notifications) { notification in
                 if let ticketID = notification.ticketId {
                     NavigationLink {
-                        TicketDetailView(ticketID: ticketID)
+                        TicketDetailView(ticketID: ticketID, ticketHash: notification.ticketHash)
                     } label: {
                         RecentUpdateRow(notification: notification)
                     }

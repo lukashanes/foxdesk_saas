@@ -173,6 +173,13 @@ public final class FoxDeskAPIClient {
         )
     }
 
+    public func ticketDetail(accessToken: String, ticketHash: String) async throws -> AppEnvelope<TicketDetailPayload> {
+        try await send(
+            path: "tickets/\(ticketHash)",
+            bearerToken: accessToken
+        )
+    }
+
     public func ticketActions(accessToken: String, ticketId: Int) async throws -> AppEnvelope<TicketActionsResponse> {
         try await send(
             path: "tickets/\(ticketId)/actions",

@@ -77,7 +77,7 @@ struct NotificationsView: View {
             }
         }
         .navigationDestination(item: $selectedTicket) { route in
-            TicketDetailView(ticketID: route.id)
+            TicketDetailView(ticketID: route.id, ticketHash: route.hash)
                 .task {
                     await markTicketNotificationsRead(ticketID: route.id)
                 }
@@ -127,7 +127,7 @@ struct NotificationsView: View {
 
     private func open(_ notification: AppNotificationItem) {
         if let ticketID = notification.ticketId {
-            selectedTicket = NotificationTicketRoute(id: ticketID)
+            selectedTicket = NotificationTicketRoute(id: ticketID, hash: notification.ticketHash)
         }
 
         if !notification.isRead {
@@ -257,6 +257,7 @@ struct NotificationsView: View {
 
 private struct NotificationTicketRoute: Identifiable, Hashable {
     let id: Int
+    let hash: String?
 }
 
 private struct NotificationRow: View {
@@ -297,7 +298,7 @@ private struct NotificationRow: View {
                     if let actor = notification.actor?.name, !actor.isEmpty {
                         Label(actor, systemImage: "person")
                     }
-                    if notification.ticketId != nil {
+                    if notification.ticketId != nil || notification.ticketHash != nil {
                         Label("Open ticket", systemImage: "arrow.right")
                     }
                 }

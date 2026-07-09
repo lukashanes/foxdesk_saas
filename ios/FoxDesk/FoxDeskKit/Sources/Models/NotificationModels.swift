@@ -10,6 +10,7 @@ public struct AppNotificationItem: Codable, Sendable, Equatable, Identifiable, H
     public let id: Int
     public let type: String
     public let ticketId: Int?
+    public let ticketHash: String?
     public let isRead: Bool
     public let isResolved: Bool
     public let createdAt: String?
@@ -19,6 +20,36 @@ public struct AppNotificationItem: Codable, Sendable, Equatable, Identifiable, H
     public let snippet: String?
     public let isAction: Bool?
     public let actor: NotificationActor?
+
+    public init(
+        id: Int,
+        type: String,
+        ticketId: Int?,
+        ticketHash: String? = nil,
+        isRead: Bool,
+        isResolved: Bool,
+        createdAt: String?,
+        timeAgo: String?,
+        text: String?,
+        actionText: String?,
+        snippet: String?,
+        isAction: Bool?,
+        actor: NotificationActor?
+    ) {
+        self.id = id
+        self.type = type
+        self.ticketId = ticketId
+        self.ticketHash = ticketHash
+        self.isRead = isRead
+        self.isResolved = isResolved
+        self.createdAt = createdAt
+        self.timeAgo = timeAgo
+        self.text = text
+        self.actionText = actionText
+        self.snippet = snippet
+        self.isAction = isAction
+        self.actor = actor
+    }
 }
 
 public struct NotificationActor: Codable, Sendable, Equatable, Hashable {

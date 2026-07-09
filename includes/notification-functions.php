@@ -611,9 +611,11 @@ function get_user_notifications(int $user_id, int $limit = 50, int $offset = 0, 
 
     while (count($visible_rows) < $target_count && $scan_batches < 10) {
         $rows = db_fetch_all(
-            "SELECT n.*, u.first_name AS actor_first_name, u.last_name AS actor_last_name,
+            "SELECT n.*, t.hash AS ticket_hash,
+                    u.first_name AS actor_first_name, u.last_name AS actor_last_name,
                     u.avatar AS actor_avatar, u.email AS actor_email
              FROM notifications n
+             LEFT JOIN tickets t ON t.id = n.ticket_id
              LEFT JOIN users u ON u.id = n.actor_id
              WHERE n.user_id = ? $resolved_filter $tenant_filter
              ORDER BY n.created_at DESC

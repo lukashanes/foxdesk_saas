@@ -84,7 +84,7 @@ struct ActiveTimersSection: View {
             } else {
                 ForEach(timers) { timer in
                     NavigationLink {
-                        TicketDetailView(ticketID: timer.ticketId)
+                        TicketDetailView(ticketID: timer.ticketId, ticketHash: timer.ticketHash)
                     } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {

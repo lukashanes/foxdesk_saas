@@ -31,7 +31,7 @@ struct WorkedTimeSection: View {
                             .foregroundStyle(.secondary)
                         ForEach(entries.prefix(3)) { entry in
                             NavigationLink {
-                                TicketDetailView(ticketID: entry.ticketId)
+                                TicketDetailView(ticketID: entry.ticketId, ticketHash: entry.ticketHash)
                             } label: {
                                 WorkedTimeEntryRow(entry: entry)
                             }
@@ -259,7 +259,7 @@ private struct TeamMemberWorkSheet: View {
                 Section("Recent ticket work") {
                     ForEach(entries) { entry in
                         NavigationLink {
-                            TicketDetailView(ticketID: entry.ticketId)
+                            TicketDetailView(ticketID: entry.ticketId, ticketHash: entry.ticketHash)
                         } label: {
                             WorkedTimeEntryRow(entry: entry)
                         }

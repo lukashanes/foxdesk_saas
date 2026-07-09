@@ -5,6 +5,7 @@ struct TicketDetailView: View {
     @Environment(AppSession.self) private var session
 
     let ticketID: Int
+    let ticketHash: String?
 
     private let detailCache = TicketDetailCacheStore()
 
@@ -13,6 +14,11 @@ struct TicketDetailView: View {
     @State private var errorMessage: String?
     @State private var cacheMessage: String?
     @State private var isManagePresented = false
+
+    init(ticketID: Int, ticketHash: String? = nil) {
+        self.ticketID = ticketID
+        self.ticketHash = ticketHash
+    }
 
     var body: some View {
         List {
@@ -119,7 +125,14 @@ struct TicketDetailView: View {
 
         do {
             let freshDetail = try await session.authenticated { accessToken in
-                try await session.client.ticketDetail(accessToken: accessToken, ticketId: ticketID)
+                do {
+                    return try await session.client.ticketDetail(accessToken: accessToken, ticketId: ticketID)
+                } catch {
+                    guard let ticketHash, !ticketHash.isEmpty else {
+                        throw error
+                    }
+                    return try await session.client.ticketDetail(accessToken: accessToken, ticketHash: ticketHash)
+                }
             }.data
             detail = freshDetail
             cacheMessage = nil

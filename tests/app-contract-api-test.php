@@ -7,8 +7,9 @@ $handler = file_get_contents($root . '/includes/api/app-handler.php');
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
 $appContract = file_get_contents($root . '/includes/modules/app/app-contract.php');
 $billingReview = file_get_contents($root . '/includes/modules/reports/billing-review.php');
+$notificationFunctions = file_get_contents($root . '/includes/notification-functions.php');
 
-if ($router === false || $handler === false || $bootstrap === false || $appContract === false || $billingReview === false) {
+if ($router === false || $handler === false || $bootstrap === false || $appContract === false || $billingReview === false || $notificationFunctions === false) {
     fwrite(STDERR, "Unable to read app contract API files.\n");
     exit(1);
 }
@@ -102,10 +103,18 @@ foreach ([
 	    "'minutes_label'",
 	    "'billable_amount_label'",
     'function app_contract_notification_summary_item',
+    "'ticket_hash'",
     'function app_contract_tenant_payload',
     "'billing_override_reason'",
 ] as $needle) {
     $assert(str_contains($appContract, $needle), 'App contract module missing behavior: ' . $needle);
+}
+
+foreach ([
+    't.hash AS ticket_hash',
+    'LEFT JOIN tickets t ON t.id = n.ticket_id',
+] as $needle) {
+    $assert(str_contains($notificationFunctions, $needle), 'Notification read model missing native ticket hash behavior: ' . $needle);
 }
 
 require_once $root . '/includes/modules/app/app-contract.php';

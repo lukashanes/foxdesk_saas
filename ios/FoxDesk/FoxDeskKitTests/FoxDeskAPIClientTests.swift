@@ -1289,6 +1289,7 @@ final class FoxDeskAPIClientTests: XCTestCase {
                     "id": 101,
                     "type": "ticket_reply",
                     "ticket_id": 42,
+                    "ticket_hash": "u26Y7GdxUmnG",
                     "is_read": false,
                     "is_resolved": false,
                     "created_at": "2026-07-05 09:35:00",
@@ -1321,6 +1322,7 @@ final class FoxDeskAPIClientTests: XCTestCase {
         XCTAssertEqual(result.data.unreadCount, 2)
         XCTAssertEqual(result.data.items.first?.id, 101)
         XCTAssertEqual(result.data.items.first?.ticketId, 42)
+        XCTAssertEqual(result.data.items.first?.ticketHash, "u26Y7GdxUmnG")
         XCTAssertEqual(result.data.items.first?.actionText, "Open ticket")
         XCTAssertEqual(result.data.items.first?.actor?.name, "Eva Novak")
         XCTAssertEqual(result.data.pagination?.total, 1)
@@ -1463,6 +1465,43 @@ final class FoxDeskAPIClientTests: XCTestCase {
         XCTAssertEqual(result.data.attachments.first?.filename, "screenshot.png")
         XCTAssertEqual(result.data.timeEntries.first?.commentId, 7)
         XCTAssertEqual(result.data.timeEntries.first?.durationMinutes, 25)
+    }
+
+    func testTicketDetailCanLoadByTicketHash() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        URLProtocolStub.requestHandler = { request in
+            Self.assertAPIPath(request.url, "/api/mobile/v1/tickets/u26Y7GdxUmnG")
+
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            let data = """
+            {
+              "success": true,
+              "data": {
+                "ticket": {"id": 42, "hash": "u26Y7GdxUmnG", "title": "VPN access stopped working", "code": "TK-10042"},
+                "comments": [],
+                "attachments": [],
+                "time_entries": [],
+                "actions": null
+              },
+              "meta": {"schema_version": 1, "resource": "ticket_detail"},
+              "errors": []
+            }
+            """.data(using: .utf8)!
+            return (response, data)
+        }
+
+        let result = try await client.ticketDetail(accessToken: "fdm_at_test", ticketHash: "u26Y7GdxUmnG")
+
+        XCTAssertEqual(result.data.ticket.id, 42)
+        XCTAssertEqual(result.data.ticket.hash, "u26Y7GdxUmnG")
     }
 
     func testAddCommentWithTimeUsesDedicatedAction() async throws {

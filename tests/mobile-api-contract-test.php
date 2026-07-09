@@ -422,7 +422,7 @@ $assert(str_contains($iosDashboardWorkQueuesView, 'struct WorkQueueSections'), '
 $assert(!str_contains($iosDashboardQuickActionsView, 'struct QuickActionsSection'), 'iOS Dashboard quick actions must be removed in favor of the bottom tab bar.');
 $assert(str_contains($iosDashboardQuickActionsView, 'struct RecentUpdatesSection'), 'iOS Dashboard recent updates UI must live with dashboard action sections.');
 $assert(str_contains($iosDashboardQuickActionsView, 'notification.ticketId'), 'iOS Dashboard recent updates must open ticket notifications directly.');
-$assert(str_contains($iosDashboardQuickActionsView, 'TicketDetailView(ticketID: ticketID)'), 'iOS Dashboard recent updates must route into ticket detail.');
+$assert(str_contains($iosDashboardQuickActionsView, 'TicketDetailView(ticketID: ticketID, ticketHash: notification.ticketHash)'), 'iOS Dashboard recent updates must route into ticket detail with hash fallback.');
 $assert(str_contains($iosDashboardView, 'home.notifications?.items'), 'iOS Dashboard must render recent notification items from app-home.');
 $assert(str_contains($iosHomeModels, 'items: [AppNotificationItem]?'), 'iOS home notification model must decode compact recent notification items.');
 $assert(str_contains($nativeDocs, 'Native Dashboard clients should show these as recent'), 'Native API docs must describe recent notification items on app-home.');

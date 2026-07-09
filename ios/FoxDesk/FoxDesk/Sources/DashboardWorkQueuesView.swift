@@ -51,7 +51,7 @@ private struct QueueSectionView: View {
             if let items = section.items, !items.isEmpty {
                 ForEach(items) { ticket in
                     NavigationLink {
-                        TicketDetailView(ticketID: ticket.id)
+                        TicketDetailView(ticketID: ticket.id, ticketHash: ticket.hash)
                     } label: {
                         HomeTicketCardRow(ticket: ticket)
                     }
