@@ -88,6 +88,7 @@ function apns_notification_payload(array $notification): array
     $type = (string) ($notification['type'] ?? '');
     $data = is_array($notification['data'] ?? null) ? $notification['data'] : [];
     $ticket_id = (int) ($notification['ticket_id'] ?? 0);
+    $ticket_hash = trim((string) ($notification['ticket_hash'] ?? ''));
 
     $title = match ($type) {
         'new_ticket' => 'New ticket',
@@ -130,6 +131,9 @@ function apns_notification_payload(array $notification): array
 
     if ($ticket_id > 0) {
         $payload['ticket_id'] = $ticket_id;
+    }
+    if ($ticket_hash !== '') {
+        $payload['ticket_hash'] = $ticket_hash;
     }
 
     return $payload;
@@ -254,9 +258,11 @@ function apns_notifications_for_users(array $user_ids, array $notification_ids_b
                 : '';
             $params = array_merge($params, $ids);
             $rows = db_fetch_all(
-                "SELECT n.*, u.first_name AS actor_first_name, u.last_name AS actor_last_name,
+                "SELECT n.*, t.hash AS ticket_hash,
+                        u.first_name AS actor_first_name, u.last_name AS actor_last_name,
                         u.avatar AS actor_avatar, u.email AS actor_email
                  FROM notifications n
+                 LEFT JOIN tickets t ON t.id = n.ticket_id
                  LEFT JOIN users u ON u.id = n.actor_id
                  WHERE n.user_id = ?{$tenant_filter} AND n.id IN ({$placeholders})
                  ORDER BY n.created_at DESC",
@@ -268,9 +274,11 @@ function apns_notifications_for_users(array $user_ids, array $notification_ids_b
                 ? tenant_sql_filter('notifications', 'n', $params)
                 : '';
             $rows = db_fetch_all(
-                "SELECT n.*, u.first_name AS actor_first_name, u.last_name AS actor_last_name,
+                "SELECT n.*, t.hash AS ticket_hash,
+                        u.first_name AS actor_first_name, u.last_name AS actor_last_name,
                         u.avatar AS actor_avatar, u.email AS actor_email
                  FROM notifications n
+                 LEFT JOIN tickets t ON t.id = n.ticket_id
                  LEFT JOIN users u ON u.id = n.actor_id
                  WHERE n.user_id = ?{$tenant_filter} AND n.is_read = 0
                  ORDER BY n.created_at DESC

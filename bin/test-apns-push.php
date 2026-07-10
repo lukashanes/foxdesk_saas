@@ -63,6 +63,7 @@ $notification = [
     'id' => (int) ($option('--notification-id', getenv('APNS_TEST_NOTIFICATION_ID') ?: '1')),
     'type' => (string) ($option('--type', getenv('APNS_TEST_TYPE') ?: 'new_comment')),
     'ticket_id' => $ticket_id,
+    'ticket_hash' => (string) ($option('--ticket-hash', getenv('APNS_TEST_TICKET_HASH') ?: 'ios-smoke-ticket-hash')),
     'data' => [
         'ticket_subject' => 'FoxDesk iOS APNs smoke test',
         'actor_name' => 'FoxDesk',

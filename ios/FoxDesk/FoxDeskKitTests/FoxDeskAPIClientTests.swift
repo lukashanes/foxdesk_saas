@@ -2211,6 +2211,18 @@ final class FoxDeskAPIClientTests: XCTestCase {
         XCTAssertNil(
             FoxDeskNotificationPayload.ticketID(from: ["data": ["ticket_id": "-2"]])
         )
+
+        XCTAssertEqual(
+            FoxDeskNotificationPayload.ticketHash(from: ["ticket_hash": "ticket-42"]),
+            "ticket-42"
+        )
+        XCTAssertEqual(
+            FoxDeskNotificationPayload.ticketHash(from: ["data": ["ticketHash": " ticket-43 "]]),
+            "ticket-43"
+        )
+        XCTAssertNil(
+            FoxDeskNotificationPayload.ticketHash(from: ["ticket_hash": "  "])
+        )
     }
 
     func testMobileRichTextFormatterBuildsParagraphsAndLists() {

@@ -33,6 +33,42 @@ settings stay on the web for the first release.
 
 ## Latest Verified State
 
+### 2026-07-10 local mobile write verification
+
+The current worktree closes two native release gaps found by a real local
+mobile API write smoke:
+
+- Protected attachment and image proxies now authenticate short-lived mobile
+  Bearer sessions. An iOS upload can therefore be previewed or downloaded with
+  the same Keychain access token instead of returning HTTP 403.
+- APNs registration verifies the persisted tenant/user owner before returning
+  success. Re-registering the same Apple device after a workspace/account
+  change deliberately transfers the globally unique APNs token to the current
+  authenticated workspace.
+- APNs payloads and native routing carry both `ticket_id` and `ticket_hash`.
+  Notification taps use the hash as the stable fallback when the numeric id is
+  stale after migration or data replacement.
+- Localhost evidence is now labelled `local-read-only` / `local-write` and can
+  no longer satisfy the production `app.foxdesk.net` submission gates.
+
+Verified locally on populated Docker data:
+
+```bash
+npm run ios:gate
+npm run ios:release:check
+npm run ios:apns:smoke -- --json
+FOXDESK_IOS_SMOKE_BASE_URL=http://127.0.0.1:8090 \
+  FOXDESK_IOS_SMOKE_EMAIL=<local-agent> \
+  FOXDESK_IOS_SMOKE_PASSWORD=<local-password> \
+  FOXDESK_IOS_SMOKE_WRITE=1 \
+  npm run ios:api:smoke -- --require-credentials --json
+```
+
+The write smoke proved login, Dashboard, ticket list/detail/search, ticket
+creation, a comment linked to exact manual time, attachment upload, metadata,
+authorized byte-for-byte download, detail reload, and logout. Production and
+physical-iPhone evidence remains intentionally separate.
+
 ### 2026-07-08 production/mobile verification
 
 Current repository state has these mobile fixes committed and pushed:

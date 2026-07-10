@@ -38,6 +38,17 @@ const config = {
   statusId: process.env.FOXDESK_IOS_SMOKE_STATUS_ID || '',
 };
 
+function smokeTargetKind(baseURL) {
+  try {
+    const hostname = new URL(baseURL).hostname.toLowerCase();
+    return ['127.0.0.1', 'localhost', '::1'].includes(hostname) ? 'local' : 'live';
+  } catch {
+    return 'live';
+  }
+}
+
+const credentialMode = config.writeEnabled ? 'write' : 'read-only';
+
 function appRootURL() {
   const url = new URL(config.baseURL);
   url.pathname = url.pathname.replace(/\/api\/mobile\/v1\/?$/, '/');
@@ -58,7 +69,7 @@ function resourceURL(value) {
 
 const result = {
   ok: false,
-  mode: config.email && config.password ? (config.writeEnabled ? 'live-write' : 'live-read-only') : 'preflight',
+  mode: config.email && config.password ? `${smokeTargetKind(config.baseURL)}-${credentialMode}` : 'preflight',
   generated_at: null,
   base_url: config.baseURL,
   steps: [],

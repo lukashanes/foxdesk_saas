@@ -62,6 +62,20 @@ evidence_ready() {
   [[ -f "$file" ]] || return 1
   [[ "$(json_field "$file" ok 2>/dev/null || true)" == "true" ]] || return 1
   [[ "$(json_field "$file" mode 2>/dev/null || true)" == "$mode" ]] || return 1
+  if [[ "$mode" == live-* ]]; then
+    evidence_targets_production "$file" || return 1
+  fi
+}
+
+evidence_targets_production() {
+  local file="$1"
+
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const hostname = new URL(String(data.base_url || "")).hostname.toLowerCase();
+    if (hostname !== "app.foxdesk.net") process.exit(1);
+  ' "$file"
 }
 
 api_write_ready() {

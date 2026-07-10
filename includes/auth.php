@@ -1157,6 +1157,27 @@ function authenticate_mobile_session()
 }
 
 /**
+ * Authenticate a native mobile Bearer token on non-API resource endpoints.
+ *
+ * Attachment and image proxies are intentionally outside the API router, but
+ * native clients still need the same short-lived mobile-session authorization
+ * when downloading protected ticket files.
+ */
+function authenticate_mobile_bearer_request(): ?array
+{
+    if (!is_api_token_request()) {
+        return null;
+    }
+
+    $user = authenticate_mobile_session();
+    if ($user) {
+        $GLOBALS['is_mobile_token_auth'] = true;
+    }
+
+    return $user;
+}
+
+/**
  * Update the last_used_at timestamp of an API token.
  */
 function update_token_last_used($token_id)

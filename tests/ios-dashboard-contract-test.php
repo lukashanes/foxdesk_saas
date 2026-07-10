@@ -57,14 +57,14 @@ $assert(str_contains($dashboard, 'await homeCache.save'), 'iOS Dashboard must pe
 $assert(str_contains($dashboard, 'await homeCache.load'), 'iOS Dashboard must load cached home data when offline.');
 
 $assert(str_contains($identity, 'Section("In progress now")'), 'In-progress section title is missing.');
-$assert(str_contains($identity, 'TicketDetailView(ticketID: timer.ticketId)'), 'Active timers must deep-link to the running ticket.');
+$assert(str_contains($identity, 'TicketDetailView(ticketID: timer.ticketId, ticketHash: timer.ticketHash)'), 'Active timers must deep-link to the running ticket with a hash fallback.');
 $assert(str_contains($identity, 'timer.elapsedLabel'), 'Active timers must show elapsed time.');
 
 foreach (['"mine"', '"unassigned"', '"overdue"', '"waiting"', '"done_today"'] as $queueKey) {
     $assert(str_contains($queues, $queueKey), "Dashboard queue order must keep {$queueKey}.");
 }
 $assert(str_contains($queues, 'HomeTicketCardRow'), 'Dashboard work queues must render ticket rows, not only counters.');
-$assert(str_contains($queues, 'TicketDetailView(ticketID: ticket.id)'), 'Dashboard work queue tickets must open ticket detail.');
+$assert(str_contains($queues, 'TicketDetailView(ticketID: ticket.id, ticketHash: ticket.hash)'), 'Dashboard work queue tickets must open ticket detail with a hash fallback.');
 
 foreach (['"Today"', '"This week"', '"This month"'] as $timeLabel) {
     $assert(str_contains($workedTime, $timeLabel), "Worked-time totals must include {$timeLabel}.");
@@ -74,10 +74,10 @@ $assert(str_contains($workedTime, 'Text("Last 30 days")'), 'Dashboard worked-tim
 $assert(str_contains($workedTime, 'Text("Recent work")'), 'Dashboard must show recent ticket work under worked time.');
 $assert(str_contains($workedTime, 'TeamActivityList(team: team)'), 'Admin-capable Dashboard must expose team activity when the API provides it.');
 $assert(str_contains($workedTime, 'TeamMemberWorkSheet'), 'Team activity must let admins inspect a team member workload.');
-$assert(str_contains($workedTime, 'TicketDetailView(ticketID: entry.ticketId)'), 'Recent work entries must open ticket detail.');
+$assert(str_contains($workedTime, 'TicketDetailView(ticketID: entry.ticketId, ticketHash: entry.ticketHash)'), 'Recent work entries must open ticket detail with a hash fallback.');
 
 $assert(str_contains($quickActions, 'Section("Recent updates")'), 'Recent updates section title is missing.');
-$assert(str_contains($quickActions, 'TicketDetailView(ticketID: ticketID)'), 'Recent updates with ticket ids must open ticket detail.');
+$assert(str_contains($quickActions, 'TicketDetailView(ticketID: ticketID, ticketHash: notification.ticketHash)'), 'Recent updates with ticket ids must open ticket detail with a hash fallback.');
 $assert(!str_contains($quickActions, 'struct QuickActionsSection'), 'Dashboard quick actions must be removed in favor of the bottom tab bar.');
 $assert(!str_contains($quickActions, 'TicketsView()'), 'Dashboard quick actions must not duplicate the bottom Tickets tab.');
 $assert(!str_contains($quickActions, 'SearchView()'), 'Dashboard quick actions must not duplicate the bottom Search tab.');

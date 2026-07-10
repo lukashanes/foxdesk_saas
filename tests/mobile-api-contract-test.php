@@ -32,6 +32,7 @@ $assert(str_contains($tenant, "'mobile_devices'"), 'Mobile devices table must be
 
 $assert(str_contains($auth, 'function bearer_token_from_request'), 'Shared Bearer token parser is missing.');
 $assert(str_contains($auth, 'function authenticate_mobile_session'), 'Mobile session authenticator is missing.');
+$assert(str_contains($auth, 'function authenticate_mobile_bearer_request'), 'Protected native resources need a mobile Bearer authenticator outside the API router.');
 $assert(str_contains($auth, "'mobile_session_id'"), 'Mobile authenticator must expose the session id.');
 
 $assert(str_contains($router, "require_once __DIR__ . '/mobile-handler.php'"), 'API router must load mobile handler.');
@@ -74,6 +75,9 @@ $assert(str_contains($handler, 'function api_mobile_verify_2fa'), 'Mobile 2FA ve
 $assert(str_contains($handler, 'function api_mobile_refresh'), 'Mobile refresh handler is missing.');
 $assert(str_contains($handler, 'function api_mobile_logout'), 'Mobile logout handler is missing.');
 $assert(str_contains($handler, 'function api_mobile_register_device'), 'Mobile device registration handler is missing.');
+$assert(str_contains($handler, "'tenant_id' => \$tenant_id"), 'Mobile device registration must persist the authenticated workspace id.');
+$assert(str_contains($handler, 'UPDATE mobile_devices'), 'Mobile device registration must explicitly transfer a globally unique APNs token to the authenticated workspace.');
+$assert(str_contains($handler, 'Could not register this device for push notifications.'), 'Mobile device registration must verify the persisted owner before reporting success.');
 $assert(str_contains($handler, "'fdm_at_'"), 'Mobile access token prefix is missing.');
 $assert(str_contains($handler, "'fdm_rt_'"), 'Mobile refresh token prefix is missing.');
 $assert(str_contains($handler, "'avatar' => \$user['avatar'] ?? null"), 'Mobile identity payload must include user avatar for native account surfaces.');
@@ -89,6 +93,8 @@ $assert(str_contains($apns, 'APNS_AUTH_KEY'), 'APNs config must include APNS_AUT
 $assert(str_contains($apns, 'APNS_AUTH_KEY_PATH'), 'APNs config must include APNS_AUTH_KEY_PATH.');
 $assert(str_contains($apns, 'APNS_BUNDLE_ID'), 'APNs config must include APNS_BUNDLE_ID.');
 $assert(str_contains($apns, "'ticket_id'"), 'APNs payload must include ticket_id for native deep links.');
+$assert(str_contains($apns, "'ticket_hash'"), 'APNs payload must include ticket_hash as a stable native deep-link fallback.');
+$assert(str_contains($apns, 't.hash AS ticket_hash'), 'APNs notification queries must load the ticket hash used by native fallback routing.');
 $assert(str_contains($apns, "'mentioned' => 'Mentioned in a ticket'"), 'APNs payload must title mention notifications for native push.');
 $assert(str_contains($apns, "'ticket_updated' => 'Ticket updated'"), 'APNs payload must title important ticket update notifications for native push.');
 $assert(str_contains($apns, "'mobile_devices'"), 'APNs dispatch must read registered mobile devices.');
@@ -1051,11 +1057,12 @@ $assert(str_contains($iosEntitlements, 'aps-environment'), 'iOS entitlements mus
 $assert(str_contains($iosEntitlements, '$(APS_ENVIRONMENT)'), 'iOS APNs entitlement must be config-driven.');
 $assert(str_contains($iosPushRouter, 'pendingTicketID'), 'iOS push router must store pending ticket navigation.');
 $assert(str_contains($iosPushRouter, 'PendingPushNavigationStore'), 'iOS push router must persist notification taps that arrive before the router exists.');
-$assert(str_contains($iosPushRouter, 'consumePendingTicketID'), 'iOS push router must consume pending ticket navigation exactly once.');
+$assert(str_contains($iosPushRouter, 'consumePendingTicket()'), 'iOS push router must consume pending ticket navigation exactly once.');
+$assert(str_contains($iosPushRouter, 'pendingTicketHash'), 'iOS push router must retain the stable ticket hash fallback from APNs.');
 $assert(str_contains($iosRootView, '.task'), 'iOS signed-in shell must process pending push navigation on first display.');
 $assert(str_contains($iosRootView, 'openPendingTicketIfNeeded'), 'iOS signed-in shell must centralize push ticket routing.');
 $assert(str_contains($iosRootView, 'selectedTab = .tickets'), 'iOS push ticket routing must select the Tickets tab.');
-$assert(str_contains($iosRootView, 'TicketDetailView(ticketID: route.ticketID)'), 'iOS push ticket routing must open the matching ticket detail.');
+$assert(str_contains($iosRootView, 'TicketDetailView(ticketID: route.ticketID, ticketHash: route.ticketHash)'), 'iOS push ticket routing must open the matching ticket detail with a stable hash fallback.');
 $assert(str_contains($iosPushNavigationTests, 'testLaunchStorePendingTicketSurvivesBeforeRouterInit'), 'iOS tests must cover cold-start APNs ticket routing before the router exists.');
 $assert(str_contains($iosPushNavigationTests, 'testNotificationEventConsumesStoredLaunchTicket'), 'iOS tests must consume stored push ticket routes exactly once.');
 $assert(str_contains($iosPushNavigationTests, 'testNotificationCenterEventStoresPendingTicket'), 'iOS tests must cover APNs tap notification routing.');

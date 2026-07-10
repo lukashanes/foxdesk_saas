@@ -477,9 +477,15 @@ function api_mobile_register_device(): void
         set_current_tenant_from_user($user);
     }
 
+    $tenant_id = function_exists('current_tenant_id') ? (int) current_tenant_id() : (int) ($user['tenant_id'] ?? 0);
+    if ($tenant_id <= 0) {
+        api_error('Workspace context is required.', 409);
+    }
+
     $token_hash = hash('sha256', $apns_token);
     $session_id = (int) ($_SESSION['mobile_session_id'] ?? 0);
     $data = [
+        'tenant_id' => $tenant_id,
         'user_id' => (int) $user['id'],
         'mobile_session_id' => $session_id > 0 ? $session_id : null,
         'platform' => 'ios',
@@ -493,12 +499,49 @@ function api_mobile_register_device(): void
         'last_registered_at' => date('Y-m-d H:i:s'),
     ];
 
+    // APNs tokens identify an app installation globally. A device can move to a
+    // different workspace after sign-out, so this authenticated registration is
+    // the one deliberate cross-tenant ownership transfer for mobile_devices.
     $existing = db_fetch_one("SELECT id FROM mobile_devices WHERE apns_token_hash = ? LIMIT 1", [$token_hash]);
     if ($existing) {
-        db_update('mobile_devices', $data, 'id = ?', [(int) $existing['id']]);
         $device_id = (int) $existing['id'];
+        db_query(
+            "UPDATE mobile_devices
+             SET tenant_id = ?, user_id = ?, mobile_session_id = ?, platform = ?, device_id = ?,
+                 device_name = ?, app_version = ?, apns_environment = ?, apns_token = ?,
+                 apns_token_hash = ?, is_active = ?, last_registered_at = ?
+             WHERE id = ? AND apns_token_hash = ?",
+            [
+                $data['tenant_id'],
+                $data['user_id'],
+                $data['mobile_session_id'],
+                $data['platform'],
+                $data['device_id'],
+                $data['device_name'],
+                $data['app_version'],
+                $data['apns_environment'],
+                $data['apns_token'],
+                $data['apns_token_hash'],
+                $data['is_active'],
+                $data['last_registered_at'],
+                $device_id,
+                $token_hash,
+            ]
+        );
     } else {
         $device_id = (int) db_insert('mobile_devices', $data);
+    }
+
+    $registered = $device_id > 0
+        ? db_fetch_one(
+            "SELECT id FROM mobile_devices
+             WHERE id = ? AND tenant_id = ? AND user_id = ? AND apns_token_hash = ? AND is_active = 1
+             LIMIT 1",
+            [$device_id, $tenant_id, (int) $user['id'], $token_hash]
+        )
+        : null;
+    if (!$registered) {
+        api_error('Could not register this device for push notifications.', 500);
     }
 
     api_success(['device_id' => $device_id, 'registered' => true]);

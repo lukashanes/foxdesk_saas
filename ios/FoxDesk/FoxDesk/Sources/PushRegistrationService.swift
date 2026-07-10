@@ -159,7 +159,11 @@ final class FoxDeskAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificat
 
     private func queueTicketNavigation(from userInfo: [AnyHashable: Any]) {
         guard let ticketID = FoxDeskNotificationPayload.ticketID(from: userInfo) else { return }
-        PendingPushNavigationStore.store(ticketID: ticketID)
-        NotificationCenter.default.post(name: .foxDeskOpenTicketFromNotification, object: ticketID)
+        let route = PushTicketRoute(
+            id: ticketID,
+            hash: FoxDeskNotificationPayload.ticketHash(from: userInfo)
+        )
+        PendingPushNavigationStore.store(ticketID: route.id, ticketHash: route.hash)
+        NotificationCenter.default.post(name: .foxDeskOpenTicketFromNotification, object: route)
     }
 }

@@ -77,5 +77,10 @@ $assert(
     str_contains($scriptBody, 'detail.manual_date === comment.manual_date'),
     'External gates must compare live write smoke manual time evidence between comment response and detail reload.'
 );
+$assert(
+    str_contains($scriptBody, 'evidence_targets_production')
+        && str_contains($scriptBody, 'hostname !== "app.foxdesk.net"'),
+    'External gates must reject localhost API smoke evidence as a live production proof.'
+);
 
 echo "iOS external gates contract OK\n";

@@ -17,6 +17,8 @@ demo_evidence="$ROOT_DIR/tmp/ios-demo-account-check/latest-live-demo-account.jso
 demo_preflight_evidence="$ROOT_DIR/tmp/ios-demo-account-check/latest-preflight.json"
 api_read_evidence="$ROOT_DIR/tmp/ios-api-smoke/latest-live-read-only.json"
 api_write_evidence="$ROOT_DIR/tmp/ios-api-smoke/latest-live-write.json"
+api_local_read_evidence="$ROOT_DIR/tmp/ios-api-smoke/latest-local-read-only.json"
+api_local_write_evidence="$ROOT_DIR/tmp/ios-api-smoke/latest-local-write.json"
 api_preflight_evidence="$ROOT_DIR/tmp/ios-api-smoke/latest-preflight.json"
 apns_dry_evidence="$ROOT_DIR/tmp/ios-apns-smoke/latest-dry-run.json"
 apns_send_evidence="$ROOT_DIR/tmp/ios-apns-smoke/latest-send.json"
@@ -84,6 +86,20 @@ evidence_ready() {
   [[ -f "$file" ]] || return 1
   [[ "$(json_field "$file" ok 2>/dev/null || true)" == "true" ]] || return 1
   [[ "$(json_field "$file" mode 2>/dev/null || true)" == "$mode" ]] || return 1
+  if [[ "$mode" == live-* ]]; then
+    evidence_targets_production "$file" || return 1
+  fi
+}
+
+evidence_targets_production() {
+  local file="$1"
+
+  node -e '
+    const fs = require("node:fs");
+    const data = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const hostname = new URL(String(data.base_url || "")).hostname.toLowerCase();
+    if (hostname !== "app.foxdesk.net") process.exit(1);
+  ' "$file"
 }
 
 apns_dry_ready() {
@@ -285,8 +301,10 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 - Demo account preflight evidence: $(if [[ -f "$demo_preflight_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-demo-account-check/latest-preflight.json\`
 - Demo account live evidence: $(if [[ -f "$demo_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-demo-account-check/latest-live-demo-account.json\`
 - API smoke preflight evidence: $(if [[ -f "$api_preflight_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-api-smoke/latest-preflight.json\`
-- API read live evidence: $(if [[ -f "$api_read_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-api-smoke/latest-live-read-only.json\`
-- API write live evidence: $(if [[ -f "$api_write_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-api-smoke/latest-live-write.json\`
+- API read production evidence: $live_smoke_status — \`tmp/ios-api-smoke/latest-live-read-only.json\`
+- API write production evidence: $write_smoke_status — \`tmp/ios-api-smoke/latest-live-write.json\`
+- API local read evidence: $(if [[ -f "$api_local_read_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-api-smoke/latest-local-read-only.json\`
+- API local write evidence: $(if [[ -f "$api_local_write_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-api-smoke/latest-local-write.json\`
 - APNs dry-run evidence: $(if [[ -f "$apns_dry_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-apns-smoke/latest-dry-run.json\`
 - APNs live-send evidence: $(if [[ -f "$apns_send_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-apns-smoke/latest-send.json\`
 - MVP traceability: \`docs/IOS_MVP_TRACEABILITY.md\`

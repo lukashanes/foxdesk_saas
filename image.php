@@ -42,6 +42,9 @@ if (file_exists(BASE_PATH . '/config.php')) {
     if (file_exists(BASE_PATH . '/includes/auth.php')) {
         require_once BASE_PATH . '/includes/auth.php';
     }
+    if (function_exists('is_logged_in') && !is_logged_in() && function_exists('authenticate_mobile_bearer_request')) {
+        authenticate_mobile_bearer_request();
+    }
     if (file_exists(BASE_PATH . '/includes/ticket-functions.php')) {
         require_once BASE_PATH . '/includes/ticket-functions.php';
     }

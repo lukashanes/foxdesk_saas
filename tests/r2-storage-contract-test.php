@@ -27,6 +27,8 @@ assert_r2_contract(strpos($upload, "\$visibility !== 'public' && function_exists
 assert_r2_contract(strpos($attachment, "storage_read_object(\$attachment)") !== false, 'Attachment download proxy must read R2 objects.');
 assert_r2_contract(strpos($image, "storage_read_object(\$attachment)") !== false, 'Image proxy must support R2 image previews.');
 assert_r2_contract(strpos($image, 'image_proxy_attachment_is_authorized') !== false, 'R2 image preview must use attachment authorization.');
+assert_r2_contract(strpos($attachment, 'authenticate_mobile_bearer_request') !== false, 'Attachment downloads must accept authorized native mobile Bearer requests.');
+assert_r2_contract(strpos($image, 'authenticate_mobile_bearer_request') !== false, 'Protected image previews must accept authorized native mobile Bearer requests.');
 assert_r2_contract(strpos($r2_test, 'storage_r2_healthcheck($tenant_id') !== false, 'R2 smoke test must run the shared health roundtrip.');
 assert_r2_contract(strpos($r2_test, 'tenant_prefixed') !== false, 'R2 smoke test must report tenant prefix validation.');
 assert_r2_contract(strpos($preflight, 'STORAGE_DRIVER must be r2 for SaaS production') !== false, 'Production preflight must fail unless SaaS storage uses R2.');

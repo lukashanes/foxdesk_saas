@@ -33,6 +33,8 @@ $assert($contains('APNS_SEND_EVIDENCE="$ROOT_DIR/tmp/ios-apns-smoke/latest-send.
 foreach (['evidence_ready()', 'api_read_ready()', 'api_write_ready()', 'demo_write_ready()', 'apns_send_ready()', 'apns_dry_ready()', 'assert_evidence()'] as $function) {
     $assert($contains($function), "Submission gate is missing {$function}.");
 }
+$assert($contains('evidence_targets_production()'), 'Submission gate must distinguish production evidence from localhost smoke evidence.');
+$assert($contains('hostname !== "app.foxdesk.net"'), 'Submission gate must only accept app.foxdesk.net as live API evidence.');
 
 foreach ([
     '"create-ticket"',

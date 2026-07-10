@@ -48,7 +48,7 @@ struct SignedInShellView: View {
                 WorkspaceAccessGate {
                     TicketsView()
                         .navigationDestination(for: TicketNotificationRoute.self) { route in
-                            TicketDetailView(ticketID: route.ticketID)
+                            TicketDetailView(ticketID: route.ticketID, ticketHash: route.ticketHash)
                         }
                 }
             }
@@ -95,15 +95,15 @@ struct SignedInShellView: View {
     }
 
     private func openPendingTicketIfNeeded() {
-        guard let ticketID = pushRouter.consumePendingTicketID() else { return }
+        guard let route = pushRouter.consumePendingTicket() else { return }
         selectedTab = .tickets
-        ticketNotificationPath = [TicketNotificationRoute(ticketID: ticketID)]
+        ticketNotificationPath = [TicketNotificationRoute(ticketID: route.id, ticketHash: route.hash)]
     }
 
     @MainActor
     private func openTicket(_ ticketID: Int) {
         selectedTab = .tickets
-        ticketNotificationPath = [TicketNotificationRoute(ticketID: ticketID)]
+        ticketNotificationPath = [TicketNotificationRoute(ticketID: ticketID, ticketHash: nil)]
     }
 }
 
@@ -117,6 +117,7 @@ private enum AppTab: Hashable {
 
 private struct TicketNotificationRoute: Hashable {
     let ticketID: Int
+    let ticketHash: String?
 }
 
 private struct WorkspaceAccessGate<Content: View>: View {
