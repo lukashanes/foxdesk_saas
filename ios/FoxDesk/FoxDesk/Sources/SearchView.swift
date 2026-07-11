@@ -169,6 +169,7 @@ private struct SearchResultRow: View {
             item.status,
             item.client,
             item.assignee,
+            item.type == "ticket" ? (item.workedLabel ?? "0 min") : nil,
             item.subtitle,
             item.updatedAt
         ]

@@ -29,6 +29,7 @@ function tenant_owned_tables(): array
         'mobile_auth_challenges',
         'mobile_sessions',
         'mobile_devices',
+        'mobile_idempotency_keys',
         'notifications',
         'push_subscriptions',
         'allowed_senders',
@@ -244,6 +245,35 @@ function set_current_tenant_from_user(?array $user): void
     }
 
     $_SESSION['tenant_id'] = (int) $user['tenant_id'];
+}
+
+/**
+ * Run background work inside one explicit workspace and always restore the
+ * caller's tenant context, including when the job throws.
+ */
+function tenant_run_in_context(int $tenant_id, callable $callback): mixed
+{
+    if ($tenant_id <= 0) {
+        throw new InvalidArgumentException('A valid tenant id is required.');
+    }
+
+    if (!isset($_SESSION) || !is_array($_SESSION)) {
+        $_SESSION = [];
+    }
+
+    $had_tenant = array_key_exists('tenant_id', $_SESSION);
+    $previous_tenant = $_SESSION['tenant_id'] ?? null;
+    $_SESSION['tenant_id'] = $tenant_id;
+
+    try {
+        return $callback();
+    } finally {
+        if ($had_tenant) {
+            $_SESSION['tenant_id'] = $previous_tenant;
+        } else {
+            unset($_SESSION['tenant_id']);
+        }
+    }
 }
 
 function tenant_sql_filter(string $table, string $alias, array &$params): string

@@ -86,6 +86,7 @@ public struct MobileRefreshRequest: Encodable, Sendable {
 
 public struct LogoutRequest: Encodable, Sendable {
     public let refreshToken: String?
+    public let deviceId: String
 }
 
 public struct LogoutResponse: Decodable, Sendable, Equatable {

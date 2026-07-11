@@ -3,6 +3,7 @@ import FoxDeskKit
 
 struct DashboardView: View {
     @Environment(AppSession.self) private var session
+    @Environment(PushRegistrationService.self) private var pushRegistration
 
     private let homeCache = HomeFeedCacheStore()
 
@@ -13,6 +14,19 @@ struct DashboardView: View {
 
     var body: some View {
         List {
+            if pushRegistration.shouldOfferEnableAction {
+                Section {
+                    Button {
+                        Task { await pushRegistration.enableNotifications(session: session) }
+                    } label: {
+                        Label("Enable ticket notifications", systemImage: "bell.badge")
+                    }
+                    Text("Get assigned work and important ticket replies on this iPhone.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             if let cacheMessage {
                 Section {
                     Label(cacheMessage, systemImage: "clock.arrow.circlepath")

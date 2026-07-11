@@ -27,6 +27,8 @@ public struct GlobalSearchItem: Decodable, Sendable, Identifiable, Equatable, Ha
     public let statusGroup: String?
     public let client: String?
     public let assignee: String?
+    public let workedMinutes: Int?
+    public let workedLabel: String?
     public let subtitle: String?
     public let role: String?
     public let url: String?

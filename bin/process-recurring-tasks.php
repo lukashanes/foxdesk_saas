@@ -21,6 +21,7 @@ if (!file_exists(BASE_PATH . '/config.php')) {
 
 require_once BASE_PATH . '/config.php';
 require_once BASE_PATH . '/includes/database.php';
+require_once BASE_PATH . '/includes/tenant-functions.php';
 require_once BASE_PATH . '/includes/functions.php';
 require_once BASE_PATH . '/includes/cli-functions.php';
 

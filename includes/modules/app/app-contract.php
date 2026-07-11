@@ -95,6 +95,8 @@ function app_contract_ticket_payload(array $ticket): array
         ])
         : (string) ($ticket['status_name'] ?? '');
 
+    $worked_minutes = max(0, (int) ($ticket['worked_minutes'] ?? 0));
+
     return [
         'id' => $ticket_id,
         'hash' => $ticket['hash'] ?? null,
@@ -135,6 +137,10 @@ function app_contract_ticket_payload(array $ticket): array
         'due_date' => $ticket['due_date'] ?? null,
         'created_at' => $ticket['created_at'] ?? null,
         'updated_at' => $ticket['updated_at'] ?? null,
+        'worked_minutes' => $worked_minutes,
+        'worked_label' => function_exists('format_duration_minutes')
+            ? format_duration_minutes($worked_minutes)
+            : ($worked_minutes . ' min'),
         'url' => function_exists('ticket_url') ? ticket_url($ticket) : url('ticket', ['id' => $ticket_id]),
     ];
 }
@@ -362,11 +368,14 @@ function app_contract_attachment_can_preview(array $attachment): bool
 function app_contract_attachment_payload(array $attachment): array
 {
     $file_size = isset($attachment['file_size']) ? (int) $attachment['file_size'] : null;
-    $download_url = function_exists('attachment_download_url') ? attachment_download_url($attachment) : '';
+    $attachment_id = (int) ($attachment['id'] ?? 0);
+    $download_url = $attachment_id > 0
+        ? '/api/mobile/v1/attachments/' . $attachment_id . '/download'
+        : (function_exists('attachment_download_url') ? attachment_download_url($attachment) : '');
     $can_preview = app_contract_attachment_can_preview($attachment);
 
     return [
-        'id' => (int) ($attachment['id'] ?? 0),
+        'id' => $attachment_id,
         'ticket_id' => (int) ($attachment['ticket_id'] ?? 0),
         'comment_id' => !empty($attachment['comment_id']) ? (int) $attachment['comment_id'] : null,
         'filename' => (string) ($attachment['original_name'] ?? $attachment['filename'] ?? ''),

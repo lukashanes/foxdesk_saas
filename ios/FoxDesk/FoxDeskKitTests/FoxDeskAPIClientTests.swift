@@ -330,6 +330,204 @@ final class FoxDeskAPIClientTests: XCTestCase {
     }
 
     @MainActor
+    func testAppSessionRestoreKeepsTokensAfterTransientNetworkFailure() async throws {
+        let storedTokens = MobileSessionTokens(
+            tokenType: "Bearer",
+            accessToken: "offline_access",
+            refreshToken: "offline_refresh",
+            expiresIn: 3600,
+            refreshExpiresIn: 5_184_000
+        )
+        let tokenStore = InMemoryTokenStore(tokens: storedTokens)
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        let appSession = AppSession(
+            client: client,
+            tokenStore: tokenStore,
+            device: DeviceContext(deviceId: "device", deviceName: "iPhone", appVersion: "0.1")
+        )
+
+        URLProtocolStub.requestHandler = { request in
+            Self.assertAPIPath(request.url, "/api/mobile/v1/me")
+            throw URLError(.notConnectedToInternet)
+        }
+
+        await appSession.restore()
+
+        guard case .failed = appSession.state else {
+            return XCTFail("A transient restore failure should be visible without signing the user out.")
+        }
+        XCTAssertEqual(appSession.tokens, storedTokens)
+        let persistedTokens = try await tokenStore.loadTokens()
+        XCTAssertEqual(persistedTokens, storedTokens)
+    }
+
+    @MainActor
+    func testNewSignInWinsOverInFlightSessionRestore() async throws {
+        let oldTokens = MobileSessionTokens(
+            tokenType: "Bearer",
+            accessToken: "old_access",
+            refreshToken: "old_refresh",
+            expiresIn: 3600,
+            refreshExpiresIn: 5_184_000
+        )
+        let tokenStore = InMemoryTokenStore(tokens: oldTokens)
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        let appSession = AppSession(
+            client: client,
+            tokenStore: tokenStore,
+            device: DeviceContext(deviceId: "device", deviceName: "iPhone", appVersion: "0.1")
+        )
+
+        URLProtocolStub.requestHandler = { request in
+            let path = request.url?.path ?? ""
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+
+            if path.hasSuffix("/me") {
+                Thread.sleep(forTimeInterval: 0.08)
+                return (response, Self.mobileMeResponseData())
+            }
+            if path.hasSuffix("/login") {
+                return (response, Data(#"{"success":true,"requires_2fa":false,"session":{"token_type":"Bearer","access_token":"new_access","refresh_token":"new_refresh","expires_in":3600,"refresh_expires_in":5184000},"user":{"id":8,"email":"admin@example.com","first_name":"Alex","last_name":"Admin","name":"Alex Admin","role":"admin","language":"en","tenant_id":3}}"#.utf8))
+            }
+            if path.hasSuffix("/tenant-state") {
+                return (response, Self.tenantStateResponseData())
+            }
+            XCTFail("Unexpected request: \(request.url?.absoluteString ?? "<missing url>")")
+            throw URLError(.badServerResponse)
+        }
+
+        let restoreTask = Task { await appSession.restore() }
+        try await Task.sleep(for: .milliseconds(10))
+        await appSession.signIn(email: "admin@example.com", password: "secret")
+        await restoreTask.value
+
+        XCTAssertEqual(appSession.state, .signedIn)
+        XCTAssertEqual(appSession.user?.email, "admin@example.com")
+        XCTAssertEqual(appSession.tokens?.accessToken, "new_access")
+        let persistedTokens = try await tokenStore.loadTokens()
+        XCTAssertEqual(persistedTokens?.accessToken, "new_access")
+    }
+
+    @MainActor
+    func testConcurrentUnauthorizedRequestsShareOneRefresh() async throws {
+        let storedTokens = MobileSessionTokens(
+            tokenType: "Bearer",
+            accessToken: "stale_access",
+            refreshToken: "stale_refresh",
+            expiresIn: 0,
+            refreshExpiresIn: 5_184_000
+        )
+        let tokenStore = InMemoryTokenStore(tokens: storedTokens)
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        let appSession = AppSession(
+            client: client,
+            tokenStore: tokenStore,
+            device: DeviceContext(deviceId: "device", deviceName: "iPhone", appVersion: "0.1")
+        )
+
+        let lock = NSLock()
+        var initialMeCount = 0
+        var staleFailures = 0
+        var freshSuccesses = 0
+        var refreshCount = 0
+
+        URLProtocolStub.requestHandler = { request in
+            let path = request.url?.path ?? ""
+            let authorization = request.value(forHTTPHeaderField: "Authorization")
+            let response: HTTPURLResponse
+
+            if path.hasSuffix("/me") {
+                let meIndex = lock.withLock {
+                    initialMeCount += 1
+                    if authorization == "Bearer stale_access" && initialMeCount > 1 {
+                        staleFailures += 1
+                    } else if authorization == "Bearer fresh_access" {
+                        freshSuccesses += 1
+                    }
+                    return initialMeCount
+                }
+
+                if authorization == "Bearer stale_access" && meIndex > 1 {
+                    Thread.sleep(forTimeInterval: 0.05)
+                    response = HTTPURLResponse(
+                        url: request.url!,
+                        statusCode: 401,
+                        httpVersion: nil,
+                        headerFields: ["Content-Type": "application/json"]
+                    )!
+                    return (response, Data(#"{"success":false,"message":"Expired"}"#.utf8))
+                }
+
+                response = HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!
+                return (response, Self.mobileMeResponseData())
+            }
+
+            if path.hasSuffix("/tenant-state") {
+                response = HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!
+                return (response, Self.tenantStateResponseData())
+            }
+
+            if path.hasSuffix("/refresh") {
+                lock.withLock {
+                    refreshCount += 1
+                }
+                Thread.sleep(forTimeInterval: 0.05)
+                response = HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!
+                return (response, Self.refreshedAuthResponseData())
+            }
+
+            XCTFail("Unexpected request: \(request.url?.absoluteString ?? "<missing url>")")
+            throw URLError(.badServerResponse)
+        }
+
+        await appSession.restore()
+        XCTAssertEqual(appSession.state, .signedIn)
+
+        async let first = appSession.authenticated { accessToken in
+            try await client.me(accessToken: accessToken)
+        }
+        async let second = appSession.authenticated { accessToken in
+            try await client.me(accessToken: accessToken)
+        }
+        _ = try await (first, second)
+
+        let counts = lock.withLock { (staleFailures, freshSuccesses, refreshCount) }
+        XCTAssertEqual(counts.0, 2)
+        XCTAssertEqual(counts.1, 2)
+        XCTAssertEqual(counts.2, 1)
+        XCTAssertEqual(appSession.tokens?.accessToken, "fresh_access")
+    }
+
+    @MainActor
     func testAppSessionSignOutUnregistersDeviceBeforeLogout() async throws {
         let tokenStore = InMemoryTokenStore()
         let client = FoxDeskAPIClient(
@@ -422,11 +620,12 @@ final class FoxDeskAPIClientTests: XCTestCase {
                 return (response, Data(#"{"success":true,"unregistered":true}"#.utf8))
 
             case 3:
-                XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer fresh_access")
+                XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
                 Self.assertAPIPath(request.url, "/api/mobile/v1/logout")
                 let body = try XCTUnwrap(Self.bodyData(from: request))
                 let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
                 XCTAssertEqual(json["refresh_token"] as? String, "fresh_refresh")
+                XCTAssertEqual(json["device_id"] as? String, "device")
                 let response = HTTPURLResponse(
                     url: request.url!,
                     statusCode: 200,
@@ -609,6 +808,8 @@ final class FoxDeskAPIClientTests: XCTestCase {
                     "status": {"id": 1, "name": "Waiting", "color": "#335CFF", "group": "waiting", "is_closed": false},
                     "client": {"id": 3, "name": "Aenze"},
                     "attachment_count": 2,
+                    "worked_minutes": 48,
+                    "worked_label": "48 min",
                     "is_archived": false
                   }
                 ],
@@ -629,6 +830,8 @@ final class FoxDeskAPIClientTests: XCTestCase {
 
         XCTAssertEqual(result.data.tickets.first?.title, "VPN access stopped working")
         XCTAssertEqual(result.data.tickets.first?.status?.group, "waiting")
+        XCTAssertEqual(result.data.tickets.first?.workedMinutes, 48)
+        XCTAssertEqual(result.data.tickets.first?.workedLabel, "48 min")
         XCTAssertEqual(result.data.pagination?.total, 1)
     }
 
@@ -1380,6 +1583,7 @@ final class FoxDeskAPIClientTests: XCTestCase {
         URLProtocolStub.requestHandler = { request in
             XCTAssertEqual(request.httpMethod, "POST")
             XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer fdm_at_test")
+            XCTAssertTrue(request.value(forHTTPHeaderField: "Idempotency-Key")?.hasPrefix("ios-") == true)
             Self.assertAPIPath(request.url, "/api/mobile/v1/notifications/read-state")
 
             let body = try XCTUnwrap(Self.bodyData(from: request))
@@ -1419,6 +1623,47 @@ final class FoxDeskAPIClientTests: XCTestCase {
 
         XCTAssertEqual(result.data.unreadCount, 1)
         XCTAssertEqual(result.data.updated, true)
+    }
+
+    func testMobileWriteRetriesOnceWithTheSameIdempotencyKey() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        var keys: [String] = []
+        var requestCount = 0
+        URLProtocolStub.requestHandler = { request in
+            requestCount += 1
+            keys.append(request.value(forHTTPHeaderField: "Idempotency-Key") ?? "")
+            Self.assertAPIPath(request.url, "/api/mobile/v1/notifications/read-state")
+
+            if requestCount == 1 {
+                throw URLError(.networkConnectionLost)
+            }
+
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, Data(#"{"success":true,"data":{"unread_count":0,"updated":true},"meta":{"schema_version":1,"resource":"notification_read_state"},"errors":[]}"#.utf8))
+        }
+
+        let result = try await client.setNotificationReadState(
+            accessToken: "fdm_at_test",
+            request: NotificationReadStateRequest(
+                scope: "all",
+                notificationId: nil,
+                isRead: true
+            )
+        )
+
+        XCTAssertTrue(result.data.updated)
+        XCTAssertEqual(requestCount, 2)
+        XCTAssertEqual(keys.count, 2)
+        XCTAssertFalse(keys[0].isEmpty)
+        XCTAssertEqual(keys[0], keys[1])
     }
 
     func testTicketDetailDecodesCommentsTimeAndAttachments() async throws {
@@ -1818,6 +2063,45 @@ final class FoxDeskAPIClientTests: XCTestCase {
         XCTAssertEqual(result.file.originalName, "screenshot.png")
     }
 
+    func testUploadAttachmentStreamsMultipartBodyFromFile() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FoxDeskUploadTest-\(UUID().uuidString).txt")
+        try Data("streamed-file-body".utf8).write(to: fileURL)
+        defer { try? FileManager.default.removeItem(at: fileURL) }
+
+        URLProtocolStub.requestHandler = { request in
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer fdm_at_test")
+            Self.assertAPIPath(request.url, "/api/mobile/v1/tickets/42/attachments")
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let bodyText = String(decoding: body, as: UTF8.self)
+            XCTAssertTrue(bodyText.contains("filename=\"notes.txt\""))
+            XCTAssertTrue(bodyText.contains("streamed-file-body"))
+
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, Data(#"{"success":true,"file":{"filename":"uploads/notes.txt","original_name":"notes.txt","mime_type":"text/plain","file_size":18,"url":"attachment.php?id=10","attachment_id":10}}"#.utf8))
+        }
+
+        let result = try await client.uploadAttachment(
+            accessToken: "fdm_at_test",
+            ticketId: 42,
+            filename: "notes.txt",
+            mimeType: "text/plain",
+            fileURL: fileURL
+        )
+
+        XCTAssertEqual(result.file.attachmentId, 10)
+    }
+
     func testAgentTicketWorkflowSmokeUsesVersionedMobileEndpoints() async throws {
         let client = FoxDeskAPIClient(
             environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
@@ -2182,6 +2466,50 @@ final class FoxDeskAPIClientTests: XCTestCase {
         XCTAssertNil(requests.last?.value(forHTTPHeaderField: "Authorization"))
     }
 
+    func testDownloadResourceToTemporaryFileDoesNotKeepPayloadInMemory() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        URLProtocolStub.requestHandler = { request in
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer fdm_at_test")
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/octet-stream"]
+            )!
+            return (response, Data("downloaded-file".utf8))
+        }
+
+        let fileURL = try await client.downloadResourceToTemporaryFile(
+            accessToken: "fdm_at_test",
+            url: URL(string: "https://app.foxdesk.net/attachment.php?id=9")!,
+            suggestedFilename: "../unsafe.pdf"
+        )
+        defer { try? FileManager.default.removeItem(at: fileURL) }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: fileURL.path))
+        XCTAssertFalse(fileURL.lastPathComponent.contains("/"))
+        XCTAssertEqual(try String(contentsOf: fileURL, encoding: .utf8), "downloaded-file")
+    }
+
+    func testStagedAttachmentFilePersistsToDiskAndRemovesItself() throws {
+        let attachment = try StagedAttachmentFile(
+            data: Data("attachment".utf8),
+            filename: "../screen shot.png",
+            mimeType: "image/png"
+        )
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: attachment.fileURL.path))
+        XCTAssertEqual(attachment.byteCount, 10)
+        XCTAssertFalse(attachment.filename.contains("/"))
+        XCTAssertEqual(attachment.iconName, "photo")
+
+        attachment.remove()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: attachment.fileURL.path))
+    }
+
     func testNotificationPayloadExtractsTicketIDVariants() {
         XCTAssertEqual(
             FoxDeskNotificationPayload.ticketID(from: ["ticket_id": 42]),
@@ -2273,11 +2601,10 @@ final class FoxDeskAPIClientTests: XCTestCase {
     }
 
     func testTicketCommentDraftStorePersistsPerTicketAndUser() async throws {
-        let suiteName = "FoxDeskDraftStoreTests-\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let directoryURL = temporaryCacheDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
 
-        let store = TicketCommentDraftStore(defaults: defaults)
+        let store = TicketCommentDraftStore(directoryURL: directoryURL)
         let draft = TicketCommentDraft(
             ticketId: 42,
             userId: 7,
@@ -2305,11 +2632,10 @@ final class FoxDeskAPIClientTests: XCTestCase {
     }
 
     func testTicketCommentDraftStoreClearsEmptyAndSubmittedDrafts() async throws {
-        let suiteName = "FoxDeskDraftStoreTests-\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let directoryURL = temporaryCacheDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
 
-        let store = TicketCommentDraftStore(defaults: defaults)
+        let store = TicketCommentDraftStore(directoryURL: directoryURL)
         try await store.save(TicketCommentDraft(ticketId: 42, userId: 7, content: "Temporary note"))
         let savedDraft = try await store.load(ticketId: 42, userId: 7)
         XCTAssertNotNil(savedDraft)
@@ -2325,11 +2651,10 @@ final class FoxDeskAPIClientTests: XCTestCase {
     }
 
     func testTicketListCacheStorePersistsPerUserTenantAndList() async throws {
-        let suiteName = "FoxDeskTicketListCacheTests-\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let directoryURL = temporaryCacheDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
 
-        let store = TicketListCacheStore(defaults: defaults)
+        let store = TicketListCacheStore(directoryURL: directoryURL)
         let ticket = cachedTicket(id: 42, title: "VPN access stopped working")
 
         try await store.save(
@@ -2354,11 +2679,10 @@ final class FoxDeskAPIClientTests: XCTestCase {
     }
 
     func testTicketListCacheStoreClearsSavedLists() async throws {
-        let suiteName = "FoxDeskTicketListCacheTests-\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let directoryURL = temporaryCacheDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
 
-        let store = TicketListCacheStore(defaults: defaults)
+        let store = TicketListCacheStore(directoryURL: directoryURL)
         try await store.save(
             userId: 7,
             tenantId: 3,
@@ -2376,11 +2700,10 @@ final class FoxDeskAPIClientTests: XCTestCase {
     }
 
     func testTicketDetailCacheStorePersistsPerUserTenantAndTicket() async throws {
-        let suiteName = "FoxDeskTicketDetailCacheTests-\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let directoryURL = temporaryCacheDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
 
-        let store = TicketDetailCacheStore(defaults: defaults)
+        let store = TicketDetailCacheStore(directoryURL: directoryURL)
         let detail = cachedTicketDetail(id: 42, title: "VPN access stopped working")
 
         try await store.save(userId: 7, tenantId: 3, ticketId: 42, detail: detail)
@@ -2400,11 +2723,10 @@ final class FoxDeskAPIClientTests: XCTestCase {
     }
 
     func testTicketDetailCacheStoreClearsSavedTicket() async throws {
-        let suiteName = "FoxDeskTicketDetailCacheTests-\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let directoryURL = temporaryCacheDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
 
-        let store = TicketDetailCacheStore(defaults: defaults)
+        let store = TicketDetailCacheStore(directoryURL: directoryURL)
         try await store.save(userId: 7, tenantId: 3, ticketId: 42, detail: cachedTicketDetail(id: 42, title: "VPN"))
 
         let saved = try await store.load(userId: 7, tenantId: 3, ticketId: 42)
@@ -2416,11 +2738,10 @@ final class FoxDeskAPIClientTests: XCTestCase {
     }
 
     func testHomeFeedCacheStorePersistsPerUserAndTenant() async throws {
-        let suiteName = "FoxDeskHomeFeedCacheTests-\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let directoryURL = temporaryCacheDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
 
-        let store = HomeFeedCacheStore(defaults: defaults)
+        let store = HomeFeedCacheStore(directoryURL: directoryURL)
         let home = cachedHomeFeed()
 
         try await store.save(userId: 7, tenantId: 3, home: home)
@@ -2438,11 +2759,10 @@ final class FoxDeskAPIClientTests: XCTestCase {
     }
 
     func testHomeFeedCacheStoreClearsSavedFeed() async throws {
-        let suiteName = "FoxDeskHomeFeedCacheTests-\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let directoryURL = temporaryCacheDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
 
-        let store = HomeFeedCacheStore(defaults: defaults)
+        let store = HomeFeedCacheStore(directoryURL: directoryURL)
         try await store.save(userId: 7, tenantId: 3, home: cachedHomeFeed())
 
         let saved = try await store.load(userId: 7, tenantId: 3)
@@ -2453,10 +2773,172 @@ final class FoxDeskAPIClientTests: XCTestCase {
         XCTAssertNil(cleared)
     }
 
+    func testLocalSessionDataStoreClearsOnlySignedOutUsersFoxDeskData() async throws {
+        let suiteName = "FoxDeskLocalSessionDataTests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let directoryURL = temporaryCacheDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        let userSevenKeys = [
+            "net.foxdesk.ios.home-feed-cache.user-7.tenant-3",
+            "net.foxdesk.ios.ticket-list-cache.user-7.tenant-3.view-open",
+            "net.foxdesk.ios.ticket-detail-cache.user-7.tenant-3.ticket-42",
+            "net.foxdesk.ios.ticket-comment-draft.user-7.ticket-42"
+        ]
+        let otherUserKey = "net.foxdesk.ios.ticket-detail-cache.user-8.tenant-3.ticket-42"
+        let unrelatedKey = "net.foxdesk.ios.unrelated.user-7.value"
+        for key in userSevenKeys {
+            defaults.set(Data("private".utf8), forKey: key)
+        }
+        defaults.set(Data("other".utf8), forKey: otherUserKey)
+        defaults.set("keep", forKey: unrelatedKey)
+
+        let userSevenCache = TicketListCacheStore(directoryURL: directoryURL, legacyDefaults: defaults)
+        let otherUserCache = TicketListCacheStore(directoryURL: directoryURL, legacyDefaults: defaults)
+        try await userSevenCache.save(
+            userId: 7,
+            tenantId: 3,
+            listKey: "view-open",
+            tickets: [cachedTicket(id: 42, title: "Private ticket")],
+            totalCount: 1
+        )
+        try await otherUserCache.save(
+            userId: 8,
+            tenantId: 3,
+            listKey: "view-open",
+            tickets: [cachedTicket(id: 43, title: "Other user ticket")],
+            totalCount: 1
+        )
+
+        let store = LocalSessionDataStore(cacheDirectoryURL: directoryURL, legacyDefaults: defaults)
+        await store.clear(userId: 7)
+
+        for key in userSevenKeys {
+            XCTAssertNil(defaults.object(forKey: key))
+        }
+        XCTAssertNotNil(defaults.object(forKey: otherUserKey))
+        XCTAssertEqual(defaults.string(forKey: unrelatedKey), "keep")
+        let clearedFileCache = try await userSevenCache.load(userId: 7, tenantId: 3, listKey: "view-open")
+        let preservedFileCache = try await otherUserCache.load(userId: 8, tenantId: 3, listKey: "view-open")
+        XCTAssertNil(clearedFileCache)
+        XCTAssertEqual(preservedFileCache?.tickets.first?.id, 43)
+    }
+
+    @MainActor
+    func testAppSessionRestoreWithoutTokensClearsAllFoxDeskLocalData() async throws {
+        let suiteName = "FoxDeskRestoreWithoutTokensTests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let directoryURL = temporaryCacheDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+
+        let managedKeys = [
+            "net.foxdesk.ios.home-feed-cache.user-7.tenant-3",
+            "net.foxdesk.ios.ticket-list-cache.user-8.tenant-4.view-all",
+            "net.foxdesk.ios.ticket-detail-cache.user-7.tenant-3.ticket-42",
+            "net.foxdesk.ios.ticket-comment-draft.user-8.ticket-99"
+        ]
+        for key in managedKeys {
+            defaults.set(Data("private".utf8), forKey: key)
+        }
+        defaults.set("keep", forKey: "net.foxdesk.ios.unrelated")
+
+        let protectedCache = TicketDetailCacheStore(directoryURL: directoryURL, legacyDefaults: defaults)
+        try await protectedCache.save(
+            userId: 7,
+            tenantId: 3,
+            ticketId: 42,
+            detail: cachedTicketDetail(id: 42, title: "Private ticket")
+        )
+
+        let appSession = AppSession(
+            client: FoxDeskAPIClient(
+                environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+                session: makeStubbedSession()
+            ),
+            tokenStore: InMemoryTokenStore(),
+            device: DeviceContext(deviceId: "device", deviceName: "iPhone", appVersion: "0.1"),
+            localDataStore: LocalSessionDataStore(
+                cacheDirectoryURL: directoryURL,
+                legacyDefaults: defaults
+            )
+        )
+
+        await appSession.restore()
+
+        XCTAssertEqual(appSession.state, .signedOut)
+        for key in managedKeys {
+            XCTAssertNil(defaults.object(forKey: key))
+        }
+        XCTAssertEqual(defaults.string(forKey: "net.foxdesk.ios.unrelated"), "keep")
+        let protectedDetail = try await protectedCache.load(userId: 7, tenantId: 3, ticketId: 42)
+        XCTAssertNil(protectedDetail)
+    }
+
+    func testProtectedCachesExpireAndRemoveStaleFiles() async throws {
+        let directoryURL = temporaryCacheDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+        let store = TicketListCacheStore(directoryURL: directoryURL, maxAge: -1)
+
+        try await store.save(
+            userId: 7,
+            tenantId: 3,
+            listKey: "view-open",
+            tickets: [cachedTicket(id: 42, title: "Expired ticket")],
+            totalCount: 1
+        )
+
+        let expired = try await store.load(userId: 7, tenantId: 3, listKey: "view-open")
+        XCTAssertNil(expired)
+        let remainingFiles = try FileManager.default.subpathsOfDirectory(atPath: directoryURL.path)
+            .filter { $0.hasSuffix(".json") }
+        XCTAssertTrue(remainingFiles.isEmpty)
+    }
+
+    func testProtectedCacheMigratesLegacyUserDefaultsAndRemovesOriginal() async throws {
+        let suiteName = "FoxDeskLegacyCacheMigrationTests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let directoryURL = temporaryCacheDirectory()
+        defer { try? FileManager.default.removeItem(at: directoryURL) }
+        let legacyKey = "net.foxdesk.ios.home-feed-cache.user-7.tenant-3"
+        let cached = CachedHomeFeed(userId: 7, tenantId: 3, home: cachedHomeFeed())
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        defaults.set(try encoder.encode(cached), forKey: legacyKey)
+
+        let store = HomeFeedCacheStore(directoryURL: directoryURL, legacyDefaults: defaults)
+        let restored = try await store.load(userId: 7, tenantId: 3)
+
+        XCTAssertEqual(restored?.userId, 7)
+        XCTAssertNil(defaults.object(forKey: legacyKey))
+        let protectedFiles = try FileManager.default.subpathsOfDirectory(atPath: directoryURL.path)
+            .filter { $0.hasSuffix(".json") }
+        XCTAssertEqual(protectedFiles.count, 1)
+    }
+
+    private static func mobileMeResponseData() -> Data {
+        Data(#"{"success":true,"user":{"id":7,"email":"agent@example.com","first_name":"Emma","last_name":"Carter","name":"Emma Carter","role":"agent","language":"en","tenant_id":3}}"#.utf8)
+    }
+
+    private static func tenantStateResponseData() -> Data {
+        Data(#"{"success":true,"data":{"tenant":{"id":3,"name":"Aenze"},"access":{"allowed":true,"state":"active","reason":null,"message":null},"billing_actions":null,"usage":null,"capabilities":{"manage_billing":false,"platform_admin":false},"links":null},"meta":{"schema_version":1,"resource":"tenant_state"},"errors":[]}"#.utf8)
+    }
+
+    private static func refreshedAuthResponseData() -> Data {
+        Data(#"{"success":true,"requires_2fa":false,"session":{"token_type":"Bearer","access_token":"fresh_access","refresh_token":"fresh_refresh","expires_in":3600,"refresh_expires_in":5184000},"user":{"id":7,"email":"agent@example.com","first_name":"Emma","last_name":"Carter","name":"Emma Carter","role":"agent","language":"en","tenant_id":3}}"#.utf8)
+    }
+
     private func makeStubbedSession() -> URLSession {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [URLProtocolStub.self]
         return URLSession(configuration: configuration)
+    }
+
+    private func temporaryCacheDirectory() -> URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent("FoxDeskProtectedCacheTests-\(UUID().uuidString)", isDirectory: true)
     }
 
     private static func bodyData(from request: URLRequest) -> Data? {
@@ -2517,6 +2999,8 @@ final class FoxDeskAPIClientTests: XCTestCase {
             updatedAt: "2026-07-06 10:30:00",
             url: nil,
             attachmentCount: 0,
+            workedMinutes: 48,
+            workedLabel: "48 min",
             isArchived: false
         )
     }
@@ -2591,6 +3075,8 @@ final class FoxDeskAPIClientTests: XCTestCase {
             dueDate: nil,
             createdAt: "2026-07-06 09:00:00",
             updatedAt: "2026-07-06 10:00:00",
+            workedMinutes: 48,
+            workedLabel: "48 min",
             url: nil
         )
 

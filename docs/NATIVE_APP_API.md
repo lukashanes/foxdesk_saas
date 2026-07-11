@@ -58,7 +58,10 @@ Mobile clients authenticate with the mobile session endpoints:
 
 The native app registers APNs with `device-token` after notification
 permission is granted and calls `device-token/unregister` during sign-out before
-local tokens are cleared. Logout must still finish if device unregister fails.
+local tokens are cleared. `logout` is authorized by the refresh token in its
+JSON body, so it can revoke the server session and linked APNs registrations
+even after the short-lived access token expires. Logout must still finish
+locally if the server cannot be reached.
 
 Compatibility aliases:
 
@@ -87,6 +90,12 @@ authenticated request once after `401 Unauthorized` by calling
 `POST /api/mobile/v1/refresh`, persist the rotated session tokens, and then
 repeat the original request. If refresh fails, clear local tokens and return to
 sign-in.
+
+Every authenticated mobile write sends an `Idempotency-Key` header. The server
+reserves that key per mobile session and action for 24 hours. When a write loses
+its network response, the iOS client retries it once with the same key; the
+server replays the stored response instead of creating a duplicate ticket,
+comment, time entry, timer action, notification update, or attachment.
 
 Cookie-authenticated browser sessions still need CSRF on write endpoints. Mobile
 Bearer-token requests do not use browser CSRF because they do not rely on
@@ -451,6 +460,15 @@ Frozen `data.attachment` keys:
 Native clients should use `download_url` for authorized download and
 `preview_url` only when `can_preview` is true. The API never exposes R2 secret
 credentials or raw bucket secrets.
+
+### Download Attachment
+
+`GET /api/mobile/v1/attachments/{id}/download`
+
+The versioned endpoint accepts the same mobile Bearer token as metadata and
+streams the authorized file without creating a browser session. Native clients
+must use the URL returned by `download_url` rather than constructing storage or
+provider URLs.
 
 ## Clients
 

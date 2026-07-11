@@ -782,6 +782,25 @@ CREATE TABLE IF NOT EXISTS mobile_sessions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS mobile_idempotency_keys (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tenant_id INT NULL,
+    mobile_session_id INT NOT NULL,
+    user_id INT NOT NULL,
+    idempotency_key VARCHAR(128) NOT NULL,
+    action VARCHAR(120) NOT NULL,
+    request_hash CHAR(64) NOT NULL,
+    response_json MEDIUMTEXT NULL,
+    status_code INT DEFAULT 200,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    UNIQUE KEY uniq_mobile_idempotency_session_key (mobile_session_id, action, idempotency_key),
+    INDEX idx_tenant_id (tenant_id),
+    INDEX idx_expires (expires_at),
+    FOREIGN KEY (mobile_session_id) REFERENCES mobile_sessions(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Native mobile device records for APNs registration
 CREATE TABLE IF NOT EXISTS mobile_devices (
     id INT AUTO_INCREMENT PRIMARY KEY,

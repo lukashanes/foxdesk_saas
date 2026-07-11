@@ -21,17 +21,22 @@
 		23271722990FA7672CDC222F /* SearchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B400DBB271B686EEEEEB428 /* SearchModels.swift */; };
 		266B6D31503EA6C51463A901 /* TicketManageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA08CDCC5C4CC2B492910C18 /* TicketManageView.swift */; };
 		27E99377960CD56B3C0DE9BD /* NewTicketView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9E3AA0484834696C5C22B5 /* NewTicketView.swift */; };
+		353C4B8CCF07CDACEF31CE06 /* LocalSessionDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A9203911D6BE1E42A11B9A7 /* LocalSessionDataStore.swift */; };
 		377BD7118F338361474E69B2 /* TicketDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 811791BCF658B9EB20463265 /* TicketDetailView.swift */; };
 		37B76817A19C8288BC0EC97D /* FoxDeskEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8331D41A240FFEF566CB635B /* FoxDeskEnvironment.swift */; };
 		37D0A84874C70C6F933966C5 /* DashboardQuickActionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2AF1C42D06044F251E24FD3 /* DashboardQuickActionsView.swift */; };
 		3CC75DD94C1F07A373D2F9BC /* NotificationPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EC76D06414A76560B6D1668 /* NotificationPayload.swift */; };
+		40B65DB476FD3DB8579B4EC7 /* StagedAttachmentFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36C7F3FF48B8274FABD69FF4 /* StagedAttachmentFile.swift */; };
 		48D18AA4D58DE9FD404B62FC /* KeychainTokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46B4E6F3AED5D296B73325E7 /* KeychainTokenStore.swift */; };
 		4AEB6F5E3951F62862994E0D /* DashboardIdentitySectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19C4B0BA20C82FF8D9053394 /* DashboardIdentitySectionsView.swift */; };
+		4E51F79D29ED341466841E76 /* MobileRichTextRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E35350C2D21E16D58DC0F21 /* MobileRichTextRendererTests.swift */; };
 		55DE5B7F364B5CF267F7B660 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E120A22828DF8535BF6AF3AD /* Assets.xcassets */; };
 		56A10650D8EBEDC8E430AE43 /* TicketsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92A5BBF545C7A6D97A394A62 /* TicketsView.swift */; };
+		5733B6B8C6A3C5758911DB75 /* MobileRichTextRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18F361292413A7CB154B555D /* MobileRichTextRenderer.swift */; };
 		593E7C7323E4E7C72EECCA04 /* DashboardWorkQueuesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDA41A187DDB57FC95F35054 /* DashboardWorkQueuesView.swift */; };
 		60D832C435D85D32D6261C1E /* TokenStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7557548900FBA2053AA2D24 /* TokenStore.swift */; };
 		636828DA9CB679AB422A246B /* FoxDeskKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 389BC991F1584CC6C1002DA4 /* FoxDeskKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		65F35FE3E29231735AF54192 /* ProtectedLocalCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E61CE945F2DEF89D6012B8D /* ProtectedLocalCache.swift */; };
 		66CD141A38AC52A0A9BC43F2 /* DashboardWorkedTimeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AD0219E37FD6D62CD4B9902 /* DashboardWorkedTimeView.swift */; };
 		8D16D025EE95A9A9F9A2CE0B /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9456F5B85787F870AF0A0BEA /* AccountView.swift */; };
 		8E0E600548E6B9753B34BA56 /* PushNavigationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B9D296BBB448455F0C22B4 /* PushNavigationRouter.swift */; };
@@ -122,12 +127,16 @@
 		15EB2A96C4410D4F1DE1922A /* TicketModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TicketModels.swift; sourceTree = "<group>"; };
 		17C80F641D509DAED66D45C1 /* FoxDeskAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoxDeskAPIClient.swift; sourceTree = "<group>"; };
 		17ED2C789D3D650419DDE160 /* FoxDeskAPIClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoxDeskAPIClientTests.swift; sourceTree = "<group>"; };
+		18F361292413A7CB154B555D /* MobileRichTextRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileRichTextRenderer.swift; sourceTree = "<group>"; };
 		19C4B0BA20C82FF8D9053394 /* DashboardIdentitySectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardIdentitySectionsView.swift; sourceTree = "<group>"; };
 		1BA194F508B815E7DCF2E427 /* HomeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeModels.swift; sourceTree = "<group>"; };
 		2EC76D06414A76560B6D1668 /* NotificationPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPayload.swift; sourceTree = "<group>"; };
+		36C7F3FF48B8274FABD69FF4 /* StagedAttachmentFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StagedAttachmentFile.swift; sourceTree = "<group>"; };
 		383FFC7CE000555170EE3BD2 /* FoxDeskApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoxDeskApp.swift; sourceTree = "<group>"; };
 		389BC991F1584CC6C1002DA4 /* FoxDeskKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FoxDeskKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		3A9203911D6BE1E42A11B9A7 /* LocalSessionDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalSessionDataStore.swift; sourceTree = "<group>"; };
 		3DF2B4A07CB3CF5DA6E831C4 /* CameraCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraCaptureView.swift; sourceTree = "<group>"; };
+		3E35350C2D21E16D58DC0F21 /* MobileRichTextRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileRichTextRendererTests.swift; sourceTree = "<group>"; };
 		45EB6D3E9852C52B6F1962A3 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		46943E9AF58268A44A2A02CA /* ScreenshotDemoRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotDemoRootView.swift; sourceTree = "<group>"; };
 		46B4E6F3AED5D296B73325E7 /* KeychainTokenStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainTokenStore.swift; sourceTree = "<group>"; };
@@ -149,6 +158,7 @@
 		8331D41A240FFEF566CB635B /* FoxDeskEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoxDeskEnvironment.swift; sourceTree = "<group>"; };
 		887BA8963438675CDBC65842 /* APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModels.swift; sourceTree = "<group>"; };
 		897D59F23AB6289F0ED6EDA7 /* TicketCommentDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TicketCommentDraft.swift; sourceTree = "<group>"; };
+		8E61CE945F2DEF89D6012B8D /* ProtectedLocalCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtectedLocalCache.swift; sourceTree = "<group>"; };
 		92A5BBF545C7A6D97A394A62 /* TicketsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TicketsView.swift; sourceTree = "<group>"; };
 		9374BB176A78C902E91AC541 /* PushRegistrationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushRegistrationService.swift; sourceTree = "<group>"; };
 		9456F5B85787F870AF0A0BEA /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
@@ -203,6 +213,7 @@
 				5CFE917847248EC118D4346C /* Models */,
 				26558E9C4AD6DC95E84F5B7C /* Security */,
 				2585D7D75B42E25D9A42C043 /* Session */,
+				A3DC55C955104208A6FC2153 /* Storage */,
 			);
 			name = Sources;
 			path = FoxDeskKit/Sources;
@@ -213,6 +224,7 @@
 			children = (
 				B1A4A3A155D96E6104F21347 /* AppSession.swift */,
 				FEDEFF24A75D148732D5CDFB /* DeviceContextProvider.swift */,
+				3A9203911D6BE1E42A11B9A7 /* LocalSessionDataStore.swift */,
 			);
 			path = Session;
 			sourceTree = "<group>";
@@ -257,6 +269,7 @@
 				AE8B555C2BBA53E11C132323 /* NotificationModels.swift */,
 				2EC76D06414A76560B6D1668 /* NotificationPayload.swift */,
 				4B400DBB271B686EEEEEB428 /* SearchModels.swift */,
+				36C7F3FF48B8274FABD69FF4 /* StagedAttachmentFile.swift */,
 				E8D10A59DC2545594A248C9B /* StagedAttachmentUploadState.swift */,
 				8176455E9A47EA70AAD5768D /* TenantModels.swift */,
 				897D59F23AB6289F0ED6EDA7 /* TicketCommentDraft.swift */,
@@ -322,6 +335,14 @@
 			path = FoxDesk/Sources;
 			sourceTree = "<group>";
 		};
+		A3DC55C955104208A6FC2153 /* Storage */ = {
+			isa = PBXGroup;
+			children = (
+				8E61CE945F2DEF89D6012B8D /* ProtectedLocalCache.swift */,
+			);
+			path = Storage;
+			sourceTree = "<group>";
+		};
 		CA5B4E6ACB21E6640CC94E84 /* FoxDesk */ = {
 			isa = PBXGroup;
 			children = (
@@ -336,6 +357,7 @@
 			children = (
 				17ED2C789D3D650419DDE160 /* FoxDeskAPIClientTests.swift */,
 				48C1E516900E18772BBE5C11 /* MobileRichTextFormatterTests.swift */,
+				3E35350C2D21E16D58DC0F21 /* MobileRichTextRendererTests.swift */,
 			);
 			path = FoxDeskKitTests;
 			sourceTree = "<group>";
@@ -344,6 +366,7 @@
 			isa = PBXGroup;
 			children = (
 				9D5307F31481372E1FACEF9B /* MobileRichTextFormatter.swift */,
+				18F361292413A7CB154B555D /* MobileRichTextRenderer.swift */,
 			);
 			path = Formatting;
 			sourceTree = "<group>";
@@ -525,6 +548,7 @@
 			files = (
 				907253D364EE987E91C781AA /* FoxDeskAPIClientTests.swift in Sources */,
 				1033FCB37D7FFEBE66C08AB2 /* MobileRichTextFormatterTests.swift in Sources */,
+				4E51F79D29ED341466841E76 /* MobileRichTextRendererTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -551,10 +575,14 @@
 				FD670BECB8F4CD08CCD0F000 /* HomeFeedCache.swift in Sources */,
 				E6BC3454BEBA971551EE7338 /* HomeModels.swift in Sources */,
 				48D18AA4D58DE9FD404B62FC /* KeychainTokenStore.swift in Sources */,
+				353C4B8CCF07CDACEF31CE06 /* LocalSessionDataStore.swift in Sources */,
 				B2C1884776AB05BB930B7A5D /* MobileRichTextFormatter.swift in Sources */,
+				5733B6B8C6A3C5758911DB75 /* MobileRichTextRenderer.swift in Sources */,
 				CC00B581F6D83ADD2AB643E6 /* NotificationModels.swift in Sources */,
 				3CC75DD94C1F07A373D2F9BC /* NotificationPayload.swift in Sources */,
+				65F35FE3E29231735AF54192 /* ProtectedLocalCache.swift in Sources */,
 				23271722990FA7672CDC222F /* SearchModels.swift in Sources */,
+				40B65DB476FD3DB8579B4EC7 /* StagedAttachmentFile.swift in Sources */,
 				CDB26BA851A2E7FC7FD88B8D /* StagedAttachmentUploadState.swift in Sources */,
 				ACCF5B15F221D4F4DD39B391 /* TenantModels.swift in Sources */,
 				16E1D3DD388B806195D0EF67 /* TicketCommentDraft.swift in Sources */,
@@ -593,12 +621,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = FoxDesk/FoxDesk.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = XS4ZQYPKLB;
 				FOXDESK_API_BASE_URL = "https://app.foxdesk.net/index.php";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = FoxDesk;
 				INFOPLIST_KEY_FOXDESK_API_BASE_URL = "$(FOXDESK_API_BASE_URL)";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take photos and attach them to FoxDesk tickets.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -609,7 +638,8 @@
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.foxdesk.ios;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -620,12 +650,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = FoxDesk/FoxDesk.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = XS4ZQYPKLB;
 				FOXDESK_API_BASE_URL = "https://app.foxdesk.net/index.php";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = FoxDesk;
 				INFOPLIST_KEY_FOXDESK_API_BASE_URL = "$(FOXDESK_API_BASE_URL)";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take photos and attach them to FoxDesk tickets.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -636,7 +667,8 @@
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.foxdesk.ios;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -661,7 +693,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -673,6 +705,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.foxdesk.ios.kit;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -875,12 +908,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = FoxDesk/FoxDesk.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = XS4ZQYPKLB;
 				FOXDESK_API_BASE_URL = "https://app.foxdesk.net/index.php";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = FoxDesk;
 				INFOPLIST_KEY_FOXDESK_API_BASE_URL = "$(FOXDESK_API_BASE_URL)";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take photos and attach them to FoxDesk tickets.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -891,7 +925,8 @@
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.foxdesk.ios;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Production;
 		};
@@ -966,12 +1001,13 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = FoxDesk/FoxDesk.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = XS4ZQYPKLB;
 				FOXDESK_API_BASE_URL = "https://staging.app.foxdesk.net/index.php";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = FoxDesk;
 				INFOPLIST_KEY_FOXDESK_API_BASE_URL = "$(FOXDESK_API_BASE_URL)";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Take photos and attach them to FoxDesk tickets.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -982,7 +1018,8 @@
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.foxdesk.ios;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Staging;
 		};
@@ -1063,7 +1100,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1075,6 +1112,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.foxdesk.ios.kit;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1087,7 +1125,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1099,6 +1137,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.foxdesk.ios.kit;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1128,7 +1167,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1140,6 +1179,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.foxdesk.ios.kit;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;

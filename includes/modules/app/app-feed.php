@@ -38,6 +38,8 @@ function app_feed_ticket_card(array $ticket): array
 
     $ticket_id = (int) ($ticket['id'] ?? 0);
 
+    $worked_minutes = max(0, (int) ($ticket['worked_minutes'] ?? 0));
+
     return [
         'id' => $ticket_id,
         'hash' => $ticket['hash'] ?? null,
@@ -66,6 +68,8 @@ function app_feed_ticket_card(array $ticket): array
         'due_date' => $ticket['due_date'] ?? null,
         'created_at' => $ticket['created_at'] ?? null,
         'updated_at' => $ticket['updated_at'] ?? null,
+        'worked_minutes' => $worked_minutes,
+        'worked_label' => app_feed_duration_label($worked_minutes),
         'url' => function_exists('ticket_url') ? ticket_url($ticket) : url('ticket', ['id' => $ticket_id]),
     ];
 }

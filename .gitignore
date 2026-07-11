@@ -16,3 +16,5 @@ cloudflare/email-router/worker-configuration.d.ts
 deploy/hetzner/.env.prod
 deploy/hetzner/config.php
 deploy/hetzner/backups/
+secrets/
+.secrets/

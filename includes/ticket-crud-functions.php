@@ -239,6 +239,20 @@ function get_tickets($filters = []) {
                    ) as completed_at";
     }
 
+    $worked_time_select = '0 as worked_minutes';
+    $worked_time_join = '';
+    if (function_exists('ticket_time_table_exists')
+        && ticket_time_table_exists()
+        && function_exists('sql_timer_duration_minutes')) {
+        $duration_sql = sql_timer_duration_minutes('tte.');
+        $worked_time_select = 'IFNULL(wt.worked_minutes, 0) as worked_minutes';
+        $worked_time_join = " LEFT JOIN (
+            SELECT tte.ticket_id, SUM({$duration_sql}) AS worked_minutes
+            FROM ticket_time_entries tte
+            GROUP BY tte.ticket_id
+        ) wt ON wt.ticket_id = t.id";
+    }
+
     $sql = "SELECT t.*,
                    s.name as status_name, s.color as status_color, s.is_closed,
                    u.first_name, u.last_name, u.email,
@@ -246,14 +260,16 @@ function get_tickets($filters = []) {
                    p.name as priority_name, p.color as priority_color,
                    a.first_name as assignee_first_name, a.last_name as assignee_last_name,
                    {$completed_at_select},
-                   IFNULL(ac.attachment_count, 0) as attachment_count
+                   IFNULL(ac.attachment_count, 0) as attachment_count,
+                   {$worked_time_select}
             FROM tickets t
             LEFT JOIN statuses s ON t.status_id = s.id
             LEFT JOIN users u ON t.user_id = u.id
             LEFT JOIN organizations o ON t.organization_id = o.id
             LEFT JOIN priorities p ON t.priority_id = p.id
             LEFT JOIN users a ON t.assignee_id = a.id
-            LEFT JOIN (SELECT ticket_id, COUNT(*) AS attachment_count FROM attachments GROUP BY ticket_id) ac ON ac.ticket_id = t.id";
+            LEFT JOIN (SELECT ticket_id, COUNT(*) AS attachment_count FROM attachments GROUP BY ticket_id) ac ON ac.ticket_id = t.id
+            {$worked_time_join}";
     $params = [];
     $sql .= build_ticket_where_clause($filters, $params);
 

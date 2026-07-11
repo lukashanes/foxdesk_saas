@@ -86,6 +86,8 @@ foreach ([
     'function app_contract_plain_text',
     'function app_contract_text_excerpt',
     'function app_contract_ticket_payload',
+    "'worked_minutes'",
+    "'worked_label'",
     'function app_contract_ticket_list_item',
     'function app_contract_ticket_filters_from_request',
     'build_ticket_visibility_filters_for_user',

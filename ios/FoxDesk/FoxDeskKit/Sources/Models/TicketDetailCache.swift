@@ -23,13 +23,21 @@ public struct CachedTicketDetail: Codable, Equatable, Sendable {
 }
 
 public actor TicketDetailCacheStore {
-    private let defaults: UserDefaults
+    private let directoryURL: URL
+    private let legacyDefaults: UserDefaults
+    private let maxAge: TimeInterval
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
     private let keyPrefix = "net.foxdesk.ios.ticket-detail-cache"
 
-    public init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
+    public init(
+        directoryURL: URL = ProtectedLocalCache.defaultRootURL,
+        legacyDefaults: UserDefaults = .standard,
+        maxAge: TimeInterval = 7 * 24 * 60 * 60
+    ) {
+        self.directoryURL = directoryURL
+        self.legacyDefaults = legacyDefaults
+        self.maxAge = maxAge
 
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -41,23 +49,58 @@ public actor TicketDetailCacheStore {
     }
 
     public func load(userId: Int, tenantId: Int, ticketId: Int) throws -> CachedTicketDetail? {
-        guard let data = defaults.data(forKey: key(userId: userId, tenantId: tenantId, ticketId: ticketId)) else {
+        let legacyKey = key(userId: userId, tenantId: tenantId, ticketId: ticketId)
+        let fileURL = fileURL(userId: userId, tenantId: tenantId, ticketId: ticketId)
+        guard let data = try ProtectedLocalCache.read(from: fileURL)
+            ?? migrateLegacyData(forKey: legacyKey, to: fileURL) else {
             return nil
         }
-        return try decoder.decode(CachedTicketDetail.self, from: data)
+        do {
+            let cached = try decoder.decode(CachedTicketDetail.self, from: data)
+            guard !ProtectedLocalCache.isExpired(cached.cachedAt, maxAge: maxAge) else {
+                clear(userId: userId, tenantId: tenantId, ticketId: ticketId)
+                return nil
+            }
+            return cached
+        } catch {
+            clear(userId: userId, tenantId: tenantId, ticketId: ticketId)
+            return nil
+        }
     }
 
     public func save(userId: Int, tenantId: Int, ticketId: Int, detail: TicketDetailPayload) throws {
         let cached = CachedTicketDetail(userId: userId, tenantId: tenantId, ticketId: ticketId, detail: detail)
         let data = try encoder.encode(cached)
-        defaults.set(data, forKey: key(userId: userId, tenantId: tenantId, ticketId: ticketId))
+        try ProtectedLocalCache.write(
+            data,
+            to: fileURL(userId: userId, tenantId: tenantId, ticketId: ticketId),
+            rootURL: directoryURL
+        )
+        legacyDefaults.removeObject(forKey: key(userId: userId, tenantId: tenantId, ticketId: ticketId))
     }
 
     public func clear(userId: Int, tenantId: Int, ticketId: Int) {
-        defaults.removeObject(forKey: key(userId: userId, tenantId: tenantId, ticketId: ticketId))
+        ProtectedLocalCache.remove(fileURL(userId: userId, tenantId: tenantId, ticketId: ticketId))
+        legacyDefaults.removeObject(forKey: key(userId: userId, tenantId: tenantId, ticketId: ticketId))
     }
 
     private func key(userId: Int, tenantId: Int, ticketId: Int) -> String {
         "\(keyPrefix).user-\(userId).tenant-\(tenantId).ticket-\(ticketId)"
+    }
+
+    private func fileURL(userId: Int, tenantId: Int, ticketId: Int) -> URL {
+        ProtectedLocalCache.fileURL(
+            rootURL: directoryURL,
+            userId: userId,
+            category: "ticket-details",
+            key: "tenant-\(tenantId)-ticket-\(ticketId)"
+        )
+    }
+
+    private func migrateLegacyData(forKey key: String, to fileURL: URL) throws -> Data? {
+        guard let data = legacyDefaults.data(forKey: key) else { return nil }
+        try ProtectedLocalCache.write(data, to: fileURL, rootURL: directoryURL)
+        legacyDefaults.removeObject(forKey: key)
+        return data
     }
 }

@@ -34,6 +34,7 @@ services:
       FOXDESK_UPDATE_CHANNEL: "${FOXDESK_UPDATE_CHANNEL:-managed}"
     volumes:
       - ./config.php:/var/www/html/config.php:ro
+      - ./secrets/apns/AuthKey.p8:/run/secrets/foxdesk-apns-auth-key.p8:ro
       - foxdesk_uploads:/var/www/html/uploads
       - foxdesk_storage:/var/www/html/storage
       - foxdesk_backups:/var/www/html/backups
@@ -60,6 +61,7 @@ services:
       FOXDESK_UPDATE_CHANNEL: "${FOXDESK_UPDATE_CHANNEL:-managed}"
     volumes:
       - ./config.php:/var/www/html/config.php:ro
+      - ./secrets/apns/AuthKey.p8:/run/secrets/foxdesk-apns-auth-key.p8:ro
       - foxdesk_uploads:/var/www/html/uploads
       - foxdesk_storage:/var/www/html/storage
       - foxdesk_backups:/var/www/html/backups

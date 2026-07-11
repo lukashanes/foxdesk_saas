@@ -146,12 +146,108 @@ function seedPermissionFixture() {
   return {
     password,
     agentEmail: 'agent.scope@example.test',
+    alphaOrgId,
     betaOrgId,
     betaUserId,
     betaTicketCode: `TK-${String(Number(betaTicket.id) + 10000).padStart(5, '0')}`,
     token
   };
 }
+
+test('concurrent idempotent API requests create one ticket', async () => {
+  const fixture = seedPermissionFixture();
+  const title = `Concurrent idempotency ${Date.now()}`;
+  const idempotencyKey = `e2e-idempotency-${crypto.randomUUID()}`;
+  const api = await request.newContext({
+    baseURL,
+    extraHTTPHeaders: {
+      Authorization: `Bearer ${fixture.token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  try {
+    const options = {
+      headers: { 'Idempotency-Key': idempotencyKey },
+      data: {
+        title,
+        description: 'Concurrent retry safety check',
+        organization_id: fixture.alphaOrgId,
+        skip_notification: true
+      }
+    };
+    const [first, second] = await Promise.all([
+      api.post('/index.php?page=api&action=app-create-ticket', options),
+      api.post('/index.php?page=api&action=app-create-ticket', options)
+    ]);
+    const responses = [first, second];
+    const statuses = responses.map(response => response.status());
+
+    expect(statuses.some(status => status === 200)).toBe(true);
+    expect(statuses.every(status => status === 200 || status === 409)).toBe(true);
+
+    const successfulBodies = [];
+    for (const response of responses) {
+      if (response.status() === 200) {
+        successfulBodies.push(await response.json());
+      }
+    }
+    expect(successfulBodies.every(body => body.success === true)).toBe(true);
+    expect(new Set(successfulBodies.map(body => body.ticket_id)).size).toBe(1);
+
+    const count = rowObject(dbQuery(`
+      SELECT COUNT(*) AS ticket_count
+      FROM tickets
+      WHERE title = ${sqlString(title)}
+    `));
+    expect(Number(count.ticket_count)).toBe(1);
+  } finally {
+    await api.dispose();
+    dbQuery(`DELETE FROM tickets WHERE title = ${sqlString(title)}`);
+  }
+});
+
+test('mobile refresh tokens are single-use under concurrent retries', async () => {
+  const fixture = seedPermissionFixture();
+  const api = await request.newContext({ baseURL });
+
+  try {
+    const loginResponse = await api.post('/index.php?page=api&action=mobile-login', {
+      data: {
+        email: fixture.agentEmail,
+        password: fixture.password,
+        device_id: `e2e-refresh-${crypto.randomUUID()}`,
+        device_name: 'Playwright iPhone',
+        app_version: '0.1.0-e2e'
+      }
+    });
+    expect(loginResponse.status()).toBe(200);
+    const login = await loginResponse.json();
+    const refreshToken = login?.session?.refresh_token;
+    expect(typeof refreshToken).toBe('string');
+    expect(refreshToken.length).toBeGreaterThan(20);
+
+    const refreshRequest = {
+      data: {
+        refresh_token: refreshToken,
+        device_name: 'Playwright iPhone',
+        app_version: '0.1.0-e2e'
+      }
+    };
+    const responses = await Promise.all([
+      api.post('/index.php?page=api&action=mobile-refresh', refreshRequest),
+      api.post('/index.php?page=api&action=mobile-refresh', refreshRequest)
+    ]);
+
+    expect(responses.map((response) => response.status()).sort()).toEqual([200, 401]);
+    const success = responses.find((response) => response.status() === 200);
+    const rejected = responses.find((response) => response.status() === 401);
+    expect((await success.json())?.session?.refresh_token).not.toBe(refreshToken);
+    expect(await rejected.text()).toMatch(/already used|expired|invalid|unauthorized/i);
+  } finally {
+    await api.dispose();
+  }
+});
 
 function seedTenantIsolationFixture() {
   dbQuery("DELETE FROM tickets WHERE hash = 'e2etenantb0001'");

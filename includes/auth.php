@@ -803,6 +803,7 @@ function api_token_required_scope_for_action(string $action): ?string
         'app-delete-comment' => 'delete:write',
         'app-delete-time-entry' => 'delete:write',
         'app-attachment-metadata' => 'attachments:read',
+        'app-attachment-download' => 'attachments:read',
         'app-ticket-timer' => 'time:read',
         'app-ticket-timer-action' => 'time:write',
         'app-log-time' => 'time:write',
@@ -910,19 +911,61 @@ function api_idempotency_replay_if_available(string $action): void
     }
 
     $request_hash = api_idempotency_request_hash($action);
-    $GLOBALS['api_idempotency'] = [
+    $state = [
         'key' => $key,
         'request_hash' => $request_hash,
         'action' => $action,
+        'owns_reservation' => false,
     ];
+    $GLOBALS['api_idempotency'] = $state;
+
+    $reservation = [
+        'token_id' => (int) $token['id'],
+        'user_id' => (int) $token['user_id'],
+        'idempotency_key' => $key,
+        'action' => $action,
+        'request_hash' => $request_hash,
+        'response_json' => null,
+        'status_code' => 0,
+        'created_at' => date('Y-m-d H:i:s'),
+        'expires_at' => date('Y-m-d H:i:s', time() + 300),
+    ];
+    if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('api_idempotency_keys')) {
+        $reservation['tenant_id'] = (int) ($token['tenant_id'] ?? current_tenant_id());
+    }
+
+    try {
+        $reservation_id = (int) db_insert('api_idempotency_keys', $reservation);
+        $GLOBALS['api_idempotency']['reservation_id'] = $reservation_id;
+        $GLOBALS['api_idempotency']['owns_reservation'] = true;
+        return;
+    } catch (Throwable $e) {
+        // A unique-key collision is expected when another request already owns
+        // this key. Read that row below and either replay or report in-progress.
+    }
 
     $row = db_fetch_one(
-        "SELECT * FROM api_idempotency_keys WHERE token_id = ? AND action = ? AND idempotency_key = ? AND expires_at > NOW() LIMIT 1",
+        "SELECT * FROM api_idempotency_keys WHERE token_id = ? AND action = ? AND idempotency_key = ? LIMIT 1",
         [(int) $token['id'], $action, $key]
     );
 
+    if ($row && strtotime((string) ($row['expires_at'] ?? '')) <= time()) {
+        db_delete('api_idempotency_keys', 'id = ? AND expires_at <= NOW()', [(int) $row['id']]);
+        try {
+            $reservation_id = (int) db_insert('api_idempotency_keys', $reservation);
+            $GLOBALS['api_idempotency']['reservation_id'] = $reservation_id;
+            $GLOBALS['api_idempotency']['owns_reservation'] = true;
+            return;
+        } catch (Throwable $e) {
+            $row = db_fetch_one(
+                "SELECT * FROM api_idempotency_keys WHERE token_id = ? AND action = ? AND idempotency_key = ? LIMIT 1",
+                [(int) $token['id'], $action, $key]
+            );
+        }
+    }
+
     if (!$row) {
-        return;
+        api_error('Unable to reserve idempotency key.', 503);
     }
 
     if (!hash_equals((string) $row['request_hash'], $request_hash)) {
@@ -936,6 +979,9 @@ function api_idempotency_replay_if_available(string $action): void
         echo $row['response_json'];
         exit;
     }
+
+    header('Retry-After: 1');
+    api_error('A request with this idempotency key is already in progress.', 409);
 }
 
 function api_idempotency_store_success(array $response): void
@@ -946,26 +992,42 @@ function api_idempotency_store_success(array $response): void
         return;
     }
 
+    if (empty($state['owns_reservation']) || empty($state['reservation_id'])) {
+        return;
+    }
+
     $data = [
-        'token_id' => (int) $token['id'],
-        'user_id' => (int) $token['user_id'],
-        'idempotency_key' => (string) $state['key'],
-        'action' => (string) $state['action'],
-        'request_hash' => (string) $state['request_hash'],
         'response_json' => json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         'status_code' => http_response_code() ?: 200,
-        'created_at' => date('Y-m-d H:i:s'),
         'expires_at' => date('Y-m-d H:i:s', time() + 86400),
     ];
-    if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('api_idempotency_keys')) {
-        $data['tenant_id'] = (int) ($token['tenant_id'] ?? current_tenant_id());
+
+    try {
+        db_update(
+            'api_idempotency_keys',
+            $data,
+            'id = ? AND request_hash = ?',
+            [(int) $state['reservation_id'], (string) $state['request_hash']]
+        );
+        $GLOBALS['api_idempotency']['owns_reservation'] = false;
+    } catch (Throwable $e) {
+        error_log('FoxDesk could not persist idempotent API response: ' . $e->getMessage());
+    }
+}
+
+function api_idempotency_release_pending(): void
+{
+    $state = $GLOBALS['api_idempotency'] ?? null;
+    if (!is_array($state) || empty($state['owns_reservation']) || empty($state['reservation_id'])) {
+        return;
     }
 
     try {
-        db_insert('api_idempotency_keys', $data);
+        db_delete('api_idempotency_keys', 'id = ? AND response_json IS NULL', [(int) $state['reservation_id']]);
     } catch (Throwable $e) {
-        // Duplicate means another request stored it first; the operation has already succeeded.
+        error_log('FoxDesk could not release pending idempotency key: ' . $e->getMessage());
     }
+    $GLOBALS['api_idempotency']['owns_reservation'] = false;
 }
 
 function api_token_resource_from_response(string $action, array $response): array

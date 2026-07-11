@@ -33,6 +33,28 @@ settings stay on the web for the first release.
 
 ## Latest Verified State
 
+### 2026-07-11 App Store Connect and release verification
+
+- App Store Connect app record `FoxDesk` uses bundle id `net.foxdesk.ios`.
+- Build `0.1.0 (2)` is processed, assigned to `FoxDesk Internal`, and attached
+  to iOS version 1.0. It contains foreground APNs re-registration and the
+  export-compliance declaration that were added after build 1.
+- Ten populated iPhone screenshots are uploaded.
+- App metadata, manual release mode, demo reviewer credentials, review notes,
+  category `Business`, content-rights declaration, and age rating `4+` are set.
+- The App Privacy label is published. It declares Name, Email Address, User ID,
+  Customer Support, and Photos or Videos as linked to the user and used only
+  for App Functionality, with no tracking.
+- The ignored `.env.ios-release` records the completed app-record, build,
+  screenshot, and privacy gates. Do not commit that file.
+
+The full `npm run ios:gate`, archive preflight, beta gate, production mobile API
+read/write smoke, demo-account write proof, and attachment round-trip pass on
+2026-07-11. App Review login, contact details, and notes are saved. The strict
+submission gate now has one external requirement: install/open the app on a
+physical iPhone, allow notifications, capture the production APNs token, and
+run the live APNs send smoke.
+
 ### 2026-07-10 local mobile write verification
 
 The current worktree closes two native release gaps found by a real local
@@ -68,6 +90,34 @@ The write smoke proved login, Dashboard, ticket list/detail/search, ticket
 creation, a comment linked to exact manual time, attachment upload, metadata,
 authorized byte-for-byte download, detail reload, and logout. Production and
 physical-iPhone evidence remains intentionally separate.
+
+### 2026-07-10 protected offline data and session verification
+
+- Dashboard, ticket-list, ticket-detail, and comment-draft payloads are stored
+  as per-user files under Application Support with complete iOS file
+  protection. They are excluded from device backup.
+- API response caches expire after seven days; unsent comment drafts expire
+  after 30 days. Corrupt or expired files are removed instead of being shown.
+- Existing `UserDefaults` cache records migrate once into protected storage and
+  are deleted from their legacy keys.
+- Logout removes only the signed-out user's protected data. Failed session
+  restoration or missing credentials removes all FoxDesk-managed local data.
+- Mobile refresh-token rotation and 2FA challenge consumption are atomic. A
+  concurrent refresh E2E proves that one request succeeds and the replay is
+  rejected.
+
+Verified commands:
+
+```bash
+npm run ios:gate
+npm run ios:beta:gate
+E2E_PORT=8091 npm run e2e -- tests/e2e/04-permissions.spec.js --grep "mobile refresh tokens"
+```
+
+The beta gate also proved Production, Release, and Staging builds, simulator
+launch, live production login/read/write flows, exact timed comments, attachment
+upload/preview/download, and the App Review demo account. Remaining Apple gates
+are a physical-device APNs send and human App Store privacy/submission review.
 
 ### 2026-07-08 production/mobile verification
 
@@ -655,9 +705,10 @@ Give the next agent or Mac this exact checklist:
    diagnostics, and run the APNs send smoke.
    Current Apple setup values are `Team ID XS4ZQYPKLB`, bundle
    `net.foxdesk.ios`, App Store ID `6788441555`, and APNs Key ID
-   `UQX5NGK25C`. The private key is stored locally at
-   `/Users/mac/.foxdesk/secrets/AuthKey_UQX5NGK25C.p8` and must not be
-   committed.
+   `72XK5GX6CW`. The private key is stored locally at
+   `/Users/mac/Dev/FoxDesk/foxdesk_saas/secrets/apns/AuthKey.p8`, mounted in
+   production from `/opt/foxdesk_saas/secrets/apns/AuthKey.p8`, and must never
+   be committed.
 6. Regenerate screenshots, review them manually, then fill App Store Connect
    metadata from `docs/IOS_APP_STORE_CONNECT_METADATA.md`, following
    `docs/IOS_APP_STORE_CONNECT_STEPS.md`, and privacy answers.

@@ -286,6 +286,44 @@ function api_app_resolve_comment_time_input(array $input, array $user, string $f
     ];
 }
 
+function api_app_resolve_log_time_input(array $input): array
+{
+    $duration = (int) ($input['duration_minutes'] ?? 0);
+    if ($duration < 1 || $duration > 1440) {
+        api_error('duration_minutes must be between 1 and 1440.', 422);
+    }
+
+    $started_raw = trim((string) ($input['started_at'] ?? ''));
+    $ended_raw = trim((string) ($input['ended_at'] ?? ''));
+    $started_at = $started_raw !== '' ? api_app_normalize_datetime_for_time($started_raw, 'started_at') : null;
+    $ended_at = $ended_raw !== '' ? api_app_normalize_datetime_for_time($ended_raw, 'ended_at') : null;
+
+    if ($started_at !== null && $ended_at !== null) {
+        $start_ts = strtotime($started_at);
+        $end_ts = strtotime($ended_at);
+        if (!$start_ts || !$end_ts || $end_ts <= $start_ts) {
+            api_error('ended_at must be after started_at.', 422);
+        }
+        $computed_duration = max(1, (int) floor(($end_ts - $start_ts) / 60));
+        if ($computed_duration !== $duration) {
+            api_error('duration_minutes must match started_at and ended_at.', 422);
+        }
+    } elseif ($started_at !== null) {
+        $ended_at = date('Y-m-d H:i:s', strtotime($started_at) + ($duration * 60));
+    } elseif ($ended_at !== null) {
+        $started_at = date('Y-m-d H:i:s', strtotime($ended_at) - ($duration * 60));
+    } else {
+        $ended_at = date('Y-m-d H:i:s');
+        $started_at = date('Y-m-d H:i:s', strtotime($ended_at) - ($duration * 60));
+    }
+
+    return [
+        'started_at' => $started_at,
+        'ended_at' => $ended_at,
+        'duration_minutes' => $duration,
+    ];
+}
+
 function api_app_ticket_list()
 {
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -482,6 +520,74 @@ function api_app_attachment_metadata()
     ], ['resource' => 'attachment_metadata']);
 }
 
+function api_app_attachment_download(): void
+{
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+        api_error('Method not allowed', 405);
+    }
+
+    $user = current_user();
+    if (!$user) {
+        api_error('Unauthorized', 401);
+    }
+
+    $attachment = api_app_resolve_attachment($_GET, $user);
+    $mime = trim((string) ($attachment['mime_type'] ?? '')) ?: 'application/octet-stream';
+    $filename = basename((string) ($attachment['original_name'] ?? $attachment['filename'] ?? 'attachment'));
+    $disposition = str_starts_with($mime, 'image/') ? 'inline' : 'attachment';
+
+    header('Content-Type: ' . $mime);
+    header('Content-Disposition: ' . $disposition . '; filename="' . str_replace('"', '', $filename) . '"');
+    header('Cache-Control: private, max-age=3600');
+    header('X-Content-Type-Options: nosniff');
+
+    if (($attachment['storage_driver'] ?? '') === 'r2' && function_exists('storage_read_object')) {
+        try {
+            $body = storage_read_object($attachment);
+        } catch (Throwable $e) {
+            error_log('R2 mobile attachment read failed: ' . $e->getMessage());
+            $body = null;
+        }
+        if ($body === null) {
+            http_response_code(404);
+            exit;
+        }
+        header('Content-Length: ' . strlen($body));
+        echo $body;
+        exit;
+    }
+
+    $path = function_exists('attachment_absolute_path') ? attachment_absolute_path($attachment) : '';
+    $real_path = $path !== '' ? realpath($path) : false;
+    $allowed_roots = [
+        realpath(BASE_PATH . '/' . trim((defined('UPLOAD_DIR') ? UPLOAD_DIR : 'uploads/'), '/\\')),
+        realpath(BASE_PATH . '/storage/tickets'),
+    ];
+    $allowed = false;
+    if ($real_path !== false && is_file($real_path)) {
+        foreach (array_filter($allowed_roots) as $root) {
+            if ($real_path === $root || str_starts_with($real_path, $root . DIRECTORY_SEPARATOR)) {
+                $allowed = true;
+                break;
+            }
+        }
+    }
+    if (!$allowed) {
+        http_response_code(404);
+        exit;
+    }
+
+    header('Content-Length: ' . filesize($real_path));
+    $handle = fopen($real_path, 'rb');
+    if ($handle === false) {
+        http_response_code(404);
+        exit;
+    }
+    fpassthru($handle);
+    fclose($handle);
+    exit;
+}
+
 function api_app_ticket_time_entries(int $ticket_id): array
 {
     if (!is_agent() || !function_exists('get_ticket_time_entries')) {
@@ -518,6 +624,9 @@ function api_app_ticket_detail()
 
     $ticket = api_app_resolve_ticket($_GET, $user);
     $ticket_id = (int) $ticket['id'];
+    if (function_exists('get_ticket_time_total')) {
+        $ticket['worked_minutes'] = get_ticket_time_total($ticket_id);
+    }
     $comments = api_app_ticket_comments($ticket_id, is_agent());
 
     $payload = [
@@ -975,10 +1084,8 @@ function api_app_log_time()
     }
 
     $input = get_json_input();
-    $duration = (int) ($input['duration_minutes'] ?? 0);
-    if ($duration < 1) {
-        api_error('Duration must be at least one minute.', 422);
-    }
+    $time_input = api_app_resolve_log_time_input($input);
+    $duration = (int) $time_input['duration_minutes'];
 
     $ticket = api_app_resolve_ticket($input, $user);
     $ticket_id = (int) $ticket['id'];
@@ -986,14 +1093,9 @@ function api_app_log_time()
         api_error('Time tracking is not available.', 400);
     }
 
-    $started_at = !empty($input['started_at']) ? (string) $input['started_at'] : date('Y-m-d H:i:s');
-    $ended_at = !empty($input['ended_at'])
-        ? (string) $input['ended_at']
-        : date('Y-m-d H:i:s', strtotime($started_at) + ($duration * 60));
-
     $entry_id = add_manual_time_entry($ticket_id, (int) $user['id'], [
-        'started_at' => $started_at,
-        'ended_at' => $ended_at,
+        'started_at' => $time_input['started_at'],
+        'ended_at' => $time_input['ended_at'],
         'duration_minutes' => $duration,
         'summary' => $input['summary'] ?? null,
         'is_billable' => isset($input['is_billable']) ? (!empty($input['is_billable']) ? 1 : 0) : 1,

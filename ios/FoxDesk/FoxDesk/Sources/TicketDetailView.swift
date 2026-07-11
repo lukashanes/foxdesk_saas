@@ -125,19 +125,20 @@ struct TicketDetailView: View {
 
         do {
             let freshDetail = try await session.authenticated { accessToken in
-                do {
-                    return try await session.client.ticketDetail(accessToken: accessToken, ticketId: ticketID)
-                } catch {
-                    guard let ticketHash, !ticketHash.isEmpty else {
-                        throw error
-                    }
+                if let ticketHash, !ticketHash.isEmpty {
                     return try await session.client.ticketDetail(accessToken: accessToken, ticketHash: ticketHash)
                 }
+                return try await session.client.ticketDetail(accessToken: accessToken, ticketId: ticketID)
             }.data
             detail = freshDetail
             cacheMessage = nil
             if let userId = session.user?.id {
-                try? await detailCache.save(userId: userId, tenantId: cacheTenantId, ticketId: ticketID, detail: freshDetail)
+                try? await detailCache.save(
+                    userId: userId,
+                    tenantId: cacheTenantId,
+                    ticketId: freshDetail.ticket.id,
+                    detail: freshDetail
+                )
             }
         } catch {
             if detail == nil {
@@ -152,6 +153,9 @@ struct TicketDetailView: View {
     }
 
     private func loadCachedDetail(message: String) async {
+        guard ticketHash?.isEmpty != false else {
+            return
+        }
         guard let userId = session.user?.id,
               let cached = try? await detailCache.load(userId: userId, tenantId: cacheTenantId, ticketId: ticketID) else {
             return
@@ -192,6 +196,9 @@ private struct TicketHeaderSection: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                    Label(ticket.workedLabel ?? "0 min", systemImage: "clock")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
                 }
 
                 if let organizationID = ticket.client?.id {

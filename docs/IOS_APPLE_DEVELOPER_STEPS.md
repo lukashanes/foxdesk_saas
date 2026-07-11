@@ -67,15 +67,15 @@ https://developer.apple.com/account/resources/authkeys/list
 
 Current APNs key:
 
-- Name: FoxDesk APNs Production
-- Key ID: `UQX5NGK25C`
+- Name: FoxDesk APNs Production 2026
+- Key ID: `72XK5GX6CW`
 - Team ID: `XS4ZQYPKLB`
 - Capability: Apple Push Notifications service (APNs)
 
 The `.p8` file was downloaded once and stored locally at:
 
 ```text
-/Users/mac/.foxdesk/secrets/AuthKey_UQX5NGK25C.p8
+/Users/mac/Dev/FoxDesk/foxdesk_saas/secrets/apns/AuthKey.p8
 ```
 
 Never commit the `.p8` file to Git. Copy it to the production secret store or
@@ -85,8 +85,8 @@ Production backend values:
 
 ```bash
 APNS_TEAM_ID=XS4ZQYPKLB
-APNS_KEY_ID=UQX5NGK25C
-APNS_AUTH_KEY_PATH=<server path to the .p8 file>
+APNS_KEY_ID=72XK5GX6CW
+APNS_AUTH_KEY_PATH=/run/secrets/foxdesk-apns-auth-key.p8
 APNS_BUNDLE_ID=net.foxdesk.ios
 ```
 
@@ -94,10 +94,14 @@ APNS_BUNDLE_ID=net.foxdesk.ios
 storage system supports multiline secrets safely.
 
 For local Docker-backed smoke tests, a host path such as
-`/Users/mac/.foxdesk/secrets/AuthKey_UQX5NGK25C.p8` is not visible inside the
+`/Users/mac/Dev/FoxDesk/foxdesk_saas/secrets/apns/AuthKey.p8` is not visible inside the
 PHP container unless it is mounted. Use the multiline `APNS_AUTH_KEY` value for
 local dry-runs, or mount the secret and point `APNS_AUTH_KEY_PATH` at the
 container-visible path.
+
+Production mounts `/opt/foxdesk_saas/secrets/apns/AuthKey.p8` read-only at the
+container path above. The compose file tracks only that mount; the key itself is
+ignored by Git.
 
 ## 4. Confirm Signing And Provisioning
 

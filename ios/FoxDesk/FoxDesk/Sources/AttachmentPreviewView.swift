@@ -1,6 +1,5 @@
 import QuickLook
 import SwiftUI
-import UIKit
 import FoxDeskKit
 
 struct AttachmentPreviewView: View {
@@ -9,6 +8,7 @@ struct AttachmentPreviewView: View {
     let attachment: TicketAttachment
 
     @State private var state: PreviewState = .loading
+    @State private var downloadedFileURL: URL?
 
     var body: some View {
         Group {
@@ -16,15 +16,6 @@ struct AttachmentPreviewView: View {
             case .loading:
                 ProgressView("Loading attachment")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .image(let image):
-                ScrollView([.horizontal, .vertical]) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .padding()
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(.systemBackground))
             case .file(let url):
                 QuickLookPreview(url: url)
                     .ignoresSafeArea(edges: .bottom)
@@ -37,13 +28,17 @@ struct AttachmentPreviewView: View {
         .task(id: attachment.id) {
             await loadPreview()
         }
+        .onDisappear {
+            cleanupDownloadedFile()
+        }
     }
 
     private func loadPreview() async {
         state = .loading
+        cleanupDownloadedFile()
 
         do {
-            let preview = try await session.authenticated { accessToken in
+            let fileURL = try await session.authenticated { accessToken in
                 let resolved = try await resolvedAttachment(accessToken: accessToken)
                 let urlString = resolved.canPreview == true
                     ? (resolved.previewUrl ?? resolved.downloadUrl)
@@ -56,16 +51,13 @@ struct AttachmentPreviewView: View {
                     )
                 }
 
-                let data = try await session.client.downloadResource(accessToken: accessToken, url: url)
-                return (resolved, data)
+                return try await session.client.downloadResourceToTemporaryFile(
+                    accessToken: accessToken,
+                    url: url,
+                    suggestedFilename: resolved.filename
+                )
             }
-
-            if let image = UIImage(data: preview.1), isImage(preview.0) {
-                state = .image(image)
-                return
-            }
-
-            let fileURL = try writeTemporaryFile(data: preview.1, attachment: preview.0)
+            downloadedFileURL = fileURL
             state = .file(fileURL)
         } catch {
             state = .failed(error.localizedDescription)
@@ -83,37 +75,15 @@ struct AttachmentPreviewView: View {
         ).data.attachment
     }
 
-    private func isImage(_ attachment: TicketAttachment) -> Bool {
-        if let mimeType = attachment.mimeType?.lowercased(), mimeType.hasPrefix("image/") {
-            return true
-        }
-
-        return attachment.canPreview == true
-    }
-
-    private func writeTemporaryFile(data: Data, attachment: TicketAttachment) throws -> URL {
-        let filename = sanitizedFilename(attachment.filename) ?? "attachment-\(attachment.id)"
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("foxdesk-\(attachment.id)-\(filename)")
-        try data.write(to: url, options: .atomic)
-        return url
-    }
-
-    private func sanitizedFilename(_ filename: String?) -> String? {
-        guard let filename = filename?.trimmingCharacters(in: .whitespacesAndNewlines), !filename.isEmpty else {
-            return nil
-        }
-
-        let forbidden = CharacterSet(charactersIn: "/:\\?%*|\"<>")
-        return filename
-            .components(separatedBy: forbidden)
-            .joined(separator: "-")
+    private func cleanupDownloadedFile() {
+        guard let downloadedFileURL else { return }
+        try? FileManager.default.removeItem(at: downloadedFileURL)
+        self.downloadedFileURL = nil
     }
 }
 
 private enum PreviewState {
     case loading
-    case image(UIImage)
     case file(URL)
     case failed(String)
 }

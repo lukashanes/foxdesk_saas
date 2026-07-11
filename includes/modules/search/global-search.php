@@ -74,6 +74,10 @@ function global_search_ticket_section(string $query, array $user, string $sectio
             'status_group' => $status_group,
             'client' => (string) ($ticket['organization_name'] ?? ''),
             'assignee' => trim((string) (($ticket['assignee_first_name'] ?? '') . ' ' . ($ticket['assignee_last_name'] ?? ''))),
+            'worked_minutes' => max(0, (int) ($ticket['worked_minutes'] ?? 0)),
+            'worked_label' => function_exists('format_duration_minutes')
+                ? format_duration_minutes(max(0, (int) ($ticket['worked_minutes'] ?? 0)))
+                : (max(0, (int) ($ticket['worked_minutes'] ?? 0)) . ' min'),
             'url' => function_exists('ticket_url') ? ticket_url($ticket) : 'index.php?page=ticket&id=' . (int) $ticket['id'],
             'updated_at' => (string) ($ticket['updated_at'] ?? ''),
         ];

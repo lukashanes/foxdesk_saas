@@ -50,6 +50,7 @@ $assert(str_contains($router, "'app-create-ticket'"), 'app-create-ticket route i
 $assert(str_contains($router, "'app-add-comment'"), 'app-add-comment route is missing.');
 $assert(str_contains($router, "'app-add-comment-with-time'"), 'app-add-comment-with-time route is missing.');
 $assert(str_contains($router, "'app-attachment-metadata'"), 'app-attachment-metadata route is missing.');
+$assert(str_contains($router, "'app-attachment-download'"), 'app-attachment-download route is missing.');
 $assert(str_contains($router, "'app-ticket-timer-action'"), 'app-ticket-timer-action route is missing.');
 $assert(str_contains($router, "'app-client-overview'"), 'app-client-overview route is missing.');
 $assert(str_contains($router, "'global-search'"), 'global-search route is missing.');
@@ -73,6 +74,16 @@ $assert(
 $assert(str_contains($handler, 'function api_mobile_login'), 'Mobile login handler is missing.');
 $assert(str_contains($handler, 'function api_mobile_verify_2fa'), 'Mobile 2FA verification handler is missing.');
 $assert(str_contains($handler, 'function api_mobile_refresh'), 'Mobile refresh handler is missing.');
+$assert(
+    str_contains($handler, "id = ? AND refresh_token_hash = ? AND revoked_at IS NULL AND refresh_expires_at > ?")
+        && str_contains($handler, 'if ($session_rotated !== 1)'),
+    'Mobile refresh token rotation must be atomic and single-use.'
+);
+$assert(
+    str_contains($handler, "id = ? AND challenge_hash = ? AND consumed_at IS NULL AND expires_at > ?")
+        && str_contains($handler, 'if ($challenge_consumed !== 1)'),
+    'Mobile 2FA challenges must be consumed atomically.'
+);
 $assert(str_contains($handler, 'function api_mobile_logout'), 'Mobile logout handler is missing.');
 $assert(str_contains($handler, 'function api_mobile_register_device'), 'Mobile device registration handler is missing.');
 $assert(str_contains($handler, "'tenant_id' => \$tenant_id"), 'Mobile device registration must persist the authenticated workspace id.');
@@ -135,6 +146,8 @@ $assert(str_contains($appHandler, 'function api_app_require_write_auth'), 'Nativ
 $assert(str_contains($appHandler, 'require_csrf_token(true)'), 'Native write endpoints must keep CSRF for cookie sessions.');
 $assert(str_contains($appHandler, 'empty($GLOBALS[\'is_mobile_token_auth\'])'), 'Mobile Bearer writes must not require browser CSRF.');
 $assert(str_contains($appHandler, 'function api_app_attachment_metadata'), 'Native attachment metadata endpoint is missing.');
+$assert(str_contains($appHandler, 'function api_app_attachment_download'), 'Native attachment download endpoint is missing.');
+$assert(str_contains($appHandler, 'api_app_resolve_attachment($_GET, $user)'), 'Native attachment download must reuse attachment authorization.');
 $assert(str_contains($appHandler, 'function api_app_ticket_timer_action'), 'Native timer action endpoint is missing.');
 $assert(str_contains($appHandler, 'function api_app_client_overview'), 'Native client overview endpoint is missing.');
 $assert(str_contains($appHandler, 'function api_app_notification_read_state'), 'Native notification read-state endpoint is missing.');
@@ -161,6 +174,7 @@ $assert(str_contains($nativeDocs, 'app-client-overview'), 'Native API docs must 
 $assert(str_contains($nativeDocs, 'global-search'), 'Native API docs must document global search.');
 $assert(str_contains($nativeDocs, 'action=upload'), 'Native API docs must document upload.');
 $assert(str_contains($nativeDocs, 'app-attachment-metadata'), 'Native API docs must document attachment metadata.');
+$assert(str_contains($nativeDocs, 'GET /api/mobile/v1/attachments/{id}/download'), 'Native API docs must document Bearer-authorized attachment download.');
 $assert(str_contains($nativeDocs, 'app-tenant-state'), 'Native API docs must document tenant state.');
 $assert(str_contains($nativeDocs, 'app-ticket-timer-action'), 'Native API docs must document timer actions.');
 $assert(str_contains($nativeDocs, 'app-notification-read-state'), 'Native API docs must document notification read state.');
@@ -754,6 +768,8 @@ $assert(str_contains($iosBetaGate, 'npm run ios:sim:smoke'), 'iOS beta readiness
 $assert(str_contains($iosBetaGate, 'npm run ios:testflight:preflight'), 'iOS beta readiness gate must run TestFlight preflight.');
 $assert(str_contains($iosBetaGate, 'npm run ios:api:smoke'), 'iOS beta readiness gate must run mobile API smoke.');
 $assert(str_contains($iosBetaGate, 'FOXDESK_IOS_SMOKE_WRITE=0 npm run ios:api:smoke'), 'iOS beta readiness gate must keep the live auth smoke read-only before the opt-in write smoke.');
+$assert(str_contains($iosBetaGate, 'run_step "7/8 Mobile API safe smoke" env FOXDESK_IOS_SMOKE_WRITE=0'), 'iOS beta readiness safe smoke must never inherit the opt-in production write flag.');
+$assert(!str_contains($iosArchivePreflight, 'CURRENT_PROJECT_VERSION: 1'), 'iOS archive preflight must accept incremented positive build numbers instead of pinning build 1.');
 $assert(str_contains($iosBetaGate, 'npm run ios:apns:smoke'), 'iOS beta readiness gate must run APNs smoke.');
 $assert(str_contains($iosBetaGate, 'Human gates still required before TestFlight'), 'iOS beta readiness gate must list remaining human gates.');
 $assert(str_contains($iosBetaGate, 'tmp/ios-beta-readiness/latest.md'), 'iOS beta readiness gate must write a durable local evidence report.');
@@ -1138,6 +1154,9 @@ $assert(str_contains($iosAPIClient, 'session: URLSession = FoxDeskAPIClient.make
 $assert(str_contains($iosAPIClient, 'public static func makeDefaultSession() -> URLSession'), 'iOS API client must expose its cookie-less default session factory.');
 $assert(str_contains($iosPushRegistrationService, 'func resetAfterSignOut()'), 'iOS push registration service must expose an explicit local reset after sign-out.');
 $assert(str_contains($iosPushRegistrationService, 'apnsToken = nil'), 'iOS push sign-out reset must clear the local APNs token preview/state.');
+$assert(str_contains($iosPushRegistrationService, 'func resumeAuthorizedRegistration(session: AppSession)'), 'iOS app must resume APNs device registration after sign-in when permission was already granted.');
+$assert(str_contains($iosRootView, 'await pushRegistration.resumeAuthorizedRegistration(session: session)'), 'Signed-in iOS shell must synchronize an already-authorized APNs token automatically.');
+$assert(str_contains($iosDashboardView, 'Label("Enable ticket notifications"'), 'iOS Dashboard must offer notification setup until the user has made a choice.');
 $assert(str_contains($iosAPIClient, 'configuration.httpCookieStorage = nil'), 'iOS API client default session must not keep browser cookie storage.');
 $assert(str_contains($iosAPIClient, 'configuration.httpShouldSetCookies = false'), 'iOS API client default session must not accept web session cookies.');
 $assert(str_contains($iosAPIClient, 'configuration.requestCachePolicy = .reloadIgnoringLocalCacheData'), 'iOS API client default session should rely on app-level caches rather than URL cache.');
@@ -1195,14 +1214,15 @@ $assert(str_contains($iosNewTicketView, 'PhotosPicker'), 'iOS new ticket screen 
 $assert(str_contains($iosNewTicketView, 'fileImporter'), 'iOS new ticket screen must let agents attach a file before creating a ticket.');
 $assert(str_contains($iosNewTicketView, 'CameraCaptureView'), 'iOS new ticket screen must let agents capture a camera photo before creating a ticket.');
 $assert(str_contains($iosNewTicketView, 'defer { selectedPhoto = nil }'), 'iOS new ticket screen must clear the photo picker selection after every load attempt so the same photo can be selected again.');
-$assert(str_contains($iosNewTicketView, 'PendingNewTicketAttachment'), 'iOS new ticket screen must keep pending attachments before a ticket id exists.');
+$assert(str_contains($iosNewTicketView, 'StagedAttachmentFile'), 'iOS new ticket screen must keep pending attachments on disk before a ticket id exists.');
+$assert(str_contains($iosNewTicketView, 'fileURL: attachment.fileURL'), 'iOS new ticket uploads must stream staged attachment files instead of retaining multipart payloads in memory.');
 $assert(str_contains($iosNewTicketView, 'uploadPendingAttachments(to:'), 'iOS new ticket screen must upload pending attachments after creating the ticket.');
 $assert(str_contains($iosNewTicketView, 'session.client.uploadAttachment'), 'iOS new ticket attachment flow must use the native upload endpoint.');
 $assert(str_contains($iosNewTicketView, 'createdTicketID'), 'iOS new ticket screen must retry failed uploads without creating duplicate tickets.');
 $assert(str_contains($iosNewTicketView, "if let createdTicketID {\n                ticketID = createdTicketID"), 'iOS new ticket retry path must reuse the existing created ticket id.');
 $assert(str_contains($iosNewTicketView, 'createdTicketID = ticketID'), 'iOS new ticket screen must persist the created ticket id before uploading staged attachments.');
-$assert(str_contains($iosNewTicketView, 'Text(createdTicketID == nil ? "Create" : "Retry uploads")'), 'iOS new ticket screen must make the failed-upload retry state explicit.');
-$assert(str_contains($iosNewTicketView, 'Ticket created, but attachment upload failed. Tap Retry uploads to finish.'), 'iOS new ticket screen must explain that retry finishes uploads instead of creating another ticket.');
+$assert(str_contains($iosNewTicketView, 'Text(createdTicketID == nil ? "Create" : "Finish setup")'), 'iOS new ticket screen must make the incomplete post-create setup state explicit.');
+$assert(str_contains($iosNewTicketView, 'Ticket created, but setup is not finished.'), 'iOS new ticket screen must explain that retry finishes remaining post-create work instead of creating another ticket.');
 $assert(str_contains($iosNewTicketView, 'pendingAttachments.removeAll()'), 'iOS new ticket screen must only clear staged attachments after successful upload.');
 $assert(str_contains($iosStagedAttachmentUploadState, 'struct StagedAttachmentUploadState'), 'iOS staged attachment retry logic must live in a reusable helper.');
 $assert(str_contains($iosStagedAttachmentUploadState, 'markUploaded'), 'iOS staged attachment retry helper must mark successful uploads.');
@@ -1211,6 +1231,13 @@ $assert(str_contains($iosNewTicketView, 'var uploadState = StagedAttachmentUploa
 $assert(str_contains($iosNewTicketView, 'uploadState.markUploaded(attachment.id)'), 'iOS new ticket retry must mark each successfully uploaded staged attachment.');
 $assert(str_contains($iosNewTicketView, 'pendingAttachments = uploadState.remaining(from: pendingAttachments)'), 'iOS new ticket retry must keep only failed staged attachments after a partial upload failure.');
 $assert(str_contains($iosNewTicketView, 'still needs upload'), 'iOS new ticket retry must tell agents when only some staged attachments still need upload.');
+$assert(str_contains($iosNewTicketView, 'Toggle("Add worked time"'), 'iOS new ticket screen must let agents add manual worked time while creating a ticket.');
+$assert(str_contains($iosNewTicketView, 'Toggle("Start timer after creating"'), 'iOS new ticket screen must let agents start the timer immediately after ticket creation.');
+$assert(str_contains($iosNewTicketView, 'addWorkedTimeIfNeeded'), 'iOS new ticket flow must link optional manual time to a comment on the created ticket.');
+$assert(str_contains($iosNewTicketView, 'startTimerIfNeeded'), 'iOS new ticket flow must start the native ticket timer when requested.');
+$assert(str_contains($iosNewTicketView, 'didAddWorkedTime') && str_contains($iosNewTicketView, 'didStartTimer'), 'iOS new ticket retry must not duplicate completed manual-time or timer steps.');
+$assert(str_contains($iosTicketRowsView, 'ticket.workedLabel'), 'iOS ticket list rows must show total worked time.');
+$assert(str_contains($iosTicketModels, 'workedMinutes') && str_contains($iosTicketModels, 'workedLabel'), 'iOS ticket models must decode total worked time from shared ticket contracts.');
 $assert(str_contains($iosTicketComposerView, 'manualDate:'), 'iOS comment composer must send manual_date for exact work records.');
 $assert(str_contains($iosTicketComposerView, 'manualStartTime:'), 'iOS comment composer must send manual_start_time for exact work records.');
 $assert(str_contains($iosTicketComposerView, 'manualEndTime:'), 'iOS comment composer must send manual_end_time for exact work records.');
@@ -1234,13 +1261,14 @@ $assert(str_contains($iosTicketsView, 'Showing saved tickets'), 'iOS ticket list
 $assert(str_contains($iosTicketDetailView, 'TicketDetailCacheStore'), 'iOS ticket detail screen must use the ticket detail cache store.');
 $assert(str_contains($iosTicketDetailView, 'Showing saved ticket'), 'iOS ticket detail must clearly label cached ticket data.');
 $assert(str_contains($iosTicketDetailView, 'loadCachedDetail'), 'iOS ticket detail must load cached detail before or after network failures.');
-$assert(str_contains($iosTicketAttachmentsView, 'PendingAttachmentUpload'), 'iOS ticket detail must keep the last failed attachment upload available for retry.');
+$assert(str_contains($iosTicketAttachmentsView, 'StagedAttachmentFile'), 'iOS ticket detail must keep the last failed attachment upload as a staged file for retry.');
 $assert(str_contains($iosTicketAttachmentsView, 'failedUpload'), 'iOS ticket detail must expose failed attachment upload retry state.');
 $assert(str_contains($iosTicketAttachmentsView, 'Retry upload'), 'iOS ticket detail must show a retry action after attachment upload failure.');
 $assert(str_contains($iosTicketAttachmentsView, 'retryFailedUpload'), 'iOS ticket detail must retry the failed attachment without requiring a new file selection.');
 $assert(str_contains($iosTicketAttachmentsView, 'defer { selectedPhoto = nil }'), 'iOS ticket detail must clear the photo picker selection after every load attempt so retrying the same photo is possible.');
 $assert(str_contains($iosTicketAttachmentsView, 'AttachmentThumbnailView'), 'iOS ticket detail must show image thumbnails in the attachment list.');
-$assert(str_contains($iosTicketAttachmentsView, 'downloadResource(accessToken: accessToken, url: url)'), 'iOS attachment thumbnails must use the authorized download flow.');
+$assert(str_contains($iosTicketAttachmentsView, 'downloadResourceToTemporaryFile('), 'iOS attachment thumbnails must use the authorized file download flow without retaining the full payload in memory.');
+$assert(str_contains($iosTicketAttachmentsView, 'QLThumbnailGenerator'), 'iOS image rows must render bounded Quick Look thumbnails instead of decoding full-size source images.');
 $assert(str_contains($iosTicketAttachmentsView, 'attachmentMetadata('), 'iOS attachment thumbnails must resolve metadata when a row lacks preview URLs.');
 $assert(str_contains($iosTicketComposerView, 'loadDraftIfNeeded'), 'iOS comment composer must restore saved reply drafts.');
 $assert(str_contains($iosTicketComposerView, 'persistDraft'), 'iOS comment composer must persist reply drafts while editing.');

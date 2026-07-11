@@ -22,12 +22,26 @@ struct RootView: View {
         }
         .task {
             await session.restore()
+
+            #if DEBUG
+            let environment = ProcessInfo.processInfo.environment
+            if session.state == .signedOut,
+               let email = environment["FOXDESK_AUTOMATION_EMAIL"],
+               let password = environment["FOXDESK_AUTOMATION_PASSWORD"],
+               !email.isEmpty,
+               !password.isEmpty {
+                await session.signIn(email: email, password: password)
+            }
+            #endif
         }
     }
 }
 
 struct SignedInShellView: View {
+    @Environment(AppSession.self) private var session
+    @Environment(PushRegistrationService.self) private var pushRegistration
     @Environment(PushNavigationRouter.self) private var pushRouter
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var selectedTab: AppTab = .dashboard
     @State private var ticketNotificationPath: [TicketNotificationRoute] = []
@@ -87,6 +101,21 @@ struct SignedInShellView: View {
         }
         .task {
             openPendingTicketIfNeeded()
+            #if DEBUG
+            if ProcessInfo.processInfo.environment["FOXDESK_AUTOMATION_ENABLE_NOTIFICATIONS"] == "1" {
+                await pushRegistration.enableNotifications(session: session)
+            } else {
+                await pushRegistration.resumeAuthorizedRegistration(session: session)
+            }
+            #else
+            await pushRegistration.resumeAuthorizedRegistration(session: session)
+            #endif
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task {
+                await pushRegistration.resumeAuthorizedRegistration(session: session)
+            }
         }
         .onChange(of: pushRouter.pendingTicketID) { _, ticketID in
             guard ticketID != nil else { return }

@@ -37,6 +37,7 @@ $endpointMatrix = [
     ['ticket attachment upload', 'POST', '/api/mobile/v1/tickets/745/attachments', 'upload', 'POST /api/mobile/v1/tickets/{id}/attachments', ['public func uploadAttachment(', 'path: "tickets/\\(ticketId)/attachments"']],
     ['generic attachment upload', 'POST', '/api/mobile/v1/attachments', 'upload', 'POST /api/mobile/v1/attachments', ['sendMultipart(']],
     ['attachment metadata', 'GET', '/api/mobile/v1/attachments/55', 'app-attachment-metadata', 'GET /api/mobile/v1/attachments/{id}', ['public func attachmentMetadata(', 'path: "attachments/\\(attachmentId)"']],
+    ['attachment download', 'GET', '/api/mobile/v1/attachments/55/download', 'app-attachment-download', 'GET /api/mobile/v1/attachments/{id}/download', ['public func downloadResourceToTemporaryFile(']],
     ['client overview', 'GET', '/api/mobile/v1/clients/12', 'app-client-overview', 'GET /api/mobile/v1/clients/{id}?view=open', ['public func clientOverview(', 'path: "clients/\\(organizationId)"']],
     ['global search', 'GET', '/api/mobile/v1/search?q=vpn', 'global-search', 'GET /api/mobile/v1/search?q=vpn&limit=8', ['public func globalSearch(', 'path: "search"']],
     ['device registration', 'POST', '/api/mobile/v1/device-token', 'mobile-register-device', 'POST /api/mobile/v1/device-token', ['public func registerDevice(', 'path: "device-token"']],

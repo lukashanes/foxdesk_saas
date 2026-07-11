@@ -48,6 +48,25 @@ function mobile_api_ensure_tables(): void
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
+    db_query("CREATE TABLE IF NOT EXISTS mobile_idempotency_keys (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tenant_id INT NULL,
+        mobile_session_id INT NOT NULL,
+        user_id INT NOT NULL,
+        idempotency_key VARCHAR(128) NOT NULL,
+        action VARCHAR(120) NOT NULL,
+        request_hash CHAR(64) NOT NULL,
+        response_json MEDIUMTEXT NULL,
+        status_code INT DEFAULT 200,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        expires_at DATETIME NOT NULL,
+        UNIQUE KEY uniq_mobile_idempotency_session_key (mobile_session_id, action, idempotency_key),
+        INDEX idx_tenant_id (tenant_id),
+        INDEX idx_expires (expires_at),
+        FOREIGN KEY (mobile_session_id) REFERENCES mobile_sessions(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
     db_query("CREATE TABLE IF NOT EXISTS mobile_devices (
         id INT AUTO_INCREMENT PRIMARY KEY,
         tenant_id INT NULL,
@@ -78,6 +97,122 @@ function mobile_api_ensure_tables(): void
 function mobile_api_short_string($value, int $max): string
 {
     return mb_substr(trim((string) $value), 0, $max);
+}
+
+function mobile_api_idempotency_replay_if_available(string $action): void
+{
+    $session_id = (int) ($_SESSION['mobile_session_id'] ?? 0);
+    $user = current_user();
+    $key = function_exists('api_token_idempotency_key') ? api_token_idempotency_key() : '';
+    if ($session_id <= 0 || !$user || $key === '' || !api_token_action_is_write($action) || !table_exists('mobile_idempotency_keys')) {
+        return;
+    }
+
+    $request_hash = api_idempotency_request_hash($action);
+    $reservation = [
+        'tenant_id' => (int) ($user['tenant_id'] ?? current_tenant_id()),
+        'mobile_session_id' => $session_id,
+        'user_id' => (int) $user['id'],
+        'idempotency_key' => $key,
+        'action' => $action,
+        'request_hash' => $request_hash,
+        'response_json' => null,
+        'status_code' => 0,
+        'created_at' => date('Y-m-d H:i:s'),
+        'expires_at' => date('Y-m-d H:i:s', time() + 300),
+    ];
+    $GLOBALS['mobile_api_idempotency'] = [
+        'key' => $key,
+        'request_hash' => $request_hash,
+        'owns_reservation' => false,
+    ];
+
+    try {
+        $reservation_id = (int) db_insert('mobile_idempotency_keys', $reservation);
+        $GLOBALS['mobile_api_idempotency']['reservation_id'] = $reservation_id;
+        $GLOBALS['mobile_api_idempotency']['owns_reservation'] = true;
+        return;
+    } catch (Throwable $e) {
+        // Another request can legitimately own the same key.
+    }
+
+    $row = db_fetch_one(
+        "SELECT * FROM mobile_idempotency_keys
+         WHERE mobile_session_id = ? AND action = ? AND idempotency_key = ?
+         LIMIT 1",
+        [$session_id, $action, $key]
+    );
+
+    if ($row && strtotime((string) ($row['expires_at'] ?? '')) <= time()) {
+        db_delete('mobile_idempotency_keys', 'id = ? AND expires_at <= NOW()', [(int) $row['id']]);
+        try {
+            $reservation_id = (int) db_insert('mobile_idempotency_keys', $reservation);
+            $GLOBALS['mobile_api_idempotency']['reservation_id'] = $reservation_id;
+            $GLOBALS['mobile_api_idempotency']['owns_reservation'] = true;
+            return;
+        } catch (Throwable $e) {
+            $row = db_fetch_one(
+                "SELECT * FROM mobile_idempotency_keys
+                 WHERE mobile_session_id = ? AND action = ? AND idempotency_key = ?
+                 LIMIT 1",
+                [$session_id, $action, $key]
+            );
+        }
+    }
+
+    if (!$row) {
+        api_error('Unable to reserve mobile idempotency key.', 503);
+    }
+    if (!hash_equals((string) $row['request_hash'], $request_hash)) {
+        api_error('Idempotency key was already used with a different request.', 409);
+    }
+    if (!empty($row['response_json'])) {
+        http_response_code((int) ($row['status_code'] ?? 200));
+        header('Content-Type: application/json');
+        header('X-Idempotent-Replay: true');
+        echo $row['response_json'];
+        exit;
+    }
+
+    header('Retry-After: 1');
+    api_error('A request with this idempotency key is already in progress.', 409);
+}
+
+function mobile_api_idempotency_store_success(array $response): void
+{
+    $state = $GLOBALS['mobile_api_idempotency'] ?? null;
+    if (!is_array($state) || empty($state['owns_reservation']) || empty($state['reservation_id'])) {
+        return;
+    }
+
+    try {
+        db_update('mobile_idempotency_keys', [
+            'response_json' => json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'status_code' => http_response_code() ?: 200,
+            'expires_at' => date('Y-m-d H:i:s', time() + 86400),
+        ], 'id = ? AND request_hash = ?', [
+            (int) $state['reservation_id'],
+            (string) $state['request_hash'],
+        ]);
+        $GLOBALS['mobile_api_idempotency']['owns_reservation'] = false;
+    } catch (Throwable $e) {
+        error_log('FoxDesk could not persist mobile idempotent response: ' . $e->getMessage());
+    }
+}
+
+function mobile_api_idempotency_release_pending(): void
+{
+    $state = $GLOBALS['mobile_api_idempotency'] ?? null;
+    if (!is_array($state) || empty($state['owns_reservation']) || empty($state['reservation_id'])) {
+        return;
+    }
+
+    try {
+        db_delete('mobile_idempotency_keys', 'id = ? AND response_json IS NULL', [(int) $state['reservation_id']]);
+    } catch (Throwable $e) {
+        error_log('FoxDesk could not release pending mobile idempotency key: ' . $e->getMessage());
+    }
+    $GLOBALS['mobile_api_idempotency']['owns_reservation'] = false;
 }
 
 function mobile_api_find_user_by_email(string $email): ?array
@@ -335,12 +470,19 @@ function api_mobile_verify_2fa(): void
         api_error('Invalid two-factor code.', 401);
     }
 
-    db_update(
+    $challenge_consumed = db_update(
         'mobile_auth_challenges',
         ['consumed_at' => date('Y-m-d H:i:s')],
-        'id = ?',
-        [(int) $challenge['id']]
+        'id = ? AND challenge_hash = ? AND consumed_at IS NULL AND expires_at > ?',
+        [
+            (int) $challenge['id'],
+            hash('sha256', $challenge_token),
+            date('Y-m-d H:i:s'),
+        ]
     );
+    if ($challenge_consumed !== 1) {
+        api_error('Two-factor challenge expired or already used.', 401);
+    }
     rate_limit_clear($rate_key);
 
     $session = mobile_api_issue_session($user, $input);
@@ -390,7 +532,8 @@ function api_mobile_refresh(): void
     $now = time();
     $tokens = mobile_api_token_pair();
 
-    db_update('mobile_sessions', [
+    $refresh_token_hash = hash('sha256', $refresh_token);
+    $session_rotated = db_update('mobile_sessions', [
         'access_token_hash' => $tokens['access_token_hash'],
         'refresh_token_hash' => $tokens['refresh_token_hash'],
         'token_prefix' => $tokens['token_prefix'],
@@ -400,7 +543,14 @@ function api_mobile_refresh(): void
         'access_expires_at' => date('Y-m-d H:i:s', $now + $access_seconds),
         'refresh_expires_at' => date('Y-m-d H:i:s', $now + $refresh_seconds),
         'last_used_at' => date('Y-m-d H:i:s', $now),
-    ], 'id = ?', [(int) $mobile_session['id']]);
+    ], 'id = ? AND refresh_token_hash = ? AND revoked_at IS NULL AND refresh_expires_at > ?', [
+        (int) $mobile_session['id'],
+        $refresh_token_hash,
+        date('Y-m-d H:i:s'),
+    ]);
+    if ($session_rotated !== 1) {
+        api_error('Refresh token expired or already used.', 401);
+    }
 
     mobile_api_set_session_context($user, (int) $mobile_session['id']);
 
@@ -431,19 +581,36 @@ function api_mobile_logout(): void
     mobile_api_ensure_tables();
 
     $input = get_json_input();
-    $session_id = (int) ($_SESSION['mobile_session_id'] ?? 0);
-    if ($session_id > 0) {
-        db_update('mobile_sessions', ['revoked_at' => date('Y-m-d H:i:s')], 'id = ?', [$session_id]);
+    $refresh_token = trim((string) ($input['refresh_token'] ?? ''));
+    if ($refresh_token === '') {
+        api_error('Refresh token is required.', 422);
     }
 
-    $refresh_token = trim((string) ($input['refresh_token'] ?? ''));
-    if ($refresh_token !== '') {
-        db_update(
-            'mobile_sessions',
-            ['revoked_at' => date('Y-m-d H:i:s')],
-            'refresh_token_hash = ?',
-            [hash('sha256', $refresh_token)]
-        );
+    $refresh_hash = hash('sha256', $refresh_token);
+    $mobile_session = db_fetch_one(
+        "SELECT id, user_id, tenant_id FROM mobile_sessions
+         WHERE refresh_token_hash = ? AND revoked_at IS NULL
+         LIMIT 1",
+        [$refresh_hash]
+    );
+
+    // Logout is intentionally authorized by the refresh token, not the short-
+    // lived access token. This keeps server-side revocation reliable after the
+    // access token expires.
+    if ($mobile_session) {
+        $session_id = (int) $mobile_session['id'];
+        db_update('mobile_sessions', ['revoked_at' => date('Y-m-d H:i:s')], 'id = ?', [$session_id]);
+        db_update('mobile_devices', ['is_active' => 0], 'mobile_session_id = ?', [$session_id]);
+
+        $device_id = mobile_api_short_string($input['device_id'] ?? '', 191);
+        if ($device_id !== '') {
+            db_update(
+                'mobile_devices',
+                ['is_active' => 0],
+                'user_id = ? AND device_id = ?',
+                [(int) $mobile_session['user_id'], $device_id]
+            );
+        }
     }
 
     api_success(['logged_out' => true]);
@@ -498,6 +665,15 @@ function api_mobile_register_device(): void
         'is_active' => 1,
         'last_registered_at' => date('Y-m-d H:i:s'),
     ];
+
+    if ($data['device_id'] !== null) {
+        db_query(
+            "UPDATE mobile_devices
+             SET is_active = 0
+             WHERE user_id = ? AND device_id = ? AND apns_token_hash <> ?",
+            [(int) $user['id'], $data['device_id'], $token_hash]
+        );
+    }
 
     // APNs tokens identify an app installation globally. A device can move to a
     // different workspace after sign-out, so this authenticated registration is

@@ -176,7 +176,7 @@ run_step "3/8 Release compatibility build check" npm run ios:release:check
 run_step "4/8 Staging build check" npm run ios:staging:check
 run_step "5/8 Simulator launch smoke" npm run ios:sim:smoke
 run_step "6/8 TestFlight preflight" npm run ios:testflight:preflight
-run_step "7/8 Mobile API safe smoke" npm run ios:api:smoke -- --json
+run_step "7/8 Mobile API safe smoke" env FOXDESK_IOS_SMOKE_WRITE=0 npm run ios:api:smoke -- --json
 run_step "8/8 APNs dry-run smoke" npm run ios:apns:smoke -- --json
 
 if [[ -n "${FOXDESK_IOS_SMOKE_EMAIL:-}" && -n "${FOXDESK_IOS_SMOKE_PASSWORD:-}" ]]; then

@@ -19,6 +19,7 @@ struct CommentComposerSection: View {
     @State private var isSending = false
     @State private var hasLoadedDraft = false
     @State private var message: String?
+    @State private var draftSaveTask: Task<Void, Never>?
 
     private let draftStore = TicketCommentDraftStore()
 
@@ -103,6 +104,9 @@ struct CommentComposerSection: View {
         .onChange(of: endTime) { _, _ in
             persistDraft()
         }
+        .onDisappear {
+            persistDraft(delay: false)
+        }
     }
 
     private func submit() async {
@@ -131,6 +135,8 @@ struct CommentComposerSection: View {
                     )
                 )
             }
+            draftSaveTask?.cancel()
+            draftSaveTask = nil
             content = ""
             includeTime = false
             useExactTime = false
@@ -167,7 +173,7 @@ struct CommentComposerSection: View {
         }
     }
 
-    private func persistDraft() {
+    private func persistDraft(delay: Bool = true) {
         guard hasLoadedDraft, let userId = session.user?.id else { return }
         let draft = TicketCommentDraft(
             ticketId: ticketID,
@@ -181,7 +187,12 @@ struct CommentComposerSection: View {
             startTime: startTime,
             endTime: endTime
         )
-        Task {
+        draftSaveTask?.cancel()
+        draftSaveTask = Task {
+            if delay {
+                try? await Task.sleep(for: .milliseconds(250))
+            }
+            guard !Task.isCancelled else { return }
             try? await draftStore.save(draft)
         }
     }

@@ -275,6 +275,24 @@ public final class FoxDeskAPIClient {
         )
     }
 
+    public func uploadAttachment(
+        accessToken: String,
+        ticketId: Int,
+        filename: String,
+        mimeType: String,
+        fileURL: URL
+    ) async throws -> UploadResponse {
+        try await sendMultipartFile(
+            path: "tickets/\(ticketId)/attachments",
+            bearerToken: accessToken,
+            fields: [:],
+            fileFieldName: "file",
+            filename: filename,
+            mimeType: mimeType,
+            fileURL: fileURL
+        )
+    }
+
     public func ticketTimer(
         accessToken: String,
         ticketId: Int
@@ -376,6 +394,39 @@ public final class FoxDeskAPIClient {
         return data
     }
 
+    public func downloadResourceToTemporaryFile(
+        accessToken: String,
+        url: URL,
+        suggestedFilename: String? = nil
+    ) async throws -> URL {
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("*/*", forHTTPHeaderField: "Accept")
+
+        if url.host == environment.baseURL.host {
+            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        }
+
+        let (temporaryURL, response) = try await session.download(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw FoxDeskAPIError.invalidResponse
+        }
+        guard (200..<300).contains(httpResponse.statusCode) else {
+            if httpResponse.statusCode == 401 {
+                throw FoxDeskAPIError.unauthorized
+            }
+            throw FoxDeskAPIError.server(statusCode: httpResponse.statusCode, message: "FoxDesk download failed.")
+        }
+
+        let filename = sanitizedTemporaryFilename(suggestedFilename)
+            ?? sanitizedTemporaryFilename(response.suggestedFilename)
+            ?? "attachment"
+        let destination = FileManager.default.temporaryDirectory
+            .appendingPathComponent("foxdesk-\(UUID().uuidString)-\(filename)")
+        try FileManager.default.moveItem(at: temporaryURL, to: destination)
+        return destination
+    }
+
     public func registerDevice(
         accessToken: String,
         apnsToken: String,
@@ -409,12 +460,11 @@ public final class FoxDeskAPIClient {
         )
     }
 
-    public func logout(refreshToken: String?, accessToken: String) async throws -> LogoutResponse {
+    public func logout(refreshToken: String?, device: DeviceContext) async throws -> LogoutResponse {
         try await send(
             path: "logout",
             method: "POST",
-            bearerToken: accessToken,
-            body: LogoutRequest(refreshToken: refreshToken)
+            body: LogoutRequest(refreshToken: refreshToken, deviceId: device.deviceId)
         )
     }
 
@@ -461,6 +511,7 @@ public final class FoxDeskAPIClient {
             request.httpBody = bodyData
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
+        addIdempotencyKeyIfNeeded(to: &request, bearerToken: bearerToken)
 
         let preferServerMessageForUnauthorized = ["login", "verify-2fa"].contains(
             path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
@@ -476,7 +527,7 @@ public final class FoxDeskAPIClient {
         _ request: URLRequest,
         preferServerMessageForUnauthorized: Bool = false
     ) async throws -> Response {
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await performIdempotentDataRequest(request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw FoxDeskAPIError.invalidResponse
         }
@@ -525,6 +576,7 @@ public final class FoxDeskAPIClient {
         if let bearerToken {
             request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
         }
+        addIdempotencyKeyIfNeeded(to: &request, bearerToken: bearerToken)
 
         var body = Data()
         for (name, value) in fields {
@@ -545,8 +597,109 @@ public final class FoxDeskAPIClient {
         return try await sendMultipartRequest(request)
     }
 
+    private func sendMultipartFile<Response: Decodable>(
+        path: String,
+        bearerToken: String?,
+        fields: [String: String],
+        fileFieldName: String,
+        filename: String,
+        mimeType: String,
+        fileURL: URL
+    ) async throws -> Response {
+        let boundary = "FoxDeskBoundary-\(UUID().uuidString)"
+        let bodyURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("foxdesk-multipart-\(UUID().uuidString).body")
+        defer { try? FileManager.default.removeItem(at: bodyURL) }
+
+        FileManager.default.createFile(atPath: bodyURL.path, contents: nil)
+        let output = try FileHandle(forWritingTo: bodyURL)
+        defer { try? output.close() }
+
+        for (name, value) in fields {
+            try output.write(contentsOf: Data("--\(boundary)\r\n".utf8))
+            try output.write(contentsOf: Data("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".utf8))
+            try output.write(contentsOf: Data(value.utf8))
+            try output.write(contentsOf: Data("\r\n".utf8))
+        }
+
+        try output.write(contentsOf: Data("--\(boundary)\r\n".utf8))
+        try output.write(contentsOf: Data("Content-Disposition: form-data; name=\"\(fileFieldName)\"; filename=\"\(filename)\"\r\n".utf8))
+        try output.write(contentsOf: Data("Content-Type: \(mimeType)\r\n\r\n".utf8))
+
+        let input = try FileHandle(forReadingFrom: fileURL)
+        defer { try? input.close() }
+        while let chunk = try input.read(upToCount: 64 * 1024), !chunk.isEmpty {
+            try output.write(contentsOf: chunk)
+        }
+        try output.write(contentsOf: Data("\r\n--\(boundary)--\r\n".utf8))
+        try output.synchronize()
+
+        var request = URLRequest(url: try apiURL(path: path))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        if let size = try? bodyURL.resourceValues(forKeys: [.fileSizeKey]).fileSize {
+            request.setValue(String(size), forHTTPHeaderField: "Content-Length")
+        }
+        if let bearerToken {
+            request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        }
+        addIdempotencyKeyIfNeeded(to: &request, bearerToken: bearerToken)
+
+        let (responseData, response) = try await performIdempotentUpload(request, fromFile: bodyURL)
+        return try decodeMultipartResponse(data: responseData, response: response)
+    }
+
     private func sendMultipartRequest<Response: Decodable>(_ request: URLRequest) async throws -> Response {
-        let (responseData, response) = try await session.data(for: request)
+        let (responseData, response) = try await performIdempotentDataRequest(request)
+        return try decodeMultipartResponse(data: responseData, response: response)
+    }
+
+    private func addIdempotencyKeyIfNeeded(to request: inout URLRequest, bearerToken: String?) {
+        guard bearerToken != nil,
+              request.httpMethod?.uppercased() != "GET",
+              request.value(forHTTPHeaderField: "Idempotency-Key") == nil else {
+            return
+        }
+        request.setValue("ios-\(UUID().uuidString)", forHTTPHeaderField: "Idempotency-Key")
+    }
+
+    private func performIdempotentDataRequest(_ request: URLRequest) async throws -> (Data, URLResponse) {
+        var attempt = 0
+        while true {
+            do {
+                return try await session.data(for: request)
+            } catch {
+                guard attempt == 0,
+                      request.value(forHTTPHeaderField: "Idempotency-Key") != nil,
+                      error is URLError else {
+                    throw error
+                }
+                attempt += 1
+            }
+        }
+    }
+
+    private func performIdempotentUpload(_ request: URLRequest, fromFile fileURL: URL) async throws -> (Data, URLResponse) {
+        var attempt = 0
+        while true {
+            do {
+                return try await session.upload(for: request, fromFile: fileURL)
+            } catch {
+                guard attempt == 0,
+                      request.value(forHTTPHeaderField: "Idempotency-Key") != nil,
+                      error is URLError else {
+                    throw error
+                }
+                attempt += 1
+            }
+        }
+    }
+
+    private func decodeMultipartResponse<Response: Decodable>(
+        data responseData: Data,
+        response: URLResponse
+    ) throws -> Response {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw FoxDeskAPIError.invalidResponse
         }
@@ -564,6 +717,14 @@ public final class FoxDeskAPIClient {
         } catch {
             throw FoxDeskAPIError.decoding(error.localizedDescription)
         }
+    }
+
+    private func sanitizedTemporaryFilename(_ filename: String?) -> String? {
+        guard let filename = filename?.trimmingCharacters(in: .whitespacesAndNewlines), !filename.isEmpty else {
+            return nil
+        }
+        let forbidden = CharacterSet(charactersIn: "/:\\?%*|\"<>")
+        return filename.components(separatedBy: forbidden).joined(separator: "-")
     }
 }
 

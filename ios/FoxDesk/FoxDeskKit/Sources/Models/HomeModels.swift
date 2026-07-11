@@ -87,6 +87,8 @@ public struct HomeTicketCard: Codable, Sendable, Equatable, Identifiable, Hashab
     public let dueDate: String?
     public let createdAt: String?
     public let updatedAt: String?
+    public let workedMinutes: Int?
+    public let workedLabel: String?
     public let url: String?
 }
 

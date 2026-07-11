@@ -29,6 +29,10 @@ Use app-create-ticket for new work, app-add-comment for plain ticket updates,
 app-add-comment-with-time when a comment and worked time belong together,
 app-log-time only for standalone time entries, and app-reporting-review for
 report drafts.
+For retries, reuse the same Idempotency-Key with an unchanged body. If FoxDesk
+returns 409 with Retry-After, wait and retry; do not generate a second key.
+Standalone time entries accept 1 to 1440 minutes and default to an interval
+ending at the request time when start/end are omitted.
 If the API returns 401 or 403, ask for a token with the required scope.
 ```
 

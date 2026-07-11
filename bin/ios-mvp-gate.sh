@@ -90,6 +90,9 @@ log "Running Xcode tests on ${DESTINATION}"
 log "Running mobile API contracts"
 (cd "$ROOT" && ./bin/run-php.sh tests/mobile-api-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/mobile-api-v1-routing-contract-test.php)
+(cd "$ROOT" && ./bin/run-php.sh tests/mobile-session-bootstrap-contract-test.php)
+(cd "$ROOT" && ./bin/run-php.sh tests/mobile-idempotency-contract-test.php)
+(cd "$ROOT" && ./bin/run-php.sh tests/background-job-tenant-isolation-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/ios-mvp-endpoint-matrix-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/native-app-api-freeze-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/app-home-contract-test.php)

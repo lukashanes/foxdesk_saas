@@ -139,7 +139,7 @@ const TOOLS = [
       properties: {
         ticket_id: { type: 'integer', minimum: 1 },
         ticket_hash: { type: 'string' },
-        duration_minutes: { type: 'integer', minimum: 1 },
+        duration_minutes: { type: 'integer', minimum: 1, maximum: 1440 },
         summary: { type: 'string' },
         is_billable: { type: 'boolean' },
         idempotency_key: { type: 'string' },

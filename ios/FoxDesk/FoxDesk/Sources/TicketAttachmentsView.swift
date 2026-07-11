@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import QuickLookThumbnailing
 import UniformTypeIdentifiers
 import UIKit
 import FoxDeskKit
@@ -15,7 +16,7 @@ struct AttachmentUploadSection: View {
     @State private var isCameraPresented = false
     @State private var isUploading = false
     @State private var message: String?
-    @State private var failedUpload: PendingAttachmentUpload?
+    @State private var failedUpload: StagedAttachmentFile?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -101,6 +102,12 @@ struct AttachmentUploadSection: View {
             }
             .ignoresSafeArea()
         }
+        .onDisappear {
+            if !isUploading {
+                failedUpload?.remove()
+                failedUpload = nil
+            }
+        }
     }
 
     private func uploadPhoto(_ item: PhotosPickerItem) async {
@@ -112,16 +119,16 @@ struct AttachmentUploadSection: View {
         }
         let type = item.supportedContentTypes.first ?? .jpeg
         let ext = type.preferredFilenameExtension ?? "jpg"
-        await uploadData(
-            data,
+        await stageAndUpload(
+            data: data,
             filename: "photo-\(Int(Date().timeIntervalSince1970)).\(ext)",
             mimeType: type.preferredMIMEType ?? "image/jpeg"
         )
     }
 
     private func uploadCameraPhoto(_ data: Data) async {
-        await uploadData(
-            data,
+        await stageAndUpload(
+            data: data,
             filename: "camera-\(Int(Date().timeIntervalSince1970)).jpg",
             mimeType: "image/jpeg"
         )
@@ -136,15 +143,27 @@ struct AttachmentUploadSection: View {
         }
 
         do {
-            let data = try Data(contentsOf: url)
             let mimeType = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
-            await uploadData(data, filename: url.lastPathComponent, mimeType: mimeType)
+            let staged = try StagedAttachmentFile(
+                copying: url,
+                filename: url.lastPathComponent,
+                mimeType: mimeType
+            )
+            await upload(staged)
         } catch {
             message = error.localizedDescription
         }
     }
 
-    private func uploadData(_ data: Data, filename: String, mimeType: String) async {
+    private func stageAndUpload(data: Data, filename: String, mimeType: String) async {
+        do {
+            await upload(try StagedAttachmentFile(data: data, filename: filename, mimeType: mimeType))
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    private func upload(_ attachment: StagedAttachmentFile) async {
         isUploading = true
         message = nil
         defer { isUploading = false }
@@ -154,23 +173,28 @@ struct AttachmentUploadSection: View {
                 try await session.client.uploadAttachment(
                     accessToken: accessToken,
                     ticketId: ticketID,
-                    filename: filename,
-                    mimeType: mimeType,
-                    data: data
+                    filename: attachment.filename,
+                    mimeType: attachment.mimeType,
+                    fileURL: attachment.fileURL
                 )
             }
             message = "Attachment uploaded"
+            failedUpload?.remove()
             failedUpload = nil
+            attachment.remove()
             await onUploaded()
         } catch {
-            failedUpload = PendingAttachmentUpload(data: data, filename: filename, mimeType: mimeType)
+            if failedUpload?.id != attachment.id {
+                failedUpload?.remove()
+            }
+            failedUpload = attachment
             message = error.localizedDescription
         }
     }
 
     private func retryFailedUpload() async {
         guard let failedUpload else { return }
-        await uploadData(failedUpload.data, filename: failedUpload.filename, mimeType: failedUpload.mimeType)
+        await upload(failedUpload)
     }
 }
 
@@ -218,13 +242,6 @@ struct AttachmentRow: View {
     }
 }
 
-private struct PendingAttachmentUpload: Identifiable {
-    let id = UUID()
-    let data: Data
-    let filename: String
-    let mimeType: String
-}
-
 private struct AttachmentThumbnailView: View {
     @Environment(AppSession.self) private var session
 
@@ -267,7 +284,7 @@ private struct AttachmentThumbnailView: View {
         didAttemptLoad = true
 
         do {
-            let data = try await session.authenticated { accessToken in
+            let fileURL = try await session.authenticated { accessToken in
                 let resolved = try await resolvedAttachment(accessToken: accessToken)
                 let urlString = resolved.previewUrl ?? resolved.downloadUrl
                 guard let url = session.client.resourceURL(from: urlString) else {
@@ -276,10 +293,21 @@ private struct AttachmentThumbnailView: View {
                         message: "This attachment does not have an available preview."
                     )
                 }
-                return try await session.client.downloadResource(accessToken: accessToken, url: url)
+                return try await session.client.downloadResourceToTemporaryFile(
+                    accessToken: accessToken,
+                    url: url,
+                    suggestedFilename: resolved.filename
+                )
             }
+            defer { try? FileManager.default.removeItem(at: fileURL) }
 
-            image = UIImage(data: data)
+            let request = QLThumbnailGenerator.Request(
+                fileAt: fileURL,
+                size: CGSize(width: 88, height: 88),
+                scale: UIScreen.main.scale,
+                representationTypes: .thumbnail
+            )
+            image = try await QLThumbnailGenerator.shared.generateBestRepresentation(for: request).uiImage
         } catch {
             image = nil
         }

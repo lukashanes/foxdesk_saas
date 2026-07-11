@@ -46,4 +46,23 @@ final class PushRegistrationServiceTests: XCTestCase {
         XCTAssertNil(service.apnsToken)
         XCTAssertEqual(service.state, .idle)
     }
+
+    func testIdlePushStateOffersNotificationEnableAction() {
+        let service = PushRegistrationService(notificationCenter: NotificationCenter())
+
+        XCTAssertTrue(service.shouldOfferEnableAction)
+    }
+
+    func testReceivedTokenRemainsAvailableForForegroundResynchronization() async throws {
+        let notificationCenter = NotificationCenter()
+        let service = PushRegistrationService(notificationCenter: notificationCenter)
+        let token = String(repeating: "c", count: 64)
+
+        notificationCenter.post(name: .foxDeskAPNsTokenReceived, object: token)
+        try await Task.sleep(for: .milliseconds(50))
+
+        XCTAssertEqual(service.apnsToken, token)
+        XCTAssertEqual(service.state, .idle)
+        XCTAssertTrue(service.shouldOfferEnableAction)
+    }
 }

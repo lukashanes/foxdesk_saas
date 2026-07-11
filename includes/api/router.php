@@ -67,6 +67,7 @@ function route_api_request($action) {
         'mobile-login',
         'mobile-verify-2fa',
         'mobile-refresh',
+        'mobile-logout',
         'migration-connect',
         'migration-plan',
         'migration-status',
@@ -106,6 +107,8 @@ function route_api_request($action) {
         api_token_enforce_action_scope($action);
         api_token_rate_limit_check($action);
         api_idempotency_replay_if_available($action);
+    } elseif (!empty($GLOBALS['is_mobile_token_auth']) && function_exists('mobile_api_idempotency_replay_if_available')) {
+        mobile_api_idempotency_replay_if_available($action);
     }
 
     api_record_usage_request($action);
@@ -184,6 +187,7 @@ function route_api_request($action) {
         'app-delete-comment' => 'api_app_delete_comment',
         'app-delete-time-entry' => 'api_app_delete_time_entry',
         'app-attachment-metadata' => 'api_app_attachment_metadata',
+        'app-attachment-download' => 'api_app_attachment_download',
         'app-ticket-timer' => 'api_app_ticket_timer',
         'app-ticket-timer-action' => 'api_app_ticket_timer_action',
         'app-log-time' => 'api_app_log_time',

@@ -552,9 +552,41 @@ if (!function_exists('foxdesk_bootstrap_filesystem_session')) {
     }
 }
 
+if (!function_exists('foxdesk_request_uses_bearer_auth')) {
+    function foxdesk_request_uses_bearer_auth(): bool
+    {
+        $authorization = trim((string) (
+            $_SERVER['HTTP_AUTHORIZATION']
+            ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+            ?? ''
+        ));
+
+        return preg_match('/^Bearer\s+\S+$/i', $authorization) === 1;
+    }
+}
+
+if (!function_exists('foxdesk_request_is_native_mobile_api')) {
+    function foxdesk_request_is_native_mobile_api(): bool
+    {
+        $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '');
+        return preg_match('~(?:^|/)api/mobile/v1(?:/|$)~', $path) === 1;
+    }
+}
+
 if (!function_exists('foxdesk_bootstrap_session')) {
     function foxdesk_bootstrap_session(bool $prefer_database = true): bool
     {
+        // Native and agent API clients authenticate every request with a bearer
+        // token. Their role context only needs to live for this PHP request;
+        // persisting a separate browser session would create one DB row per call.
+        if (foxdesk_request_uses_bearer_auth() || foxdesk_request_is_native_mobile_api()) {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            $_SESSION = [];
+            return true;
+        }
+
         if (session_status() === PHP_SESSION_ACTIVE) {
             return true;
         }

@@ -185,6 +185,12 @@ function report_ticket_tags_column_exists(): bool {
 function get_report_template($id) {
     $organization_logo_select = report_organization_column_exists('logo_url') ? 'o.logo_url' : 'NULL';
     $organization_theme_select = report_organization_column_exists('theme_color') ? 'o.theme_color' : 'NULL';
+    $params = [$id];
+    $tenant_filter = '';
+    if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('report_templates')) {
+        $tenant_filter = ' AND rt.tenant_id = ?';
+        $params[] = current_tenant_id();
+    }
 
     return db_fetch_one("
         SELECT rt.*,
@@ -195,8 +201,8 @@ function get_report_template($id) {
         FROM report_templates rt
         LEFT JOIN organizations o ON rt.organization_id = o.id
         LEFT JOIN users u ON rt.created_by_user_id = u.id
-        WHERE rt.id = ?
-    ", [$id]);
+        WHERE rt.id = ?{$tenant_filter}
+    ", $params);
 }
 
 /**
@@ -770,6 +776,13 @@ function get_due_scheduled_reports(): array
     ensure_report_schedule_columns();
     $today = date('Y-m-d');
 
+    $params = [$today];
+    $tenant_filter = '';
+    if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('report_templates')) {
+        $tenant_filter = ' AND rt.tenant_id = ?';
+        $params[] = current_tenant_id();
+    }
+
     return db_fetch_all("
         SELECT rt.*, o.name as organization_name
         FROM report_templates rt
@@ -777,7 +790,8 @@ function get_due_scheduled_reports(): array
         WHERE rt.schedule_enabled = 1
           AND rt.is_draft = 0
           AND (rt.schedule_next_due IS NULL OR rt.schedule_next_due <= ?)
-    ", [$today]);
+          {$tenant_filter}
+    ", $params);
 }
 
 /**
@@ -842,9 +856,42 @@ function calculate_next_report_due(string $interval, int $day, ?string $from = n
 /**
  * Process all due scheduled reports: regenerate snapshots, advance dates, send emails.
  */
-function process_scheduled_reports(): void
+function process_scheduled_reports(?int $tenant_id = null): void
 {
     ensure_report_schedule_columns();
+
+    if ($tenant_id === null
+        && function_exists('tenant_scoped_table_has_column')
+        && tenant_scoped_table_has_column('report_templates')
+        && function_exists('tenant_run_in_context')) {
+        $today = date('Y-m-d');
+        $tenant_rows = db_fetch_all("
+            SELECT DISTINCT tenant_id
+            FROM report_templates
+            WHERE tenant_id IS NOT NULL
+              AND schedule_enabled = 1
+              AND is_draft = 0
+              AND (schedule_next_due IS NULL OR schedule_next_due <= ?)
+            ORDER BY tenant_id ASC
+        ", [$today]);
+
+        foreach ($tenant_rows as $row) {
+            $row_tenant_id = (int) ($row['tenant_id'] ?? 0);
+            if ($row_tenant_id <= 0) {
+                continue;
+            }
+            tenant_run_in_context(
+                $row_tenant_id,
+                static fn() => process_scheduled_reports($row_tenant_id)
+            );
+        }
+        return;
+    }
+
+    if ($tenant_id !== null && current_tenant_id() !== $tenant_id) {
+        throw new RuntimeException('Scheduled report tenant context mismatch.');
+    }
+
     $due_reports = get_due_scheduled_reports();
 
     foreach ($due_reports as $report) {

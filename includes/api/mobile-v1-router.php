@@ -139,6 +139,10 @@ function foxdesk_mobile_v1_route_from_request(string $method, string $uri): ?arr
     }
 
     if ($first === 'attachments') {
+        if ($second !== '' && $third === 'download' && $method === 'GET') {
+            $route['query']['attachment_id'] = (int) $second;
+            return $set_action('app-attachment-download');
+        }
         if ($second !== '' && $method === 'GET') {
             $route['query']['attachment_id'] = (int) $second;
             return $set_action('app-attachment-metadata');

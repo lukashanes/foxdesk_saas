@@ -65,10 +65,17 @@ contains "$MANIFEST" "PRODUCT_BUNDLE_IDENTIFIER: net.foxdesk.ios" "Production ap
 contains "$MANIFEST" "CODE_SIGN_STYLE: Automatic" "Project must use automatic signing for operator archive handoff."
 contains "$MANIFEST" "CODE_SIGN_ENTITLEMENTS: FoxDesk/FoxDesk.entitlements" "App target must include entitlements."
 contains "$MANIFEST" "MARKETING_VERSION: 0.1.0" "Marketing version must be declared before archive."
-contains "$MANIFEST" "CURRENT_PROJECT_VERSION: 1" "Build number must be declared before archive."
+build_number="$(awk '/CURRENT_PROJECT_VERSION:/ { print $2; exit }' "$MANIFEST")"
+[[ "$build_number" =~ ^[1-9][0-9]*$ ]] || fail "Build number must be a positive integer before archive."
+framework_marketing_count="$(grep -c 'MARKETING_VERSION: 0.1.0' "$MANIFEST" || true)"
+framework_build_count="$(grep -Ec "CURRENT_PROJECT_VERSION:[[:space:]]+${build_number}$" "$MANIFEST" || true)"
+[[ "$framework_marketing_count" -ge 2 ]] || fail "App and embedded FoxDeskKit framework must both declare CFBundleShortVersionString."
+[[ "$framework_build_count" -ge 2 ]] || fail "App and embedded FoxDeskKit framework must use the same CFBundleVersion."
 contains "$MANIFEST" "ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon" "Archive must use the AppIcon asset catalog."
+contains "$MANIFEST" 'TARGETED_DEVICE_FAMILY: "1"' "First release must target iPhone only."
 contains "$MANIFEST" "APS_ENVIRONMENT: production" "Production config must use production APNs."
 contains "$MANIFEST" "https://app.foxdesk.net/index.php" "Production config must use production app.foxdesk.net API."
+contains "$MANIFEST" "INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO" "App must declare that it does not use non-exempt encryption."
 contains "$ENTITLEMENTS" '$(APS_ENVIRONMENT)' "APNs entitlement must be driven by build configuration."
 contains "$PRIVACY" "NSPrivacyTracking" "Privacy manifest must declare tracking state."
 contains "$PRIVACY" "NSPrivacyCollectedDataTypes" "Privacy manifest must declare collected data types."
@@ -108,7 +115,9 @@ contains "$BUILD_SETTINGS" "CODE_SIGN_ENTITLEMENTS = FoxDesk/FoxDesk.entitlement
 contains "$BUILD_SETTINGS" "ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon" "Production build settings must use AppIcon."
 contains "$BUILD_SETTINGS" "APS_ENVIRONMENT = production" "Production build settings must use production APNs."
 contains "$BUILD_SETTINGS" "INFOPLIST_KEY_FOXDESK_API_BASE_URL = https://app.foxdesk.net/index.php" "Production archive must point to production app.foxdesk.net."
+contains "$BUILD_SETTINGS" "INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO" "Production archive must declare no non-exempt encryption."
 contains "$BUILD_SETTINGS" "IPHONEOS_DEPLOYMENT_TARGET = 17.0" "Production archive must target iOS 17."
+contains "$BUILD_SETTINGS" "TARGETED_DEVICE_FAMILY = 1" "Production archive must target iPhone only."
 
 cat >> "$EVIDENCE_REPORT" <<'REPORT'
 

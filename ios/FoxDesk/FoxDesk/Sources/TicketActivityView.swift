@@ -122,52 +122,7 @@ private struct RichCommentText: View {
         guard let source, !source.isEmpty else {
             return nil
         }
-        let markdown = markdownFromHTML(source)
-        return try? AttributedString(markdown: markdown)
-    }
-
-    private func markdownFromHTML(_ html: String) -> String {
-        var text = html
-        let replacements: [(String, String)] = [
-            ("<br>", "\n"),
-            ("<br/>", "\n"),
-            ("<br />", "\n"),
-            ("<p>", "\n\n"),
-            ("</p>", "\n\n"),
-            ("<ul>", "\n"),
-            ("</ul>", "\n"),
-            ("<ol>", "\n"),
-            ("</ol>", "\n"),
-            ("<li>", "- "),
-            ("</li>", "\n"),
-            ("<strong>", "**"),
-            ("</strong>", "**"),
-            ("<b>", "**"),
-            ("</b>", "**"),
-            ("<em>", "*"),
-            ("</em>", "*"),
-            ("<i>", "*"),
-            ("</i>", "*")
-        ]
-        for (needle, replacement) in replacements {
-            text = text.replacingOccurrences(of: needle, with: replacement, options: [.caseInsensitive])
-        }
-        text = text.replacingOccurrences(of: #"(?s)<[^>]+>"#, with: "", options: .regularExpression)
-        return decodeBasicHTMLEntities(text)
-            .components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .joined(separator: "\n")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private func decodeBasicHTMLEntities(_ value: String) -> String {
-        value
-            .replacingOccurrences(of: "&nbsp;", with: " ")
-            .replacingOccurrences(of: "&amp;", with: "&")
-            .replacingOccurrences(of: "&lt;", with: "<")
-            .replacingOccurrences(of: "&gt;", with: ">")
-            .replacingOccurrences(of: "&quot;", with: "\"")
-            .replacingOccurrences(of: "&#39;", with: "'")
+        return MobileRichTextRenderer.attributedString(fromHTML: source)
     }
 }
 

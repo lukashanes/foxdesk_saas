@@ -257,6 +257,9 @@ function move_item_down($table, $id) {
  */
 function api_success($data = []) {
     $response = array_merge(['success' => true], $data);
+    if (!empty($GLOBALS['is_mobile_token_auth']) && function_exists('mobile_api_idempotency_store_success')) {
+        mobile_api_idempotency_store_success($response);
+    }
     if (!empty($GLOBALS['is_api_token_auth'])) {
         $action = (string) ($GLOBALS['api_current_action'] ?? ($_GET['action'] ?? ''));
         if (function_exists('api_idempotency_store_success')) {
@@ -273,6 +276,12 @@ function api_success($data = []) {
 
 function api_error($message, $code = 400) {
     http_response_code($code);
+    if (!empty($GLOBALS['is_mobile_token_auth']) && function_exists('mobile_api_idempotency_release_pending')) {
+        mobile_api_idempotency_release_pending();
+    }
+    if (!empty($GLOBALS['is_api_token_auth']) && function_exists('api_idempotency_release_pending')) {
+        api_idempotency_release_pending();
+    }
     if (!empty($GLOBALS['is_api_token_auth']) && function_exists('api_token_log_action')) {
         api_token_log_action((string) ($GLOBALS['api_current_action'] ?? ($_GET['action'] ?? '')), ['error' => $message], $code);
     }

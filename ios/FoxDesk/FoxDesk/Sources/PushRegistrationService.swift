@@ -56,6 +56,7 @@ final class PushRegistrationService {
     }
 
     func enableNotifications(session: AppSession) async {
+        guard !isRegistrationInProgress else { return }
         do {
             state = .requestingPermission
             let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound])
@@ -64,22 +65,41 @@ final class PushRegistrationService {
                 return
             }
 
-            state = .waitingForToken
-            UIApplication.shared.registerForRemoteNotifications()
-
-            let token = try await waitForAPNsToken()
-            state = .registering
-            _ = try await session.authenticated { accessToken in
-                try await session.client.registerDevice(
-                    accessToken: accessToken,
-                    apnsToken: token,
-                    environment: currentAPNsEnvironment,
-                    device: session.device
-                )
-            }
-            state = .registered
+            try await registerAuthorizedDevice(session: session)
         } catch {
             state = .failed(error.localizedDescription)
+        }
+    }
+
+    func resumeAuthorizedRegistration(session: AppSession) async {
+        // APNs registration is intentionally repeated when the app becomes
+        // active. The backend endpoint is idempotent and this repairs a device
+        // row that was removed, deactivated, or missed during an earlier
+        // short-lived network failure without asking for permission again.
+        guard !isRegistrationInProgress else { return }
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        switch settings.authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            do {
+                try await registerAuthorizedDevice(session: session)
+            } catch {
+                state = .failed(error.localizedDescription)
+            }
+        case .denied:
+            state = .denied
+        case .notDetermined:
+            state = .idle
+        @unknown default:
+            state = .idle
+        }
+    }
+
+    var shouldOfferEnableAction: Bool {
+        switch state {
+        case .idle, .failed:
+            return true
+        default:
+            return false
         }
     }
 
@@ -96,12 +116,41 @@ final class PushRegistrationService {
         #endif
     }
 
+    private var isRegistrationInProgress: Bool {
+        switch state {
+        case .requestingPermission, .waitingForToken, .registering:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func registerAuthorizedDevice(session: AppSession) async throws {
+        state = .waitingForToken
+        UIApplication.shared.registerForRemoteNotifications()
+
+        let token = try await waitForAPNsToken()
+        state = .registering
+        _ = try await session.authenticated { accessToken in
+            try await session.client.registerDevice(
+                accessToken: accessToken,
+                apnsToken: token,
+                environment: currentAPNsEnvironment,
+                device: session.device
+            )
+        }
+        state = .registered
+    }
+
     private func waitForAPNsToken() async throws -> String {
         if let apnsToken {
             return apnsToken
         }
 
-        for _ in 0..<20 {
+        // APNs can take longer than a few seconds after install, entitlement
+        // changes, or a network transition. Keep waiting long enough for a
+        // physical device instead of treating a slow token as a broken API.
+        for _ in 0..<120 {
             try await Task.sleep(for: .milliseconds(250))
             if let apnsToken {
                 return apnsToken

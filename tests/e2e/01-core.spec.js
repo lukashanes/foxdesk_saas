@@ -1,4 +1,5 @@
 const fs = require('fs');
+const crypto = require('crypto');
 const os = require('os');
 const path = require('path');
 const { test, expect } = require('@playwright/test');
@@ -473,6 +474,109 @@ test('recurring task runner creates due tickets without duplicate runs', async (
   `));
   expect(Number(state.ticket_count)).toBe(2);
   expect(Number(state.run_count)).toBe(2);
+});
+
+test('background jobs preserve tenant isolation across workspaces', async () => {
+  const stamp = Date.now();
+  const secondTenantSlug = `jobs-${stamp}`;
+  const secondAdminEmail = `jobs.admin.${stamp}@example.test`;
+  const defaultTaskTitle = `E2E default tenant recurring ${stamp}`;
+  const secondTaskTitle = `E2E second tenant recurring ${stamp}`;
+  const defaultReportTitle = `E2E default tenant report ${stamp}`;
+  const secondReportTitle = `E2E second tenant report ${stamp}`;
+
+  php(`
+    define('BASE_PATH', '/var/www/html');
+    require_once BASE_PATH . '/config.php';
+    require_once BASE_PATH . '/includes/database.php';
+    require_once BASE_PATH . '/includes/tenant-functions.php';
+    ensure_tenant_baseline();
+    require_once BASE_PATH . '/includes/functions.php';
+    ensure_recurring_task_columns();
+    ensure_report_schedule_columns();
+  `);
+
+  const defaultAdmin = rowObject(dbQuery(`
+    SELECT id, tenant_id FROM users WHERE email = 'admin@example.test' LIMIT 1;
+  `));
+  const defaultStatus = rowObject(dbQuery(`
+    SELECT id FROM statuses WHERE is_default = 1 ORDER BY sort_order ASC, id ASC LIMIT 1;
+  `));
+
+  dbQuery(`
+    INSERT INTO tenants (uuid, name, slug, status, subscription_status, created_at)
+    VALUES (${sqlString(crypto.randomUUID())}, 'Jobs tenant', ${sqlString(secondTenantSlug)}, 'active', 'active', NOW());
+  `);
+  const secondTenant = rowObject(dbQuery(`
+    SELECT id FROM tenants WHERE slug = ${sqlString(secondTenantSlug)} LIMIT 1;
+  `));
+  dbQuery(`
+    INSERT INTO users (tenant_id, email, password, first_name, last_name, role, is_active, language, created_at)
+    VALUES (
+      ${Number(secondTenant.id)},
+      ${sqlString(secondAdminEmail)},
+      '$2y$10$abcdefghijklmnopqrstuuF0I9oWV6x3p4GmD0Yj6Hf8wd2Kx0D5u',
+      'Jobs', 'Admin', 'admin', 1, 'en', NOW()
+    );
+    INSERT INTO organizations (tenant_id, name, is_active, created_at)
+    VALUES
+      (${Number(defaultAdmin.tenant_id)}, ${sqlString(`Default jobs org ${stamp}`)}, 1, NOW()),
+      (${Number(secondTenant.id)}, ${sqlString(`Second jobs org ${stamp}`)}, 1, NOW());
+  `);
+
+  const organizations = rowObject(dbQuery(`
+    SELECT
+      (SELECT id FROM organizations WHERE tenant_id = ${Number(defaultAdmin.tenant_id)} AND name = ${sqlString(`Default jobs org ${stamp}`)} LIMIT 1) AS default_org_id,
+      (SELECT id FROM organizations WHERE tenant_id = ${Number(secondTenant.id)} AND name = ${sqlString(`Second jobs org ${stamp}`)} LIMIT 1) AS second_org_id,
+      (SELECT id FROM users WHERE email = ${sqlString(secondAdminEmail)} LIMIT 1) AS second_admin_id;
+  `));
+
+  dbQuery(`
+    INSERT INTO recurring_tasks (
+      tenant_id, title, description, status_id, recurrence_type, recurrence_interval,
+      start_date, next_run_date, is_active, send_email_notification, created_by_user_id, created_at
+    ) VALUES
+      (${Number(defaultAdmin.tenant_id)}, ${sqlString(defaultTaskTitle)}, 'Default tenant job', ${Number(defaultStatus.id)}, 'daily', 1, DATE_SUB(CURDATE(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 5 MINUTE), 1, 0, ${Number(defaultAdmin.id)}, NOW()),
+      (${Number(secondTenant.id)}, ${sqlString(secondTaskTitle)}, 'Second tenant job', ${Number(defaultStatus.id)}, 'daily', 1, DATE_SUB(CURDATE(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 5 MINUTE), 1, 0, ${Number(organizations.second_admin_id)}, NOW());
+
+    INSERT INTO report_templates (
+      tenant_id, uuid, organization_id, created_by_user_id, title, date_from, date_to,
+      is_draft, schedule_enabled, schedule_interval, schedule_day, schedule_next_due, created_at
+    ) VALUES
+      (${Number(defaultAdmin.tenant_id)}, ${sqlString(crypto.randomUUID())}, ${Number(organizations.default_org_id)}, ${Number(defaultAdmin.id)}, ${sqlString(defaultReportTitle)}, DATE_SUB(CURDATE(), INTERVAL 1 MONTH), CURDATE(), 0, 1, 'monthly', 1, DATE_SUB(CURDATE(), INTERVAL 1 DAY), NOW()),
+      (${Number(secondTenant.id)}, ${sqlString(crypto.randomUUID())}, ${Number(organizations.second_org_id)}, ${Number(organizations.second_admin_id)}, ${sqlString(secondReportTitle)}, DATE_SUB(CURDATE(), INTERVAL 1 MONTH), CURDATE(), 0, 1, 'monthly', 1, DATE_SUB(CURDATE(), INTERVAL 1 DAY), NOW());
+  `);
+
+  const recurringResult = JSON.parse(dockerExec(webContainer, ['php', 'bin/process-recurring-tasks.php', '--json']));
+  expect(recurringResult.ok).toBe(true);
+  expect(Number(recurringResult.processed)).toBeGreaterThanOrEqual(2);
+
+  expect(php(`
+    define('BASE_PATH', '/var/www/html');
+    require_once BASE_PATH . '/config.php';
+    require_once BASE_PATH . '/includes/database.php';
+    require_once BASE_PATH . '/includes/tenant-functions.php';
+    ensure_tenant_baseline();
+    require_once BASE_PATH . '/includes/functions.php';
+    process_scheduled_reports();
+    echo 'scheduled-ok';
+  `)).toContain('scheduled-ok');
+
+  const ticketState = rowObject(dbQuery(`
+    SELECT
+      (SELECT tenant_id FROM tickets WHERE title = ${sqlString(defaultTaskTitle)} AND source = 'recurring' LIMIT 1) AS default_ticket_tenant,
+      (SELECT tenant_id FROM tickets WHERE title = ${sqlString(secondTaskTitle)} AND source = 'recurring' LIMIT 1) AS second_ticket_tenant;
+  `));
+  expect(Number(ticketState.default_ticket_tenant)).toBe(Number(defaultAdmin.tenant_id));
+  expect(Number(ticketState.second_ticket_tenant)).toBe(Number(secondTenant.id));
+
+  const reportState = rowObject(dbQuery(`
+    SELECT
+      (SELECT rs.tenant_id FROM report_snapshots rs JOIN report_templates rt ON rt.id = rs.report_template_id WHERE rt.title = ${sqlString(defaultReportTitle)} ORDER BY rs.id DESC LIMIT 1) AS default_snapshot_tenant,
+      (SELECT rs.tenant_id FROM report_snapshots rs JOIN report_templates rt ON rt.id = rs.report_template_id WHERE rt.title = ${sqlString(secondReportTitle)} ORDER BY rs.id DESC LIMIT 1) AS second_snapshot_tenant;
+  `));
+  expect(Number(reportState.default_snapshot_tenant)).toBe(Number(defaultAdmin.tenant_id));
+  expect(Number(reportState.second_snapshot_tenant)).toBe(Number(secondTenant.id));
 });
 
 test('maintenance and pseudo-cron runners process due work once per interval', async ({ page }) => {

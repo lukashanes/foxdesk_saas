@@ -37,6 +37,9 @@ struct TicketRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                Label(ticket.workedLabel ?? "0 min", systemImage: "clock")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)

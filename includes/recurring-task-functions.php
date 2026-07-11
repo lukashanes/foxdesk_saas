@@ -137,12 +137,20 @@ function process_recurring_task_resumes(): int
     ensure_recurring_task_columns();
     $today = date('Y-m-d');
 
+    $params = [$today];
+    $tenant_filter = '';
+    if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('recurring_tasks')) {
+        $tenant_filter = ' AND tenant_id = ?';
+        $params[] = current_tenant_id();
+    }
+
     $tasks = db_fetch_all("
         SELECT * FROM recurring_tasks
         WHERE is_active = 0
         AND resume_date IS NOT NULL
         AND resume_date <= ?
-    ", [$today]);
+        {$tenant_filter}
+    ", $params);
 
     $resumed = 0;
     foreach ($tasks as $task) {
@@ -378,22 +386,63 @@ function calculate_next_run_date($task, $from_date = null)
 /**
  * Process due recurring tasks (called by cron)
  */
-function process_recurring_tasks()
+function process_recurring_tasks(?int $tenant_id = null)
 {
     $now = date('Y-m-d H:i:s');
 
     ensure_recurring_task_columns();
 
+    if ($tenant_id === null
+        && function_exists('tenant_scoped_table_has_column')
+        && tenant_scoped_table_has_column('recurring_tasks')
+        && function_exists('tenant_run_in_context')) {
+        $tenant_rows = db_fetch_all("
+            SELECT DISTINCT tenant_id
+            FROM recurring_tasks
+            WHERE tenant_id IS NOT NULL
+              AND (
+                (is_active = 1 AND next_run_date <= ? AND (end_date IS NULL OR end_date >= CURDATE()))
+                OR (is_active = 0 AND resume_date IS NOT NULL AND resume_date <= CURDATE())
+              )
+            ORDER BY tenant_id ASC
+        ", [$now]);
+
+        $processed = 0;
+        foreach ($tenant_rows as $row) {
+            $row_tenant_id = (int) ($row['tenant_id'] ?? 0);
+            if ($row_tenant_id <= 0) {
+                continue;
+            }
+            $processed += (int) tenant_run_in_context(
+                $row_tenant_id,
+                static fn() => process_recurring_tasks($row_tenant_id)
+            );
+        }
+        return $processed;
+    }
+
+    if ($tenant_id !== null && current_tenant_id() !== $tenant_id) {
+        throw new RuntimeException('Recurring task tenant context mismatch.');
+    }
+
     // Auto-resume paused tasks whose resume_date has arrived
     process_recurring_task_resumes();
+
+    $params = [$now];
+    $tenant_filter = '';
+    if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('recurring_tasks')) {
+        $tenant_filter = ' AND tenant_id = ?';
+        $params[] = current_tenant_id();
+    }
 
     $tasks = db_fetch_all("
         SELECT * FROM recurring_tasks
         WHERE is_active = 1
         AND next_run_date <= ?
         AND (end_date IS NULL OR end_date >= CURDATE())
+        {$tenant_filter}
         ORDER BY next_run_date ASC
-    ", [$now]);
+    ", $params);
 
     $processed = 0;
 
@@ -429,7 +478,11 @@ function process_recurring_tasks()
             // Notify admins about the failure (R8)
             if (function_exists('create_notifications_for_users')) {
                 $admin_ids = array_column(
-                    db_fetch_all("SELECT id FROM users WHERE role = 'admin' AND is_active = 1"),
+                    db_fetch_all(
+                        "SELECT id FROM users WHERE role = 'admin' AND is_active = 1"
+                        . (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('users') ? ' AND tenant_id = ?' : ''),
+                        function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('users') ? [current_tenant_id()] : []
+                    ),
                     'id'
                 );
                 if (!empty($admin_ids)) {
@@ -467,7 +520,16 @@ function generate_ticket_from_recurring_task($task)
         $requester_id = (int) $task['assigned_user_id'];
     }
     if ($requester_id <= 0) {
-        $fallback_user = db_fetch_one("SELECT id FROM users WHERE role = 'admin' AND is_active = 1 ORDER BY id ASC LIMIT 1");
+        $user_params = [];
+        $user_tenant_filter = '';
+        if (function_exists('tenant_scoped_table_has_column') && tenant_scoped_table_has_column('users')) {
+            $user_tenant_filter = ' AND tenant_id = ?';
+            $user_params[] = current_tenant_id();
+        }
+        $fallback_user = db_fetch_one(
+            "SELECT id FROM users WHERE role = 'admin' AND is_active = 1{$user_tenant_filter} ORDER BY id ASC LIMIT 1",
+            $user_params
+        );
         if ($fallback_user) {
             $requester_id = (int) $fallback_user['id'];
         }
@@ -558,5 +620,3 @@ function send_recurring_task_notification($ticket_id, $recurring_task)
 
     return send_email($assigned_user['email'], $subject, $body);
 }
-
-

@@ -103,6 +103,9 @@ private struct HomeTicketCardRow: View {
                         .lineLimit(1)
                 }
                 Spacer()
+                Label(ticket.workedLabel ?? "0 min", systemImage: "clock")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)

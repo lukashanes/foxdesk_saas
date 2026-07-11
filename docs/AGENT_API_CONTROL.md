@@ -100,6 +100,8 @@ platform/admin-only setup path.
   id.
 - Write endpoints accept idempotency keys to avoid duplicate ticket/comment/time
   creation when an agent retries.
+- A concurrent request with the same key returns `409` and `Retry-After`; the
+  agent must retry the unchanged request instead of generating another key.
 - MCP write actions require `confirm:true` and support `dry_run:true`.
 - Destructive actions need explicit scopes and should support dry-run before
   they are exposed.

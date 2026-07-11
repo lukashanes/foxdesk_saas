@@ -49,6 +49,8 @@ public struct TicketSummary: Codable, Sendable, Equatable, Identifiable, Hashabl
     public let updatedAt: String?
     public let url: String?
     public let attachmentCount: Int?
+    public let workedMinutes: Int?
+    public let workedLabel: String?
     public let isArchived: Bool?
 }
 

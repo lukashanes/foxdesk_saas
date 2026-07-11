@@ -61,5 +61,9 @@ sh examples/agent-api/prepare-report.sh
 - Treat 401/403 as permission or token-scope problems, not application bugs.
 - For write actions, keep the default `Idempotency-Key` header or set
   `FOXDESK_IDEMPOTENCY_KEY` when retrying the same action.
+- If the API returns `409` with `Retry-After`, wait and retry the unchanged
+  request with the same idempotency key. Never reuse that key for new content.
+- Standalone time entries accept 1 to 1440 minutes. Without explicit start/end
+  timestamps, FoxDesk records an interval ending at the time of the request.
 - Summarize the created ticket id, logged minutes, or report totals back to the
   user.

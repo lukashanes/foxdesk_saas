@@ -236,6 +236,9 @@ fi
 
 app_record_status="$(status_from_env_flag APP_STORE_CONNECT_APP_RECORD_READY)"
 developer_status="$(status_from_env_flag APPLE_DEVELOPER_BUNDLE_READY)"
+review_info_status="$(status_from_env_flag APP_STORE_REVIEW_INFO_READY)"
+screenshots_uploaded_status="$(status_from_env_flag APP_STORE_SCREENSHOTS_UPLOADED)"
+testflight_build_status="$(status_from_env_flag TESTFLIGHT_BUILD_UPLOADED)"
 privacy_status="$(status_from_env_flag APP_STORE_PRIVACY_REVIEWED)"
 
 screenshots_status="missing"
@@ -245,6 +248,25 @@ if [[ -f "$ROOT_DIR/tmp/ios-app-store-screenshots/manifest.md" ]]; then
     screenshots_status="ready"
   fi
 fi
+
+remaining_actions=""
+append_remaining_action() {
+  remaining_actions+="- $1"$'\n'
+}
+
+[[ "$app_record_status" == "ready" ]] || append_remaining_action 'Create the App Store Connect app record for `net.foxdesk.ios`.'
+[[ "$developer_status" == "ready" ]] || append_remaining_action 'Confirm the Apple Developer explicit App ID `net.foxdesk.ios` and enable Push Notifications.'
+[[ "$review_info_status" == "ready" ]] || append_remaining_action 'Save the reviewer login, contact phone/email, and review notes in App Store Connect.'
+[[ "$screenshots_uploaded_status" == "ready" ]] || append_remaining_action 'Upload the final screenshot packet to App Store Connect and check every device crop.'
+[[ "$testflight_build_status" == "ready" ]] || append_remaining_action 'Archive and upload a signed build, then confirm it is processed and selectable in App Store Connect/TestFlight.'
+[[ "$demo_status" == "ready" ]] || append_remaining_action 'Verify the App Review demo account with `npm run ios:demo:check -- --require-credentials --json`.'
+[[ "$demo_write_status" == "ready" ]] || append_remaining_action 'Prove App Review demo write permission by creating a demo ticket and linked timed internal comment with manual date/start/end using `FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json`.'
+[[ "$live_smoke_status" == "ready" ]] || append_remaining_action 'Run the live mobile API read smoke with `npm run ios:api:smoke -- --require-credentials --json`.'
+[[ "$write_smoke_status" == "ready" ]] || append_remaining_action 'Run one opt-in write smoke with `FOXDESK_IOS_SMOKE_WRITE=1`; it must prove ticket creation, a timed comment with manual date/start/end, attachment upload, and authorized attachment download.'
+[[ "$apns_status" == "ready" ]] || append_remaining_action 'Register a physical iPhone, capture its APNs token, and run the live APNs smoke with `APNS_TEST_DEVICE_TOKEN`.'
+[[ "$screenshots_status" == "ready" ]] || append_remaining_action 'Capture and human-review the populated App Store screenshots.'
+[[ "$privacy_status" == "ready" ]] || append_remaining_action 'Human-review and confirm the App Store privacy answers.'
+append_remaining_action 'Run `npm run ios:submission:gate` and require it to pass after every preceding gate is ready.'
 
 cat > "$REPORT" <<REPORT
 # FoxDesk iOS Completion Audit
@@ -269,8 +291,8 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 | 5. Ticket detail | \`TicketDetailView\`, activity/timer/attachments/actions, mobile ticket detail contract | Live smoke against real workspace: $live_smoke_status |
 | 6. Reply / internal note | Mobile comments endpoint and native composer are implemented | Opt-in write smoke: $write_smoke_status |
 | 7. Comment with time | \`comment-with-time\` endpoint, exact/manual time controls, linked time-entry contracts | Opt-in write smoke: $write_smoke_status |
-| 8. Basic reply formatting | \`MobileRichTextFormatter\` and Xcode tests preserve paragraphs, lists, bold/italic, and HTML escaping | Covered locally; verify visually during write smoke: $write_smoke_status |
-| 9. Attachments and photos | Camera/file picker, upload, preview/download, attachment contracts | Real-device or live smoke attachment upload and authorized download: $write_smoke_status |
+| 8. Basic reply formatting | \`MobileRichTextFormatter\` plus the safe \`MobileRichTextRenderer\` preserve paragraphs, lists, emphasis and safe links without loading remote email images | Covered locally; verify visually during write smoke: $write_smoke_status |
+| 9. Attachments and photos | Camera/file picker, disk-staged streaming upload, bounded QuickLook thumbnails, disk-backed preview/download and attachment contracts | Real-device or live smoke attachment upload and authorized download: $write_smoke_status |
 | 10. Push notifications | Device-token endpoints, APNs payload dry-run: $apns_dry_status, native routing tests | Apple Developer Push capability: $developer_status; physical iPhone APNs token: $apns_status |
 | 11. Global search | \`SearchView\`, mobile search contract, global search tests | Live smoke against real workspace: $live_smoke_status |
 | 12. Client context | \`ClientContextView\`, mobile client endpoint, demo-account contract expectations | Demo reviewer account populated with client context: $demo_status |
@@ -283,6 +305,9 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 | Apple Business verification | $(status_from_env_flag APPLE_BUSINESS_VERIFIED) |
 | App Store Connect app record | $app_record_status |
 | Apple Developer bundle id + Push Notifications | $developer_status |
+| App Review portal login/contact/notes | $review_info_status |
+| App Store screenshots uploaded | $screenshots_uploaded_status |
+| TestFlight/App Store build processed | $testflight_build_status |
 | App Review demo credentials | $demo_status |
 | Demo reviewer write proof | $demo_write_status |
 | Live mobile API smoke credentials | $live_smoke_status |
@@ -312,15 +337,7 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 
 ## Required Before Calling The Goal Complete
 
-1. Create App Store Connect app record for \`net.foxdesk.ios\`.
-2. Confirm Apple Developer explicit App ID \`net.foxdesk.ios\` and enable Push Notifications.
-3. Verify App Review demo account with \`npm run ios:demo:check -- --require-credentials --json\`.
-4. Prove App Review demo write permission by creating a demo ticket and linked timed internal comment with manual date/start/end using \`FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json\`.
-5. Run live mobile API read smoke with \`npm run ios:api:smoke -- --require-credentials --json\`.
-6. Run one opt-in write smoke with \`FOXDESK_IOS_SMOKE_WRITE=1\`; it must prove ticket creation, a timed comment with manual date/start/end, attachment upload, and authorized attachment download.
-7. Run physical-device APNs smoke with \`APNS_TEST_DEVICE_TOKEN\`.
-8. Human-review App Store screenshots and privacy answers.
-9. Run \`npm run ios:submission:gate\` and require it to pass.
+$remaining_actions
 
 REPORT
 
@@ -328,6 +345,9 @@ printf '[ios:completion:audit] Wrote %s\n' "$REPORT"
 
 if [[ "$app_record_status" == "ready" \
   && "$developer_status" == "ready" \
+  && "$review_info_status" == "ready" \
+  && "$screenshots_uploaded_status" == "ready" \
+  && "$testflight_build_status" == "ready" \
   && "$privacy_status" == "ready" \
   && "$demo_status" == "ready" \
   && "$demo_write_status" == "ready" \

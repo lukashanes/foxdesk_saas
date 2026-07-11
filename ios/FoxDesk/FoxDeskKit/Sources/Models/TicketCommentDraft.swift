@@ -41,13 +41,21 @@ public struct TicketCommentDraft: Codable, Equatable, Sendable {
 }
 
 public actor TicketCommentDraftStore {
-    private let defaults: UserDefaults
+    private let directoryURL: URL
+    private let legacyDefaults: UserDefaults
+    private let maxAge: TimeInterval
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
     private let keyPrefix = "net.foxdesk.ios.ticket-comment-draft"
 
-    public init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
+    public init(
+        directoryURL: URL = ProtectedLocalCache.defaultRootURL,
+        legacyDefaults: UserDefaults = .standard,
+        maxAge: TimeInterval = 30 * 24 * 60 * 60
+    ) {
+        self.directoryURL = directoryURL
+        self.legacyDefaults = legacyDefaults
+        self.maxAge = maxAge
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         self.encoder = encoder
@@ -58,10 +66,23 @@ public actor TicketCommentDraftStore {
     }
 
     public func load(ticketId: Int, userId: Int) throws -> TicketCommentDraft? {
-        guard let data = defaults.data(forKey: key(ticketId: ticketId, userId: userId)) else {
+        let legacyKey = key(ticketId: ticketId, userId: userId)
+        let fileURL = fileURL(ticketId: ticketId, userId: userId)
+        guard let data = try ProtectedLocalCache.read(from: fileURL)
+            ?? migrateLegacyData(forKey: legacyKey, to: fileURL) else {
             return nil
         }
-        return try decoder.decode(TicketCommentDraft.self, from: data)
+        do {
+            let draft = try decoder.decode(TicketCommentDraft.self, from: data)
+            guard !ProtectedLocalCache.isExpired(draft.updatedAt, maxAge: maxAge) else {
+                clear(ticketId: ticketId, userId: userId)
+                return nil
+            }
+            return draft
+        } catch {
+            clear(ticketId: ticketId, userId: userId)
+            return nil
+        }
     }
 
     public func save(_ draft: TicketCommentDraft) throws {
@@ -74,14 +95,36 @@ public actor TicketCommentDraftStore {
         var stored = draft
         stored.updatedAt = Date()
         let data = try encoder.encode(stored)
-        defaults.set(data, forKey: key(ticketId: draft.ticketId, userId: draft.userId))
+        try ProtectedLocalCache.write(
+            data,
+            to: fileURL(ticketId: draft.ticketId, userId: draft.userId),
+            rootURL: directoryURL
+        )
+        legacyDefaults.removeObject(forKey: key(ticketId: draft.ticketId, userId: draft.userId))
     }
 
     public func clear(ticketId: Int, userId: Int) {
-        defaults.removeObject(forKey: key(ticketId: ticketId, userId: userId))
+        ProtectedLocalCache.remove(fileURL(ticketId: ticketId, userId: userId))
+        legacyDefaults.removeObject(forKey: key(ticketId: ticketId, userId: userId))
     }
 
     private func key(ticketId: Int, userId: Int) -> String {
         "\(keyPrefix).user-\(userId).ticket-\(ticketId)"
+    }
+
+    private func fileURL(ticketId: Int, userId: Int) -> URL {
+        ProtectedLocalCache.fileURL(
+            rootURL: directoryURL,
+            userId: userId,
+            category: "comment-drafts",
+            key: "ticket-\(ticketId)"
+        )
+    }
+
+    private func migrateLegacyData(forKey key: String, to fileURL: URL) throws -> Data? {
+        guard let data = legacyDefaults.data(forKey: key) else { return nil }
+        try ProtectedLocalCache.write(data, to: fileURL, rootURL: directoryURL)
+        legacyDefaults.removeObject(forKey: key)
+        return data
     }
 }
