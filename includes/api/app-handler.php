@@ -94,7 +94,10 @@ function api_app_home()
     $limit = (int) ($_GET['limit'] ?? 5);
 
     $app_shell = app_shell_payload($user);
-    $home = app_feed_payload($user, $limit);
+    $home = app_feed_payload($user, $limit, [
+        'period' => (string) ($_GET['period'] ?? 'last_30_days'),
+        'time_scope' => (string) ($_GET['time_scope'] ?? 'mine'),
+    ]);
 
     api_app_contract_success(
         ['app_shell' => $app_shell, 'home' => $home],

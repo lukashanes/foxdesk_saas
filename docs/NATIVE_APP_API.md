@@ -128,9 +128,16 @@ Frozen `data.app_shell` keys:
 
 ### App Home
 
-`GET /api/mobile/v1/work?limit=5`
+`GET /api/mobile/v1/work?limit=5&period=last_30_days&time_scope=mine`
 
-Compatibility: `GET index.php?page=api&action=app-home&limit=5`
+Compatibility: `GET index.php?page=api&action=app-home&limit=5&period=last_30_days&time_scope=mine`
+
+Dashboard time query parameters:
+
+- `period`: `today`, `this_week`, `last_30_days`, `this_month`, or
+  `last_month`. The iOS app persists the last selection locally.
+- `time_scope`: `mine` or `team`. `team` is accepted only for admins; other
+  users receive the personal scope.
 
 Frozen `data.home` keys:
 
@@ -158,7 +165,8 @@ signed-in user.
 `time` is the native Dashboard worked-time block. It reuses the same Work page
 read model as the web app and returns exact, non-rounded work time:
 
-- `period`: default `last_30_days` range metadata.
+- `scope`: effective `mine`/`team` scope, its label, and `can_view_team`.
+- `period`: selected range metadata; the default is `last_30_days`.
 - `totals`: `today`, `week`, `month`, and `selected` values with minutes and
   display labels.
 - `entries`: recent work records with ticket id/hash/code/title, client,

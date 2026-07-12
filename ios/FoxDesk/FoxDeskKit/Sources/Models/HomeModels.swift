@@ -114,11 +114,18 @@ public struct HomeNotificationSummary: Codable, Sendable, Equatable {
 }
 
 public struct HomeTimeActivity: Codable, Sendable, Equatable {
+    public let scope: HomeTimeScope?
     public let period: HomeTimePeriod?
     public let totals: [String: HomeTimeTotal]?
     public let entries: [HomeTimeEntry]?
     public let team: [HomeTeamTimeMember]?
     public let chart: HomeTimeChart?
+}
+
+public struct HomeTimeScope: Codable, Sendable, Equatable {
+    public let key: String?
+    public let label: String?
+    public let canViewTeam: Bool?
 }
 
 public struct HomeTimePeriod: Codable, Sendable, Equatable {

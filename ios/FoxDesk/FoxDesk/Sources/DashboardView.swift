@@ -11,6 +11,8 @@ struct DashboardView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var cacheMessage: String?
+    @AppStorage("dashboard.time.period") private var selectedTimePeriod = "last_30_days"
+    @AppStorage("dashboard.time.scope") private var selectedTimeScope = "mine"
 
     var body: some View {
         List {
@@ -47,7 +49,14 @@ struct DashboardView: View {
 
             if let home {
                 if let time = home.time {
-                    WorkedTimeSection(time: time)
+                    WorkedTimeSection(
+                        time: time,
+                        selectedPeriod: $selectedTimePeriod,
+                        selectedScope: $selectedTimeScope,
+                        onSelectionChange: {
+                            Task { await loadHome() }
+                        }
+                    )
                 }
 
                 ActiveTimersSection(timers: home.timers ?? [])
@@ -86,9 +95,17 @@ struct DashboardView: View {
 
         do {
             let freshHome = try await session.authenticated { accessToken in
-                try await session.client.home(accessToken: accessToken, limit: 5)
+                try await session.client.home(
+                    accessToken: accessToken,
+                    limit: 5,
+                    period: selectedTimePeriod,
+                    timeScope: selectedTimeScope
+                )
             }.data.home
             home = freshHome
+            if freshHome.time?.scope?.canViewTeam != true && selectedTimeScope == "team" {
+                selectedTimeScope = "mine"
+            }
             cacheMessage = nil
             if let userId = session.user?.id {
                 try? await homeCache.save(userId: userId, tenantId: cacheTenantId, home: freshHome)

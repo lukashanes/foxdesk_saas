@@ -974,6 +974,8 @@ final class FoxDeskAPIClientTests: XCTestCase {
             XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer fdm_at_test")
             Self.assertAPIPath(request.url, "/api/mobile/v1/work")
             XCTAssertEqual(request.url?.query?.contains("limit=5"), true)
+            XCTAssertEqual(request.url?.query?.contains("period=last_30_days"), true)
+            XCTAssertEqual(request.url?.query?.contains("time_scope=mine"), true)
 
             let response = HTTPURLResponse(
                 url: request.url!,
@@ -1022,6 +1024,7 @@ final class FoxDeskAPIClientTests: XCTestCase {
                     }
                   ],
                   "time": {
+                    "scope": {"key": "mine", "label": "My time", "can_view_team": true},
                     "period": {"key": "last_30_days", "label": "Last 30 days", "start": "2026-06-06 00:00:00", "end": "2026-07-05 23:59:59"},
                     "totals": {
                       "today": {"minutes": 35, "label": "35 min"},
@@ -1133,6 +1136,8 @@ final class FoxDeskAPIClientTests: XCTestCase {
         XCTAssertEqual(result.data.home.work?["mine"]?.items?.first?.requester, "Eva Novak")
         XCTAssertEqual(result.data.home.timers?.first?.elapsedMinutes, 25)
         XCTAssertEqual(result.data.home.time?.totals?["today"]?.label, "35 min")
+        XCTAssertEqual(result.data.home.time?.scope?.key, "mine")
+        XCTAssertEqual(result.data.home.time?.scope?.canViewTeam, true)
         XCTAssertEqual(result.data.home.time?.entries?.first?.ticketCode, "TK-10042")
         XCTAssertEqual(result.data.home.time?.team?.first?.name, "Emma Carter")
         XCTAssertEqual(result.data.home.time?.team?.first?.avatar, "uploads/avatar-emma.jpg")
@@ -3111,6 +3116,7 @@ final class FoxDeskAPIClientTests: XCTestCase {
                 )
             ],
             time: HomeTimeActivity(
+                scope: HomeTimeScope(key: "mine", label: "My time", canViewTeam: true),
                 period: HomeTimePeriod(
                     key: "last_30_days",
                     label: "Last 30 days",

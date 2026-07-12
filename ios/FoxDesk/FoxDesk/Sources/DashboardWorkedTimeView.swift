@@ -3,6 +3,17 @@ import FoxDeskKit
 
 struct WorkedTimeSection: View {
     let time: HomeTimeActivity
+    @Binding var selectedPeriod: String
+    @Binding var selectedScope: String
+    let onSelectionChange: () -> Void
+
+    private let periodOptions = [
+        ("today", "Today"),
+        ("this_week", "This week"),
+        ("last_30_days", "Last 30 days"),
+        ("this_month", "This month"),
+        ("last_month", "Last month")
+    ]
 
     var body: some View {
         Section {
@@ -18,13 +29,38 @@ struct WorkedTimeSection: View {
                     }
                 }
 
-                WorkedTimeTotalsRow(totals: time.totals ?? [:])
+                if time.scope?.canViewTeam == true {
+                    Picker("Time view", selection: $selectedScope) {
+                        Text("My time").tag("mine")
+                        Text("Team time").tag("team")
+                    }
+                    .pickerStyle(.segmented)
+                    .onChange(of: selectedScope) { _, _ in
+                        onSelectionChange()
+                    }
+                }
+
+                Picker("Period", selection: $selectedPeriod) {
+                    ForEach(periodOptions, id: \.0) { key, label in
+                        Text(label).tag(key)
+                    }
+                }
+                .pickerStyle(.menu)
+                .onChange(of: selectedPeriod) { _, _ in
+                    onSelectionChange()
+                }
+
+                WorkedTimeTotalsRow(
+                    totals: time.totals ?? [:],
+                    selectedPeriodKey: selectedPeriod,
+                    selectedPeriodLabel: time.period?.label ?? "Last 30 days"
+                )
 
                 if let chart = time.chart, let days = chart.days, !days.isEmpty {
                     WorkedTimeChart(chart: chart)
                 }
 
-                if let entries = time.entries, !entries.isEmpty {
+                if selectedScope == "mine", let entries = time.entries, !entries.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Recent work")
                             .font(.subheadline.weight(.semibold))
@@ -39,7 +75,7 @@ struct WorkedTimeSection: View {
                     }
                 }
 
-                if let team = time.team, !team.isEmpty {
+                if selectedScope == "team", let team = time.team, !team.isEmpty {
                     TeamActivityList(team: team)
                 }
             }
@@ -50,12 +86,21 @@ struct WorkedTimeSection: View {
 
 private struct WorkedTimeTotalsRow: View {
     let totals: [String: HomeTimeTotal]
+    let selectedPeriodKey: String
+    let selectedPeriodLabel: String
 
-    private let items = [
-        ("today", "Today"),
-        ("week", "This week"),
-        ("month", "This month")
-    ]
+    private var items: [(String, String)] {
+        switch selectedPeriodKey {
+        case "today":
+            return [("today", "Today"), ("week", "This week"), ("month", "This month")]
+        case "this_week":
+            return [("today", "Today"), ("week", "This week"), ("month", "This month")]
+        case "this_month":
+            return [("today", "Today"), ("week", "This week"), ("month", "This month")]
+        default:
+            return [("today", "Today"), ("week", "This week"), ("selected", selectedPeriodLabel)]
+        }
+    }
 
     var body: some View {
         HStack(spacing: 10) {
@@ -345,7 +390,7 @@ private struct WorkedTimeChart: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Last 30 days")
+                Text(chartPeriodLabel)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -393,6 +438,13 @@ private struct WorkedTimeChart: View {
         }
         .padding(12)
         .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private var chartPeriodLabel: String {
+        guard let first = days.first?.fullLabel, let last = days.last?.fullLabel else {
+            return "Worked time"
+        }
+        return first == last ? first : "\(first) – \(last)"
     }
 
     @ViewBuilder

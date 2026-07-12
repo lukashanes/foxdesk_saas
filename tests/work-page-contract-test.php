@@ -25,7 +25,8 @@ assert_work_page(strpos($work, 'work-range-controls') !== false, 'work page must
 assert_work_page(strpos($work, 'class="work-custom-period"') < strpos($work, 'class="work-time-grid"'), 'custom date range controls must stay above KPI cards.');
 assert_work_page(strpos($work, 'data-work-period-chart') !== false, 'work page must render the selected-period activity chart.');
 assert_work_page(strpos($timeModel, "'last_30_days' => t('Last 30 days')") !== false, 'work time period switch must include the last-30-days graph preset.');
-assert_work_page(strpos($timeModel, "\$request['period'] ?? 'last_30_days'") !== false, 'work dashboard must default the graph to the last 30 days.');
+assert_work_page(strpos($timeModel, "foxdesk_work_time_period") !== false, 'work dashboard must remember the selected graph period.');
+assert_work_page(strpos($timeModel, "'last_30_days'" ) !== false, 'work dashboard must default the graph to the last 30 days.');
 assert_work_page(strpos($timeModel, "\$period = 'last_30_days';") !== false, 'invalid work graph periods must fall back to the last 30 days.');
 assert_work_page(strpos($work, '$chart_agents') !== false, 'work chart must build a visible agent legend.');
 assert_work_page(strpos($work, 'data-work-hours-chart-canvas') !== false, 'work chart must render a real chart canvas, not a calendar-like manual grid.');
@@ -98,5 +99,10 @@ assert_work_page(strpos($timeModel, "'entries' => \$entries") !== false, 'team t
 assert_work_page(strpos($timeModel, 'function time_activity_period_chart') !== false, 'time activity model must expose selected-period chart data.');
 assert_work_page(strpos($timeModel, "'period_chart' => time_activity_period_chart") !== false, 'work model must pass selected-period chart data to the page.');
 assert_work_page(strpos($timeModel, 'time_activity_team_summary($period, 80, $team_activity_filter[\'limit\'], $team_activity_period)') !== false, 'work model must pass the team activity filter into team summaries.');
+assert_work_page(strpos($timeModel, 'function time_activity_view_scope_from_request') !== false, 'work model must expose remembered personal/team time scope.');
+assert_work_page(strpos($timeModel, "foxdesk_work_time_scope") !== false, 'work model must remember the selected personal/team scope.');
+assert_work_page(strpos($timeModel, "'display_totals'") !== false, 'work model must expose totals for the selected personal/team scope.');
+assert_work_page(strpos($work, 'work-scope-switch') !== false, 'admins must be able to switch dashboard time between personal and team scope.');
+assert_work_page(strpos($work, 'name="time_scope"') !== false, 'custom period form must preserve the selected personal/team scope.');
 
 echo "Work page contract tests passed\n";

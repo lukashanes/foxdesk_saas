@@ -224,7 +224,7 @@ function app_feed_time_day(array $day): array
     ];
 }
 
-function app_feed_time_activity(array $user): array
+function app_feed_time_activity(array $user, array $request = []): array
 {
     if (!function_exists('time_activity_work_model')) {
         return [
@@ -236,13 +236,14 @@ function app_feed_time_activity(array $user): array
     }
 
     $model = time_activity_work_model($user, [
-        'period' => 'last_30_days',
+        'period' => (string) ($request['period'] ?? 'last_30_days'),
+        'time_scope' => (string) ($request['time_scope'] ?? 'mine'),
         'my_activity' => 'last3',
         'team_activity' => 'last3',
     ]);
 
     $totals = [];
-    foreach (($model['my_totals'] ?? []) as $key => $minutes) {
+    foreach (($model['display_totals'] ?? $model['my_totals'] ?? []) as $key => $minutes) {
         $minutes = (int) $minutes;
         $totals[$key] = [
             'minutes' => $minutes,
@@ -268,6 +269,11 @@ function app_feed_time_activity(array $user): array
     $chart_total = (int) ($chart['total_minutes'] ?? 0);
 
     return [
+        'scope' => [
+            'key' => (string) ($model['view_scope']['key'] ?? 'mine'),
+            'label' => (string) ($model['view_scope']['label'] ?? t('My time')),
+            'can_view_team' => !empty($model['view_scope']['can_view_team']),
+        ],
         'period' => [
             'key' => (string) ($model['period']['period'] ?? 'last_30_days'),
             'label' => (string) ($model['period']['label'] ?? t('Last 30 days')),
@@ -286,7 +292,7 @@ function app_feed_time_activity(array $user): array
     ];
 }
 
-function app_feed_payload(array $user, int $limit = 5): array
+function app_feed_payload(array $user, int $limit = 5, array $request = []): array
 {
     $limit = max(1, min(20, $limit));
 
@@ -301,7 +307,7 @@ function app_feed_payload(array $user, int $limit = 5): array
             ? app_feed_queue_sections(inbox_summary($user, $limit))
             : [],
         'timers' => app_feed_active_timers($user),
-        'time' => app_feed_time_activity($user),
+        'time' => app_feed_time_activity($user, $request),
         'notifications' => app_feed_notifications($user),
     ];
 }

@@ -20,13 +20,31 @@ function time_activity_period_options(): array
 
 function time_activity_period_from_request(array $request): array
 {
-    $period = (string) ($request['period'] ?? 'last_30_days');
+    $session_key = 'foxdesk_work_time_period';
+    $stored_period = session_status() === PHP_SESSION_ACTIVE
+        ? (string) ($_SESSION[$session_key] ?? '')
+        : '';
+    $period = (string) ($request['period'] ?? ($stored_period !== '' ? $stored_period : 'last_30_days'));
     if (!array_key_exists($period, time_activity_period_options())) {
         $period = 'last_30_days';
     }
 
-    $from_date = trim((string) ($request['from_date'] ?? ''));
-    $to_date = trim((string) ($request['to_date'] ?? ''));
+    $stored_from = session_status() === PHP_SESSION_ACTIVE
+        ? (string) ($_SESSION['foxdesk_work_time_from_date'] ?? '')
+        : '';
+    $stored_to = session_status() === PHP_SESSION_ACTIVE
+        ? (string) ($_SESSION['foxdesk_work_time_to_date'] ?? '')
+        : '';
+    $from_date = trim((string) ($request['from_date'] ?? ($period === 'custom' ? $stored_from : '')));
+    $to_date = trim((string) ($request['to_date'] ?? ($period === 'custom' ? $stored_to : '')));
+
+    if (session_status() === PHP_SESSION_ACTIVE && array_key_exists('period', $request)) {
+        $_SESSION[$session_key] = $period;
+        if ($period === 'custom') {
+            $_SESSION['foxdesk_work_time_from_date'] = $from_date;
+            $_SESSION['foxdesk_work_time_to_date'] = $to_date;
+        }
+    }
     $bounds = function_exists('get_time_range_bounds')
         ? get_time_range_bounds($period, $from_date, $to_date)
         : ['range' => $period, 'start' => date('Y-m-d 00:00:00', strtotime('-29 days')), 'end' => date('Y-m-d 23:59:59')];
@@ -38,6 +56,32 @@ function time_activity_period_from_request(array $request): array
         'end' => $bounds['end'] ?? null,
         'from_date' => $from_date,
         'to_date' => $to_date,
+    ];
+}
+
+function time_activity_view_scope_from_request(array $request, bool $can_view_team): array
+{
+    $session_key = 'foxdesk_work_time_scope';
+    $stored_scope = session_status() === PHP_SESSION_ACTIVE
+        ? (string) ($_SESSION[$session_key] ?? '')
+        : '';
+    $scope = (string) ($request['time_scope'] ?? ($stored_scope !== '' ? $stored_scope : 'mine'));
+    if (!in_array($scope, ['mine', 'team'], true) || (!$can_view_team && $scope === 'team')) {
+        $scope = 'mine';
+    }
+
+    if (session_status() === PHP_SESSION_ACTIVE && array_key_exists('time_scope', $request)) {
+        $_SESSION[$session_key] = $scope;
+    }
+
+    return [
+        'key' => $scope,
+        'label' => $scope === 'team' ? t('Team time') : t('My time'),
+        'can_view_team' => $can_view_team,
+        'options' => [
+            'mine' => t('My time'),
+            'team' => t('Team time'),
+        ],
     ];
 }
 
@@ -486,6 +530,18 @@ function time_activity_team_summary(array $period, int $limit = 50, ?int $entry_
     return $rows;
 }
 
+function time_activity_team_totals(array $team): array
+{
+    $totals = time_activity_empty_totals();
+    foreach ($team as $row) {
+        foreach (array_keys($totals) as $key) {
+            $totals[$key] += (int) ($row['totals'][$key] ?? 0);
+        }
+    }
+
+    return $totals;
+}
+
 function time_activity_work_model(array $user, array $request): array
 {
     $period = time_activity_period_from_request($request);
@@ -495,10 +551,18 @@ function time_activity_work_model(array $user, array $request): array
     $team_activity_period = time_activity_period_for_log_filter($team_activity_filter['key']);
     $user_id = (int) ($user['id'] ?? 0);
     $is_admin_user = function_exists('is_admin') ? is_admin() : (($user['role'] ?? '') === 'admin');
+    $view_scope = time_activity_view_scope_from_request($request, $is_admin_user);
+    $team = $is_admin_user
+        ? time_activity_team_summary($period, 80, $team_activity_filter['limit'], $team_activity_period)
+        : [];
+    $my_totals = time_activity_user_totals($user_id, $period);
+    $team_totals = time_activity_team_totals($team);
+    $display_totals = $view_scope['key'] === 'team' ? $team_totals : $my_totals;
 
     return [
         'period' => $period,
         'period_options' => time_activity_period_options(),
+        'view_scope' => $view_scope,
         'activity_scope' => [
             'key' => $my_activity_filter['key'],
             'limit' => $my_activity_filter['limit'],
@@ -506,10 +570,12 @@ function time_activity_work_model(array $user, array $request): array
         ],
         'my_activity_filter' => $my_activity_filter,
         'team_activity_filter' => $team_activity_filter,
-        'my_totals' => time_activity_user_totals($user_id, $period),
+        'my_totals' => $my_totals,
+        'team_totals' => $team_totals,
+        'display_totals' => $display_totals,
         'my_entries' => time_activity_user_entries($user_id, $my_activity_period, $my_activity_filter['limit']),
-        'team' => $is_admin_user ? time_activity_team_summary($period, 80, $team_activity_filter['limit'], $team_activity_period) : [],
-        'period_chart' => time_activity_period_chart($user_id, $is_admin_user, $period),
-        'week_chart' => time_activity_weekly_chart($user_id, $is_admin_user),
+        'team' => $team,
+        'period_chart' => time_activity_period_chart($user_id, $view_scope['key'] === 'team', $period),
+        'week_chart' => time_activity_weekly_chart($user_id, $view_scope['key'] === 'team'),
     ];
 }

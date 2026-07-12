@@ -127,10 +127,19 @@ public final class FoxDeskAPIClient {
         try await send(path: "me", bearerToken: accessToken)
     }
 
-    public func home(accessToken: String, limit: Int = 5) async throws -> AppEnvelope<HomePayload> {
+    public func home(
+        accessToken: String,
+        limit: Int = 5,
+        period: String = "last_30_days",
+        timeScope: String = "mine"
+    ) async throws -> AppEnvelope<HomePayload> {
         try await send(
             path: "work",
-            queryItems: [URLQueryItem(name: "limit", value: String(limit))],
+            queryItems: [
+                URLQueryItem(name: "limit", value: String(limit)),
+                URLQueryItem(name: "period", value: period),
+                URLQueryItem(name: "time_scope", value: timeScope)
+            ],
             bearerToken: accessToken
         )
     }
