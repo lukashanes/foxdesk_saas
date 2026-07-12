@@ -271,9 +271,20 @@ async function runWriteSmoke(accessToken) {
   });
 
   const now = new Date();
-  const manualDate = now.toISOString().slice(0, 10);
-  const manualStartTime = '09:00';
-  const manualEndTime = '09:05';
+  const manualEnd = new Date(now.getTime() - (5 * 60 * 1000));
+  const manualStart = new Date(now.getTime() - (10 * 60 * 1000));
+  const datePart = (date) => [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+  const timePart = (date) => [
+    String(date.getHours()).padStart(2, '0'),
+    String(date.getMinutes()).padStart(2, '0'),
+  ].join(':');
+  const manualDate = datePart(manualStart);
+  const manualStartTime = timePart(manualStart);
+  const manualEndTime = timePart(manualEnd);
   const title = `[iOS smoke] ${now.toISOString()}`;
   const clientId = asPositiveInt(config.clientId) || asPositiveInt(options?.defaults?.organization_id) || firstId(clients);
   const statusId = asPositiveInt(config.statusId) || asPositiveInt(options?.defaults?.status_id) || firstId(statuses);

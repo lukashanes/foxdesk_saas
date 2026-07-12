@@ -76,20 +76,11 @@ struct TicketDetailView: View {
         .navigationTitle(detail?.ticket.code ?? "Ticket")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                HStack {
-                    if canManageTicket {
-                        Button("Manage") {
-                            isManagePresented = true
-                        }
+            if canManageTicket {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Manage") {
+                        isManagePresented = true
                     }
-
-                    Button {
-                        Task { await loadDetail() }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .disabled(isLoading)
                 }
             }
         }

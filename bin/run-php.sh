@@ -14,7 +14,7 @@ fi
 if command -v docker >/dev/null 2>&1 && docker image inspect php:8.2-cli >/dev/null 2>&1; then
     ENV_ARGS=""
     for ENV_NAME in \
-        APNS_AUTH_KEY APNS_AUTH_KEY_PATH APNS_BUNDLE_ID APNS_KEY_ID APNS_TEAM_ID APNS_TEST_DEVICE_TOKEN APNS_TEST_ENV APNS_TEST_NOTIFICATION_ID APNS_TEST_TICKET_ID APNS_TEST_TYPE \
+        APNS_AUTH_KEY APNS_BUNDLE_ID APNS_KEY_ID APNS_TEAM_ID APNS_TEST_DEVICE_TOKEN APNS_TEST_ENV APNS_TEST_ENVIRONMENT APNS_TEST_NOTIFICATION_ID APNS_TEST_TICKET_ID APNS_TEST_TYPE \
         APP_DEBUG APP_FALLBACK_HOST APP_HOST APP_MARKETING_HOST APP_NAME APP_URL \
         BILLING_CLOUD_BASE_PRICE_CENTS BILLING_CURRENCY BILLING_ENABLED BILLING_INCLUDED_STORAGE_BYTES BILLING_PAST_DUE_GRACE_DAYS BILLING_STORAGE_OVERAGE_PRICE_CENTS BILLING_TRIAL_DAYS BILLING_TRIAL_GRACE_DAYS \
         CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_EMAIL_API_TOKEN CLOUDFLARE_EMAIL_FROM CLOUDFLARE_EMAIL_FROM_NAME CLOUDFLARE_EMAIL_REPLY_TO \
@@ -27,8 +27,16 @@ if command -v docker >/dev/null 2>&1 && docker image inspect php:8.2-cli >/dev/n
             ENV_ARGS="$ENV_ARGS --env $ENV_NAME"
         fi
     done
+    APNS_KEY_MOUNT=""
+    if [ -n "${APNS_AUTH_KEY_PATH:-}" ]; then
+        if [ -f "$APNS_AUTH_KEY_PATH" ]; then
+            APNS_KEY_MOUNT="-v $APNS_AUTH_KEY_PATH:/run/foxdesk-apns-smoke-key.p8:ro --env APNS_AUTH_KEY_PATH=/run/foxdesk-apns-smoke-key.p8"
+        else
+            ENV_ARGS="$ENV_ARGS --env APNS_AUTH_KEY_PATH"
+        fi
+    fi
     # shellcheck disable=SC2086
-    exec docker run --rm $ENV_ARGS -v "$ROOT_DIR:/app" -w /app php:8.2-cli php "$@"
+    exec docker run --rm $ENV_ARGS $APNS_KEY_MOUNT -v "$ROOT_DIR:/app" -w /app php:8.2-cli php "$@"
 fi
 
 echo "PHP CLI was not found."

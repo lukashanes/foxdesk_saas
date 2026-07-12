@@ -10,6 +10,10 @@ or self-hosted setup screens. The API source language is English. Localized text
 can be rendered by the client or returned by future localized display fields,
 but response keys stay English.
 
+Native mobile sessions are issued only to workspace users with the `agent` or
+`admin` role. Customer accounts continue to use the customer-facing web app and
+cannot create or refresh an iOS session.
+
 ## Response Envelope
 
 All `app-*` endpoints return the same envelope:

@@ -154,6 +154,29 @@ function seedPermissionFixture() {
   };
 }
 
+test('native iOS login rejects customer accounts', async () => {
+  const fixture = seedPermissionFixture();
+  const api = await request.newContext({ baseURL });
+
+  try {
+    const response = await api.post('/index.php?page=api&action=mobile-login', {
+      data: {
+        email: 'beta.client@example.test',
+        password: fixture.password,
+        device_id: 'e2e-customer-device',
+        device_name: 'E2E iPhone',
+        app_version: 'e2e'
+      }
+    });
+
+    expect(response.status()).toBe(403);
+    const payload = await response.json();
+    expect(JSON.stringify(payload)).toContain('workspace agents and admins');
+  } finally {
+    await api.dispose();
+  }
+});
+
 test('concurrent idempotent API requests create one ticket', async () => {
   const fixture = seedPermissionFixture();
   const title = `Concurrent idempotency ${Date.now()}`;

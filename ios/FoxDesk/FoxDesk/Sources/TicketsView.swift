@@ -11,8 +11,6 @@ struct TicketsView: View {
     @State private var tickets: [TicketSummary] = []
     @State private var totalCount: Int?
     @State private var hasMoreTickets = false
-    @State private var createdTicketRoute: TicketRoute?
-    @State private var isNewTicketPresented = false
     @State private var isLoading = false
     @State private var isLoadingMore = false
     @State private var errorMessage: String?
@@ -87,32 +85,6 @@ struct TicketsView: View {
         }
         .task(id: searchText) {
             await updateSubmittedSearch()
-        }
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    isNewTicketPresented = true
-                } label: {
-                    Label("New ticket", systemImage: "plus")
-                }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    Task { await loadTickets(reset: true) }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                }
-                .disabled(isLoading)
-            }
-        }
-        .navigationDestination(item: $createdTicketRoute) { route in
-            TicketDetailView(ticketID: route.id, ticketHash: route.hash)
-        }
-        .sheet(isPresented: $isNewTicketPresented) {
-            NewTicketView { ticketID in
-                createdTicketRoute = TicketRoute(id: ticketID, hash: nil)
-                await loadTickets(reset: true)
-            }
         }
         .task(id: selectedView + submittedSearch) {
             await loadTickets(reset: true)

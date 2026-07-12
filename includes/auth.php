@@ -1199,6 +1199,14 @@ function authenticate_mobile_session()
     if (!$user) {
         return null;
     }
+    if (!in_array(strtolower((string) ($user['role'] ?? '')), ['agent', 'admin'], true)) {
+        try {
+            db_update('mobile_sessions', ['revoked_at' => $now], 'id = ?', [(int) $session['id']]);
+        } catch (Throwable $e) {
+            // The role check is authoritative even if cleanup cannot be persisted.
+        }
+        return null;
+    }
 
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['user_email'] = $user['email'];

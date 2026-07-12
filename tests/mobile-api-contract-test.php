@@ -72,6 +72,10 @@ $assert(
 );
 
 $assert(str_contains($handler, 'function api_mobile_login'), 'Mobile login handler is missing.');
+$assert(str_contains($handler, 'function mobile_api_require_staff_user'), 'Mobile login must enforce the agent/admin product boundary.');
+$assert(str_contains($handler, "['agent', 'admin']"), 'Mobile login must allow only workspace agents and admins.');
+$assert(str_contains($handler, 'The FoxDesk iOS app is available to workspace agents and admins.'), 'Mobile role rejection must explain the supported audience.');
+$assert(str_contains($auth, "['agent', 'admin']"), 'Existing mobile sessions must be revoked when the user no longer has a staff role.');
 $assert(str_contains($handler, 'function api_mobile_verify_2fa'), 'Mobile 2FA verification handler is missing.');
 $assert(str_contains($handler, 'function api_mobile_refresh'), 'Mobile refresh handler is missing.');
 $assert(
@@ -483,6 +487,8 @@ $assert(str_contains($packageJson, '"ios:screenshots": "./bin/ios-app-store-scre
 $assert(str_contains($packageJson, '"ios:api:smoke": "node bin/ios-api-smoke.js"'), 'package.json must expose the iOS mobile API live smoke.');
 $assert(str_contains($packageJson, '"ios:demo:check": "node bin/ios-demo-account-check.js"'), 'package.json must expose the iOS demo reviewer account check.');
 $assert(str_contains($packageJson, '"ios:apns:smoke": "./bin/run-php.sh bin/test-apns-push.php"'), 'package.json must expose the iOS APNs smoke gate.');
+$assert(str_contains($iosAPNsSmoke, "getenv('APNS_TEST_ENVIRONMENT')"), 'APNs smoke must honor the release env environment key.');
+$assert(str_contains($phpRunner, '/run/foxdesk-apns-smoke-key.p8'), 'PHP Docker fallback must mount the local APNs key path without copying key contents.');
 $assert(str_contains($iosTestFlightRunbook, 'Internal TestFlight checklist'), 'iOS TestFlight runbook must include an internal checklist.');
 $assert(str_contains($iosTestFlightRunbook, 'Demo reviewer account'), 'iOS TestFlight runbook must cover the reviewer/demo account.');
 $assert(str_contains($iosTestFlightRunbook, 'No billing or upgrade flow inside iOS'), 'iOS TestFlight runbook must document the no-billing app boundary.');

@@ -67,14 +67,6 @@ struct NotificationsView: View {
                 }
                 .disabled(isLoading || unreadCount == 0)
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    Task { await loadNotifications(reset: true) }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                }
-                .disabled(isLoading)
-            }
         }
         .navigationDestination(item: $selectedTicket) { route in
             TicketDetailView(ticketID: route.id, ticketHash: route.hash)

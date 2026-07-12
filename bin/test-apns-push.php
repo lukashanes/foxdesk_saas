@@ -48,7 +48,8 @@ TXT;
 
 $config = apns_push_config();
 $token = trim((string) ($option('--token') ?? getenv('APNS_TEST_DEVICE_TOKEN') ?: ''));
-$environment = strtolower(trim((string) ($option('--environment', getenv('APNS_TEST_ENV') ?: 'sandbox'))));
+$environment_default = getenv('APNS_TEST_ENVIRONMENT') ?: getenv('APNS_TEST_ENV') ?: 'sandbox';
+$environment = strtolower(trim((string) ($option('--environment', $environment_default))));
 if (!in_array($environment, ['sandbox', 'production'], true)) {
     fwrite(STDERR, "Invalid APNs environment. Use sandbox or production.\n");
     exit(1);

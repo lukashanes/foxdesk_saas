@@ -228,6 +228,18 @@ function mobile_api_find_user_by_email(string $email): ?array
     return $user ?: null;
 }
 
+function mobile_api_is_staff_user(array $user): bool
+{
+    return in_array(strtolower((string) ($user['role'] ?? '')), ['agent', 'admin'], true);
+}
+
+function mobile_api_require_staff_user(array $user): void
+{
+    if (!mobile_api_is_staff_user($user)) {
+        api_error('The FoxDesk iOS app is available to workspace agents and admins.', 403);
+    }
+}
+
 function mobile_api_user_payload(array $user): array
 {
     return [
@@ -375,6 +387,7 @@ function api_mobile_login(): void
         }
         api_error('Invalid email or password.', 401);
     }
+    mobile_api_require_staff_user($user);
 
     require_once BASE_PATH . '/includes/totp.php';
     ensure_totp_columns();
@@ -447,6 +460,7 @@ function api_mobile_verify_2fa(): void
     if (!$user) {
         api_error('Unauthorized', 401);
     }
+    mobile_api_require_staff_user($user);
     if (function_exists('set_current_tenant_from_user')) {
         set_current_tenant_from_user($user);
     }
@@ -523,6 +537,7 @@ function api_mobile_refresh(): void
     if (!$user) {
         api_error('Unauthorized', 401);
     }
+    mobile_api_require_staff_user($user);
     if (function_exists('set_current_tenant_from_user')) {
         set_current_tenant_from_user($user);
     }
@@ -564,6 +579,7 @@ function api_mobile_me(): void
     if (!$user) {
         api_error('Unauthorized', 401);
     }
+    mobile_api_require_staff_user($user);
 
     api_success([
         'user' => mobile_api_user_payload($user),
