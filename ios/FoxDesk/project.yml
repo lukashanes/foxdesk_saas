@@ -43,14 +43,10 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: net.foxdesk.ios
         MARKETING_VERSION: 1.0
         CURRENT_PROJECT_VERSION: 3
-        GENERATE_INFOPLIST_FILE: YES
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: FoxDesk/Info.plist
         CODE_SIGN_ENTITLEMENTS: FoxDesk/FoxDesk.entitlements
         DEVELOPMENT_TEAM: XS4ZQYPKLB
-        INFOPLIST_KEY_CFBundleDisplayName: FoxDesk
-        INFOPLIST_KEY_FOXDESK_API_BASE_URL: $(FOXDESK_API_BASE_URL)
-        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
-        INFOPLIST_KEY_NSCameraUsageDescription: Take photos and attach them to FoxDesk tickets.
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1"
         SUPPORTS_MACCATALYST: NO

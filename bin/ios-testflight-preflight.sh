@@ -157,7 +157,8 @@ contains "$ARCHIVE_PREFLIGHT" "PRODUCT_BUNDLE_IDENTIFIER = net.foxdesk.ios" "iOS
 contains "$ARCHIVE_PREFLIGHT" "-configuration Production" "iOS archive preflight must inspect the Production archive configuration."
 contains "$ARCHIVE_PREFLIGHT" "CONFIGURATION = Production" "iOS archive preflight must verify Production build settings."
 contains "$ARCHIVE_PREFLIGHT" "APS_ENVIRONMENT = production" "iOS archive preflight must verify production APNs for Production archives."
-contains "$ARCHIVE_PREFLIGHT" "INFOPLIST_KEY_FOXDESK_API_BASE_URL = https://app.foxdesk.net/index.php" "iOS archive preflight must verify the production API base."
+contains "$ARCHIVE_PREFLIGHT" "FOXDESK_API_BASE_URL = https://app.foxdesk.net/index.php" "iOS archive preflight must verify the production API base."
+contains "$ARCHIVE_PREFLIGHT" "INFOPLIST_FILE = FoxDesk/Info.plist" "iOS archive preflight must verify the explicit app Info.plist."
 
 contains "$RUNBOOK" "Internal TestFlight checklist" "Runbook must include the internal TestFlight checklist."
 contains "$RUNBOOK" "Demo reviewer account" "Runbook must cover the App Review demo account."

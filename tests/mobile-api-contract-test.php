@@ -225,6 +225,7 @@ $iosAppStoreScreenshots = file_get_contents($root . '/bin/ios-app-store-screensh
 $phpRunner = file_get_contents($root . '/bin/run-php.sh');
 $packageJson = file_get_contents($root . '/package.json');
 $iosProject = file_get_contents($root . '/ios/FoxDesk/project.yml');
+$iosInfoPlist = file_get_contents($root . '/ios/FoxDesk/FoxDesk/Info.plist');
 $iosEntitlements = file_get_contents($root . '/ios/FoxDesk/FoxDesk/FoxDesk.entitlements');
 $iosPrivacyManifest = file_get_contents($root . '/ios/FoxDesk/FoxDesk/PrivacyInfo.xcprivacy');
 $iosRootView = file_get_contents($root . '/ios/FoxDesk/FoxDesk/Sources/RootView.swift');
@@ -306,6 +307,7 @@ $assert($iosAppStoreScreenshots !== false, 'iOS App Store screenshot generator i
 $assert($phpRunner !== false, 'PHP runner is missing.');
 $assert($packageJson !== false, 'package.json is missing.');
 $assert($iosProject !== false, 'iOS project manifest is missing.');
+$assert($iosInfoPlist !== false, 'iOS app Info.plist is missing.');
 $assert($iosEntitlements !== false, 'iOS entitlements file is missing.');
 $assert($iosRootView !== false, 'iOS RootView is missing.');
 $assert($iosDashboardView !== false, 'iOS Dashboard view is missing.');
@@ -747,7 +749,8 @@ $assert(str_contains($iosArchivePreflight, '-destination \'generic/platform=iOS\
 $assert(str_contains($iosArchivePreflight, '-configuration Production'), 'iOS archive preflight must inspect the Production archive configuration.');
 $assert(str_contains($iosArchivePreflight, 'CONFIGURATION = Production'), 'iOS archive preflight must verify Production build settings.');
 $assert(str_contains($iosArchivePreflight, 'PRODUCT_BUNDLE_IDENTIFIER = net.foxdesk.ios'), 'iOS archive preflight must verify the Production bundle id.');
-$assert(str_contains($iosArchivePreflight, 'INFOPLIST_KEY_FOXDESK_API_BASE_URL = https://app.foxdesk.net/index.php'), 'iOS archive preflight must verify the Production API base.');
+$assert(str_contains($iosArchivePreflight, 'FOXDESK_API_BASE_URL = https://app.foxdesk.net/index.php'), 'iOS archive preflight must verify the Production API base.');
+$assert(str_contains($iosArchivePreflight, 'INFOPLIST_FILE = FoxDesk/Info.plist'), 'iOS archive preflight must verify the explicit app Info.plist.');
 $assert(str_contains($iosArchivePreflight, 'APS_ENVIRONMENT = production'), 'iOS archive preflight must verify Production APNs.');
 $assert(str_contains($iosArchivePreflight, 'xcodebuild -list -json'), 'iOS archive preflight must inspect generated schemes.');
 $assert(str_contains($iosArchivePreflight, 'xcodebuild -showBuildSettings'), 'iOS archive preflight must inspect Production build settings.');
@@ -1071,7 +1074,9 @@ $assert(str_contains($iosProject, 'Release: release'), 'iOS project must keep th
 $assert(str_contains($iosProject, 'Staging: debug'), 'iOS Staging config must stay debug so Account push diagnostics are available for physical-device smoke tests.');
 $assert(str_contains($iosProject, 'config: Production'), 'iOS scheme archive action must use the Production configuration.');
 $assert(str_contains($iosProject, 'APS_ENVIRONMENT: production'), 'iOS Production/Release configs must set production APNs entitlement.');
-$assert(str_contains($iosProject, 'INFOPLIST_KEY_FOXDESK_API_BASE_URL: $(FOXDESK_API_BASE_URL)'), 'iOS app target must pass the API base URL through Info.plist.');
+$assert(str_contains($iosProject, 'INFOPLIST_FILE: FoxDesk/Info.plist'), 'iOS app target must use the explicit Info.plist.');
+$assert(str_contains($iosInfoPlist, '<key>FOXDESK_API_BASE_URL</key>'), 'iOS Info.plist must declare the API base key.');
+$assert(str_contains($iosInfoPlist, '<string>$(FOXDESK_API_BASE_URL)</string>'), 'iOS Info.plist must read the API base from the active build configuration.');
 $assert(str_contains($iosProject, 'Staging:') && str_contains($iosProject, 'https://staging.app.foxdesk.net/index.php'), 'iOS Staging config must point at the staging SaaS backend.');
 $assert(str_contains($iosProject, 'FoxDeskTests'), 'iOS project must include app-level FoxDeskTests.');
 $assert(str_contains($iosProject, '- FoxDeskTests'), 'iOS scheme must run app-level FoxDeskTests.');
@@ -1167,7 +1172,7 @@ $assert(str_contains($iosAPIClient, 'configuration.httpCookieStorage = nil'), 'i
 $assert(str_contains($iosAPIClient, 'configuration.httpShouldSetCookies = false'), 'iOS API client default session must not accept web session cookies.');
 $assert(str_contains($iosAPIClient, 'configuration.requestCachePolicy = .reloadIgnoringLocalCacheData'), 'iOS API client default session should rely on app-level caches rather than URL cache.');
 $assert(str_contains($iosAPIClientTests, 'testDefaultMobileSessionDoesNotUseBrowserCookies'), 'iOS API tests must prove the default mobile session does not use browser cookies.');
-$assert(str_contains($iosProject, 'INFOPLIST_KEY_NSCameraUsageDescription'), 'iOS app must declare camera usage for ticket photo capture.');
+$assert(str_contains($iosInfoPlist, '<key>NSCameraUsageDescription</key>'), 'iOS app must declare camera usage for ticket photo capture.');
 $assert(str_contains($iosTicketAttachmentsView, 'Label("Take photo", systemImage: "camera")'), 'iOS ticket detail must expose camera photo capture.');
 $assert(str_contains($iosTicketAttachmentsView, 'CameraCaptureView'), 'iOS ticket detail must present the camera capture view.');
 $assert(str_contains($iosCameraView, 'UIImagePickerController'), 'iOS camera capture must use the native camera controller.');
