@@ -35,13 +35,15 @@ $queues = $sources['queues'];
 $quickActions = $sources['quick_actions'];
 $homeModels = $sources['home_models'];
 
-$workedTimePosition = strpos($dashboard, 'WorkedTimeSection(time: time)');
+$workedTimePosition = strpos($dashboard, 'WorkedTimeSection(');
 $activeTimersPosition = strpos($dashboard, 'ActiveTimersSection(timers: home.timers ?? [])');
 $queuesPosition = strpos($dashboard, 'WorkQueueSections(home: home)');
 $recentUpdatesPosition = strpos($dashboard, 'RecentUpdatesSection(notifications:');
 
 $assert(str_contains($dashboard, 'ActiveTimersSection(timers: home.timers ?? [])'), 'iOS Dashboard must surface active timers.');
-$assert(str_contains($dashboard, 'WorkedTimeSection(time: time)'), 'iOS Dashboard must surface worked-time summary.');
+$assert(str_contains($dashboard, 'WorkedTimeSection('), 'iOS Dashboard must surface worked-time summary.');
+$assert(str_contains($dashboard, 'selectedPeriod: $selectedTimePeriod'), 'iOS Dashboard must pass the persisted time period into worked-time controls.');
+$assert(str_contains($dashboard, 'selectedScope: $selectedTimeScope'), 'iOS Dashboard must pass the persisted personal/team scope into worked-time controls.');
 $assert(str_contains($dashboard, 'WorkQueueSections(home: home)'), 'iOS Dashboard must surface ticket work queues.');
 $assert(str_contains($dashboard, 'RecentUpdatesSection(notifications:'), 'iOS Dashboard must surface recent ticket updates.');
 $assert(!str_contains($dashboard, 'QuickActionsSection('), 'iOS Dashboard must not duplicate bottom-tab destinations as quick actions.');
@@ -70,7 +72,10 @@ foreach (['"Today"', '"This week"', '"This month"'] as $timeLabel) {
     $assert(str_contains($workedTime, $timeLabel), "Worked-time totals must include {$timeLabel}.");
 }
 $assert(str_contains($workedTime, 'WorkedTimeChart(chart: chart)'), 'Dashboard worked time must include the period chart when provided.');
-$assert(str_contains($workedTime, 'Text("Last 30 days")'), 'Dashboard worked-time chart must default to a last-30-days visual.');
+$assert(str_contains($dashboard, '@AppStorage("dashboard.time.period")'), 'Dashboard must persist the selected worked-time period.');
+$assert(str_contains($dashboard, '@AppStorage("dashboard.time.scope")'), 'Dashboard must persist the selected personal/team time scope.');
+$assert(str_contains($workedTime, 'selectedPeriodLabel: time.period?.label ?? "Last 30 days"'), 'Dashboard worked-time summary must use the selected period label.');
+$assert(str_contains($workedTime, 'Text(chartPeriodLabel)'), 'Dashboard worked-time chart must render the selected date range dynamically.');
 $assert(str_contains($workedTime, 'Text("Recent work")'), 'Dashboard must show recent ticket work under worked time.');
 $assert(str_contains($workedTime, 'TeamActivityList(team: team)'), 'Admin-capable Dashboard must expose team activity when the API provides it.');
 $assert(str_contains($workedTime, 'TeamMemberWorkSheet'), 'Team activity must let admins inspect a team member workload.');

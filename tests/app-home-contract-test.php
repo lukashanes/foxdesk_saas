@@ -24,7 +24,9 @@ $assert(str_contains($bootstrap, '/app/app-feed.php'), 'Module bootstrap must lo
 $assert(str_contains($router, "'app-home' => 'api_app_home'"), 'app-home route is not registered.');
 $assert(str_contains($handler, 'function api_app_home()'), 'api_app_home handler is missing.');
 $assert(str_contains($handler, 'app_shell_payload($user)'), 'api_app_home must include app shell.');
-$assert(str_contains($handler, 'app_feed_payload($user, $limit)'), 'api_app_home must delegate to app_feed_payload().');
+$assert(str_contains($handler, 'app_feed_payload($user, $limit, ['), 'api_app_home must delegate to app_feed_payload() with dashboard filters.');
+$assert(str_contains($handler, "'period' => (string) (\$_GET['period'] ?? 'last_30_days')"), 'api_app_home must forward the selected dashboard period.');
+$assert(str_contains($handler, "'time_scope' => (string) (\$_GET['time_scope'] ?? 'mine')"), 'api_app_home must forward the selected dashboard time scope.');
 $assert(str_contains($feed, 'function app_feed_payload'), 'App feed payload helper is missing.');
 $assert(str_contains($feed, 'function app_feed_ticket_card'), 'Ticket card formatter is missing.');
 $assert(str_contains($feed, 'function app_feed_queue_sections'), 'Queue section formatter is missing.');
