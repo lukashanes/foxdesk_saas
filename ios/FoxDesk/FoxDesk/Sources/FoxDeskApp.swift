@@ -11,7 +11,7 @@ struct FoxDeskApp: App {
 
     init() {
         let client = FoxDeskAPIClient(environment: AppConfiguration.environment)
-        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
+        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         _session = State(initialValue: AppSession(
             client: client,
             device: DeviceContextProvider.current(appVersion: appVersion)
