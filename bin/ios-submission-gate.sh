@@ -204,6 +204,11 @@ smoke_base_is_production() {
   [[ "$value" == "https://app.foxdesk.net/api/mobile/v1" || "$value" == "https://app.foxdesk.net/index.php" ]]
 }
 
+project_setting() {
+  local name="$1"
+  awk -F': ' -v name="$name" '$1 ~ "^[[:space:]]*" name "$" { print $2; exit }' "$ROOT_DIR/ios/FoxDesk/project.yml"
+}
+
 log "Running local MVP audit first"
 (cd "$ROOT_DIR" && npm run ios:mvp:audit)
 
@@ -212,6 +217,9 @@ log "Running local beta readiness gate"
 
 log "Running completion audit"
 (cd "$ROOT_DIR" && npm run ios:completion:audit)
+
+log "Checking App Store privacy and screenshot assets"
+(cd "$ROOT_DIR" && npm run ios:assets:check)
 
 log "Checking final human and live-smoke gates"
 
@@ -222,6 +230,19 @@ require_env_flag "APP_STORE_REVIEW_INFO_READY" "Set APP_STORE_REVIEW_INFO_READY=
 require_env_flag "APP_STORE_SCREENSHOTS_UPLOADED" "Set APP_STORE_SCREENSHOTS_UPLOADED=1 after uploading and checking the final screenshots in App Store Connect."
 require_env_flag "TESTFLIGHT_BUILD_UPLOADED" "Set TESTFLIGHT_BUILD_UPLOADED=1 after a signed FoxDesk build is processed and selectable in App Store Connect/TestFlight."
 require_env_flag "APP_STORE_PRIVACY_REVIEWED" "Set APP_STORE_PRIVACY_REVIEWED=1 after a human reviews App Store privacy answers."
+require_env_flag "APP_STORE_PRICING_READY" "Set APP_STORE_PRICING_READY=1 after configuring the iOS app download price as Free."
+require_env_flag "APP_STORE_AVAILABILITY_READY" "Set APP_STORE_AVAILABILITY_READY=1 after saving the intended App Store countries or regions."
+require_env_flag "APP_STORE_CONTENT_RIGHTS_READY" "Set APP_STORE_CONTENT_RIGHTS_READY=1 after answering Content Rights for customer-supplied ticket content."
+require_env_flag "APP_STORE_AGREEMENTS_READY" "Set APP_STORE_AGREEMENTS_READY=1 after confirming no blocking agreement, tax, or banking action remains."
+require_env_flag "APP_STORE_UNTESTED_PLATFORMS_DISABLED" "Set APP_STORE_UNTESTED_PLATFORMS_DISABLED=1 after disabling Apple Silicon Mac and Apple Vision Pro availability for this iPhone-only release."
+require_env_value "APP_STORE_SELECTED_MARKETING_VERSION" "Set APP_STORE_SELECTED_MARKETING_VERSION to the exact marketing version selected in App Store Connect."
+require_env_value "APP_STORE_SELECTED_BUILD_NUMBER" "Set APP_STORE_SELECTED_BUILD_NUMBER to the exact processed build selected in App Store Connect."
+if [[ "${APP_STORE_SELECTED_MARKETING_VERSION:-}" != "$(project_setting MARKETING_VERSION)" ]]; then
+  failures+=("App Store Connect marketing version must match project.yml ($(project_setting MARKETING_VERSION)); found ${APP_STORE_SELECTED_MARKETING_VERSION:-unset}.")
+fi
+if [[ "${APP_STORE_SELECTED_BUILD_NUMBER:-}" != "$(project_setting CURRENT_PROJECT_VERSION)" ]]; then
+  failures+=("App Store Connect selected build must match project.yml ($(project_setting CURRENT_PROJECT_VERSION)); found ${APP_STORE_SELECTED_BUILD_NUMBER:-unset}.")
+fi
 require_env_value "FOXDESK_IOS_DEMO_EMAIL" "Set FOXDESK_IOS_DEMO_EMAIL for the App Review demo account verification."
 require_env_value "FOXDESK_IOS_DEMO_PASSWORD" "Set FOXDESK_IOS_DEMO_PASSWORD for the App Review demo account verification."
 require_env_flag "FOXDESK_IOS_DEMO_WRITE" "Set FOXDESK_IOS_DEMO_WRITE=1 to prove the App Review demo account can create a demo ticket and add a linked internal timed comment without notifying customers."

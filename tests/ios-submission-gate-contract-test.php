@@ -23,6 +23,7 @@ $assert($contains('source "$ROOT_DIR/bin/ios-release-env.sh"'), 'Submission gate
 $assert($contains('npm run ios:mvp:audit'), 'Submission gate must run the local iOS MVP audit.');
 $assert($contains('npm run ios:beta:gate'), 'Submission gate must run the local beta readiness gate.');
 $assert($contains('npm run ios:completion:audit'), 'Submission gate must run the iOS completion audit.');
+$assert($contains('npm run ios:assets:check'), 'Submission gate must verify screenshot and privacy assets against the current iOS source.');
 
 $assert($contains('DEMO_EVIDENCE="$ROOT_DIR/tmp/ios-demo-account-check/latest-live-demo-account.json"'), 'Submission gate must require demo-account evidence JSON.');
 $assert($contains('API_READ_EVIDENCE="$ROOT_DIR/tmp/ios-api-smoke/latest-live-read-only.json"'), 'Submission gate must require live read-only API evidence JSON.');
@@ -78,6 +79,15 @@ $assert($contains('APP_STORE_CONNECT_APP_RECORD_READY'), 'Submission gate must r
 $assert($contains('APPLE_DEVELOPER_BUNDLE_READY'), 'Submission gate must require Apple Developer bundle id and Push confirmation.');
 $assert($contains('APPLE_BUSINESS_VERIFIED'), 'Submission gate must record Apple Business organization verification.');
 $assert($contains('APP_STORE_PRIVACY_REVIEWED'), 'Submission gate must require App Store privacy review.');
+$assert($contains('APP_STORE_PRICING_READY'), 'Submission gate must require app download pricing.');
+$assert($contains('APP_STORE_AVAILABILITY_READY'), 'Submission gate must require App Store availability.');
+$assert($contains('APP_STORE_CONTENT_RIGHTS_READY'), 'Submission gate must require Content Rights confirmation.');
+$assert($contains('APP_STORE_AGREEMENTS_READY'), 'Submission gate must require agreement, tax, and banking readiness.');
+$assert($contains('APP_STORE_UNTESTED_PLATFORMS_DISABLED'), 'Submission gate must require untested Apple platforms to be disabled.');
+$assert($contains('APP_STORE_SELECTED_MARKETING_VERSION'), 'Submission gate must require the selected App Store marketing version.');
+$assert($contains('APP_STORE_SELECTED_BUILD_NUMBER'), 'Submission gate must require the selected App Store build number.');
+$assert($contains('project_setting MARKETING_VERSION'), 'Submission gate must compare the selected marketing version with project.yml.');
+$assert($contains('project_setting CURRENT_PROJECT_VERSION'), 'Submission gate must compare the selected build with project.yml.');
 $assert($contains('FOXDESK_IOS_DEMO_EMAIL'), 'Submission gate must require demo email.');
 $assert($contains('FOXDESK_IOS_DEMO_PASSWORD'), 'Submission gate must require demo password.');
 $assert($contains('APNS_TEST_DEVICE_TOKEN'), 'Submission gate must require a physical-device APNs token.');

@@ -26,6 +26,8 @@ Select these data types as linked to the user and used for app functionality.
 | User ID | App functionality | FoxDesk user id, session identity, and permission checks. |
 | Customer Support | App functionality | Tickets, comments, internal notes, work logs, and customer support context shown in the app. |
 | Photos or Videos | App functionality | Optional camera/photo attachments uploaded by the user to tickets. |
+| Other User Content | App functionality | Optional documents and other files uploaded by the user to tickets. |
+| Device ID | App functionality | The APNs device token and app installation identifier are linked to the signed-in account so FoxDesk can deliver and manage push notifications. |
 
 ## Data Not Used For Tracking
 
@@ -56,9 +58,9 @@ Do not select these unless the production build changes:
 
 ## Device Token
 
-APNs device tokens are used only for push notification delivery. If App Store
-Connect requires a category, include it with app functionality / notifications,
-not tracking.
+APNs device tokens and the app installation identifier are used only for push
+notification delivery and device registration. Select `Device ID`, linked to
+the user, used for app functionality, and not used for tracking.
 
 The app should disclose push notification delivery in review notes, but the
 token is not a customer-facing identifier and must not be exposed in
@@ -98,6 +100,8 @@ Before setting `APP_STORE_PRIVACY_REVIEWED=1`, verify:
 - The app has no billing, checkout, or subscription purchase UI.
 - The app has no analytics/tracking SDK.
 - The privacy manifest still declares no tracking.
+- The privacy manifest declares `Device ID` for APNs registration and
+  `Other User Content` for non-photo ticket attachments.
 - The privacy manifest still declares the `UserDefaults` required reason API
   with reason `CA92.1`.
 

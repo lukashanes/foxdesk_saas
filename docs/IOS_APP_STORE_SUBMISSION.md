@@ -110,6 +110,12 @@ The detailed App Store privacy answer sheet is in
 `docs/IOS_APP_PRIVACY_ANSWERS.md`. Review that document against the current App
 Store Connect form before setting `APP_STORE_PRIVACY_REVIEWED=1`.
 
+The first iOS release must also be configured as a free download, have explicit
+country or region availability, have Content Rights answered for
+customer-supplied ticket content, and have no blocking agreement, tax, or
+banking action. Disable Apple Silicon Mac and Apple Vision Pro availability
+until those platforms are intentionally tested and supported.
+
 ## Capabilities
 
 - Sign in to an existing FoxDesk Cloud workspace.
@@ -170,6 +176,10 @@ required screen in the iOS simulator, and writes screenshots plus
 `manifest.md` to `tmp/ios-app-store-screenshots`. Review the images before
 uploading them to App Store Connect; the fixture is intentionally excluded from
 Production/App Store builds.
+
+The manifest records the marketing version, build number, and a fingerprint of
+the iOS source tree. `npm run ios:assets:check` fails if screenshots no longer
+match the current source or privacy manifest.
 
 ## Pre-Submission Gates
 

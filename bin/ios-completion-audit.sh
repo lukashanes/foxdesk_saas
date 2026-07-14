@@ -240,6 +240,17 @@ review_info_status="$(status_from_env_flag APP_STORE_REVIEW_INFO_READY)"
 screenshots_uploaded_status="$(status_from_env_flag APP_STORE_SCREENSHOTS_UPLOADED)"
 testflight_build_status="$(status_from_env_flag TESTFLIGHT_BUILD_UPLOADED)"
 privacy_status="$(status_from_env_flag APP_STORE_PRIVACY_REVIEWED)"
+pricing_status="$(status_from_env_flag APP_STORE_PRICING_READY)"
+availability_status="$(status_from_env_flag APP_STORE_AVAILABILITY_READY)"
+content_rights_status="$(status_from_env_flag APP_STORE_CONTENT_RIGHTS_READY)"
+agreements_status="$(status_from_env_flag APP_STORE_AGREEMENTS_READY)"
+platforms_status="$(status_from_env_flag APP_STORE_UNTESTED_PLATFORMS_DISABLED)"
+project_marketing_version="$(awk -F': ' '$1 ~ /^[[:space:]]*MARKETING_VERSION$/ { print $2; exit }' "$ROOT_DIR/ios/FoxDesk/project.yml")"
+project_build_number="$(awk -F': ' '$1 ~ /^[[:space:]]*CURRENT_PROJECT_VERSION$/ { print $2; exit }' "$ROOT_DIR/ios/FoxDesk/project.yml")"
+selected_build_status="missing"
+if [[ "${APP_STORE_SELECTED_MARKETING_VERSION:-}" == "$project_marketing_version" && "${APP_STORE_SELECTED_BUILD_NUMBER:-}" == "$project_build_number" ]]; then
+  selected_build_status="ready"
+fi
 
 screenshots_status="missing"
 if [[ -f "$ROOT_DIR/tmp/ios-app-store-screenshots/manifest.md" ]]; then
@@ -266,6 +277,12 @@ append_remaining_action() {
 [[ "$apns_status" == "ready" ]] || append_remaining_action 'Register a physical iPhone, capture its APNs token, and run the live APNs smoke with `APNS_TEST_DEVICE_TOKEN`.'
 [[ "$screenshots_status" == "ready" ]] || append_remaining_action 'Capture and human-review the populated App Store screenshots.'
 [[ "$privacy_status" == "ready" ]] || append_remaining_action 'Human-review and confirm the App Store privacy answers.'
+[[ "$pricing_status" == "ready" ]] || append_remaining_action 'Set the iOS app download price to Free.'
+[[ "$availability_status" == "ready" ]] || append_remaining_action 'Save the intended App Store countries or regions.'
+[[ "$content_rights_status" == "ready" ]] || append_remaining_action 'Answer Content Rights for customer-supplied ticket content.'
+[[ "$agreements_status" == "ready" ]] || append_remaining_action 'Confirm no blocking agreement, tax, or banking action remains.'
+[[ "$platforms_status" == "ready" ]] || append_remaining_action 'Disable Apple Silicon Mac and Apple Vision Pro availability for this iPhone-only release.'
+[[ "$selected_build_status" == "ready" ]] || append_remaining_action "Select App Store build ${project_marketing_version} (${project_build_number})."
 append_remaining_action 'Run `npm run ios:submission:gate` and require it to pass after every preceding gate is ready.'
 
 cat > "$REPORT" <<REPORT
@@ -316,6 +333,12 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 | Physical iPhone APNs token | $apns_status |
 | Populated screenshots | $screenshots_status |
 | App Store privacy review | $privacy_status |
+| App download pricing | $pricing_status |
+| App Store availability | $availability_status |
+| Content Rights | $content_rights_status |
+| Agreements, tax, and banking | $agreements_status |
+| Untested platform availability disabled | $platforms_status |
+| Selected App Store build ${project_marketing_version} (${project_build_number}) | $selected_build_status |
 
 ## Current Evidence Files
 
@@ -349,6 +372,12 @@ if [[ "$app_record_status" == "ready" \
   && "$screenshots_uploaded_status" == "ready" \
   && "$testflight_build_status" == "ready" \
   && "$privacy_status" == "ready" \
+  && "$pricing_status" == "ready" \
+  && "$availability_status" == "ready" \
+  && "$content_rights_status" == "ready" \
+  && "$agreements_status" == "ready" \
+  && "$platforms_status" == "ready" \
+  && "$selected_build_status" == "ready" \
   && "$demo_status" == "ready" \
   && "$demo_write_status" == "ready" \
   && "$live_smoke_status" == "ready" \

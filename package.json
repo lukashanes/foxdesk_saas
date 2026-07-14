@@ -119,6 +119,7 @@
     "ios:staging:check": "./bin/ios-staging-build-check.sh",
     "ios:sim:smoke": "./bin/ios-simulator-smoke.sh",
     "ios:screenshots": "./bin/ios-app-store-screenshots.sh",
+    "ios:assets:check": "./bin/ios-app-store-assets-check.sh --strict",
     "ios:testflight:preflight": "./bin/ios-testflight-preflight.sh",
     "ios:api:smoke": "node bin/ios-api-smoke.js",
     "ios:demo:check": "node bin/ios-demo-account-check.js",

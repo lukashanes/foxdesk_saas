@@ -111,13 +111,31 @@ for flag in \
   APP_STORE_REVIEW_INFO_READY \
   APP_STORE_SCREENSHOTS_UPLOADED \
   TESTFLIGHT_BUILD_UPLOADED \
-  APP_STORE_PRIVACY_REVIEWED; do
+  APP_STORE_PRIVACY_REVIEWED \
+  APP_STORE_PRICING_READY \
+  APP_STORE_AVAILABILITY_READY \
+  APP_STORE_CONTENT_RIGHTS_READY \
+  APP_STORE_AGREEMENTS_READY \
+  APP_STORE_UNTESTED_PLATFORMS_DISABLED; do
   if value_is_one "$flag"; then
     mark 1 "$flag"
   else
     mark 0 "$flag" "set to 1 only after the operator step is complete"
   fi
 done
+
+project_marketing_version="$(awk -F': ' '$1 ~ /^[[:space:]]*MARKETING_VERSION$/ { print $2; exit }' "$ROOT/ios/FoxDesk/project.yml")"
+project_build_number="$(awk -F': ' '$1 ~ /^[[:space:]]*CURRENT_PROJECT_VERSION$/ { print $2; exit }' "$ROOT/ios/FoxDesk/project.yml")"
+if [[ "${APP_STORE_SELECTED_MARKETING_VERSION:-}" == "$project_marketing_version" ]]; then
+  mark 1 "Selected App Store marketing version" "$project_marketing_version"
+else
+  mark 0 "Selected App Store marketing version" "expected $project_marketing_version, found ${APP_STORE_SELECTED_MARKETING_VERSION:-unset}"
+fi
+if [[ "${APP_STORE_SELECTED_BUILD_NUMBER:-}" == "$project_build_number" ]]; then
+  mark 1 "Selected App Store build" "$project_build_number"
+else
+  mark 0 "Selected App Store build" "expected $project_build_number, found ${APP_STORE_SELECTED_BUILD_NUMBER:-unset}"
+fi
 
 if value_is_one APPLE_BUSINESS_VERIFIED; then
   note "APPLE_BUSINESS_VERIFIED" "ready; identity context only, not a substitute for App Store Connect or Developer signing"

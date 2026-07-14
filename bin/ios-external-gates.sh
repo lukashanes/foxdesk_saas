@@ -238,6 +238,28 @@ else
   gate_status "App Store privacy review" "missing" "Review docs/IOS_APP_PRIVACY_ANSWERS.md as an operator, then set APP_STORE_PRIVACY_REVIEWED=1."
 fi
 
+for row in \
+  "APP_STORE_PRICING_READY|App download pricing|Set the iOS app download price to Free." \
+  "APP_STORE_AVAILABILITY_READY|App Store availability|Save the intended countries or regions." \
+  "APP_STORE_CONTENT_RIGHTS_READY|Content Rights|Answer Content Rights for customer-supplied ticket content." \
+  "APP_STORE_AGREEMENTS_READY|Agreements, tax, and banking|Resolve any blocking App Store Connect agreement, tax, or banking action." \
+  "APP_STORE_UNTESTED_PLATFORMS_DISABLED|Untested platform availability|Disable Apple Silicon Mac and Apple Vision Pro for this iPhone-only release."; do
+  IFS='|' read -r flag label action <<< "$row"
+  if [[ "${!flag:-}" == "1" ]]; then
+    gate_status "$label" "ready" "Operator set ${flag}=1."
+  else
+    gate_status "$label" "missing" "$action Then set ${flag}=1."
+  fi
+done
+
+project_marketing_version="$(awk -F': ' '$1 ~ /^[[:space:]]*MARKETING_VERSION$/ { print $2; exit }' "$ROOT_DIR/ios/FoxDesk/project.yml")"
+project_build_number="$(awk -F': ' '$1 ~ /^[[:space:]]*CURRENT_PROJECT_VERSION$/ { print $2; exit }' "$ROOT_DIR/ios/FoxDesk/project.yml")"
+if [[ "${APP_STORE_SELECTED_MARKETING_VERSION:-}" == "$project_marketing_version" && "${APP_STORE_SELECTED_BUILD_NUMBER:-}" == "$project_build_number" ]]; then
+  gate_status "Selected App Store build" "ready" "App Store selection matches ${project_marketing_version} (${project_build_number})."
+else
+  gate_status "Selected App Store build" "missing" "Select ${project_marketing_version} (${project_build_number}) and record APP_STORE_SELECTED_MARKETING_VERSION and APP_STORE_SELECTED_BUILD_NUMBER."
+fi
+
 cat >> "$EVIDENCE_REPORT" <<'REPORT'
 
 ## Final Command
