@@ -57,9 +57,53 @@ function api_record_usage_request($action) {
 }
 
 /**
+ * Keep identity, session cleanup, and the tenant-state explanation available
+ * when a workspace is paused. All workspace data remains behind the billing
+ * access decision.
+ */
+function api_workspace_access_exempt_actions(): array
+{
+    return [
+        'app-tenant-state',
+        'mobile-me',
+        'mobile-register-device',
+        'mobile-unregister-device',
+        'agent-docs',
+        'agent-me',
+    ];
+}
+
+function api_enforce_workspace_access(string $action): void
+{
+    if (in_array($action, api_workspace_access_exempt_actions(), true)) {
+        return;
+    }
+
+    $user = function_exists('current_user') ? current_user() : null;
+    if (!$user || (function_exists('is_platform_admin') && is_platform_admin($user))) {
+        return;
+    }
+
+    if (!function_exists('billing_current_tenant') || !function_exists('billing_workspace_access_state')) {
+        return;
+    }
+
+    $tenant = billing_current_tenant();
+    $access = billing_workspace_access_state($tenant);
+    if (!empty($access['allowed'])) {
+        return;
+    }
+
+    header('X-FoxDesk-Workspace-Access: paused');
+    api_error('Workspace access is paused. Ask a workspace admin to restore access.', 402);
+}
+
+/**
  * Route API requests to appropriate handlers
  */
 function route_api_request($action) {
+    api_validate_utf8_values($_GET);
+    api_validate_utf8_values($_POST);
     $GLOBALS['api_current_action'] = (string) $action;
 
     // Define public actions that don't require authentication
@@ -103,6 +147,13 @@ function route_api_request($action) {
         api_error('Unauthorized', 401);
     }
 
+    if (!in_array($action, $public_actions, true)) {
+        api_enforce_workspace_access((string) $action);
+        if (function_exists('ticket_undo_finalize_expired')) {
+            ticket_undo_finalize_expired();
+        }
+    }
+
     if (!empty($GLOBALS['is_api_token_auth'])) {
         api_token_enforce_action_scope($action);
         api_token_rate_limit_check($action);
@@ -144,6 +195,9 @@ function route_api_request($action) {
         'delete-comment' => 'api_delete_comment',
         'restore-comment' => 'api_restore_comment',
         'delete-attachment' => 'api_delete_attachment',
+        'restore-attachment' => 'api_restore_attachment',
+        'permanent-delete-ticket-preflight' => 'api_permanent_delete_ticket_preflight',
+        'permanent-delete-ticket' => 'api_permanent_delete_ticket',
 
         // Quick-edit (AJAX, no page reload)
         'quick-assign' => 'api_quick_assign',
@@ -184,8 +238,14 @@ function route_api_request($action) {
         'app-create-ticket' => 'api_app_create_ticket',
         'app-add-comment' => 'api_app_add_comment',
         'app-add-comment-with-time' => 'api_app_add_comment_with_time',
+        'app-update-comment' => 'api_app_update_comment',
         'app-delete-comment' => 'api_app_delete_comment',
+        'app-restore-comment' => 'api_app_restore_comment',
+        'app-update-time-entry' => 'api_app_update_time_entry',
         'app-delete-time-entry' => 'api_app_delete_time_entry',
+        'app-restore-time-entry' => 'api_app_restore_time_entry',
+        'app-delete-attachment' => 'api_app_delete_attachment',
+        'app-restore-attachment' => 'api_app_restore_attachment',
         'app-attachment-metadata' => 'api_app_attachment_metadata',
         'app-attachment-download' => 'api_app_attachment_download',
         'app-ticket-timer' => 'api_app_ticket_timer',
@@ -231,8 +291,12 @@ function route_api_request($action) {
         'agent-list-tickets' => 'api_agent_list_tickets',
         'agent-get-ticket' => 'api_agent_get_ticket',
         'agent-add-comment' => 'api_agent_add_comment',
+        'agent-add-update' => 'api_agent_add_comment',
+        'agent-add-work-entry' => 'api_agent_add_comment',
         'agent-update-status' => 'api_agent_update_status',
         'agent-log-time' => 'api_agent_log_time',
+        'agent-delete-ticket-preflight' => 'api_agent_delete_ticket_preflight',
+        'agent-delete-ticket-permanently' => 'api_agent_delete_ticket_permanently',
 
         // --- Timeline endpoint ---
         'get-timeline' => 'api_get_timeline',

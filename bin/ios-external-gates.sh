@@ -242,7 +242,7 @@ for row in \
   "APP_STORE_PRICING_READY|App download pricing|Set the iOS app download price to Free." \
   "APP_STORE_AVAILABILITY_READY|App Store availability|Save the intended countries or regions." \
   "APP_STORE_CONTENT_RIGHTS_READY|Content Rights|Answer Content Rights for customer-supplied ticket content." \
-  "APP_STORE_AGREEMENTS_READY|Agreements, tax, and banking|Resolve any blocking App Store Connect agreement, tax, or banking action." \
+  "APP_STORE_AGREEMENTS_READY|Free-app agreement|Confirm the Apple Developer Program License Agreement is active and resolve any blocking App Store Connect agreement action; Paid Apps, tax, and banking are not otherwise required for this free no-IAP build." \
   "APP_STORE_UNTESTED_PLATFORMS_DISABLED|Untested platform availability|Disable Apple Silicon Mac and Apple Vision Pro for this iPhone-only release."; do
   IFS='|' read -r flag label action <<< "$row"
   if [[ "${!flag:-}" == "1" ]]; then

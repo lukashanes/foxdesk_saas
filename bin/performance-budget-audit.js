@@ -34,6 +34,56 @@ function sum(items, key) {
   return items.reduce((total, item) => total + item[key], 0);
 }
 
+function jsAssetMap(items) {
+  return new Map(items.map((item) => [path.basename(item.path), item]));
+}
+
+function buildRouteBundles(items) {
+  const assets = jsAssetMap(items);
+  const common = [
+    'app-api-client.js',
+    'app-contract-shell.js',
+    'page-transitions.js',
+    'image-preview.js',
+    'app-footer.js',
+    'app-header.js',
+    'shortcuts.js'
+  ];
+  const routes = {
+    shell: [],
+    work: ['work-dashboard.js'],
+    tickets: ['kanban.js', 'ticket-list.js'],
+    'ticket-detail': [
+      'chip-select.js',
+      'rich-text-editor.js',
+      'quill-image-upload.js',
+      'attachment-paste-drop.js',
+      'autosave.js',
+      'upload-preview.js',
+      'ticket-detail.js'
+    ],
+    'new-ticket': [
+      'chip-select.js',
+      'rich-text-editor.js',
+      'quill-image-upload.js',
+      'attachment-paste-drop.js',
+      'autosave.js',
+      'upload-preview.js'
+    ],
+    reports: ['chip-select.js', 'report-page.js', 'report-billing-review.js', 'report-time-delete.js']
+  };
+
+  return Object.entries(routes).map(([route, routeAssets]) => {
+    const names = [...new Set([...common, ...routeAssets])];
+    const resolved = names.map((name) => assets.get(name)).filter(Boolean);
+    return {
+      route,
+      assets: resolved.map((item) => item.path),
+      gzipBytes: sum(resolved, 'gzipBytes')
+    };
+  });
+}
+
 function assert(condition, message, failures) {
   if (!condition) {
     failures.push(message);
@@ -43,12 +93,14 @@ function assert(condition, message, failures) {
 const before = readJson(beforePath);
 const current = fs.existsSync(currentPath) ? readJson(currentPath) : null;
 const cssAssets = [
-  gzipBytes('theme.css'),
+  gzipBytes('assets/css/theme.min.css'),
   gzipBytes('assets/public/cloud.css')
 ];
 const jsAssets = listJsAssets();
 const cssGzipBytes = sum(cssAssets, 'gzipBytes');
 const jsGzipBytes = sum(jsAssets, 'gzipBytes');
+const jsRouteBundles = buildRouteBundles(jsAssets);
+const largestJsRoute = [...jsRouteBundles].sort((a, b) => b.gzipBytes - a.gzipBytes)[0];
 const beforeCssGzip = Number(before.metrics?.css?.cssGzipBytes || 0);
 const cssTarget10 = beforeCssGzip > 0 ? Math.floor(beforeCssGzip * 0.9) : 0;
 const largestJs = [...jsAssets].sort((a, b) => b.gzipBytes - a.gzipBytes)[0];
@@ -58,11 +110,13 @@ const warnings = [];
 assert(beforeCssGzip > 0, 'Missing before CSS gzip baseline.', failures);
 assert(cssGzipBytes <= beforeCssGzip, `CSS gzip regressed: ${cssGzipBytes} > ${beforeCssGzip}.`, failures);
 assert(largestJs.gzipBytes <= 16000, `Largest JS asset is too large: ${largestJs.path} ${largestJs.gzipBytes} gzip bytes.`, failures);
-assert(jsGzipBytes <= 65000, `Total JS gzip payload is too large: ${jsGzipBytes} gzip bytes.`, failures);
+assert(largestJsRoute.gzipBytes <= 65000, `Largest route JS payload is too large: ${largestJsRoute.route} ${largestJsRoute.gzipBytes} gzip bytes.`, failures);
 
-if (cssTarget10 > 0 && cssGzipBytes > cssTarget10) {
-  warnings.push(`CSS gzip is stable but has not reached the -10% target yet: ${cssGzipBytes} > ${cssTarget10}.`);
-}
+assert(
+  cssTarget10 <= 0 || cssGzipBytes <= cssTarget10,
+  `CSS gzip has not reached the required -10% target: ${cssGzipBytes} > ${cssTarget10}.`,
+  failures
+);
 
 if (current && current.status !== 'passed') {
   failures.push('Current UI quality audit is not passing.');
@@ -81,7 +135,9 @@ const report = {
   },
   js: {
     assets: jsAssets,
-    gzipBytes: jsGzipBytes,
+    totalAssetGzipBytes: jsGzipBytes,
+    routeBundles: jsRouteBundles,
+    largestRoute: largestJsRoute,
     largestAsset: largestJs
   },
   warnings,
@@ -104,7 +160,8 @@ if (failures.length > 0) {
 
 console.log('Performance budget: passed');
 console.log(`- CSS gzip: ${cssGzipBytes} bytes (baseline ${beforeCssGzip}, target ${cssTarget10})`);
-console.log(`- JS gzip: ${jsGzipBytes} bytes; largest ${largestJs.path} ${largestJs.gzipBytes} bytes`);
+console.log(`- JS route gzip: ${largestJsRoute.gzipBytes} bytes on ${largestJsRoute.route}; largest asset ${largestJs.path} ${largestJs.gzipBytes} bytes`);
+console.log(`- JS asset inventory: ${jsGzipBytes} gzip bytes across ${jsAssets.length} route-split files`);
 for (const warning of warnings) {
   console.log(`- warning: ${warning}`);
 }

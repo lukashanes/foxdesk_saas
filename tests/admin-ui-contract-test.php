@@ -1,6 +1,8 @@
 <?php
 
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/settings-source.php';
+require_once __DIR__ . '/support/ticket-list-source.php';
 
 function assert_admin_ui(bool $condition, string $message): void
 {
@@ -19,11 +21,11 @@ function read_admin_ui_file(string $root, string $path): string
 
 $header = read_admin_ui_file($root, 'includes/header.php');
 $theme = read_admin_ui_file($root, 'theme.css');
-$tickets = read_admin_ui_file($root, 'pages/tickets.php');
+$tickets = ticket_list_surface_source($root);
 $page_header = read_admin_ui_file($root, 'includes/components/page-header.php');
 $admin_nav = read_admin_ui_file($root, 'includes/components/admin-nav.php');
 $admin_settings_tabs = read_admin_ui_file($root, 'includes/components/admin-settings-tabs.php');
-$admin_settings = read_admin_ui_file($root, 'pages/admin/settings.php');
+$admin_settings = settings_source_bundle($root);
 $admin_users = read_admin_ui_file($root, 'pages/admin/users.php');
 $admin_user_surface = $admin_users
     . "\n" . read_admin_ui_file($root, 'includes/components/team-ai-agents-tab.php')

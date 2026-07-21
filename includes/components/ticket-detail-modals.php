@@ -18,8 +18,12 @@
                         <h3 class="text-base font-semibold mb-4 flex items-center gap-2 text-theme-primary"
                             id="edit-ticket-title">
                             <?php echo get_icon('edit', 'w-5 h-5 td-text-muted'); ?>
-                            <?php echo e(t('Edit ticket')); ?>
+                            <span data-edit-ticket-title><?php echo e(t('Edit ticket')); ?></span>
                         </h3>
+
+                        <p class="quick-start-ticket-note hidden" data-quick-start-note>
+                            <?php echo e(t('The timer is running. Add a subject and client now; everything else can wait.')); ?>
+                        </p>
 
                         <div class="space-y-3">
                             <div>
@@ -28,7 +32,7 @@
                                     value="<?php echo e($ticket['title']); ?>" class="form-input w-full" required>
                             </div>
 
-                            <div>
+                            <div data-quick-start-optional>
                                 <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('Description')); ?></label>
                                 <div class="editor-wrapper">
                                     <div id="edit-description-editor"></div>
@@ -38,7 +42,7 @@
                             </div>
 
                             <?php if ($tags_supported): ?>
-                                    <div>
+                                    <div data-quick-start-optional>
                                         <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('Tags')); ?></label>
                                         <input type="text" name="edit_tags" id="edit-ticket-tags-input"
                                             value="<?php echo e($ticket['tags'] ?? ''); ?>" class="form-input w-full"
@@ -61,7 +65,7 @@
                             <?php endif; ?>
 
                             <?php if (is_admin()): ?>
-                                    <div>
+                                    <div data-quick-start-optional>
                                         <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('Custom billable rate (per hour)')); ?></label>
                                         <input type="number" name="edit_custom_billable_rate" step="0.01" min="0"
                                             value="<?php echo e($ticket_custom_billable_rate !== null ? number_format((float) $ticket_custom_billable_rate, 2, '.', '') : ''); ?>"
@@ -176,6 +180,28 @@
                 </form>
             </div>
         </div>
+<?php endif; ?>
+
+<?php if (can_permanently_delete_tickets($user)): ?>
+    <div id="ticket-permanent-delete-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="ticket-permanent-delete-title">
+        <button type="button" class="modal-backdrop" data-close-permanent-delete aria-label="<?php echo e(t('Cancel')); ?>"></button>
+        <div class="modal-panel max-w-lg">
+            <div class="modal-panel-body space-y-4">
+                <div>
+                    <h3 id="ticket-permanent-delete-title" class="text-lg font-semibold text-red-700"><?php echo e(t('Permanently delete ticket')); ?></h3>
+                    <p class="mt-2 text-sm text-theme-secondary"><?php echo e(t('This action cannot be undone. Check what will be removed before you continue.')); ?></p>
+                </div>
+                <div class="card-body bg-theme-secondary fd-rounded-control text-sm space-y-2" data-permanent-delete-summary>
+                    <?php echo e(t('Loading deletion summary...')); ?>
+                </div>
+                <p class="text-sm text-red-600 hidden" data-permanent-delete-error></p>
+            </div>
+            <div class="modal-panel-footer">
+                <button type="button" class="btn btn-secondary" data-close-permanent-delete><?php echo e(t('Cancel')); ?></button>
+                <button type="button" class="btn btn-danger" disabled data-confirm-permanent-delete><?php echo e(t('Delete permanently')); ?></button>
+            </div>
+        </div>
+    </div>
 <?php endif; ?>
 
 <?php

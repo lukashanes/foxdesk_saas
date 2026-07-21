@@ -14,7 +14,11 @@ function assert(condition, message) {
 const theme = read('theme.css');
 const work = read('pages/work.php');
 const tickets = read('pages/tickets.php');
-const reports = read('pages/admin/reports.php');
+const reports = [
+  read('pages/admin/reports.php'),
+  read('includes/modules/reports/views/time.php'),
+  read('includes/modules/reports/views/billing.php'),
+].join('\n');
 const workspaceSurface = read('includes/components/workspace-surface.php');
 
 for (const token of [
@@ -68,7 +72,7 @@ assert(theme.includes('.report-detail-totals'), 'Report detail totals must live 
 assert(theme.includes('.report-mini-progress'), 'Report mini progress bars must live in theme.css.');
 assert(theme.includes('@keyframes fd-page-enter'), 'App shell must define a shared page enter transition.');
 assert(theme.includes('.app-shell-page.is-page-leaving .app-content'), 'App shell must define a shared page leave transition.');
-assert(theme.includes('@media (prefers-reduced-motion: reduce)'), 'Page transitions must respect reduced motion preferences.');
+assert(/@media\s*\(prefers-reduced-motion\s*:\s*reduce\)/.test(theme), 'Page transitions must respect reduced motion preferences.');
 assert(reports.includes('report-source-card report-source-card--human'), 'Reports must render source cards through shared classes.');
 assert(reports.includes('report-detail-totals'), 'Reports must render detail totals through shared classes.');
 assert(reports.includes('report-mini-progress__bar'), 'Reports must render progress bars through shared classes.');

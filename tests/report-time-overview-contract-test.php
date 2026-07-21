@@ -18,9 +18,11 @@ $assert = static function (bool $condition, string $message): void {
     }
 };
 
+require_once __DIR__ . '/support/report-page-source.php';
+
 $bootstrap = $read('includes/modules/bootstrap.php');
 $module = $read('includes/modules/reports/time-overview.php');
-$reports = $read('pages/admin/reports.php');
+$reports = report_page_source_bundle($root);
 $theme = $read('theme.css');
 $cs = $read('includes/lang/cs.php');
 

@@ -102,6 +102,78 @@ test('admin can collapse the sidebar and keep more workspace width', async ({ pa
   expect(isCompact).toBe(false);
 });
 
+test('admin can start work first and name the ticket afterwards', async ({ page }) => {
+  const title = `Quick work ${Date.now()}`;
+  const admin = rowObject(dbQuery(`
+    SELECT tenant_id
+    FROM users
+    WHERE email = 'admin@example.test'
+    LIMIT 1
+  `));
+  dbQuery(`
+    INSERT INTO organizations (tenant_id, name, is_active, created_at)
+    VALUES (${Number(admin.tenant_id)}, ${sqlString(`Quick client ${Date.now()}`)}, 1, NOW())
+  `);
+  const seededOrganization = rowObject(dbQuery(`
+    SELECT id
+    FROM organizations
+    WHERE tenant_id = ${Number(admin.tenant_id)}
+    ORDER BY id DESC
+    LIMIT 1
+  `));
+
+  await login(page);
+  const startWork = page.locator('[data-quick-start-work]');
+  await expect(startWork).toBeVisible();
+  await startWork.click();
+  await page.waitForURL(/page=ticket.*quick_start=1/);
+
+  const ticketHash = new URL(page.url()).searchParams.get('t');
+  expect(ticketHash).toBeTruthy();
+  const ticketRow = rowObject(dbQuery(`
+    SELECT id
+    FROM tickets
+    WHERE hash = ${sqlString(ticketHash)}
+    LIMIT 1
+  `));
+  const ticketId = Number(ticketRow.id);
+  expect(ticketId).toBeGreaterThan(0);
+
+  const modal = page.locator('#edit-ticket-modal');
+  await expect(modal).toBeVisible();
+  await expect(modal).toHaveClass(/is-quick-start/);
+  await expect(modal.locator('input[name="edit_title"]')).toBeFocused();
+  await expect(modal.locator('select[name="edit_organization_id"]')).toBeVisible();
+  await expect(modal.locator('[data-quick-start-optional]:visible')).toHaveCount(0);
+
+  const activeTimer = rowObject(dbQuery(`
+    SELECT COUNT(*) AS active_count
+    FROM ticket_time_entries
+    WHERE ticket_id = ${ticketId} AND ended_at IS NULL
+  `));
+  expect(Number(activeTimer.active_count)).toBe(1);
+
+  await modal.locator('input[name="edit_title"]').fill(title);
+  const organization = modal.locator('select[name="edit_organization_id"]');
+  const organizationValue = String(seededOrganization.id);
+  await organization.selectOption(organizationValue);
+  await modal.locator('button[name="update_ticket"]').click();
+  await expect(modal).toBeHidden();
+
+  await expect(page.locator('body')).toContainText(title);
+  const saved = rowObject(dbQuery(`
+    SELECT t.title, t.organization_id,
+      SUM(CASE WHEN e.ended_at IS NULL THEN 1 ELSE 0 END) AS active_count
+    FROM tickets t
+    LEFT JOIN ticket_time_entries e ON e.ticket_id = t.id
+    WHERE t.id = ${ticketId}
+    GROUP BY t.id, t.title, t.organization_id
+  `));
+  expect(saved.title).toBe(title);
+  expect(Number(saved.organization_id)).toBe(Number(organizationValue));
+  expect(Number(saved.active_count)).toBe(1);
+});
+
 test('admin can create a ticket, upload, preview, download, and delete attachments', async ({ page }) => {
   const attachmentPath = path.join(os.tmpdir(), 'foxdesk-e2e-attachment.txt');
   fs.writeFileSync(attachmentPath, 'hello from foxdesk e2e\n');
@@ -247,6 +319,53 @@ test('admin can add normalized tags and filter tickets by tag', async ({ page })
 
   await page.goto('/index.php?page=tickets&tags=not-present');
   await expect(page.locator('body')).not.toContainText(title);
+});
+
+test('ticket inline status menu stays anchored to the clicked row', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await login(page);
+  await page.goto('/index.php?page=new-ticket');
+  await page.locator('input[name="title"]').fill(`Popup anchor ${Date.now()}`);
+  await page.locator('#description-input').evaluate(input => {
+    input.value = '<p>Status popup geometry test.</p>';
+  });
+  await page.locator('button[type="submit"]').click();
+  await page.waitForURL(/page=ticket&id=\d+/);
+  await page.goto('/index.php?page=tickets');
+
+  const trigger = page.locator('.tl-edit-trigger[data-field="status"]').first();
+  await expect(trigger).toBeVisible();
+  await trigger.scrollIntoViewIfNeeded();
+  await trigger.click();
+
+  const ticketId = await trigger.getAttribute('data-ticket');
+  const dropdown = page.locator(`[data-dropdown="status-${ticketId}"]`);
+  await expect(dropdown).toBeVisible();
+
+  const geometry = await page.evaluate(({ ticketId }) => {
+    const triggerNode = document.querySelector(`.tl-edit-trigger[data-field="status"][data-ticket="${ticketId}"]`);
+    const dropdownNode = document.querySelector(`[data-dropdown="status-${ticketId}"]`);
+    if (!triggerNode || !dropdownNode) return null;
+    const triggerRect = triggerNode.getBoundingClientRect();
+    const dropdownRect = dropdownNode.getBoundingClientRect();
+    return {
+      trigger: { left: triggerRect.left, top: triggerRect.top, bottom: triggerRect.bottom },
+      dropdown: { left: dropdownRect.left, top: dropdownRect.top, bottom: dropdownRect.bottom, right: dropdownRect.right },
+      viewport: { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight },
+      position: getComputedStyle(dropdownNode).position
+    };
+  }, { ticketId });
+
+  expect(geometry).not.toBeNull();
+  expect(geometry.position).toBe('fixed');
+  expect(Math.abs(geometry.dropdown.left - geometry.trigger.left)).toBeLessThanOrEqual(8);
+  const opensBelow = Math.abs(geometry.dropdown.top - (geometry.trigger.bottom + 4)) <= 8;
+  const opensAbove = Math.abs(geometry.dropdown.bottom - (geometry.trigger.top - 4)) <= 8;
+  expect(opensBelow || opensAbove).toBe(true);
+  expect(geometry.dropdown.left).toBeGreaterThanOrEqual(0);
+  expect(geometry.dropdown.right).toBeLessThanOrEqual(geometry.viewport.width);
+  expect(geometry.dropdown.top).toBeGreaterThanOrEqual(0);
+  expect(geometry.dropdown.bottom).toBeLessThanOrEqual(geometry.viewport.height);
 });
 
 test('logout and login flow works', async ({ browser }) => {

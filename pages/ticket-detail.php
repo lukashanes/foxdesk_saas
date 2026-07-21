@@ -73,7 +73,7 @@ $time_tracking_available = ticket_time_table_exists();
 $active_timer = null;
 $active_timer_elapsed = 0;
 $timer_is_paused = false;
-$time_breakdown = $time_tracking_available ? get_ticket_time_breakdown($ticket_id) : ['total' => 0, 'human' => 0, 'ai' => 0];
+$time_breakdown = $time_tracking_available ? $ticket_detail_context['time_breakdown'] : ['total' => 0, 'human' => 0, 'ai' => 0];
 $total_time_minutes = $time_breakdown['total'];
 $org_billable_rate = 0.0;
 $ticket_custom_billable_rate = function_exists('get_ticket_custom_billable_rate') ? get_ticket_custom_billable_rate($ticket) : null;
@@ -305,7 +305,7 @@ require_once BASE_PATH . '/includes/header.php';
                 </div>
         <?php endif; ?>
         <?php
-        $time_entries = ($time_tracking_available && can_view_time($user)) ? get_ticket_time_entries($ticket_id) : [];
+        $time_entries = ($time_tracking_available && can_view_time($user)) ? $ticket_detail_context['time_entries'] : [];
         $ticket_timeline = ticket_detail_build_timeline($comments, $time_entries);
         $time_entries_by_comment = $ticket_timeline['time_entries_by_comment'];
         $timeline_items = $ticket_timeline['timeline_items'];
@@ -514,6 +514,7 @@ require_once BASE_PATH . '/includes/header.php';
 <?php
 $ticket_detail_js_config = [
     'ticketId' => (int) $ticket_id,
+    'quickStart' => isset($_GET['quick_start']) && $_GET['quick_start'] === '1',
     'timerState' => (string) $timer_state,
     'csrfToken' => csrf_token(),
     'pageTitle' => ($page_title ?? t('Dashboard')) . ' - ' . $app_name,
@@ -572,10 +573,17 @@ $ticket_detail_js_config = [
         'replyPlaceholder' => t('Write a reply...'),
         'internalPlaceholder' => t('Internal note for agents...'),
         'descriptionPlaceholder' => t('Description...'),
+        'quickStartDetails' => t('Name this work'),
         'draftRestored' => t('Draft restored'),
         'loading' => t('Loading...'),
         'noActivity' => t('No activity found'),
         'timelineError' => t('Error loading timeline'),
+        'ticket' => t('Ticket'),
+        'comments' => t('Comments'),
+        'timeEntries' => t('Time entries'),
+        'totalTime' => t('Total time'),
+        'attachments' => t('Attachments'),
+        'loadingDeletionSummary' => t('Loading deletion summary...'),
     ],
     'icons' => [
         'play' => get_icon('play', 'w-4 h-4'),
@@ -635,5 +643,8 @@ window.FoxDeskTicketDetailConfig = <?php echo json_encode($ticket_detail_js_conf
     </div>
 </div>
 <?php endif; ?>
+<script src="assets/js/ticket-detail-timer.js?v=<?php echo e($ticket_detail_asset_version('assets/js/ticket-detail-timer.js')); ?>"></script>
+<script src="assets/js/ticket-detail-records.js?v=<?php echo e($ticket_detail_asset_version('assets/js/ticket-detail-records.js')); ?>"></script>
+<script src="assets/js/ticket-detail-admin.js?v=<?php echo e($ticket_detail_asset_version('assets/js/ticket-detail-admin.js')); ?>"></script>
 <script src="assets/js/ticket-detail.js?v=<?php echo e($ticket_detail_asset_version('assets/js/ticket-detail.js')); ?>"></script>
 <?php require_once BASE_PATH . '/includes/footer.php';

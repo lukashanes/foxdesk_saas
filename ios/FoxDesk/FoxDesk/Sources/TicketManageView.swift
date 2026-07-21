@@ -66,6 +66,28 @@ struct TicketManageSheet: View {
                     }
                 }
 
+                if canArchive {
+                    Section("Ticket lifecycle") {
+                        Button(role: detail.ticket.isArchived == true ? nil : .destructive) {
+                            Task { await setArchived(detail.ticket.isArchived != true) }
+                        } label: {
+                            Label(
+                                detail.ticket.isArchived == true ? "Restore ticket" : "Archive ticket",
+                                systemImage: detail.ticket.isArchived == true ? "arrow.uturn.backward" : "archivebox"
+                            )
+                        }
+                        .disabled(isSaving)
+
+                        Text(
+                            detail.ticket.isArchived == true
+                                ? "Restore this ticket to the active ticket lists."
+                                : "Archive this ticket without permanently deleting its history."
+                        )
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    }
+                }
+
                 if let message {
                     Section {
                         Text(message)
@@ -114,6 +136,14 @@ struct TicketManageSheet: View {
             || assigneeSelection != (detail.ticket.assignee?.id ?? 0)
     }
 
+    private var canArchive: Bool {
+        guard detail.actions != nil,
+              let role = session.user?.role.lowercased() else {
+            return false
+        }
+        return ["admin", "owner", "agent"].contains(role)
+    }
+
     private func save() async {
         isSaving = true
         message = nil
@@ -130,6 +160,29 @@ struct TicketManageSheet: View {
                         includePriorityId: prioritySelection != (detail.ticket.priority?.id ?? 0),
                         assigneeId: assigneeSelection == 0 ? nil : assigneeSelection,
                         includeAssigneeId: assigneeSelection != (detail.ticket.assignee?.id ?? 0)
+                    )
+                )
+            }
+            await onSaved()
+            dismiss()
+        } catch {
+            message = error.localizedDescription
+        }
+    }
+
+    private func setArchived(_ isArchived: Bool) async {
+        isSaving = true
+        message = nil
+        defer { isSaving = false }
+
+        do {
+            _ = try await session.authenticated { accessToken in
+                try await session.client.updateTicket(
+                    accessToken: accessToken,
+                    request: UpdateTicketRequest(
+                        ticketId: detail.ticket.id,
+                        isArchived: isArchived,
+                        includeIsArchived: true
                     )
                 )
             }

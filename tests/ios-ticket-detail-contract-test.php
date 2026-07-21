@@ -46,10 +46,19 @@ $models = $sources['models'];
 $assert(str_contains($detail, 'TicketHeaderSection(ticket: detail.ticket)'), 'Ticket detail must render the ticket header.');
 $assert(str_contains($detail, 'TimerControlSection(ticketID: detail.ticket.id)'), 'Ticket detail must render timer controls.');
 $assert(str_contains($detail, 'CommentComposerSection(ticketID: detail.ticket.id)'), 'Ticket detail must render reply/internal-note composer.');
-$assert(str_contains($detail, 'TicketActivitySections(comments: detail.comments, timeEntries: detail.timeEntries)'), 'Ticket detail must render comments and time activity.');
+$assert(
+    str_contains($detail, 'TicketActivitySections(')
+    && str_contains($detail, 'comments: detail.comments')
+    && str_contains($detail, 'timeEntries: detail.timeEntries'),
+    'Ticket detail must render comments and time activity.'
+);
 $assert(str_contains($detail, 'Section("Attachments")'), 'Ticket detail must render attachments section.');
 $assert(str_contains($detail, 'AttachmentUploadSection(ticketID: detail.ticket.id)'), 'Ticket detail must support attachment uploads.');
-$assert(str_contains($detail, 'AttachmentRow(attachment: attachment)'), 'Ticket detail must render attachment rows.');
+$assert(
+    str_contains($detail, 'AttachmentRow(')
+    && str_contains($detail, 'attachment: attachment'),
+    'Ticket detail must render attachment rows.'
+);
 $assert(str_contains($detail, 'TicketManageSheet(detail: detail)'), 'Ticket detail must expose the manage sheet when actions are available.');
 $assert(str_contains($detail, 'ClientContextView('), 'Ticket detail must link to basic client context.');
 $assert(str_contains($detail, 'TicketDetailCacheStore'), 'Ticket detail must keep cached fallback for offline/fast reopen.');
@@ -74,7 +83,11 @@ $assert(str_contains($composer, 'TicketCommentDraftStore'), 'Ticket composer mus
 $assert(str_contains($activity, 'Section("Comments")'), 'Ticket activity must render comment section.');
 $assert(str_contains($activity, 'RichCommentText(html: comment.contentHtml'), 'Ticket activity must render rich comment text.');
 $assert(str_contains($activity, 'MobileRichTextRenderer.attributedString(fromHTML: source)'), 'Ticket activity must use the shared safe rich-text renderer.');
-$assert(str_contains($activity, 'LinkedCommentTimeRow(entry: entry)'), 'Ticket activity must render time linked to comments.');
+$assert(
+    str_contains($activity, 'LinkedCommentTimeRow(')
+    && str_contains($activity, 'entry: entry'),
+    'Ticket activity must render time linked to comments.'
+);
 $assert(str_contains($activity, 'Section("Time")'), 'Ticket activity must still render orphan time entries safely.');
 foreach (['replacingListBlocks', 'isSafeLink', '[Image:', '&amp;', '&#x'] as $needle) {
     $assert(str_contains($richRenderer, $needle), "Rich comment renderer must preserve/handle {$needle}.");

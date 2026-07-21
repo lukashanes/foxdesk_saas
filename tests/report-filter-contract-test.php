@@ -22,6 +22,7 @@ if (!function_exists('normalize_ticket_tags')) {
 }
 
 require_once $root . '/includes/modules/reports/report-filters.php';
+require_once __DIR__ . '/support/report-page-source.php';
 
 $assert = static function (bool $condition, string $message): void {
     if (!$condition) {
@@ -31,9 +32,10 @@ $assert = static function (bool $condition, string $message): void {
 };
 
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
-$page = file_get_contents($root . '/pages/admin/reports.php');
+$route = file_get_contents($root . '/pages/admin/reports.php');
+$controller = file_get_contents($root . '/includes/modules/reports/report-page-controller.php');
 $module = file_get_contents($root . '/includes/modules/reports/report-filters.php');
-$assert($bootstrap !== false && $page !== false && $module !== false, 'Report filter files must be readable.');
+$assert($bootstrap !== false && $route !== false && $controller !== false && $module !== false, 'Report filter files must be readable.');
 
 $state = report_filter_state_from_request([
     'tab' => 'bad-tab',
@@ -59,8 +61,9 @@ $agent_billing_state = report_filter_state_from_request(['tab' => 'billing'], fa
 $assert($agent_billing_state['tab'] === 'time', 'Non-admin users must be kept in time overview.');
 
 $assert(str_contains($bootstrap, '/reports/report-filters.php'), 'Module bootstrap must load report filters.');
-$assert(str_contains($page, 'report_filter_state_from_request($_GET, is_admin())'), 'Reports page must consume report filter state.');
-$assert(!str_contains($page, '$allowed_tabs ='), 'Reports page must not own tab allow-list logic.');
-$assert(!str_contains($page, '$range_data = get_time_range_bounds'), 'Reports page must not own range bound logic.');
+$assert(str_contains($route, 'report_admin_page_context($_GET, $_POST, $_SERVER)'), 'Reports route must delegate request orchestration.');
+$assert(str_contains($controller, 'report_filter_state_from_request($request, is_admin())'), 'Reports controller must consume report filter state.');
+$assert(!str_contains($controller, '$allowed_tabs ='), 'Reports controller must not own tab allow-list logic.');
+$assert(!str_contains($controller, '$range_data = get_time_range_bounds'), 'Reports controller must not own range bound logic.');
 
 echo "Report filter contract OK\n";

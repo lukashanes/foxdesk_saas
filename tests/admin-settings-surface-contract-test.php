@@ -1,7 +1,8 @@
 <?php
 
 $root = dirname(__DIR__);
-$page = file_get_contents($root . '/pages/admin/settings.php');
+require_once __DIR__ . '/support/settings-source.php';
+$page = settings_source_bundle($root);
 $theme = file_get_contents($root . '/theme.css');
 
 $assert = static function (bool $condition, string $message): void {
@@ -11,7 +12,7 @@ $assert = static function (bool $condition, string $message): void {
     }
 };
 
-$assert($page !== false && $theme !== false, 'Admin settings files must be readable.');
+$assert($theme !== false, 'Admin settings files must be readable.');
 
 foreach ([
     'settings-warning-box',

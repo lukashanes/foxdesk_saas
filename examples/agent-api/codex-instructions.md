@@ -1,5 +1,19 @@
 # Codex Agent Instructions
 
+## Canonical ticket workflow
+
+- Use only the FoxDesk Agent API. Never use a web browser.
+- Start with `agent-docs`, then `agent-me`.
+- Before changing an existing ticket, call `agent-get-ticket`.
+- Every POST requires a unique `Idempotency-Key`.
+- Keep the main ticket concise: title, general description, client, assignee,
+  status, and priority only.
+- Use `agent-add-update` for a comment without tracked time.
+- Use one `agent-add-work-entry` request for each tracked work record; send the
+  formatted comment and `duration_minutes` together.
+- Finish with `agent-get-ticket`: every tracked-work comment must have a linked
+  time entry with `comment_id`, totals must match, and no duplicate may exist.
+
 Use this when connecting Codex to FoxDesk through a scoped API key.
 
 ## Local Secret
@@ -39,8 +53,7 @@ request fields, and safety rules.
 
 ## Allowed Tools
 
-Use only these scripts unless the user explicitly asks for a lower-level API
-call:
+Use these scripts for the canonical ticket workflow:
 
 ```bash
 sh examples/agent-api/create-ticket.sh
@@ -50,20 +63,18 @@ sh examples/agent-api/log-time.sh
 sh examples/agent-api/prepare-report.sh
 ```
 
+Use the comment-with-time helper for tracked work. Use a standalone time entry
+only when no comment belongs to the work.
+
 ## Behavior
 
 - Read the user's intent first, then set the relevant `FOXDESK_*` variables.
 - Use `FOXDESK_TICKET_ID` or `FOXDESK_TICKET_HASH` before commenting or logging
   time.
-- Prefer `comment-with-time.sh` when a work note and exact worked time belong to
-  the same update; it creates one comment and links the time entry through
-  `comment_id`.
 - Treat 401/403 as permission or token-scope problems, not application bugs.
 - For write actions, keep the default `Idempotency-Key` header or set
   `FOXDESK_IDEMPOTENCY_KEY` when retrying the same action.
 - If the API returns `409` with `Retry-After`, wait and retry the unchanged
   request with the same idempotency key. Never reuse that key for new content.
-- Standalone time entries accept 1 to 1440 minutes. Without explicit start/end
-  timestamps, FoxDesk records an interval ending at the time of the request.
-- Summarize the created ticket id, logged minutes, or report totals back to the
-  user.
+- Summarize the created ticket id, daily comments, or report totals back to the
+  user without revealing the API token.

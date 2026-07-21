@@ -4,6 +4,7 @@ $root = dirname(__DIR__);
 require_once $root . '/includes/modules/tickets/ticket-status-groups.php';
 require_once $root . '/includes/modules/tickets/ticket-list-views.php';
 require_once $root . '/includes/modules/tickets/ticket-row-view-model.php';
+require_once __DIR__ . '/support/ticket-list-source.php';
 
 $assert = static function (bool $condition, string $message): void {
     if (!$condition) {
@@ -52,7 +53,7 @@ $assert(ticket_status_visual_color(['name' => 'Waiting for customer', 'color' =>
 $assert(str_contains(ticket_status_color_dot_svg(['name' => 'Done', 'color' => '#44aa55']), 'fill="#44aa55"'), 'Status color dot must render the configured color without inline style attributes.');
 $assert(ticket_registry_priority_badge_class('Urgent') === 'badge-inline ticket-priority-inline ticket-priority-inline--medium', 'Priority helper must compose fallback priority badge class.');
 
-$page = file_get_contents($root . '/pages/tickets.php');
+$page = ticket_list_surface_source($root);
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
 $assert($page !== false && $bootstrap !== false, 'Ticket registry files must be readable.');
 $assert(str_contains($bootstrap, '/tickets/ticket-row-view-model.php'), 'Module bootstrap must load row view model.');

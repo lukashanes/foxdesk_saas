@@ -28,6 +28,7 @@ Select these data types as linked to the user and used for app functionality.
 | Photos or Videos | App functionality | Optional camera/photo attachments uploaded by the user to tickets. |
 | Other User Content | App functionality | Optional documents and other files uploaded by the user to tickets. |
 | Device ID | App functionality | The APNs device token and app installation identifier are linked to the signed-in account so FoxDesk can deliver and manage push notifications. |
+| Search History | App functionality | Search terms are sent to the FoxDesk workspace API to find tickets, clients, and contacts and may appear in operational request logs. |
 
 ## Data Not Used For Tracking
 
@@ -48,7 +49,7 @@ Do not select these unless the production build changes:
 - Location
 - Contacts
 - Browsing History
-- Search History outside FoxDesk ticket search
+- Browsing activity outside FoxDesk
 - Purchases
 - Financial Info
 - Health and Fitness
@@ -102,8 +103,30 @@ Before setting `APP_STORE_PRIVACY_REVIEWED=1`, verify:
 - The privacy manifest still declares no tracking.
 - The privacy manifest declares `Device ID` for APNs registration and
   `Other User Content` for non-photo ticket attachments.
+- The privacy manifest declares `Search History` because in-app search terms
+  are sent to the workspace API and may be retained in operational request
+  logs.
 - The privacy manifest still declares the `UserDefaults` required reason API
   with reason `CA92.1`.
+
+## Exact App Store Connect Entry
+
+In `App Privacy`, answer `Yes` to data collection and enter every row in the
+table above as:
+
+- linked to the user's identity: `Yes`,
+- used for tracking: `No`,
+- purpose: `App Functionality` only.
+
+Answer `No` to tracking. Add the public Privacy Policy URL:
+
+```text
+https://foxdesk.net/index.php?page=legal&type=privacy
+```
+
+After checking the production build against this sheet, click `Publish` in App
+Store Connect and only then set `APP_STORE_PRIVACY_REVIEWED=1` in the ignored
+local `.env.ios-release` file.
 
 ## Related Files
 

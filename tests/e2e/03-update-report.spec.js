@@ -97,6 +97,7 @@ test('public report token works and expired token is rejected', async ({ page })
 });
 
 test('backup rollback removes files created after backup and health remains OK', async ({ page }) => {
+  const rollbackStartedAt = Date.now();
   const output = php(`
     define('BASE_PATH', '/var/www/html');
     require_once BASE_PATH . '/config.php';
@@ -109,12 +110,14 @@ test('backup rollback removes files created after backup and health remains OK',
       fwrite(STDERR, json_encode($backup));
       exit(2);
     }
-    file_put_contents(BASE_PATH . '/rollback-marker-e2e.txt', 'created after backup');
+    file_put_contents(BASE_PATH . '/pages/rollback-marker-e2e.php', '<?php // created after backup');
     rollback_update($backup['backup_id'], false);
   `);
+  const rollbackDurationMs = Date.now() - rollbackStartedAt;
   expect(output).toContain('Rollback complete');
+  expect(rollbackDurationMs, `Rollback took ${rollbackDurationMs}ms`).toBeLessThan(15_000);
 
-  const marker = dockerExec(webContainer, ['sh', '-lc', 'test ! -f /var/www/html/rollback-marker-e2e.txt && echo removed']);
+  const marker = dockerExec(webContainer, ['sh', '-lc', 'test ! -f /var/www/html/pages/rollback-marker-e2e.php && echo removed']);
   expect(marker.trim()).toBe('removed');
 
   const health = await page.request.get('/index.php?page=health');

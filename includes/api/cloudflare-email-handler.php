@@ -94,9 +94,17 @@ function api_cloudflare_email_ingest(): void
 
     api_cloudflare_email_verify_signature($body);
 
-    $payload = json_decode($body, true);
-    if (!is_array($payload)) {
+    $valid_utf8 = function_exists('mb_check_encoding') ? mb_check_encoding($body, 'UTF-8') : preg_match('//u', $body) === 1;
+    if (!$valid_utf8) {
+        api_error('Request body must be valid UTF-8.', 422);
+    }
+    try {
+        $payload = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+    } catch (JsonException $e) {
         api_error('Invalid JSON payload', 400);
+    }
+    if (!is_array($payload)) {
+        api_error('JSON root must be an object.', 422);
     }
     api_cloudflare_email_verify_archive_payload($payload);
 

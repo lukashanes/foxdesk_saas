@@ -131,6 +131,32 @@ const TOOLS = [
     },
   },
   {
+    name: 'foxdesk_add_work_entry',
+    description: 'Atomically add a comment and its linked tracked-time entry to a FoxDesk ticket.',
+    inputSchema: {
+      type: 'object',
+      required: ['content', 'duration_minutes'],
+      properties: {
+        ticket_id: { type: 'integer', minimum: 1 },
+        ticket_hash: { type: 'string' },
+        content: { type: 'string' },
+        is_internal: { type: 'boolean' },
+        skip_notification: { type: 'boolean' },
+        duration_minutes: { type: 'integer', minimum: 1, maximum: 1440 },
+        started_at: { type: 'string' },
+        ended_at: { type: 'string' },
+        manual_date: { type: 'string' },
+        manual_start_time: { type: 'string' },
+        manual_end_time: { type: 'string' },
+        is_billable: { type: 'boolean' },
+        idempotency_key: { type: 'string' },
+        dry_run: { type: 'boolean', description: 'Return the planned API request without writing.' },
+        confirm: { type: 'boolean', description: 'Required to execute this write tool.' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'foxdesk_log_time',
     description: 'Add a manual time entry to a FoxDesk ticket.',
     inputSchema: {
@@ -185,7 +211,7 @@ const TOOL_POLICY = {
     requiresConfirmation: false,
   },
   foxdesk_list_tickets: {
-    action: 'app-ticket-list',
+    action: 'agent-list-tickets',
     method: 'GET',
     scopes: ['tickets:read'],
     writes: false,
@@ -193,7 +219,7 @@ const TOOL_POLICY = {
     requiresConfirmation: false,
   },
   foxdesk_get_ticket: {
-    action: 'app-ticket-detail',
+    action: 'agent-get-ticket',
     method: 'GET',
     scopes: ['tickets:read'],
     writes: false,
@@ -201,7 +227,7 @@ const TOOL_POLICY = {
     requiresConfirmation: false,
   },
   foxdesk_create_ticket: {
-    action: 'app-create-ticket',
+    action: 'agent-create-ticket',
     method: 'POST',
     scopes: ['tickets:write'],
     writes: true,
@@ -209,15 +235,23 @@ const TOOL_POLICY = {
     requiresConfirmation: true,
   },
   foxdesk_add_comment: {
-    action: 'app-add-comment',
+    action: 'agent-add-update',
     method: 'POST',
-    scopes: ['comments:write'],
+    scopes: ['tickets:read', 'comments:write'],
+    writes: true,
+    supportsDryRun: true,
+    requiresConfirmation: true,
+  },
+  foxdesk_add_work_entry: {
+    action: 'agent-add-work-entry',
+    method: 'POST',
+    scopes: ['tickets:read', 'comments:write', 'time:write'],
     writes: true,
     supportsDryRun: true,
     requiresConfirmation: true,
   },
   foxdesk_log_time: {
-    action: 'app-log-time',
+    action: 'agent-log-time',
     method: 'POST',
     scopes: ['time:write'],
     writes: true,
@@ -244,14 +278,17 @@ const TOOL_MANIFEST = TOOLS.map((tool) => ({
 const TOOL_HANDLERS = {
   foxdesk_agent_manifest: () => agentManifest(),
   foxdesk_agent_docs: () => apiGet('agent-docs'),
-  foxdesk_list_tickets: (args) => apiGet('app-ticket-list', pickDefined(args, ['view', 'search', 'limit', 'offset'])),
+  foxdesk_list_tickets: (args) => apiGet('agent-list-tickets', pickDefined(args, ['search', 'limit', 'offset'])),
   foxdesk_get_ticket: (args) => {
     requireTicketSelector(args);
-    return apiGet('app-ticket-detail', pickDefined(args, ['ticket_id', 'ticket_hash', 'include_internal']));
+    return apiGet('agent-get-ticket', {
+      ...(args.ticket_id ? { id: args.ticket_id } : {}),
+      ...(args.ticket_hash ? { hash: args.ticket_hash } : {}),
+    });
   },
   foxdesk_create_ticket: (args) => {
     requireString(args.title, 'title');
-    return apiWriteTool('foxdesk_create_ticket', 'app-create-ticket', pickDefined(args, [
+    return apiWriteTool('foxdesk_create_ticket', 'agent-create-ticket', pickDefined(args, [
       'title',
       'description',
       'organization_id',
@@ -263,16 +300,34 @@ const TOOL_HANDLERS = {
   foxdesk_add_comment: (args) => {
     requireTicketSelector(args);
     requireString(args.content, 'content');
-    return apiWriteTool('foxdesk_add_comment', 'app-add-comment', pickDefined(args, [
+    return apiWriteTool('foxdesk_add_comment', 'agent-add-update', pickDefined(args, [
       'ticket_id',
       'ticket_hash',
       'content',
       'is_internal',
     ]), args);
   },
+  foxdesk_add_work_entry: (args) => {
+    requireTicketSelector(args);
+    requireString(args.content, 'content');
+    return apiWriteTool('foxdesk_add_work_entry', 'agent-add-work-entry', pickDefined(args, [
+      'ticket_id',
+      'ticket_hash',
+      'content',
+      'is_internal',
+      'skip_notification',
+      'duration_minutes',
+      'started_at',
+      'ended_at',
+      'manual_date',
+      'manual_start_time',
+      'manual_end_time',
+      'is_billable',
+    ]), args);
+  },
   foxdesk_log_time: (args) => {
     requireTicketSelector(args);
-    return apiWriteTool('foxdesk_log_time', 'app-log-time', pickDefined(args, [
+    return apiWriteTool('foxdesk_log_time', 'agent-log-time', pickDefined(args, [
       'ticket_id',
       'ticket_hash',
       'duration_minutes',

@@ -43,6 +43,21 @@ $route = foxdesk_mobile_v1_route_from_request('POST', '/api/mobile/v1/tickets/74
 $assert(($route['action'] ?? '') === 'app-add-comment-with-time', 'POST /api/mobile/v1/tickets/{id}/comment-with-time must route to app-add-comment-with-time.');
 $assert(($route['input_defaults']['ticket_id'] ?? 0) === 745, 'Comment-with-time route must add ticket_id JSON default.');
 
+$route = foxdesk_mobile_v1_route_from_request('POST', '/api/mobile/v1/comments/91');
+$assert(($route['action'] ?? '') === 'app-update-comment', 'POST /api/mobile/v1/comments/{id} must route to app-update-comment.');
+$assert((int) ($route['input_defaults']['comment_id'] ?? 0) === 91, 'Comment update route must bind comment_id.');
+
+$route = foxdesk_mobile_v1_route_from_request('POST', '/api/mobile/v1/time-entries/92');
+$assert(($route['action'] ?? '') === 'app-update-time-entry', 'POST /api/mobile/v1/time-entries/{id} must route to app-update-time-entry.');
+$assert((int) ($route['input_defaults']['time_entry_id'] ?? 0) === 92, 'Time update route must bind time_entry_id.');
+
+$route = foxdesk_mobile_v1_route_from_request('POST', '/api/mobile/v1/attachments/93/delete');
+$assert(($route['action'] ?? '') === 'app-delete-attachment', 'POST /api/mobile/v1/attachments/{id}/delete must route to app-delete-attachment.');
+$assert((int) ($route['input_defaults']['attachment_id'] ?? 0) === 93, 'Attachment delete route must bind attachment_id.');
+
+$route = foxdesk_mobile_v1_route_from_request('POST', '/api/mobile/v1/attachments/restore');
+$assert(($route['action'] ?? '') === 'app-restore-attachment', 'POST /api/mobile/v1/attachments/restore must route to app-restore-attachment.');
+
 $route = foxdesk_mobile_v1_route_from_request('POST', '/api/mobile/v1/tickets/745/attachments');
 $assert(($route['action'] ?? '') === 'upload', 'POST /api/mobile/v1/tickets/{id}/attachments must route to upload.');
 $assert(($route['post_defaults']['ticket_id'] ?? 0) === 745, 'Attachment route must add ticket_id POST default.');

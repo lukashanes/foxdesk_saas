@@ -17,6 +17,8 @@ function read_report_rate_file(string $root, string $path): string
     return $contents;
 }
 
+require_once __DIR__ . '/support/report-page-source.php';
+
 if (!function_exists('table_exists')) {
     function table_exists($table): bool { return false; }
 }
@@ -81,13 +83,13 @@ foreach ([
     'function get_user_default_billable_rate',
     'function get_agent_default_billable_rates',
     'function save_agent_default_billable_rate',
-    "ALTER TABLE users ADD COLUMN billable_rate",
     "get_agent_client_billable_rate(\$organization_id, \$user_id)",
     "get_user_default_billable_rate(\$user_id)",
     "\$entry['user_billable_rate']",
 ] as $needle) {
     assert_report_rates(str_contains($time, $needle), 'Rate helper contract missing: ' . $needle);
 }
+assert_report_rates(!str_contains($time, 'ALTER TABLE users ADD COLUMN billable_rate'), 'Report rate helpers must not mutate schema during requests.');
 
 $billing = read_report_rate_file($root, 'includes/modules/reports/billing-review.php');
 foreach ([
@@ -103,7 +105,7 @@ foreach ([
 $report_functions = read_report_rate_file($root, 'includes/report-functions.php');
 assert_report_rates(str_contains($report_functions, 'u.billable_rate as user_billable_rate'), 'Published report snapshots must include agent default billable rates.');
 
-$reports_page = read_report_rate_file($root, 'pages/admin/reports.php');
+$reports_page = report_page_source_bundle($root);
 $billing_js = read_report_rate_file($root, 'assets/js/report-billing-review.js');
 foreach ([
     'save_agent_default_rate',
@@ -123,7 +125,7 @@ foreach ([
 ] as $needle) {
     assert_report_rates(str_contains($billing_js, $needle), 'Billing review JS contract missing: ' . $needle);
 }
-assert_report_rates(str_contains($reports_page, 'report_filter_state_from_request($_GET, is_admin())'), 'Reports page must use shared report filter state.');
+assert_report_rates(str_contains($reports_page, 'report_filter_state_from_request($request, is_admin())'), 'Reports controller must use shared report filter state.');
 assert_report_rates(!str_contains($reports_page, '$normalize_tag_filters = static function'), 'Reports page must not define a local tag parser.');
 assert_report_rates(!preg_match('/stripe|subscription_status|checkout/i', $reports_page), 'Customer report billing review must not mix SaaS Stripe billing state.');
 

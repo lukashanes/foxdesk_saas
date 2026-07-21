@@ -339,7 +339,7 @@ async function assertStyledShell(page, label, selectors, options = {}) {
         paddingLeft: parseFloat(contentStyle.paddingLeft),
       } : null,
       styleTagCount: document.querySelectorAll('style').length,
-      themeLinks: [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href')),
+      themeLinks: [...document.querySelectorAll('link[href*="theme.min.css"]')].map(link => link.getAttribute('href')),
       matches,
       allowStyleTags,
     };
@@ -351,8 +351,8 @@ async function assertStyledShell(page, label, selectors, options = {}) {
   if (result.bodyOpacity !== '1') {
     throw new Error(`${label} body is not fully visible: ${JSON.stringify(result)}`);
   }
-  if (!result.themeLinks.some(href => href && href.includes('theme.css?v='))) {
-    throw new Error(`${label} does not use a versioned theme.css link: ${JSON.stringify(result)}`);
+  if (!result.themeLinks.some(href => href && href.includes('theme.min.css?v='))) {
+    throw new Error(`${label} does not use a versioned theme.min.css link: ${JSON.stringify(result)}`);
   }
   if (!result.main || result.main.display !== 'flex' || result.main.rect.width < 320) {
     throw new Error(`${label} app frame is missing or unstyled: ${JSON.stringify(result)}`);

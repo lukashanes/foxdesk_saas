@@ -146,10 +146,9 @@ Out of scope for first release:
   debug/staging builds expose Account → Push diagnostics so testers can verify
   the active API base URL and copy the physical-device APNs token for the smoke
   command; this diagnostic surface is excluded from Production/App Store UI.
-- Production SaaS evidence currently verifies deployment evidence, R2 storage,
-  Cloudflare outbound email, inbound email archive, and Stripe live meter
-  configuration. Legal review and full Stripe live-flow acknowledgement remain
-  human/operator gates before paid public launch.
+- Production SaaS evidence verifies deployment, storage, and managed email.
+  Web billing has its own operational launch gate and is deliberately separate
+  from native App Store readiness.
 
 ## iOS Milestones
 
@@ -385,12 +384,11 @@ existing FoxDesk Cloud workspaces. Do not sell, upgrade, show pricing, or link t
 Stripe Checkout from inside the iOS app. Billing, plan changes, invoices, and
 Stripe Customer Portal stay web-only.
 
-The app may display read-only workspace status such as `Active`,
-`Trial active`, `Included access`, `Past due grace`, or `Workspace suspended`.
-For blocked access, show the server-provided access message and ask the user to
-contact their workspace admin or FoxDesk support. Do not include a "Manage
-billing", "Upgrade", "Start plan", "Restart plan", or external checkout link in
-the iOS UI for the first release.
+The app may display only a generic read-only workspace state such as `Active` or
+`Paused`. It must not display trial, subscription, payment, pricing, or billing
+reasons returned by the server. For blocked access, ask the user to contact their
+workspace administrator or FoxDesk support. Do not include a "Manage billing",
+"Upgrade", "Start plan", "Restart plan", or external checkout link in iOS.
 
 This keeps the iOS app focused on support work and avoids App Review risk around
 external purchase calls to action. Existing customers can sign in and use the
@@ -400,7 +398,8 @@ If FoxDesk later sells subscriptions inside the iOS app, use Apple's In-App
 Purchase system with StoreKit 2 and auto-renewable subscriptions. In that mode,
 the app must not use Stripe for in-app digital subscription purchases.
 
-Apple billing setup:
+Apple billing setup only if a future iOS release sells a paid app or digital
+subscription through the app:
 
 1. Sign in to App Store Connect as the Account Holder.
 2. Open Business.
@@ -414,6 +413,12 @@ Apple billing setup:
 9. Map Apple subscription entitlement state to the tenant billing state.
 10. Submit the subscription products with the app build for review.
 
+The first FoxDesk iOS release is a free companion app without in-app purchases,
+so this paid-app setup is not part of the current submission. For the current
+build, confirm only that the Apple Developer Program License Agreement for free
+app distribution is active and that App Store Connect shows no blocking
+agreement action.
+
 ## Decisions Needed
 
 - Apple Team ID.
@@ -422,9 +427,8 @@ Apple billing setup:
 - Whether first login uses email/password, magic link, or admin-created mobile
   token. Recommended first release: email/password with TOTP support and
   server-issued mobile tokens. Magic link can be added later.
-- Whether Stripe subscription management opens the web billing portal from the
-  app or remains web-only for the first release. Recommended: web-only and no
-  in-app purchase calls to action.
+- Native commerce is intentionally absent. Reassess StoreKit requirements before
+  adding any future signup, pricing, purchase, upgrade, or external purchase CTA.
 
 ## Updated Native Screen Plan
 
@@ -490,8 +494,8 @@ Apple billing setup:
 
 ### Account
 
-- Show signed-in user, workspace name, access state, subscription state, and
-  server notice copy.
+- Show signed-in user, workspace name, and generic `Active` or `Paused` access
+  state.
 - Keep legal/support/deletion links.
 - No Stripe, pricing, checkout, portal, or upgrade links.
 - Current scaffold keeps Account available even when workspace work screens

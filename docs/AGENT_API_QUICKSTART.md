@@ -1,5 +1,9 @@
 # Agent API Quickstart
 
+For ticket creation and approved daily work notes, follow
+[`AGENT_TICKET_WORKFLOW.md`](AGENT_TICKET_WORKFLOW.md). The same rules are
+returned live and localized by `agent-docs`.
+
 This quickstart connects Codex, Claude, or a CLI script to FoxDesk without
 giving the assistant more access than the user who created the key.
 

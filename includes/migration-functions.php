@@ -44,23 +44,12 @@ function migration_export_tables(): array
 
 function migration_ensure_imports_table(): void
 {
-    db_query("
-        CREATE TABLE IF NOT EXISTS migration_imports (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            tenant_id INT NULL,
-            source_url VARCHAR(255) NULL,
-            source_version VARCHAR(40) NULL,
-            package_hash CHAR(64) NOT NULL,
-            status ENUM('imported', 'failed') NOT NULL DEFAULT 'imported',
-            summary_json JSON NULL,
-            error_message TEXT NULL,
-            created_by INT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_tenant_id (tenant_id),
-            INDEX idx_package_hash (package_hash),
-            INDEX idx_status (status)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
+    schema_require('migration imports', ['migration_imports'], [
+        'migration_imports' => [
+            'tenant_id', 'source_url', 'source_version', 'package_hash', 'status',
+            'summary_json', 'error_message', 'created_by', 'created_at',
+        ],
+    ]);
 }
 
 function migration_table_columns(string $table): array
@@ -729,49 +718,15 @@ function migration_import_package(string $zip_path, array $options = []): array
 
 function migration_bridge_ensure_connections_table(): void
 {
-    db_query("
-        CREATE TABLE IF NOT EXISTS migration_connections (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            tenant_id INT NOT NULL,
-            token_hash CHAR(64) NOT NULL UNIQUE,
-            label VARCHAR(160) NULL,
-            source_instance_id VARCHAR(80) NULL,
-            source_url VARCHAR(255) NULL,
-            source_version VARCHAR(40) NULL,
-            status ENUM('issued', 'connected', 'syncing', 'ready_for_cutover', 'cutover_complete', 'revoked') NOT NULL DEFAULT 'issued',
-            last_seen_at DATETIME NULL,
-            last_plan_json JSON NULL,
-            attachment_sync_count INT NOT NULL DEFAULT 0,
-            attachment_sync_bytes BIGINT NOT NULL DEFAULT 0,
-            attachment_sync_last_at DATETIME NULL,
-            attachment_sync_last_key VARCHAR(700) NULL,
-            attachment_sync_last_checksum CHAR(64) NULL,
-            attachment_sync_last_source_id INT NULL,
-            created_by INT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            expires_at DATETIME NULL,
-            revoked_at DATETIME NULL,
-            cutover_at DATETIME NULL,
-            INDEX idx_tenant_id (tenant_id),
-            INDEX idx_status (status),
-            INDEX idx_source_instance (source_instance_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-
-    $columns = [
-        'attachment_sync_count' => "ALTER TABLE migration_connections ADD COLUMN attachment_sync_count INT NOT NULL DEFAULT 0",
-        'attachment_sync_bytes' => "ALTER TABLE migration_connections ADD COLUMN attachment_sync_bytes BIGINT NOT NULL DEFAULT 0",
-        'attachment_sync_last_at' => "ALTER TABLE migration_connections ADD COLUMN attachment_sync_last_at DATETIME NULL",
-        'attachment_sync_last_key' => "ALTER TABLE migration_connections ADD COLUMN attachment_sync_last_key VARCHAR(700) NULL",
-        'attachment_sync_last_checksum' => "ALTER TABLE migration_connections ADD COLUMN attachment_sync_last_checksum CHAR(64) NULL",
-        'attachment_sync_last_source_id' => "ALTER TABLE migration_connections ADD COLUMN attachment_sync_last_source_id INT NULL",
-    ];
-
-    foreach ($columns as $column => $sql) {
-        if (!column_exists('migration_connections', $column)) {
-            db_query($sql);
-        }
-    }
+    schema_require('migration sync connections', ['migration_connections'], [
+        'migration_connections' => [
+            'tenant_id', 'token_hash', 'label', 'source_instance_id', 'source_url', 'source_version',
+            'status', 'last_seen_at', 'last_plan_json', 'attachment_sync_count',
+            'attachment_sync_bytes', 'attachment_sync_last_at', 'attachment_sync_last_key',
+            'attachment_sync_last_checksum', 'attachment_sync_last_source_id', 'created_by',
+            'expires_at', 'revoked_at', 'cutover_at',
+        ],
+    ]);
 }
 
 function migration_bridge_token_hash(string $token): string
@@ -1010,23 +965,12 @@ function migration_bridge_record_attachment_sync_evidence(array $connection, arr
 
 function migration_bridge_ensure_object_map_table(): void
 {
-    db_query("
-        CREATE TABLE IF NOT EXISTS migration_object_map (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            connection_id INT NOT NULL,
-            tenant_id INT NOT NULL,
-            source_table VARCHAR(80) NOT NULL,
-            source_id INT NOT NULL,
-            target_id INT NOT NULL,
-            source_updated_at DATETIME NULL,
-            row_hash CHAR(64) NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY uniq_connection_object (connection_id, source_table, source_id),
-            INDEX idx_tenant_table (tenant_id, source_table),
-            INDEX idx_target (target_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
+    schema_require('migration object mapping', ['migration_object_map'], [
+        'migration_object_map' => [
+            'connection_id', 'tenant_id', 'source_table', 'source_id', 'target_id',
+            'source_updated_at', 'row_hash', 'created_at', 'updated_at',
+        ],
+    ]);
 }
 
 function migration_bridge_chunk_tables(): array

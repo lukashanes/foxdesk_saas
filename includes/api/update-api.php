@@ -100,7 +100,7 @@ function api_dismiss_update_notice(): void
 {
     require_admin_post();
 
-    $input = json_decode(file_get_contents('php://input'), true);
+    $input = get_json_input();
     $version = trim((string) ($input['version'] ?? $_POST['version'] ?? ''));
 
     if ($version === '') {

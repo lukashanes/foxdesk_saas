@@ -124,6 +124,12 @@ for flag in \
   fi
 done
 
+if value_is_one IOS_COMPANION_MODEL_REVIEWED; then
+  mark 1 "IOS_COMPANION_MODEL_REVIEWED" "free companion model reviewed against Apple guideline 3.1.3(f)"
+else
+  mark 0 "IOS_COMPANION_MODEL_REVIEWED" "review the final native UI, screenshots, and App Review notes before setting to 1"
+fi
+
 project_marketing_version="$(awk -F': ' '$1 ~ /^[[:space:]]*MARKETING_VERSION$/ { print $2; exit }' "$ROOT/ios/FoxDesk/project.yml")"
 project_build_number="$(awk -F': ' '$1 ~ /^[[:space:]]*CURRENT_PROJECT_VERSION$/ { print $2; exit }' "$ROOT/ios/FoxDesk/project.yml")"
 if [[ "${APP_STORE_SELECTED_MARKETING_VERSION:-}" == "$project_marketing_version" ]]; then

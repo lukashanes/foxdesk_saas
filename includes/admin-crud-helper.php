@@ -263,14 +263,26 @@ function api_success($data = []) {
     if (!empty($GLOBALS['is_api_token_auth'])) {
         $action = (string) ($GLOBALS['api_current_action'] ?? ($_GET['action'] ?? ''));
         if (function_exists('api_idempotency_store_success')) {
-            api_idempotency_store_success($response);
+            try {
+                api_idempotency_store_success($response);
+            } catch (Throwable $e) {
+                http_response_code(500);
+                header('Content-Type: application/json; charset=UTF-8');
+                echo '{"success":false,"error":"The operation could not be committed safely."}';
+                exit;
+            }
         }
         if (function_exists('api_token_log_action')) {
             api_token_log_action($action, $response, http_response_code() ?: 200);
         }
     }
-    header('Content-Type: application/json');
-    echo json_encode($response);
+    header('Content-Type: application/json; charset=UTF-8');
+    try {
+        echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+    } catch (JsonException $e) {
+        http_response_code(500);
+        echo '{"success":false,"error":"Response encoding failed"}';
+    }
     exit;
 }
 
@@ -285,8 +297,12 @@ function api_error($message, $code = 400) {
     if (!empty($GLOBALS['is_api_token_auth']) && function_exists('api_token_log_action')) {
         api_token_log_action((string) ($GLOBALS['api_current_action'] ?? ($_GET['action'] ?? '')), ['error' => $message], $code);
     }
-    header('Content-Type: application/json');
-    echo json_encode(['error' => $message, 'success' => false]);
+    header('Content-Type: application/json; charset=UTF-8');
+    try {
+        echo json_encode(['error' => $message, 'success' => false], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+    } catch (JsonException $e) {
+        echo '{"success":false,"error":"Request failed"}';
+    }
     exit;
 }
 
@@ -309,8 +325,23 @@ function require_admin_post() {
  * Get JSON input from request body
  */
 function get_json_input() {
-    $input = json_decode(file_get_contents('php://input'), true);
-    $input = is_array($input) ? $input : [];
+    $raw = (string) file_get_contents('php://input');
+    if ($raw === '') {
+        $input = [];
+    } else {
+        $valid_utf8 = function_exists('mb_check_encoding') ? mb_check_encoding($raw, 'UTF-8') : preg_match('//u', $raw) === 1;
+        if (!$valid_utf8) {
+            api_error('Request body must be valid UTF-8.', 422);
+        }
+        try {
+            $input = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            api_error('Request body must contain valid JSON.', 422);
+        }
+        if (!is_array($input)) {
+            api_error('Request JSON root must be an object.', 422);
+        }
+    }
 
     $route_defaults = $GLOBALS['api_mobile_v1_input_defaults'] ?? [];
     if (is_array($route_defaults) && $route_defaults !== []) {
@@ -322,4 +353,22 @@ function get_json_input() {
     }
 
     return $input;
+}
+
+function api_validate_utf8_values(array $values): void
+{
+    foreach ($values as $key => $value) {
+        foreach ([$key, $value] as $candidate) {
+            if (is_array($candidate)) {
+                api_validate_utf8_values($candidate);
+            } elseif (is_string($candidate)) {
+                $valid = function_exists('mb_check_encoding')
+                    ? mb_check_encoding($candidate, 'UTF-8')
+                    : preg_match('//u', $candidate) === 1;
+                if (!$valid) {
+                    api_error('Request parameters must be valid UTF-8.', 422);
+                }
+            }
+        }
+    }
 }

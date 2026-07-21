@@ -269,6 +269,43 @@ document.addEventListener('click', function(event) {
    ============================= */
 
 (function() {
+    var buttons = document.querySelectorAll('[data-quick-start-work]');
+    if (!buttons.length) return;
+
+    buttons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            if (button.disabled) return;
+
+            var cfg = window.appConfig || {};
+            var label = button.querySelector('span');
+            var originalLabel = label ? label.textContent : '';
+            button.disabled = true;
+            button.setAttribute('aria-busy', 'true');
+            if (label) label.textContent = cfg.startingWorkLabel || 'Starting...';
+
+            fetch((cfg.apiUrl || 'index.php?page=api') + '&action=quick-start', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': window.csrfToken || cfg.csrfToken || '' },
+                body: new FormData()
+            })
+                .then(function(response) { return response.json(); })
+                .then(function(result) {
+                    if (!result.success || !result.url) {
+                        throw new Error(result.error || cfg.startWorkFailedLabel || 'Could not start work.');
+                    }
+                    window.location.assign(result.url);
+                })
+                .catch(function(error) {
+                    window.showAppToast(error.message || cfg.startWorkFailedLabel || 'Could not start work.', 'error', { force: true });
+                    button.disabled = false;
+                    button.removeAttribute('aria-busy');
+                    if (label) label.textContent = originalLabel;
+                });
+        });
+    });
+})();
+
+(function() {
     var cfg = window.appConfig || {};
     if (!cfg.isStaff) return; // Only for agents/admins
 

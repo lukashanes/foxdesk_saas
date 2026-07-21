@@ -1,6 +1,8 @@
 <?php
 
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/ticket-list-source.php';
+require_once __DIR__ . '/support/ticket-detail-source.php';
 $functions = file_get_contents($root . '/includes/functions.php');
 $helper = file_get_contents($root . '/includes/components/ticket-detail-surface.php');
 $sidebar = file_get_contents($root . '/includes/components/ticket-detail-sidebar.php');
@@ -12,11 +14,19 @@ $shareState = file_get_contents($root . '/includes/modules/tickets/ticket-share-
 $ticketBulkActions = file_get_contents($root . '/includes/modules/tickets/ticket-bulk-actions.php');
 $ticketListFilters = file_get_contents($root . '/includes/modules/tickets/ticket-list-filters.php');
 $ticketRowViewModel = file_get_contents($root . '/includes/modules/tickets/ticket-row-view-model.php');
+$ticketListAssets = file_get_contents($root . '/includes/components/ticket-list-assets.php');
 $ticketListJs = file_get_contents($root . '/assets/js/ticket-list.js');
-$ticketDetailJs = file_get_contents($root . '/assets/js/ticket-detail.js');
+$ticketListDueDateJs = file_get_contents($root . '/assets/js/ticket-list-due-date.js');
+$ticketListTimeJs = file_get_contents($root . '/assets/js/ticket-list-time.js');
+$ticketDetailJs = ticket_detail_browser_source($root);
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
 $ticketPage = file_get_contents($root . '/pages/ticket-detail.php');
-$ticketListPage = file_get_contents($root . '/pages/tickets.php');
+$ticketListPage = ticket_list_route_source($root);
+$ticketListController = ticket_list_controller_source($root);
+$ticketListView = ticket_list_view_source($root);
+$ticketListBoard = ticket_list_board_source($root);
+$ticketListTable = ticket_list_table_source($root);
+$ticketListSurface = ticket_list_surface_source($root);
 $clientPage = file_get_contents($root . '/pages/client.php');
 $theme = file_get_contents($root . '/theme.css');
 $header = file_get_contents($root . '/includes/header.php');
@@ -40,7 +50,10 @@ $assert($shareState !== false, 'ticket share state module must be readable.');
 $assert($ticketBulkActions !== false, 'ticket bulk actions module must be readable.');
 $assert($ticketListFilters !== false, 'ticket list filters module must be readable.');
 $assert($ticketRowViewModel !== false, 'ticket row view model module must be readable.');
+$assert($ticketListAssets !== false, 'ticket list assets component must be readable.');
 $assert($ticketListJs !== false, 'ticket list JS asset must be readable.');
+$assert($ticketListDueDateJs !== false, 'ticket list due-date JS asset must be readable.');
+$assert($ticketListTimeJs !== false, 'ticket list time JS asset must be readable.');
 $assert($ticketDetailJs !== false, 'ticket detail JS asset must be readable.');
 $assert($bootstrap !== false, 'module bootstrap must be readable.');
 $assert($ticketPage !== false, 'pages/ticket-detail.php must be readable.');
@@ -121,19 +134,30 @@ foreach ([
     $assert(str_contains($ticketRowViewModel, $needle), 'Ticket row view model missing: ' . $needle);
 }
 
-$assert(str_contains($ticketListPage, 'ticket_list_filter_state_from_request($_GET, $_COOKIE, $is_archive)'), 'Tickets page must consume extracted filter state.');
-$assert(str_contains($ticketListPage, 'ticket_handle_bulk_actions('), 'Tickets page must delegate bulk actions.');
-$assert(str_contains($ticketListPage, 'ticket_registry_split_model($statuses, $tickets, $status_id, $ticket_list_view)'), 'Tickets page must consume row split model.');
-$assert(str_contains($ticketListPage, 'ticket_registry_kanban_model('), 'Tickets page must consume kanban model.');
-$assert(str_contains($ticketListPage, 'assets/js/ticket-list.js'), 'Tickets page must load extracted ticket list JS.');
-$assert(!str_contains($ticketListPage, '$collect_editable_tickets = function'), 'Tickets page must not own editable ticket collection.');
-$assert(!str_contains($ticketListPage, "isset(\$_POST['bulk_update'])"), 'Tickets page must not own bulk update handling.');
-$assert(!str_contains($ticketListPage, '$ticket_registry_allowed_status_groups'), 'Tickets page must not define status class closures inline.');
-$assert(!str_contains($ticketListPage, '$statuses_by_id = [];'), 'Tickets page must not rebuild status lookup inline.');
-$assert(!str_contains($ticketListPage, '$allowed_sorts ='), 'Tickets page must not own sort allow-list logic.');
-$assert(!str_contains($ticketListPage, 'normalize_ticket_tags($_GET'), 'Tickets page must not parse tag request filters inline.');
-$assert(!str_contains($ticketListPage, 'function applyHeaderSort'), 'Tickets page must not own ticket list JS behavior.');
+$assert(str_contains($ticketListPage, 'ticket-list-page-controller.php'), 'Tickets route must delegate request handling.');
+$assert(str_contains($ticketListPage, 'ticket-list-page.php'), 'Tickets route must delegate registry rendering.');
+$assert(str_contains($ticketListController, 'ticket_list_filter_state_from_request($_GET, $_COOKIE, $is_archive)'), 'Ticket-list controller must consume extracted filter state.');
+$assert(str_contains($ticketListController, 'ticket_handle_bulk_actions('), 'Ticket-list controller must delegate bulk actions.');
+$assert(str_contains($ticketListView, 'ticket_registry_split_model($statuses, $tickets, $status_id, $ticket_list_view)'), 'Ticket-list view must consume row split model.');
+$assert(str_contains($ticketListView, 'ticket_registry_kanban_model('), 'Ticket-list view must consume kanban model.');
+$assert(str_contains($ticketListView, 'ticket-list-board.php'), 'Ticket-list view must delegate Kanban markup.');
+$assert(str_contains($ticketListView, 'ticket-list-table.php'), 'Ticket-list view must delegate table markup.');
+$assert(str_contains($ticketListBoard, 'data-kanban-scope="main"'), 'Ticket-list board component must own Kanban columns.');
+$assert(str_contains($ticketListTable, 'tickets-table'), 'Ticket-list table component must own list rows.');
+$assert(str_contains($ticketListPage, 'includes/components/ticket-list-assets.php'), 'Tickets page must delegate its scripts and templates.');
+$assert(str_contains($ticketListAssets, 'assets/js/ticket-list.js'), 'Ticket list assets component must load extracted ticket list JS.');
+$assert(str_contains($ticketListAssets, 'assets/js/ticket-list-due-date.js'), 'Ticket list assets component must load due-date behavior.');
+$assert(str_contains($ticketListAssets, 'assets/js/ticket-list-time.js'), 'Ticket list assets component must load time behavior.');
+$assert(!str_contains($ticketListSurface, '$collect_editable_tickets = function'), 'Ticket list must not own editable ticket collection.');
+$assert(!str_contains($ticketListSurface, "isset(\$_POST['bulk_update'])"), 'Ticket list must not own bulk update handling.');
+$assert(!str_contains($ticketListSurface, '$ticket_registry_allowed_status_groups'), 'Ticket list must not define status class closures inline.');
+$assert(!str_contains($ticketListSurface, '$statuses_by_id = [];'), 'Ticket list must not rebuild status lookup inline.');
+$assert(!str_contains($ticketListSurface, '$allowed_sorts ='), 'Ticket list must not own sort allow-list logic.');
+$assert(!str_contains($ticketListSurface, 'normalize_ticket_tags($_GET'), 'Ticket list must not parse tag request filters inline.');
+$assert(!str_contains($ticketListSurface, 'function applyHeaderSort'), 'Ticket list PHP must not own browser behavior.');
 $assert(str_contains($ticketListJs, 'window.applyHeaderSort'), 'Ticket list JS must own header sort behavior.');
+$assert(str_contains($ticketListDueDateJs, 'function bindDueDatePopover'), 'Due-date behavior must live in its focused module.');
+$assert(str_contains($ticketListTimeJs, 'function bindInlineLogTime'), 'Time behavior must live in its focused module.');
 
 foreach ([
     'data-ticket-detail-surface',

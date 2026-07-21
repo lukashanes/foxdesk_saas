@@ -42,21 +42,9 @@ function ticket_bulk_editable_tickets($ticket_ids, array $user): array
 
 function ticket_bulk_delete_archived(array $editable_tickets): int
 {
-    $deleted_count = 0;
-    foreach ($editable_tickets as $ticket_id => $ticket_item) {
-        $attachments = get_ticket_attachments($ticket_id);
-        foreach ($attachments as $attachment) {
-            $path = attachment_absolute_path($attachment);
-            if ($path !== '' && is_file($path)) {
-                @unlink($path);
-            }
-        }
-        if (delete_ticket($ticket_id)) {
-            $deleted_count++;
-        }
-    }
-
-    return $deleted_count;
+    // Permanent deletion is never a bulk action. Each ticket must go through
+    // the preflight and typed-code confirmation flow.
+    return 0;
 }
 
 function ticket_bulk_archive(array $editable_tickets, array $user): int
@@ -172,8 +160,7 @@ function ticket_handle_bulk_actions(string $method, array $post, array $user, bo
     $editable_tickets = ticket_bulk_editable_tickets($post['ticket_ids'] ?? [], $user);
 
     if (isset($post['bulk_delete']) && $is_archive) {
-        $deleted_count = ticket_bulk_delete_archived($editable_tickets);
-        flash($deleted_count > 0 ? t('Selected tickets were deleted.') : t('No tickets selected.'), $deleted_count > 0 ? 'success' : 'error');
+        flash(t('Bulk permanent deletion is not available. Open one ticket and confirm its code.'), 'error');
         redirect('tickets', $redirect_params + ['archived' => '1']);
     }
 

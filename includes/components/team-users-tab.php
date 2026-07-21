@@ -410,6 +410,15 @@ defined('BASE_PATH') || exit;
                                         <?php echo e(t('Can archive tickets')); ?>
                                     </label>
                                 </div>
+                                <div id="add_can_delete_tickets_permanently_wrap">
+                                    <label class="flex items-center text-sm">
+                                        <input type="checkbox" name="can_delete_tickets_permanently" class="mr-2">
+                                        <?php echo e(t('Can permanently delete tickets')); ?>
+                                    </label>
+                                    <p class="text-xs mt-1 text-theme-muted">
+                                        <?php echo e(t('Allows irreversible deletion of a ticket and all related data.')); ?>
+                                    </p>
+                                </div>
                                 <div>
                                     <label class="flex items-center text-sm">
                                         <input type="checkbox" name="can_view_edit_history" class="mr-2">
@@ -884,6 +893,16 @@ defined('BASE_PATH') || exit;
                                         <?php echo e(t('Can archive tickets')); ?>
                                     </label>
                                 </div>
+                                <div id="edit_can_delete_tickets_permanently_wrap">
+                                    <label class="flex items-center text-sm">
+                                        <input type="checkbox" name="can_delete_tickets_permanently"
+                                            id="edit_can_delete_tickets_permanently" class="mr-2">
+                                        <?php echo e(t('Can permanently delete tickets')); ?>
+                                    </label>
+                                    <p class="text-xs mt-1 text-theme-muted">
+                                        <?php echo e(t('Allows irreversible deletion of a ticket and all related data.')); ?>
+                                    </p>
+                                </div>
                                 <div>
                                     <label class="flex items-center text-sm">
                                         <input type="checkbox" name="can_view_edit_history" id="edit_can_view_edit_history"
@@ -1185,6 +1204,10 @@ defined('BASE_PATH') || exit;
                 if (canArchive) {
                     canArchive.checked = false;
                 }
+                const canDeleteTicketsPermanently = document.getElementById('edit_can_delete_tickets_permanently');
+                if (canDeleteTicketsPermanently) {
+                    canDeleteTicketsPermanently.checked = false;
+                }
                 const canViewEditHistory = document.getElementById('edit_can_view_edit_history');
                 if (canViewEditHistory) {
                     canViewEditHistory.checked = false;
@@ -1265,6 +1288,9 @@ defined('BASE_PATH') || exit;
                 if (canArchive) {
                     canArchive.checked = permissions.can_archive === true;
                 }
+                if (canDeleteTicketsPermanently) {
+                    canDeleteTicketsPermanently.checked = permissions.can_delete_tickets_permanently === true;
+                }
                 if (canViewEditHistory) {
                     canViewEditHistory.checked = permissions.can_view_edit_history === true;
                 }
@@ -1344,4 +1370,3 @@ defined('BASE_PATH') || exit;
                 initUserAvatarDropzone();
             }
         </script>
-

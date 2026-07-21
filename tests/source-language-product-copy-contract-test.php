@@ -1,6 +1,7 @@
 <?php
 
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/settings-source.php';
 
 function assert_product_copy(bool $condition, string $message): void
 {
@@ -56,7 +57,7 @@ assert_product_copy(str_contains($cloud, '<h2>One plan. No per-seat math.</h2>')
 $billing = read_product_file($root, 'pages/billing.php');
 $billing_functions = read_product_file($root, 'includes/billing-functions.php');
 $index = read_product_file($root, 'index.php');
-$settings = read_product_file($root, 'pages/admin/settings.php');
+$settings = settings_source_bundle($root);
 
 assert_product_copy(str_contains($billing_functions, 'function billing_lifecycle_display_label'), 'Billing display labels helper is missing.');
 assert_product_copy(str_contains($billing_functions, 'function billing_payment_display_label'), 'Billing payment display helper is missing.');

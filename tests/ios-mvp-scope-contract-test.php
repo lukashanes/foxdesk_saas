@@ -103,13 +103,21 @@ foreach (['Label("Reports"', 'Label("Settings"', 'Label("Billing"', 'Label("Plat
     $assert(!str_contains($rootView, $needle), "iOS shell must not expose out-of-scope tab: {$needle}");
 }
 
-$assert(str_contains($rootView, 'NewTicketView { ticketID in'), 'iOS New ticket tab must open the created ticket after save.');
+$assert(
+    str_contains($rootView, 'NewTicketView(')
+        && str_contains($rootView, 'onCreated: { ticketID in')
+        && str_contains($rootView, 'openTicket(ticketID)'),
+    'iOS New ticket tab must open the created ticket after save.'
+);
 $assert(str_contains($rootView, 'private func openTicket(_ ticketID: Int)'), 'iOS shell must centralize created-ticket navigation.');
 $assert(str_contains($newTicketView, 'private func resetForm()'), 'New ticket form must reset after successful create when used as a primary tab.');
 $assert(str_contains($newTicketView, 'selectedPriorityID = createOptions?.defaults?.priorityId'), 'New ticket reset must preserve default priority for the next ticket.');
 $assert(str_contains($newTicketView, 'selectedStatusID = createOptions?.defaults?.statusId'), 'New ticket reset must preserve default status for the next ticket.');
 $assert(str_contains($rootView, 'WorkspaceAccessBlockedView'), 'iOS app must show a workspace-access state instead of billing or platform screens.');
-$assert(str_contains($rootView, 'session.tenantState?.billingActions?.noticeTitle'), 'iOS app may read billing notice title only as a workspace access message.');
+$assert(str_contains($rootView, 'Workspace access is paused'), 'iOS app must use a generic workspace-access title.');
+$assert(str_contains($rootView, 'Contact your workspace administrator or FoxDesk support'), 'iOS app must use a generic workspace-access recovery message.');
+$assert(!str_contains($rootView, 'access.message'), 'iOS root UI must not render raw backend access or billing messages.');
+$assert(!str_contains($rootView, 'billingActions'), 'iOS root UI must not decode or render billing actions.');
 $assert(!str_contains($rootView, 'showCheckout'), 'iOS root UI must not branch into checkout.');
 $assert(!str_contains($rootView, 'showPortal'), 'iOS root UI must not branch into a billing portal.');
 $assert(str_contains($rootView, 'AccountView()'), 'iOS shell must use the lightweight Account view.');
@@ -118,6 +126,8 @@ $assert(!str_contains($accountView, 'showCheckout'), 'iOS Account must not expos
 $assert(!str_contains($accountView, 'showPortal'), 'iOS Account must not expose billing portal actions.');
 $assert(!str_contains($accountView, 'checkoutLabel'), 'iOS Account must not expose checkout labels.');
 $assert(!str_contains($accountView, 'portalLabel'), 'iOS Account must not expose portal labels.');
+$assert(!str_contains($accountView, 'trialEndsAt'), 'iOS Account must not expose trial state.');
+$assert(!str_contains($accountView, 'billingActions'), 'iOS Account must not expose billing state.');
 $assert(!str_contains($searchView, '"reports"'), 'iOS Search must not show report sections in the first agent/admin MVP.');
 $assert(!str_contains($searchView, 'case "report"'), 'iOS Search must not render report result rows in the first agent/admin MVP.');
 $assert(!str_contains(strtolower($screenshotDemo), 'billing'), 'iOS App Store screenshot fixture must not show billing copy in the agent/admin MVP.');
@@ -131,8 +141,10 @@ $assert(str_contains($accountView, 'Copy APNs token'), 'Debug/staging Account mu
 $assert(str_contains($project, 'Staging: debug'), 'Staging must stay a debug config so APNs diagnostics are available for physical-device smoke testing.');
 $assert(str_contains($project, 'Production: release'), 'Production must stay a release config for App Store builds.');
 
-$assert(str_contains($tenantModels, 'TenantBillingActions'), 'Tenant state model must keep billing notice fields for access-state messages.');
-$assert(str_contains($tenantModels, 'showCheckout'), 'Tenant state model must decode checkout flags from the backend even though iOS does not render them.');
+$assert(!str_contains($tenantModels, 'TenantBillingActions'), 'Native tenant models must not include billing action data.');
+$assert(!str_contains($tenantModels, 'showCheckout'), 'Native tenant models must ignore checkout flags returned by the backend.');
+$assert(!str_contains($tenantModels, 'subscriptionStatus'), 'Native tenant models must not include subscription state.');
+$assert(!str_contains($tenantModels, 'trialEndsAt'), 'Native tenant models must not include trial state.');
 $assert(str_contains($runbook, 'No billing or upgrade flow inside iOS'), 'Runbook must keep billing outside the iOS MVP.');
 $assert(str_contains($handoff, 'Billing, pricing, Stripe, platform administration, reports, and full workspace'), 'Handoff must keep out-of-scope surfaces out of iOS.');
 

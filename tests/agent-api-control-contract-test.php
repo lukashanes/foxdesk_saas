@@ -1,6 +1,7 @@
 <?php
 
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/settings-source.php';
 
 $files = [
     'schema' => $root . '/includes/schema.sql',
@@ -24,6 +25,7 @@ foreach ($files as $key => $path) {
         exit(1);
     }
 }
+$contents['settings'] = settings_source_bundle($root);
 
 $assert = static function (bool $condition, string $message): void {
     if (!$condition) {
@@ -52,18 +54,15 @@ foreach ([
 
 foreach ([
     'function ensure_api_token_schema',
-    'CREATE TABLE api_tokens',
-    'ALTER TABLE api_tokens ADD COLUMN tenant_id',
-    'ALTER TABLE api_tokens ADD COLUMN scopes_json',
-    'ALTER TABLE api_tokens ADD COLUMN revoked_at',
-    'ALTER TABLE api_tokens ADD COLUMN last_used_ip',
-    'ALTER TABLE api_tokens ADD COLUMN last_used_user_agent',
-    "ALTER TABLE api_tokens ADD INDEX idx_tenant_id",
-    "column_exists_uncached('api_tokens', 'scopes_json')",
-    "column_exists_uncached('api_tokens', 'tenant_id')",
-    'WHERE expires_at IS NULL',
+    "schema_require('API access'",
+    "'scopes_json'",
+    "'tenant_id'",
 ] as $needle) {
-    $assert(str_contains($contents['auth'], $needle), 'API token schema self-healing missing: ' . $needle);
+    $assert(str_contains($contents['auth'], $needle), 'API token schema contract missing: ' . $needle);
+}
+
+foreach (['CREATE TABLE', 'ALTER TABLE'] as $runtimeDdl) {
+    $assert(!str_contains($contents['auth'], $runtimeDdl), 'API auth must not mutate schema at request time: ' . $runtimeDdl);
 }
 
 foreach ([
@@ -94,6 +93,8 @@ foreach ([
     "'agent-docs' => 'api_agent_docs'",
     "'app-create-ticket' => 'api_app_create_ticket'",
     "'app-log-time' => 'api_app_log_time'",
+    "'app-restore-comment' => 'api_app_restore_comment'",
+    "'app-restore-time-entry' => 'api_app_restore_time_entry'",
 ] as $needle) {
     $assert(str_contains($contents['router'], $needle), 'Agent API router missing: ' . $needle);
 }
@@ -151,7 +152,8 @@ $assert(str_contains($contents['settings'], "'read_only' =>"), 'Settings API & a
 $assert(str_contains($contents['settings'], "'read_write' =>"), 'Settings API & agents must offer a Read & write preset.');
 $assert(str_contains($contents['settings'], "'all' =>"), 'Settings API & agents must offer an All preset.');
 $assert(!str_contains($contents['settings'], 'value="never"'), 'Settings API keys must not offer never-expiring tokens.');
-$assert(str_contains($contents['auth'], "\$expires_at = date('Y-m-d H:i:s', time() + (90 * 86400));"), 'API tokens must always receive a default expiration when callers omit one.');
+$assert(str_contains($contents['auth'], "\$expires_at = \$expires_at !== null"), 'API tokens must preserve explicit expiration while allowing non-expiring keys.');
+$assert(!str_contains($contents['auth'], "90 * 86400"), 'API tokens must not receive a hidden default expiration.');
 $assert(str_contains($contents['teamComponent'], 'ai-token-permission-preset'), 'AI agent edit flow must use simple permission presets.');
 $assert(str_contains($contents['teamComponent'], 'data-ai-agent-key-ready'), 'AI agent token creation must render the one-time key in the agent flow.');
 $assert(str_contains($contents['teamComponent'], 'data-ai-agent-key-copy'), 'AI agent token creation must provide a direct copy button.');

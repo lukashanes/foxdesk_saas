@@ -1,5 +1,19 @@
 # Claude Agent Instructions
 
+## Canonical ticket workflow
+
+- Use only the FoxDesk Agent API. Never use a web browser.
+- Start with `agent-docs`, then `agent-me`.
+- Before changing an existing ticket, call `agent-get-ticket`.
+- Every POST requires a unique `Idempotency-Key`.
+- Keep the main ticket concise: title, general description, client, assignee,
+  status, and priority only.
+- Use `agent-add-update` for a comment without tracked time.
+- Use one `agent-add-work-entry` request for each tracked work record; send the
+  formatted comment and `duration_minutes` together.
+- Finish with `agent-get-ticket`: every tracked-work comment must have a linked
+  time entry with `comment_id`, totals must match, and no duplicate may exist.
+
 Use this when connecting Claude Desktop, Claude Code, or a Claude Project to
 FoxDesk through a scoped API key.
 
@@ -25,14 +39,11 @@ At the start of every session, load agent-docs with the current token and use it
 as the source of truth for allowed actions, scopes, request fields, and safety
 rules.
 Before write actions, confirm the target ticket or client when it is ambiguous.
-Use app-create-ticket for new work, app-add-comment for plain ticket updates,
-app-add-comment-with-time when a comment and worked time belong together,
-app-log-time only for standalone time entries, and app-reporting-review for
-report drafts.
+Use agent-create-ticket for the concise main ticket, agent-add-update for a
+comment without time, agent-add-work-entry for tracked work, and
+app-reporting-review for report drafts.
 For retries, reuse the same Idempotency-Key with an unchanged body. If FoxDesk
 returns 409 with Retry-After, wait and retry; do not generate a second key.
-Standalone time entries accept 1 to 1440 minutes and default to an interval
-ending at the request time when start/end are omitted.
 If the API returns 401 or 403, ask for a token with the required scope.
 ```
 
@@ -40,7 +51,9 @@ If the API returns 401 or 403, ask for a token with the required scope.
 
 ```bash
 sh examples/agent-api/create-ticket.sh
-FOXDESK_TICKET_ID=123 FOXDESK_MANUAL_DATE=2026-05-25 FOXDESK_MANUAL_START_TIME=21:18 FOXDESK_MANUAL_END_TIME=22:06 FOXDESK_DURATION_MINUTES=48 sh examples/agent-api/comment-with-time.sh
-FOXDESK_TICKET_ID=123 sh examples/agent-api/log-time.sh
+FOXDESK_TICKET_ID=123 FOXDESK_COMMENT='<p><strong>13 Jul 2026 - 27 min</strong></p><ul><li>Reviewed campaign performance.</li></ul>' FOXDESK_SKIP_NOTIFICATION=1 sh examples/agent-api/add-comment.sh
 FOXDESK_ORGANIZATION_ID=1 sh examples/agent-api/prepare-report.sh
 ```
+
+Use `comment-with-time.sh` for tracked work. Use `log-time.sh` only when no
+comment belongs to the time entry.

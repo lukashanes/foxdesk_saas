@@ -238,7 +238,16 @@ app_record_status="$(status_from_env_flag APP_STORE_CONNECT_APP_RECORD_READY)"
 developer_status="$(status_from_env_flag APPLE_DEVELOPER_BUNDLE_READY)"
 review_info_status="$(status_from_env_flag APP_STORE_REVIEW_INFO_READY)"
 screenshots_uploaded_status="$(status_from_env_flag APP_STORE_SCREENSHOTS_UPLOADED)"
-testflight_build_status="$(status_from_env_flag TESTFLIGHT_BUILD_UPLOADED)"
+upload_evidence_status="missing"
+if (cd "$ROOT_DIR" && ./bin/ios-upload-evidence.sh --check >/dev/null 2>&1); then
+  upload_evidence_status="uploaded"
+fi
+testflight_build_status="missing"
+if [[ "${TESTFLIGHT_BUILD_UPLOADED:-}" == "1" && "$upload_evidence_status" == "uploaded" ]]; then
+  testflight_build_status="ready"
+elif [[ "$upload_evidence_status" == "uploaded" ]]; then
+  testflight_build_status="processing"
+fi
 privacy_status="$(status_from_env_flag APP_STORE_PRIVACY_REVIEWED)"
 pricing_status="$(status_from_env_flag APP_STORE_PRICING_READY)"
 availability_status="$(status_from_env_flag APP_STORE_AVAILABILITY_READY)"
@@ -269,7 +278,11 @@ append_remaining_action() {
 [[ "$developer_status" == "ready" ]] || append_remaining_action 'Confirm the Apple Developer explicit App ID `net.foxdesk.ios` and enable Push Notifications.'
 [[ "$review_info_status" == "ready" ]] || append_remaining_action 'Save the reviewer login, contact phone/email, and review notes in App Store Connect.'
 [[ "$screenshots_uploaded_status" == "ready" ]] || append_remaining_action 'Upload the final screenshot packet to App Store Connect and check every device crop.'
-[[ "$testflight_build_status" == "ready" ]] || append_remaining_action 'Archive and upload a signed build, then confirm it is processed and selectable in App Store Connect/TestFlight.'
+if [[ "$testflight_build_status" == "processing" ]]; then
+  append_remaining_action 'Apple received the matching build; wait for processing, confirm build 1.0 (5) is selectable, then set TESTFLIGHT_BUILD_UPLOADED=1.'
+elif [[ "$testflight_build_status" != "ready" ]]; then
+  append_remaining_action 'Archive and upload a signed build, record upload evidence, then confirm it is processed and selectable in App Store Connect/TestFlight.'
+fi
 [[ "$demo_status" == "ready" ]] || append_remaining_action 'Verify the App Review demo account with `npm run ios:demo:check -- --require-credentials --json`.'
 [[ "$demo_write_status" == "ready" ]] || append_remaining_action 'Prove App Review demo write permission by creating a demo ticket and linked timed internal comment with manual date/start/end using `FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json`.'
 [[ "$live_smoke_status" == "ready" ]] || append_remaining_action 'Run the live mobile API read smoke with `npm run ios:api:smoke -- --require-credentials --json`.'
@@ -280,7 +293,7 @@ append_remaining_action() {
 [[ "$pricing_status" == "ready" ]] || append_remaining_action 'Set the iOS app download price to Free.'
 [[ "$availability_status" == "ready" ]] || append_remaining_action 'Save the intended App Store countries or regions.'
 [[ "$content_rights_status" == "ready" ]] || append_remaining_action 'Answer Content Rights for customer-supplied ticket content.'
-[[ "$agreements_status" == "ready" ]] || append_remaining_action 'Confirm no blocking agreement, tax, or banking action remains.'
+[[ "$agreements_status" == "ready" ]] || append_remaining_action 'Confirm the free-app Apple Developer Program License Agreement is active and no blocking agreement action remains.'
 [[ "$platforms_status" == "ready" ]] || append_remaining_action 'Disable Apple Silicon Mac and Apple Vision Pro availability for this iPhone-only release.'
 [[ "$selected_build_status" == "ready" ]] || append_remaining_action "Select App Store build ${project_marketing_version} (${project_build_number})."
 append_remaining_action 'Run `npm run ios:submission:gate` and require it to pass after every preceding gate is ready.'
@@ -324,6 +337,7 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 | Apple Developer bundle id + Push Notifications | $developer_status |
 | App Review portal login/contact/notes | $review_info_status |
 | App Store screenshots uploaded | $screenshots_uploaded_status |
+| Matching archive upload evidence | $upload_evidence_status |
 | TestFlight/App Store build processed | $testflight_build_status |
 | App Review demo credentials | $demo_status |
 | Demo reviewer write proof | $demo_write_status |
@@ -336,7 +350,7 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 | App download pricing | $pricing_status |
 | App Store availability | $availability_status |
 | Content Rights | $content_rights_status |
-| Agreements, tax, and banking | $agreements_status |
+| Free-app agreement | $agreements_status |
 | Untested platform availability disabled | $platforms_status |
 | Selected App Store build ${project_marketing_version} (${project_build_number}) | $selected_build_status |
 
@@ -355,6 +369,7 @@ that requires Apple systems, a live workspace account, or a physical iPhone.
 - API local write evidence: $(if [[ -f "$api_local_write_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-api-smoke/latest-local-write.json\`
 - APNs dry-run evidence: $(if [[ -f "$apns_dry_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-apns-smoke/latest-dry-run.json\`
 - APNs live-send evidence: $(if [[ -f "$apns_send_evidence" ]]; then printf 'present'; else printf 'missing'; fi) — \`tmp/ios-apns-smoke/latest-send.json\`
+- App Store upload evidence: $upload_evidence_status — \`tmp/ios-upload-evidence/latest.json\`
 - MVP traceability: \`docs/IOS_MVP_TRACEABILITY.md\`
 - Handoff: \`docs/IOS_HANDOFF.md\`
 

@@ -143,6 +143,7 @@ $assert(str_contains($appHandler, 'function api_app_add_comment'), 'Native add c
 $assert(str_contains($appHandler, 'function api_app_add_comment_with_time'), 'Native add comment with time handler is missing.');
 $assert(str_contains($appHandler, "'comment_id' => !empty(\$entry['comment_id']) ? (int) \$entry['comment_id'] : null"), 'Native ticket time entries must expose comment_id so iOS can render comment-with-time as one activity.');
 $assert(str_contains($appHandler, "'started_at' => \$entry['started_at'] ?? null"), 'Native ticket time entries must expose started_at so iOS can verify exact work records after reload.');
+$assert(str_contains($appContract, "'is_archived' => !empty(\$ticket['is_archived'])"), 'Native ticket payloads must expose archive state after archive/restore mutations.');
 $assert(str_contains($appHandler, "'ended_at' => \$entry['ended_at'] ?? null"), 'Native ticket time entries must expose ended_at so iOS can verify exact work records after reload.');
 $assert(str_contains($appHandler, 'api_app_resolve_ticket'), 'Native ticket endpoints must share access checks.');
 $assert(str_contains($appHandler, 'can_see_ticket'), 'Native ticket endpoints must enforce ticket access.');
@@ -1122,6 +1123,7 @@ $assert(str_contains($iosPrivacyManifest, 'CA92.1'), 'iOS privacy manifest must 
 $assert(str_contains($iosPrivacyManifest, 'NSPrivacyCollectedDataTypeEmailAddress'), 'iOS privacy manifest must disclose email address collection.');
 $assert(str_contains($iosPrivacyManifest, 'NSPrivacyCollectedDataTypeCustomerSupport'), 'iOS privacy manifest must disclose customer support data.');
 $assert(str_contains($iosPrivacyManifest, 'NSPrivacyCollectedDataTypePhotosorVideos'), 'iOS privacy manifest must disclose uploaded photo/video data.');
+$assert(str_contains($iosPrivacyManifest, 'NSPrivacyCollectedDataTypeSearchHistory'), 'iOS privacy manifest must disclose server-side ticket/client search queries.');
 $assert(str_contains($iosAppPrivacyAnswers, 'UserDefaults'), 'iOS privacy answer sheet must document UserDefaults required reason API usage.');
 $assert(str_contains($iosAppPrivacyAnswers, 'CA92.1'), 'iOS privacy answer sheet must document the CA92.1 UserDefaults reason.');
 $assert(str_contains($iosAccountView, 'Push diagnostics'), 'iOS Account must include debug/staging APNs diagnostics for physical-device smoke testing.');
@@ -1242,7 +1244,13 @@ $assert(str_contains($iosNewTicketView, 'var uploadState = StagedAttachmentUploa
 $assert(str_contains($iosNewTicketView, 'uploadState.markUploaded(attachment.id)'), 'iOS new ticket retry must mark each successfully uploaded staged attachment.');
 $assert(str_contains($iosNewTicketView, 'pendingAttachments = uploadState.remaining(from: pendingAttachments)'), 'iOS new ticket retry must keep only failed staged attachments after a partial upload failure.');
 $assert(str_contains($iosNewTicketView, 'still needs upload'), 'iOS new ticket retry must tell agents when only some staged attachments still need upload.');
-$assert(str_contains($iosNewTicketView, 'Toggle("Add worked time"'), 'iOS new ticket screen must let agents add manual worked time while creating a ticket.');
+$assert(
+    str_contains($iosNewTicketView, 'includeWorkedTime.toggle()')
+        && str_contains($iosNewTicketView, 'title: includeWorkedTime ? durationLabel(resolvedWorkedTimeMinutes) : "Add time"')
+        && str_contains($iosNewTicketView, 'if includeWorkedTime && canTrackTime')
+        && str_contains($iosNewTicketView, 'quickTimeView'),
+    'iOS new ticket screen must let agents add manual worked time while creating a ticket.'
+);
 $assert(str_contains($iosNewTicketView, 'Toggle("Start timer after creating"'), 'iOS new ticket screen must let agents start the timer immediately after ticket creation.');
 $assert(str_contains($iosNewTicketView, 'addWorkedTimeIfNeeded'), 'iOS new ticket flow must link optional manual time to a comment on the created ticket.');
 $assert(str_contains($iosNewTicketView, 'startTimerIfNeeded'), 'iOS new ticket flow must start the native ticket timer when requested.');

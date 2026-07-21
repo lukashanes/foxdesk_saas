@@ -1,6 +1,7 @@
 <?php
 
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/ticket-detail-source.php';
 
 require_once $root . '/includes/ticket-crud-functions.php';
 require_once $root . '/includes/modules/tickets/ticket-list-filters.php';
@@ -48,10 +49,10 @@ $assert($unsupported_state['sort'] === 'newest', 'Tag sort must fall back when t
 
 $ticket_handler = $read('includes/api/ticket-handler.php');
 $router = $read('includes/api/router.php');
-$detail_js = $read('assets/js/ticket-detail.js');
+$detail_js = ticket_detail_browser_source($root);
 $ticket_detail = $read('pages/ticket-detail.php');
 $sidebar = $read('includes/components/ticket-detail-sidebar.php');
-$new_ticket = $read('pages/new-ticket.php');
+$new_ticket = new_ticket_composed_source($root);
 $bulk_actions = $read('includes/modules/tickets/ticket-bulk-actions.php');
 
 $assert(str_contains($router, "'get-tags' => 'api_get_tags'"), 'API router must expose get-tags.');

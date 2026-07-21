@@ -1354,30 +1354,10 @@ function page_views_table_exists()
     return $exists;
 }
 
-/**
- * Ensure page_views table exists — creates it on first call if missing.
- */
+/** Check whether the installed schema supports page-view tracking. */
 function ensure_page_views_table()
 {
-    if (page_views_table_exists()) {
-        return true;
-    }
-    try {
-        get_db()->exec("
-            CREATE TABLE IF NOT EXISTS page_views (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                page VARCHAR(50) NOT NULL,
-                section VARCHAR(50) DEFAULT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_user (user_id),
-                INDEX idx_page (page),
-                INDEX idx_created (created_at),
-                INDEX idx_user_page (user_id, page)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ");
-        return true;
-    } catch (Throwable $e) {
-        return false;
-    }
+    return schema_is_ready('page-view tracking', ['page_views'], [
+        'page_views' => ['user_id', 'page', 'section', 'created_at'],
+    ]);
 }

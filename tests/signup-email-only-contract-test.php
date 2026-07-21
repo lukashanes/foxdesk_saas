@@ -65,6 +65,8 @@ $assert(str_contains($signup_page, 'signup_magic_request_failed'), 'Signup page 
 $assert(str_contains($signup_page, "We could not send the signup link. Please try again."), 'Signup page must use a safe generic send failure message.');
 $assert(str_contains($signup_page, "url('legal', ['type' => 'terms'])"), 'Signup must keep Terms link.');
 $assert(str_contains($signup_page, "url('legal', ['type' => 'privacy'])"), 'Signup must keep Privacy link.');
+$assert(str_contains($signup_page, 'acting for business or professional purposes'), 'Signup must confirm the B2B customer boundary.');
+$assert(str_contains($signup_page, 'have authority to bind the customer'), 'Signup must confirm signatory authority.');
 $assert(str_contains($signup_page, 'name="email"'), 'Signup form must contain one email input.');
 foreach ([
     'name="workspace_name"',

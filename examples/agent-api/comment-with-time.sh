@@ -37,4 +37,4 @@ payload="${payload}\"duration_minutes\":${FOXDESK_DURATION_MINUTES},"
 payload="${payload}\"is_billable\":${is_billable}"
 payload="${payload}}"
 
-foxdesk_post_json "app-add-comment-with-time" "$payload"
+foxdesk_post_json "agent-add-work-entry" "$payload"

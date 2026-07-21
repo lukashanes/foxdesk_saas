@@ -28,7 +28,7 @@ controls.
 | Page | Lines | Status | Owner Track | Next Step |
 | --- | ---: | --- | --- | --- |
 | `pages/admin/reports.php` | 2128 | needs module extraction | shared customer workflow | Query, totals, billing adjustments, CSV export, and billing review JS are extracted; continue only if report rendering grows again. |
-| `pages/admin/settings.php` | 2094 | needs module extraction | shared customer workflow plus self-hosted update compatibility | Main POST actions, workflow POST router, tab view model, tab navigation, templates, and workflow cards are extracted; continue splitting only large rendering sections. |
+| `pages/admin/settings.php` | 24 | already modular | SaaS workspace settings | Route delegates request handling, section state, and allowlisted section partials; each controller/view file stays below 700 lines. |
 | `pages/tickets.php` | 1445 | needs module extraction | shared customer workflow | Filters, bulk actions, row view model, and ticket-list JS are extracted; continue with search result mapping only if API payload grows. |
 | `pages/ticket-detail.php` | 637 | needs module extraction | shared customer workflow | Context, share state, read model, surfaces, and detail JS are extracted; continue only with smaller rendering slices if the route grows again. |
 | `pages/admin/users.php` | 762 | needs module extraction | shared customer workflow | Team permission payloads, filters, organization assignment, list read model, time totals, AI-agent token read model, and users/AI tabs are extracted. |
@@ -165,6 +165,10 @@ workflow admin, branding, upload settings, backup/rollback, and rendering.
 
 Target modules/components:
 
+- `includes/modules/settings/settings-page-controller.php`
+- `includes/modules/settings/settings-page-view-model.php`
+- `includes/modules/settings/settings-page-render.php`
+- `includes/modules/settings/views/*.php`
 - `includes/modules/settings/settings-actions.php`
 - `includes/modules/settings/settings-email.php`
 - `includes/modules/settings/settings-updates.php`
@@ -178,6 +182,7 @@ Target modules/components:
 
 Contract tests before extraction:
 
+- `tests/settings-page-extraction-contract-test.php`
 - `tests/admin-settings-surface-contract-test.php`
 - `tests/security-debt-contract-test.php`
 - `tests/email-routing-plus-address-contract-test.php`
@@ -191,6 +196,8 @@ Contract tests before extraction:
 
 Done when:
 
+- route is below 700 lines and contains no POST handlers or section forms
+- request controller, page view model, and each section partial are below 700 lines
 - route delegates POST handlers by tab/action to modules
 - route delegates email-template display rows and workflow card rendering to
   modules/components

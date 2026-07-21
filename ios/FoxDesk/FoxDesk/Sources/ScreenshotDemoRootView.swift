@@ -247,6 +247,20 @@ private struct ScreenshotAttachmentView: View {
 private struct ScreenshotSearchView: View {
     var body: some View {
         List {
+            Section {
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(.secondary)
+                    Text("vpn")
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.tertiary)
+                }
+                .font(.body)
+                .padding(.vertical, 6)
+            }
+
             Section("Tickets") {
                 demoTicket("VPN access stopped working", code: "TK-10821", meta: "Open · Aenze", color: .red)
                 demoTicket("VPN setup for new laptop", code: "TK-10798", meta: "Done · Aenze", color: .green)
@@ -259,7 +273,6 @@ private struct ScreenshotSearchView: View {
                 Label("Eva Novak · eva@example.com", systemImage: "person")
             }
         }
-        .searchable(text: .constant("vpn"), prompt: "Search FoxDesk")
         .navigationTitle("Search")
     }
 }

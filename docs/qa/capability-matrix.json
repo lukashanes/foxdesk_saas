@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "source_language": "en",
+  "resources": {
+    "tickets": {
+      "read": { "roles": ["admin", "agent", "client"], "scope": "tickets:read", "web": true, "api": true, "ios": true },
+      "create": { "roles": ["admin", "agent", "client"], "scope": "tickets:write", "web": true, "api": true, "ios": true },
+      "update": { "roles": ["admin", "agent"], "scope": "tickets:write", "web": true, "api": true, "ios": true },
+      "archive": { "roles": ["admin", "agent"], "scope": "tickets:write", "web": true, "api": true, "ios": true },
+      "restore": { "roles": ["admin", "agent"], "scope": "tickets:write", "web": true, "api": true, "ios": true },
+      "delete": { "roles": ["admin", "agent_with_permission"], "scope": "delete:write", "web": true, "api": true, "ios": false }
+    },
+    "comments": {
+      "read": { "roles": ["admin", "agent", "client"], "scope": "comments:read", "web": true, "api": true, "ios": true },
+      "create": { "roles": ["admin", "agent", "client"], "scope": "comments:write", "web": true, "api": true, "ios": true },
+      "update": { "roles": ["admin", "owner"], "scope": "comments:write", "web": true, "api": true, "ios": true },
+      "delete": { "roles": ["admin", "owner"], "scope": "delete:write", "web": true, "api": true, "ios": true, "undo_seconds": 10 }
+    },
+    "time": {
+      "read": { "roles": ["admin", "agent"], "scope": "time:read", "web": true, "api": true, "ios": true },
+      "create": { "roles": ["admin", "agent"], "scope": "time:write", "web": true, "api": true, "ios": true },
+      "update": { "roles": ["admin", "owner"], "scope": "time:write", "web": true, "api": true, "ios": true },
+      "delete": { "roles": ["admin", "owner"], "scope": "delete:write", "web": true, "api": true, "ios": true, "undo_seconds": 10 }
+    },
+    "attachments": {
+      "read": { "roles": ["admin", "agent", "authorized_client"], "scope": "attachments:read", "web": true, "api": true, "ios": true },
+      "create": { "roles": ["admin", "agent", "authorized_client"], "scope": "attachments:write", "web": true, "api": true, "ios": true },
+      "delete": { "roles": ["admin", "owner"], "scope": "delete:write", "web": true, "api": true, "ios": true, "undo_seconds": 10 }
+    },
+    "clients": {
+      "read": { "roles": ["admin", "agent"], "scope": "clients:read", "web": true, "api": true, "ios": true },
+      "create": { "roles": ["admin"], "scope": "clients:write", "web": true, "api": true, "ios": false },
+      "update": { "roles": ["admin"], "scope": "clients:write", "web": true, "api": true, "ios": false },
+      "delete": { "roles": ["admin"], "scope": "delete:write", "web": true, "api": true, "ios": false }
+    },
+    "reports": {
+      "read": { "roles": ["admin", "agent"], "scope": "reports:read", "web": true, "api": true, "ios": true },
+      "create": { "roles": ["admin"], "scope": "reports:write", "web": true, "api": true, "ios": false },
+      "update": { "roles": ["admin"], "scope": "reports:write", "web": true, "api": true, "ios": false },
+      "delete": { "roles": ["admin"], "scope": "delete:write", "web": true, "api": true, "ios": false }
+    },
+    "notifications": {
+      "read": { "roles": ["admin", "agent", "client"], "scope": "notifications:read", "web": true, "api": true, "ios": true },
+      "update": { "roles": ["owner"], "scope": "notifications:write", "web": true, "api": true, "ios": true },
+      "delete": { "roles": ["owner"], "scope": "notifications:write", "web": true, "api": true, "ios": true }
+    },
+    "api_tokens": {
+      "read": { "roles": ["admin", "owner"], "scope": null, "web": true, "api": false, "ios": false },
+      "create": { "roles": ["admin", "agent"], "scope": null, "web": true, "api": false, "ios": false },
+      "update": { "roles": ["admin", "owner"], "scope": null, "web": true, "api": false, "ios": false },
+      "delete": { "roles": ["admin", "owner"], "scope": null, "web": true, "api": false, "ios": false }
+    }
+  }
+}

@@ -37,7 +37,7 @@ foreach ($all_page_files as $file) {
 
 $priority_targets = [
     'pages/tickets.php' => [
-        'max_lines' => 1465,
+        'max_lines' => 700,
         'modules' => [
             'includes/modules/tickets/ticket-bulk-actions.php',
             'includes/modules/tickets/ticket-list-filters.php',
@@ -97,8 +97,11 @@ $priority_targets = [
         ],
     ],
     'pages/admin/settings.php' => [
-        'max_lines' => 2950,
+        'max_lines' => 700,
         'modules' => [
+            'includes/modules/settings/settings-page-controller.php',
+            'includes/modules/settings/settings-page-view-model.php',
+            'includes/modules/settings/settings-page-render.php',
             'includes/modules/settings/settings-actions.php',
             'includes/modules/settings/settings-email.php',
             'includes/modules/settings/settings-updates.php',
@@ -110,6 +113,7 @@ $priority_targets = [
             'includes/components/admin-workflow-card.php',
         ],
         'tests' => [
+            'tests/settings-page-extraction-contract-test.php',
             'tests/admin-settings-surface-contract-test.php',
             'tests/security-debt-contract-test.php',
             'tests/email-routing-plus-address-contract-test.php',
@@ -199,6 +203,11 @@ foreach ([
     'includes/modules/tickets/ticket-row-view-model.php',
     'assets/js/ticket-list.js',
     'assets/js/ticket-detail.js',
+    'assets/js/ticket-detail-timer.js',
+    'assets/js/ticket-detail-records.js',
+    'assets/js/ticket-detail-admin.js',
+    'includes/components/new-ticket-form.php',
+    'includes/components/new-ticket-assets.php',
     'includes/modules/settings/settings-templates.php',
     'includes/components/admin-workflow-card.php',
     'assets/js/report-billing-review.js',
@@ -207,6 +216,23 @@ foreach ([
     'includes/admin-crud-helper.php',
 ] as $extracted_path) {
     $assert(is_file($root . '/' . $extracted_path), "Extracted module/component missing: {$extracted_path}.");
+}
+
+$ticket_list_js_lines = count(file($root . '/assets/js/ticket-list.js') ?: []);
+$assert($ticket_list_js_lines <= 900, "assets/js/ticket-list.js has {$ticket_list_js_lines} lines; expected at most 900.");
+$new_ticket_page_lines = count(file($root . '/pages/new-ticket.php') ?: []);
+$assert($new_ticket_page_lines < 700, "pages/new-ticket.php has {$new_ticket_page_lines} lines; expected fewer than 700.");
+$ticket_detail_js_lines = count(file($root . '/assets/js/ticket-detail.js') ?: []);
+$assert($ticket_detail_js_lines < 900, "assets/js/ticket-detail.js has {$ticket_detail_js_lines} lines; expected fewer than 900.");
+foreach ([
+    'includes/modules/tickets/ticket-list-page-controller.php',
+    'includes/components/ticket-list-page.php',
+    'includes/components/ticket-list-board.php',
+    'includes/components/ticket-list-table.php',
+    'assets/js/ticket-list-due-date.js',
+    'assets/js/ticket-list-time.js',
+] as $ticket_list_extraction) {
+    $assert(is_file($root . '/' . $ticket_list_extraction), 'Ticket-list extraction missing: ' . $ticket_list_extraction);
 }
 
 $ticket_page = file_get_contents($root . '/pages/ticket-detail.php');

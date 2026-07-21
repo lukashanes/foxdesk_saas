@@ -251,29 +251,12 @@ function billing_usage_period_key(?int $timestamp = null): string
 
 function billing_ensure_usage_reports_table(): void
 {
-    if (!function_exists('table_exists') || table_exists('billing_usage_reports')) {
-        return;
-    }
-
-    db_query("
-        CREATE TABLE IF NOT EXISTS billing_usage_reports (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            tenant_id INT NOT NULL,
-            stripe_customer_id VARCHAR(255) NOT NULL,
-            event_name VARCHAR(120) NOT NULL,
-            period_key VARCHAR(20) NOT NULL,
-            quantity INT NOT NULL DEFAULT 0,
-            idempotency_key VARCHAR(255) NOT NULL,
-            status ENUM('pending', 'reported', 'dry_run', 'failed', 'skipped') NOT NULL DEFAULT 'pending',
-            error_message TEXT NULL,
-            reported_at DATETIME NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY uniq_billing_usage_idempotency (idempotency_key),
-            INDEX idx_billing_usage_tenant_period (tenant_id, period_key),
-            INDEX idx_billing_usage_status (status)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
+    schema_require('billing usage reports', ['billing_usage_reports'], [
+        'billing_usage_reports' => [
+            'tenant_id', 'stripe_customer_id', 'event_name', 'period_key', 'quantity',
+            'idempotency_key', 'status', 'error_message', 'reported_at',
+        ],
+    ]);
 }
 
 function billing_ensure_usage_events_table(): void
@@ -284,18 +267,9 @@ function billing_ensure_usage_events_table(): void
     }
     $done = true;
 
-    db_query("
-        CREATE TABLE IF NOT EXISTS billing_usage_events (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            tenant_id INT NULL,
-            event_type VARCHAR(80) NOT NULL,
-            quantity INT NOT NULL DEFAULT 1,
-            metadata_json TEXT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_billing_usage_events_tenant_created (tenant_id, created_at),
-            INDEX idx_billing_usage_events_type_created (event_type, created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
+    schema_require('billing usage events', ['billing_usage_events'], [
+        'billing_usage_events' => ['tenant_id', 'event_type', 'quantity', 'metadata_json', 'created_at'],
+    ]);
 }
 
 function billing_record_usage_event(?int $tenant_id, string $event_type, int $quantity = 1, array $metadata = []): void
@@ -334,27 +308,11 @@ function billing_record_usage_event(?int $tenant_id, string $event_type, int $qu
 
 function billing_ensure_stripe_events_table(): void
 {
-    if (!function_exists('table_exists') || table_exists('billing_stripe_events')) {
-        return;
-    }
-
-    db_query("
-        CREATE TABLE IF NOT EXISTS billing_stripe_events (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            event_id VARCHAR(255) NOT NULL,
-            event_type VARCHAR(120) NOT NULL,
-            tenant_id INT NULL,
-            status ENUM('pending', 'processed', 'ignored', 'failed') NOT NULL DEFAULT 'pending',
-            error_message TEXT NULL,
-            processed_at DATETIME NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY uniq_billing_stripe_event_id (event_id),
-            INDEX idx_billing_stripe_events_tenant (tenant_id),
-            INDEX idx_billing_stripe_events_status (status),
-            INDEX idx_billing_stripe_events_type (event_type)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
+    schema_require('Stripe webhook events', ['billing_stripe_events'], [
+        'billing_stripe_events' => [
+            'event_id', 'event_type', 'tenant_id', 'status', 'error_message', 'processed_at',
+        ],
+    ]);
 }
 
 function billing_usage_period_window(?string $period_key = null): array
@@ -1000,25 +958,11 @@ function billing_suspend_past_due_tenants(?int $tenant_id = null): array
 
 function billing_ensure_trial_email_events_table(): void
 {
-    if (!function_exists('table_exists') || table_exists('billing_trial_email_events')) {
-        return;
-    }
-
-    db_query("
-        CREATE TABLE IF NOT EXISTS billing_trial_email_events (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            tenant_id INT NOT NULL,
-            event_type VARCHAR(50) NOT NULL,
-            recipient_email VARCHAR(255) NOT NULL,
-            status ENUM('sent', 'skipped', 'failed') NOT NULL DEFAULT 'sent',
-            error_message TEXT NULL,
-            sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY uniq_trial_email_event (tenant_id, event_type),
-            INDEX idx_trial_email_tenant (tenant_id),
-            INDEX idx_trial_email_status (status)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
+    schema_require('billing trial email events', ['billing_trial_email_events'], [
+        'billing_trial_email_events' => [
+            'tenant_id', 'event_type', 'recipient_email', 'status', 'error_message', 'sent_at',
+        ],
+    ]);
 }
 
 function billing_trial_email_event_exists(int $tenant_id, string $event_type): bool
@@ -1652,6 +1596,9 @@ function billing_create_checkout_session(int $tenant_id, string $plan = 'cloud')
         'allow_promotion_codes' => 'true',
         'customer_update[name]' => 'auto',
         'customer_update[address]' => 'auto',
+        'consent_collection[terms_of_service]' => 'required',
+        'custom_text[terms_of_service_acceptance][message]' => 'I confirm that this is a business or professional purchase, I have authority to bind the customer, and I accept the Terms of Service and Refund and Cancellation Policy.',
+        'custom_text[submit][message]' => 'Renews monthly. Cancel any time; cancellation takes effect at the end of the current paid period. Paid periods are non-refundable except where mandatory law requires otherwise.',
         'metadata[tenant_id]' => (string) $tenant_id,
         'metadata[tenant_slug]' => (string) ($tenant['slug'] ?? ''),
         'metadata[plan]' => billing_plan_code(),

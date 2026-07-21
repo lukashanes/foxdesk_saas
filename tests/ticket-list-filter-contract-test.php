@@ -2,6 +2,7 @@
 
 $root = dirname(__DIR__);
 require_once $root . '/includes/modules/tickets/ticket-list-filters.php';
+require_once __DIR__ . '/support/ticket-list-source.php';
 
 $assert = static function (bool $condition, string $message): void {
     if (!$condition) {
@@ -59,9 +60,11 @@ $assert($fallback['filters']['due_date_from'] === '2026-06-20', 'Specific due da
 $assert($fallback['filters']['due_date_to'] === '2026-06-21', 'Specific due date must set exclusive next-day filter.');
 $assert($fallback['filters']['is_archived'] === 1, 'Archive list must set archive filter to one when supported.');
 
-$page = file_get_contents($root . '/pages/tickets.php');
+$route = ticket_list_route_source($root);
+$page = ticket_list_controller_source($root);
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
 $assert($page !== false && $bootstrap !== false, 'Ticket filter files must be readable.');
+$assert(str_contains($route, 'ticket-list-page-controller.php'), 'Tickets route must delegate request preparation to the controller.');
 $assert(str_contains($bootstrap, '/tickets/ticket-list-filters.php'), 'Module bootstrap must load ticket list filters.');
 $assert(str_contains($page, 'ticket_list_filter_state_from_request($_GET, $_COOKIE, $is_archive)'), 'Tickets page must consume ticket list filter state.');
 $assert(!str_contains($page, '$allowed_sorts ='), 'Tickets page must not own sort allow-list logic.');

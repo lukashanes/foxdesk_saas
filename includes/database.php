@@ -5,6 +5,23 @@
 
 $db = null;
 
+class FoxDeskDatabaseUpgradeRequired extends RuntimeException
+{
+    private array $missing;
+
+    public function __construct(string $feature, array $missing = [])
+    {
+        $this->missing = array_values($missing);
+        $detail = $this->missing ? ' Missing: ' . implode(', ', $this->missing) . '.' : '';
+        parent::__construct('Database upgrade required for ' . $feature . '.' . $detail);
+    }
+
+    public function missingRequirements(): array
+    {
+        return $this->missing;
+    }
+}
+
 function create_pdo_connection($host)
 {
     $dsn = "mysql:host=" . $host . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
@@ -230,6 +247,50 @@ function index_exists($table, $index_name)
     try {
         return (bool) db_fetch_one("SHOW INDEX FROM {$table} WHERE Key_name = ?", [$index_name]);
     } catch (\Throwable $e) {
+        return false;
+    }
+}
+
+/**
+ * Assert that an installed database already contains a feature schema.
+ * Schema changes belong to install/upgrade paths, never normal requests.
+ */
+function schema_require(string $feature, array $tables = [], array $columns = []): void
+{
+    $missing = [];
+
+    foreach ($tables as $table) {
+        if (!table_exists((string) $table)) {
+            $missing[] = 'table ' . $table;
+        }
+    }
+
+    foreach ($columns as $table => $required_columns) {
+        if (!table_exists((string) $table)) {
+            if (!in_array('table ' . $table, $missing, true)) {
+                $missing[] = 'table ' . $table;
+            }
+            continue;
+        }
+        foreach ((array) $required_columns as $column) {
+            if (!column_exists((string) $table, (string) $column)) {
+                $missing[] = $table . '.' . $column;
+            }
+        }
+    }
+
+    if ($missing) {
+        throw new FoxDeskDatabaseUpgradeRequired($feature, $missing);
+    }
+}
+
+function schema_is_ready(string $feature, array $tables = [], array $columns = []): bool
+{
+    try {
+        schema_require($feature, $tables, $columns);
+        return true;
+    } catch (FoxDeskDatabaseUpgradeRequired $e) {
+        error_log($e->getMessage());
         return false;
     }
 }

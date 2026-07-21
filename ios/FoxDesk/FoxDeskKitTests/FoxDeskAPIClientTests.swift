@@ -114,7 +114,7 @@ final class FoxDeskAPIClientTests: XCTestCase {
             )
             XCTFail("Expected missing versioned mobile API path to fail.")
         } catch let error as FoxDeskAPIError {
-            XCTAssertEqual(error.errorDescription, "FoxDesk request failed.")
+            XCTAssertEqual(error.errorDescription, "The FoxDesk mobile API is not available on this server.")
         }
         XCTAssertEqual(requestCount, 1)
     }
@@ -362,6 +362,61 @@ final class FoxDeskAPIClientTests: XCTestCase {
         XCTAssertEqual(appSession.tokens, storedTokens)
         let persistedTokens = try await tokenStore.loadTokens()
         XCTAssertEqual(persistedTokens, storedTokens)
+    }
+
+    @MainActor
+    func testWorkspacePaymentRequiredRefreshesTenantAccessState() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        let appSession = AppSession(
+            client: client,
+            tokenStore: InMemoryTokenStore(),
+            device: DeviceContext(deviceId: "device", deviceName: "iPhone", appVersion: "0.1")
+        )
+        var tenantStateRequestCount = 0
+
+        URLProtocolStub.requestHandler = { request in
+            let path = request.url?.path ?? ""
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: path.hasSuffix("/tickets") ? 402 : 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+
+            if path.hasSuffix("/login") {
+                return (response, Data(#"{"success":true,"requires_2fa":false,"session":{"token_type":"Bearer","access_token":"fdm_at_test","refresh_token":"fdm_rt_test","expires_in":3600,"refresh_expires_in":5184000},"user":{"id":7,"email":"agent@example.com","first_name":"Emma","last_name":"Carter","name":"Emma Carter","role":"agent","language":"en","tenant_id":3}}"#.utf8))
+            }
+            if path.hasSuffix("/tenant-state") {
+                tenantStateRequestCount += 1
+                return tenantStateRequestCount == 1
+                    ? (response, Self.tenantStateResponseData())
+                    : (response, Self.blockedTenantStateResponseData())
+            }
+            if path.hasSuffix("/tickets") {
+                return (response, Data(#"{"success":false,"error":"Workspace access is paused. Ask a workspace admin to restore access."}"#.utf8))
+            }
+            XCTFail("Unexpected request: \(request.url?.absoluteString ?? "<missing url>")")
+            throw URLError(.badServerResponse)
+        }
+
+        await appSession.signIn(email: "agent@example.com", password: "secret")
+        XCTAssertTrue(appSession.workspaceAccessAllowed)
+
+        do {
+            _ = try await appSession.authenticated { accessToken in
+                try await client.ticketList(accessToken: accessToken)
+            }
+            XCTFail("Paused workspace ticket access should fail.")
+        } catch FoxDeskAPIError.server(let statusCode, _) {
+            XCTAssertEqual(statusCode, 402)
+        }
+
+        XCTAssertEqual(tenantStateRequestCount, 2)
+        XCTAssertFalse(appSession.workspaceAccessAllowed)
+        XCTAssertEqual(appSession.tenantState?.access.state, "blocked")
     }
 
     @MainActor
@@ -1209,9 +1264,9 @@ final class FoxDeskAPIClientTests: XCTestCase {
 
         XCTAssertEqual(result.data.tenant.name, "Aenze")
         XCTAssertEqual(result.data.access.allowed, false)
+        XCTAssertEqual(result.data.access.reason, "suspended")
+        XCTAssertEqual(result.data.access.state, "suspended")
         XCTAssertEqual(result.data.access.message, "Update payment to continue using this workspace.")
-        XCTAssertEqual(result.data.billingActions?.noticeTitle, "We could not process payment")
-        XCTAssertEqual(result.data.capabilities?.manageBilling, true)
     }
 
     func testClientOverviewSendsOrganizationViewAndDecodesContext() async throws {
@@ -1697,7 +1752,7 @@ final class FoxDeskAPIClientTests: XCTestCase {
                   {"id": 9, "ticket_id": 42, "filename": "screenshot.png", "mime_type": "image/png", "file_size_label": "120 KB", "can_preview": true}
                 ],
                 "time_entries": [
-                  {"id": 11, "comment_id": 7, "user_name": "Emma Carter", "duration_minutes": 25, "summary": "VPN profile check", "is_billable": true}
+                  {"id": 11, "comment_id": 7, "user_id": 2, "user_name": "Emma Carter", "duration_minutes": 25, "summary": "VPN profile check", "is_billable": true}
                 ],
                 "actions": null
               },
@@ -1714,6 +1769,7 @@ final class FoxDeskAPIClientTests: XCTestCase {
         XCTAssertEqual(result.data.comments.first?.authorName, "Emma Carter")
         XCTAssertEqual(result.data.attachments.first?.filename, "screenshot.png")
         XCTAssertEqual(result.data.timeEntries.first?.commentId, 7)
+        XCTAssertEqual(result.data.timeEntries.first?.userId, 2)
         XCTAssertEqual(result.data.timeEntries.first?.durationMinutes, 25)
     }
 
@@ -1814,6 +1870,297 @@ final class FoxDeskAPIClientTests: XCTestCase {
 
         XCTAssertEqual(result.data.commentId, 100)
         XCTAssertEqual(result.data.timeEntryId, 200)
+    }
+
+    func testDeleteCommentUsesBearerJSONAndIdempotency() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        URLProtocolStub.requestHandler = { request in
+            Self.assertAPIPath(request.url, "/api/mobile/v1/comments/91/delete")
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer fdm_at_test")
+            XCTAssertFalse((request.value(forHTTPHeaderField: "Idempotency-Key") ?? "").isEmpty)
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["comment_id"] as? Int, 91)
+
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, Data(#"{"success":true,"data":{"ticket_id":42,"comment_id":91,"time_entry_id":null,"deleted":true,"undo_token":"undo-comment","undo_action":"app-restore-comment","undo_seconds":10},"meta":{"schema_version":1,"resource":"delete_comment"},"errors":[]}"#.utf8))
+        }
+
+        let result = try await client.deleteComment(accessToken: "fdm_at_test", commentId: 91)
+
+        XCTAssertTrue(result.data.deleted)
+        XCTAssertEqual(result.data.commentId, 91)
+        XCTAssertEqual(result.data.undoToken, "undo-comment")
+        XCTAssertEqual(result.data.undoSeconds, 10)
+    }
+
+    func testRestoreCommentUsesUndoToken() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        URLProtocolStub.requestHandler = { request in
+            Self.assertAPIPath(request.url, "/api/mobile/v1/comments/restore")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer fdm_at_test")
+            XCTAssertFalse((request.value(forHTTPHeaderField: "Idempotency-Key") ?? "").isEmpty)
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["undo_token"] as? String, "undo-comment")
+
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, Data(#"{"success":true,"data":{"ticket_id":42,"comment_id":91,"time_entry_id":null,"restored":true},"meta":{"schema_version":1,"resource":"restore_comment"},"errors":[]}"#.utf8))
+        }
+
+        let result = try await client.restoreComment(accessToken: "fdm_at_test", undoToken: "undo-comment")
+
+        XCTAssertTrue(result.data.restored)
+        XCTAssertEqual(result.data.commentId, 91)
+    }
+
+    func testOfflineRequestReturnsActionableMessage() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        URLProtocolStub.requestHandler = { _ in
+            throw URLError(.notConnectedToInternet)
+        }
+
+        do {
+            _ = try await client.me(accessToken: "fdm_at_test")
+            XCTFail("Expected offline request to fail")
+        } catch let error as FoxDeskAPIError {
+            XCTAssertEqual(error.errorDescription, "FoxDesk is offline. Check your connection and try again.")
+        }
+    }
+
+    func testDeleteAndRestoreTimeEntryUseExpectedActions() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        var requestIndex = 0
+        URLProtocolStub.requestHandler = { request in
+            defer { requestIndex += 1 }
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+
+            if requestIndex == 0 {
+                Self.assertAPIPath(request.url, "/api/mobile/v1/time-entries/301/delete")
+                XCTAssertEqual(json["time_entry_id"] as? Int, 301)
+                return (response, Data(#"{"success":true,"data":{"ticket_id":42,"comment_id":91,"time_entry_id":301,"deleted":true,"undo_token":"undo-time","undo_action":"app-restore-time-entry","undo_seconds":10},"meta":{"schema_version":1,"resource":"delete_time_entry"},"errors":[]}"#.utf8))
+            }
+
+            Self.assertAPIPath(request.url, "/api/mobile/v1/time-entries/restore")
+            XCTAssertEqual(json["undo_token"] as? String, "undo-time")
+            return (response, Data(#"{"success":true,"data":{"ticket_id":42,"comment_id":91,"time_entry_id":301,"restored":true},"meta":{"schema_version":1,"resource":"restore_time_entry"},"errors":[]}"#.utf8))
+        }
+
+        let deleted = try await client.deleteTimeEntry(accessToken: "fdm_at_test", timeEntryId: 301)
+        let restored = try await client.restoreTimeEntry(accessToken: "fdm_at_test", undoToken: deleted.data.undoToken)
+
+        XCTAssertTrue(restored.data.restored)
+        XCTAssertEqual(restored.data.timeEntryId, 301)
+        XCTAssertEqual(requestIndex, 2)
+    }
+
+    func testUpdateCommentUsesAppActionAndReturnsUpdatedContent() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        URLProtocolStub.requestHandler = { request in
+            Self.assertAPIPath(request.url, "/api/mobile/v1/comments/91")
+            XCTAssertEqual(request.httpMethod, "POST")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer fdm_at_test")
+            XCTAssertFalse((request.value(forHTTPHeaderField: "Idempotency-Key") ?? "").isEmpty)
+
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["comment_id"] as? Int, 91)
+            XCTAssertEqual(json["content"] as? String, "<p>Updated work note.</p>")
+
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, Data(#"{"success":true,"data":{"ticket_id":42,"comment_id":91,"content":"Updated work note.","content_html":"<p>Updated work note.</p>","updated":true},"meta":{"schema_version":1,"resource":"update_comment"},"errors":[]}"#.utf8))
+        }
+
+        let result = try await client.updateComment(
+            accessToken: "fdm_at_test",
+            commentId: 91,
+            content: "<p>Updated work note.</p>"
+        )
+
+        XCTAssertTrue(result.data.updated)
+        XCTAssertEqual(result.data.commentId, 91)
+        XCTAssertEqual(result.data.contentHtml, "<p>Updated work note.</p>")
+    }
+
+    func testUpdateTimeEntryUsesAppActionAndExactInterval() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        URLProtocolStub.requestHandler = { request in
+            Self.assertAPIPath(request.url, "/api/mobile/v1/time-entries/301")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer fdm_at_test")
+            XCTAssertFalse((request.value(forHTTPHeaderField: "Idempotency-Key") ?? "").isEmpty)
+
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["time_entry_id"] as? Int, 301)
+            XCTAssertEqual(json["duration_minutes"] as? Int, 48)
+            XCTAssertEqual(json["summary"] as? String, "Astro project setup")
+            XCTAssertEqual(json["is_billable"] as? Bool, true)
+            XCTAssertEqual(json["started_at"] as? String, "2026-05-25 21:18:00")
+            XCTAssertEqual(json["ended_at"] as? String, "2026-05-25 22:06:00")
+
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, Data(#"{"success":true,"data":{"ticket_id":42,"time_entry_id":301,"started_at":"2026-05-25 21:18:00","ended_at":"2026-05-25 22:06:00","duration_minutes":48,"summary":"Astro project setup","is_billable":true},"meta":{"schema_version":1,"resource":"update_time_entry"},"errors":[]}"#.utf8))
+        }
+
+        let result = try await client.updateTimeEntry(
+            accessToken: "fdm_at_test",
+            timeEntryId: 301,
+            durationMinutes: 48,
+            summary: "Astro project setup",
+            isBillable: true,
+            startedAt: "2026-05-25 21:18:00",
+            endedAt: "2026-05-25 22:06:00"
+        )
+
+        XCTAssertEqual(result.data.durationMinutes, 48)
+        XCTAssertEqual(result.data.startedAt, "2026-05-25 21:18:00")
+        XCTAssertTrue(result.data.isBillable)
+    }
+
+    func testDeleteAndRestoreAttachmentUseExpectedActions() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        var requestIndex = 0
+        URLProtocolStub.requestHandler = { request in
+            defer { requestIndex += 1 }
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+
+            if requestIndex == 0 {
+                Self.assertAPIPath(request.url, "/api/mobile/v1/attachments/501/delete")
+                XCTAssertEqual(json["attachment_id"] as? Int, 501)
+                return (response, Data(#"{"success":true,"data":{"ticket_id":42,"attachment_id":501,"deleted":true,"undo_token":"undo-attachment","undo_action":"app-restore-attachment","undo_seconds":10},"meta":{"schema_version":1,"resource":"delete_attachment"},"errors":[]}"#.utf8))
+            }
+
+            Self.assertAPIPath(request.url, "/api/mobile/v1/attachments/restore")
+            XCTAssertEqual(json["undo_token"] as? String, "undo-attachment")
+            return (response, Data(#"{"success":true,"data":{"ticket_id":42,"attachment_id":501,"restored":true},"meta":{"schema_version":1,"resource":"restore_attachment"},"errors":[]}"#.utf8))
+        }
+
+        let deleted = try await client.deleteAttachment(accessToken: "fdm_at_test", attachmentId: 501)
+        let restored = try await client.restoreAttachment(accessToken: "fdm_at_test", undoToken: deleted.data.undoToken)
+
+        XCTAssertEqual(deleted.data.attachmentId, 501)
+        XCTAssertTrue(restored.data.restored)
+        XCTAssertEqual(restored.data.attachmentId, 501)
+        XCTAssertEqual(requestIndex, 2)
+    }
+
+    func testUpdateTicketCanArchiveAndRestoreThroughExistingEndpoint() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        URLProtocolStub.requestHandler = { request in
+            XCTAssertEqual(request.httpMethod, "POST")
+            Self.assertAPIPath(request.url, "/api/mobile/v1/tickets/42")
+            let body = try XCTUnwrap(Self.bodyData(from: request))
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
+            XCTAssertEqual(json["ticket_id"] as? Int, 42)
+            XCTAssertEqual(json["is_archived"] as? Bool, true)
+
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200, httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, Data(#"{"success":true,"data":{"ticket":{"id":42,"title":"VPN access stopped working","code":"TK-10042","is_archived":true},"actions":{},"updated_fields":["is_archived"]},"meta":{"schema_version":1,"resource":"update_ticket"},"errors":[]}"#.utf8))
+        }
+
+        let result = try await client.updateTicket(
+            accessToken: "fdm_at_test",
+            request: UpdateTicketRequest(
+                ticketId: 42,
+                isArchived: true,
+                includeIsArchived: true
+            )
+        )
+
+        XCTAssertEqual(result.data.ticket.isArchived, true)
+        XCTAssertEqual(result.data.updatedFields, ["is_archived"])
+    }
+
+    func testStructuredAPIErrorsAndForbiddenAreReadable() async throws {
+        let client = FoxDeskAPIClient(
+            environment: FoxDeskEnvironment(baseURL: URL(string: "https://app.foxdesk.net/index.php")!),
+            session: makeStubbedSession()
+        )
+        var requestIndex = 0
+        URLProtocolStub.requestHandler = { request in
+            defer { requestIndex += 1 }
+            let status = requestIndex == 0 ? 422 : 403
+            let data = requestIndex == 0
+                ? Data(#"{"success":false,"errors":[{"message":"comment_id is required.","code":"validation"}]}"#.utf8)
+                : Data(#"{"success":false,"error":"Forbidden"}"#.utf8)
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: status,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            return (response, data)
+        }
+
+        do {
+            _ = try await client.deleteComment(accessToken: "fdm_at_test", commentId: 91)
+            XCTFail("Expected validation error")
+        } catch let error as FoxDeskAPIError {
+            XCTAssertEqual(error.errorDescription, "comment_id is required.")
+        }
+
+        do {
+            _ = try await client.deleteTimeEntry(accessToken: "fdm_at_test", timeEntryId: 301)
+            XCTFail("Expected permission error")
+        } catch let error as FoxDeskAPIError {
+            XCTAssertEqual(error.errorDescription, "You do not have permission to perform this action.")
+        }
     }
 
     func testTicketActionsLoadsActionSurfaceWithoutFullDetail() async throws {
@@ -2931,6 +3278,10 @@ final class FoxDeskAPIClientTests: XCTestCase {
         Data(#"{"success":true,"data":{"tenant":{"id":3,"name":"Aenze"},"access":{"allowed":true,"state":"active","reason":null,"message":null},"billing_actions":null,"usage":null,"capabilities":{"manage_billing":false,"platform_admin":false},"links":null},"meta":{"schema_version":1,"resource":"tenant_state"},"errors":[]}"#.utf8)
     }
 
+    private static func blockedTenantStateResponseData() -> Data {
+        Data(#"{"success":true,"data":{"tenant":{"id":3,"name":"Aenze"},"access":{"allowed":false,"state":"blocked","reason":"payment_required","message":"Update payment to continue using this workspace."},"billing_actions":{"show_checkout":false,"checkout_label":"Start plan","show_portal":true,"portal_label":"Update payment","notice_title":"Workspace access is paused","notice_body":"Ask a workspace admin to update payment.","notice_variant":"warning"},"usage":null,"capabilities":{"manage_billing":false,"platform_admin":false},"links":null},"meta":{"schema_version":1,"resource":"tenant_state"},"errors":[]}"#.utf8)
+    }
+
     private static func refreshedAuthResponseData() -> Data {
         Data(#"{"success":true,"requires_2fa":false,"session":{"token_type":"Bearer","access_token":"fresh_access","refresh_token":"fresh_refresh","expires_in":3600,"refresh_expires_in":5184000},"user":{"id":7,"email":"agent@example.com","first_name":"Emma","last_name":"Carter","name":"Emma Carter","role":"agent","language":"en","tenant_id":3}}"#.utf8)
     }
@@ -3045,6 +3396,7 @@ final class FoxDeskAPIClientTests: XCTestCase {
                 TicketTimeEntry(
                     id: 701,
                     commentId: nil,
+                    userId: 7,
                     userName: "Emma Carter",
                     startedAt: "2026-07-06 09:42:00",
                     endedAt: "2026-07-06 10:30:00",

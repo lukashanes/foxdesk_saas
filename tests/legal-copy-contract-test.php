@@ -25,7 +25,13 @@ foreach (['This page explains', 'how we approach security'] as $fluff_term) {
 
 assert_legal_copy(strpos($legal, 'Aenze s.r.o.') !== false, 'Operator name is missing.');
 assert_legal_copy(strpos($legal, 'processes personal data for FoxDesk Cloud as described below') !== false, 'Privacy intro should be direct and operator-specific.');
-assert_legal_copy(strpos($legal, 'FoxDesk Cloud is supplied for business and professional use') !== false, 'Terms must be B2B-first.');
+assert_legal_copy(strpos($legal, 'FoxDesk Cloud is offered only for use in a trade, business, craft, or profession') !== false, 'Terms must be explicitly B2B-only.');
+assert_legal_copy(strpos($legal, 'We do not knowingly contract with consumers') !== false, 'Terms must state the intended customer boundary.');
+assert_legal_copy(strpos($legal, 'customer represents and warrants that it has all rights') !== false, 'Terms must allocate customer-content rights to the customer.');
+assert_legal_copy(strpos($legal, 'other third-party content') !== false, 'Terms must cover third-party content rights.');
+assert_legal_copy(strpos($legal, 'Cancellation prevents the next renewal and takes effect at the end of the current paid billing period') !== false, 'Cancellation must take effect at period end.');
+assert_legal_copy(strpos($legal, 'fees are final and non-refundable once a paid billing period starts') !== false, 'Refund policy must make paid periods non-refundable.');
+assert_legal_copy(strpos($legal, 'Nothing in these Terms excludes or limits liability') !== false, 'Liability clause needs a mandatory-law carveout to remain enforceable.');
 assert_legal_copy(strpos($legal, 'To the maximum extent permitted by law, we disclaim all warranties') !== false, 'Operator-favourable warranty wording is missing.');
 assert_legal_copy(strpos($legal, 'If a serious service issue is confirmed') !== false, 'Refund remedy wording is missing.');
 assert_legal_copy(strpos($legal, "if (\$type === 'subprocessors')") !== false, 'Public subprocessors page must remain disabled.');

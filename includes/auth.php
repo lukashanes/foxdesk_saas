@@ -277,23 +277,14 @@ function remember_me_allowed_for_user(array $user): bool
     return !$totp_enabled && !$role_requires_2fa;
 }
 
-/**
- * Ensure the remember_token column exists on users table (auto-migration).
- */
+/** Ensure the installed schema supports remember-me tokens. */
 function ensure_remember_token_column()
 {
     static $checked = false;
     if ($checked) return true;
     $checked = true;
 
-    if (!column_exists('users', 'remember_token')) {
-        try {
-            db_query("ALTER TABLE users ADD COLUMN remember_token VARCHAR(64) DEFAULT NULL");
-        } catch (Throwable $e) {
-            return false;
-        }
-    }
-    return true;
+    return schema_is_ready('remember-me authentication', [], ['users' => ['remember_token']]);
 }
 
 /**
@@ -581,64 +572,13 @@ function ensure_api_token_schema(): void
     }
     $done = true;
 
-    try {
-        if (!db_fetch_one("SHOW TABLES LIKE 'api_tokens'")) {
-            db_query("
-                CREATE TABLE api_tokens (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    tenant_id INT NULL,
-                    user_id INT NOT NULL,
-                    name VARCHAR(255) NOT NULL,
-                    token_hash CHAR(64) NOT NULL,
-                    token_prefix VARCHAR(10) NOT NULL,
-                    scopes_json TEXT NULL,
-                    expires_at DATETIME NULL,
-                    is_active TINYINT(1) DEFAULT 1,
-                    revoked_at DATETIME NULL,
-                    last_used_at DATETIME NULL,
-                    last_used_ip VARCHAR(45) NULL,
-                    last_used_user_agent VARCHAR(255) NULL,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE KEY uniq_token_hash (token_hash),
-                    INDEX idx_tenant_id (tenant_id),
-                    INDEX idx_user (user_id),
-                    INDEX idx_active (is_active),
-                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-            ");
-            return;
-        }
-
-        $columns = [
-            'tenant_id' => "ALTER TABLE api_tokens ADD COLUMN tenant_id INT NULL AFTER id",
-            'scopes_json' => "ALTER TABLE api_tokens ADD COLUMN scopes_json TEXT NULL AFTER token_prefix",
-            'revoked_at' => "ALTER TABLE api_tokens ADD COLUMN revoked_at DATETIME NULL AFTER is_active",
-            'last_used_ip' => "ALTER TABLE api_tokens ADD COLUMN last_used_ip VARCHAR(45) NULL AFTER last_used_at",
-            'last_used_user_agent' => "ALTER TABLE api_tokens ADD COLUMN last_used_user_agent VARCHAR(255) NULL AFTER last_used_ip",
-        ];
-
-        foreach ($columns as $column => $sql) {
-            $exists = function_exists('column_exists_uncached')
-                ? column_exists_uncached('api_tokens', $column)
-                : column_exists('api_tokens', $column);
-            if (!$exists) {
-                db_query($sql);
-            }
-        }
-
-        if (function_exists('index_exists') && !index_exists('api_tokens', 'idx_tenant_id')) {
-            db_query('ALTER TABLE api_tokens ADD INDEX idx_tenant_id (tenant_id)');
-        }
-        if (function_exists('index_exists') && !index_exists('api_tokens', 'idx_user')) {
-            db_query('ALTER TABLE api_tokens ADD INDEX idx_user (user_id)');
-        }
-        if (function_exists('index_exists') && !index_exists('api_tokens', 'idx_active')) {
-            db_query('ALTER TABLE api_tokens ADD INDEX idx_active (is_active)');
-        }
-        db_query("UPDATE api_tokens SET expires_at = DATE_ADD(NOW(), INTERVAL 90 DAY) WHERE expires_at IS NULL");
-    } catch (Throwable $e) {
-        error_log('API token schema check failed: ' . $e->getMessage());
-    }
+    schema_require('API access', ['api_tokens'], [
+        'api_tokens' => [
+            'tenant_id', 'user_id', 'name', 'token_hash', 'token_prefix', 'scopes_json',
+            'expires_at', 'is_active', 'revoked_at', 'last_used_at', 'last_used_ip',
+            'last_used_user_agent', 'created_at',
+        ],
+    ]);
 }
 
 function mobile_sessions_table_exists(): bool
@@ -674,7 +614,7 @@ function api_token_scope_catalog(array $user = null): array
 
     if ($is_staff) {
         $catalog['time:write'] = 'Add and control time entries';
-        $catalog['delete:write'] = 'Delete comments and time entries';
+        $catalog['delete:write'] = 'Delete comments and time entries; permanent ticket deletion also requires explicit user permission';
     }
 
     if (($user['role'] ?? '') === 'admin' || $can_time) {
@@ -788,8 +728,12 @@ function api_token_required_scope_for_action(string $action): ?string
         'agent-list-tickets' => 'tickets:read',
         'agent-get-ticket' => 'tickets:read',
         'agent-add-comment' => 'comments:write',
+        'agent-add-update' => 'comments:write',
+        'agent-add-work-entry' => 'comments:write',
         'agent-update-status' => 'tickets:write',
         'agent-log-time' => 'time:write',
+        'agent-delete-ticket-preflight' => 'tickets:read',
+        'agent-delete-ticket-permanently' => 'delete:write',
         'app-shell' => 'work:read',
         'app-home' => 'work:read',
         'app-ticket-list' => 'tickets:read',
@@ -800,8 +744,14 @@ function api_token_required_scope_for_action(string $action): ?string
         'app-create-ticket' => 'tickets:write',
         'app-add-comment' => 'comments:write',
         'app-add-comment-with-time' => 'comments:write',
+        'app-update-comment' => 'comments:write',
         'app-delete-comment' => 'delete:write',
+        'app-restore-comment' => 'delete:write',
+        'app-update-time-entry' => 'time:write',
         'app-delete-time-entry' => 'delete:write',
+        'app-restore-time-entry' => 'delete:write',
+        'app-delete-attachment' => 'delete:write',
+        'app-restore-attachment' => 'delete:write',
         'app-attachment-metadata' => 'attachments:read',
         'app-attachment-download' => 'attachments:read',
         'app-ticket-timer' => 'time:read',
@@ -934,12 +884,21 @@ function api_idempotency_replay_if_available(string $action): void
         $reservation['tenant_id'] = (int) ($token['tenant_id'] ?? current_tenant_id());
     }
 
+    $db = get_db();
     try {
+        if (!$db->inTransaction()) {
+            $db->beginTransaction();
+            $GLOBALS['api_idempotency']['transaction_started'] = true;
+        }
         $reservation_id = (int) db_insert('api_idempotency_keys', $reservation);
         $GLOBALS['api_idempotency']['reservation_id'] = $reservation_id;
         $GLOBALS['api_idempotency']['owns_reservation'] = true;
         return;
     } catch (Throwable $e) {
+        if (!empty($GLOBALS['api_idempotency']['transaction_started']) && $db->inTransaction()) {
+            $db->rollBack();
+        }
+        $GLOBALS['api_idempotency']['transaction_started'] = false;
         // A unique-key collision is expected when another request already owns
         // this key. Read that row below and either replay or report in-progress.
     }
@@ -952,11 +911,19 @@ function api_idempotency_replay_if_available(string $action): void
     if ($row && strtotime((string) ($row['expires_at'] ?? '')) <= time()) {
         db_delete('api_idempotency_keys', 'id = ? AND expires_at <= NOW()', [(int) $row['id']]);
         try {
+            if (!$db->inTransaction()) {
+                $db->beginTransaction();
+                $GLOBALS['api_idempotency']['transaction_started'] = true;
+            }
             $reservation_id = (int) db_insert('api_idempotency_keys', $reservation);
             $GLOBALS['api_idempotency']['reservation_id'] = $reservation_id;
             $GLOBALS['api_idempotency']['owns_reservation'] = true;
             return;
         } catch (Throwable $e) {
+            if (!empty($GLOBALS['api_idempotency']['transaction_started']) && $db->inTransaction()) {
+                $db->rollBack();
+            }
+            $GLOBALS['api_idempotency']['transaction_started'] = false;
             $row = db_fetch_one(
                 "SELECT * FROM api_idempotency_keys WHERE token_id = ? AND action = ? AND idempotency_key = ? LIMIT 1",
                 [(int) $token['id'], $action, $key]
@@ -999,7 +966,7 @@ function api_idempotency_store_success(array $response): void
     $data = [
         'response_json' => json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
         'status_code' => http_response_code() ?: 200,
-        'expires_at' => date('Y-m-d H:i:s', time() + 86400),
+        'expires_at' => date('Y-m-d H:i:s', time() + 2592000),
     ];
 
     try {
@@ -1009,9 +976,24 @@ function api_idempotency_store_success(array $response): void
             'id = ? AND request_hash = ?',
             [(int) $state['reservation_id'], (string) $state['request_hash']]
         );
+        $db = get_db();
+        if (!empty($state['transaction_started']) && $db->inTransaction()) {
+            $db->commit();
+        }
+        if (function_exists('ticket_permanent_delete_run_after_commit_callbacks')) {
+            ticket_permanent_delete_run_after_commit_callbacks();
+        }
         $GLOBALS['api_idempotency']['owns_reservation'] = false;
+        $GLOBALS['api_idempotency']['transaction_started'] = false;
     } catch (Throwable $e) {
-        error_log('FoxDesk could not persist idempotent API response: ' . $e->getMessage());
+        $db = get_db();
+        if (!empty($state['transaction_started']) && $db->inTransaction()) {
+            $db->rollBack();
+        }
+        $GLOBALS['api_idempotency']['owns_reservation'] = false;
+        $GLOBALS['api_idempotency']['transaction_started'] = false;
+        $GLOBALS['ticket_after_commit_callbacks'] = [];
+        throw new RuntimeException('FoxDesk could not atomically persist the API operation.', 0, $e);
     }
 }
 
@@ -1023,15 +1005,25 @@ function api_idempotency_release_pending(): void
     }
 
     try {
-        db_delete('api_idempotency_keys', 'id = ? AND response_json IS NULL', [(int) $state['reservation_id']]);
+        $db = get_db();
+        if (!empty($state['transaction_started']) && $db->inTransaction()) {
+            $db->rollBack();
+            $GLOBALS['ticket_after_commit_callbacks'] = [];
+        } else {
+            db_delete('api_idempotency_keys', 'id = ? AND response_json IS NULL', [(int) $state['reservation_id']]);
+        }
     } catch (Throwable $e) {
         error_log('FoxDesk could not release pending idempotency key: ' . $e->getMessage());
     }
     $GLOBALS['api_idempotency']['owns_reservation'] = false;
+    $GLOBALS['api_idempotency']['transaction_started'] = false;
 }
 
 function api_token_resource_from_response(string $action, array $response): array
 {
+    if ($action === 'agent-delete-ticket-permanently') {
+        return ['ticket_deletion', null];
+    }
     foreach ([
         'ticket_id' => 'ticket',
         'comment_id' => 'comment',
@@ -1271,7 +1263,7 @@ function update_token_last_used($token_id)
  *
  * @param int    $user_id  The user this token belongs to.
  * @param string $name     A human-readable label.
- * @param string|null $expires_at  Expiration datetime. Defaults to 90 days.
+ * @param string|null $expires_at  Optional expiration datetime. Null means no expiration.
  * @return array  ['token' => full plain-text token, 'id' => row id, 'scopes' => granted scopes]
  */
 function generate_api_token($user_id, $name, $expires_at = null, $scopes = null)
@@ -1284,9 +1276,7 @@ function generate_api_token($user_id, $name, $expires_at = null, $scopes = null)
     }
 
     $granted_scopes = api_token_normalize_scopes($scopes, $token_user);
-    if ($expires_at === null || trim((string) $expires_at) === '') {
-        $expires_at = date('Y-m-d H:i:s', time() + (90 * 86400));
-    }
+    $expires_at = $expires_at !== null && trim((string) $expires_at) !== '' ? $expires_at : null;
     $raw_token = 'fdx_' . bin2hex(random_bytes(24));
     $token_hash = hash('sha256', $raw_token);
     $token_prefix = substr($raw_token, 0, 8);

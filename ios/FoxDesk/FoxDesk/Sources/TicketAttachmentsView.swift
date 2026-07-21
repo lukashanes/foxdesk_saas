@@ -200,6 +200,8 @@ struct AttachmentUploadSection: View {
 
 struct AttachmentRow: View {
     let attachment: TicketAttachment
+    let canDelete: Bool
+    let onDelete: (TicketAttachment) async -> Void
 
     @State private var isPreviewPresented = false
 
@@ -210,6 +212,29 @@ struct AttachmentRow: View {
             rowContent
         }
         .buttonStyle(.plain)
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            if canDelete {
+                Button(role: .destructive) {
+                    Task { await onDelete(attachment) }
+                } label: {
+                    Label("Delete attachment", systemImage: "trash")
+                }
+            }
+        }
+        .contextMenu {
+            Button {
+                isPreviewPresented = true
+            } label: {
+                Label(actionLabel, systemImage: "eye")
+            }
+            if canDelete {
+                Button(role: .destructive) {
+                    Task { await onDelete(attachment) }
+                } label: {
+                    Label("Delete attachment", systemImage: "trash")
+                }
+            }
+        }
         .sheet(isPresented: $isPreviewPresented) {
             NavigationStack {
                 AttachmentPreviewView(attachment: attachment)

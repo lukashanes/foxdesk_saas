@@ -41,8 +41,9 @@ function ticket_detail_available_organizations(array $ticket, array $user): arra
 
 function ticket_detail_context(int $ticket_id, array $ticket, array $user, array &$session): array
 {
-    $all_comments = get_ticket_comments($ticket_id);
-    $attachments = get_ticket_attachments($ticket_id);
+    $activity = ticket_detail_activity_data($ticket_id);
+    $all_comments = $activity['comments'];
+    $attachments = $activity['attachments'];
     $statuses = get_statuses();
     $tags_supported = function_exists('ticket_tags_column_exists') && ticket_tags_column_exists();
     $ticket_tags = $tags_supported ? get_ticket_tags_array($ticket['tags'] ?? '') : [];
@@ -51,6 +52,8 @@ function ticket_detail_context(int $ticket_id, array $ticket, array $user, array
     return [
         'all_comments' => $all_comments,
         'attachments' => $attachments,
+        'time_entries' => $activity['time_entries'],
+        'time_breakdown' => $activity['time_breakdown'],
         'statuses' => $statuses,
         'tags_supported' => $tags_supported,
         'organizations' => ticket_detail_available_organizations($ticket, $user),

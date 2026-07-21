@@ -131,6 +131,7 @@ function app_contract_ticket_payload(array $ticket): array
             'name' => trim((string) (($ticket['assignee_first_name'] ?? '') . ' ' . ($ticket['assignee_last_name'] ?? ''))),
         ],
         'source' => (string) ($ticket['source'] ?? 'web'),
+        'is_archived' => !empty($ticket['is_archived']),
         'tags' => function_exists('normalize_ticket_tags')
             ? normalize_ticket_tags($ticket['tags'] ?? '', true)
             : [],

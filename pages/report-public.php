@@ -14,12 +14,12 @@ function render_public_report_error_page(string $title, string $message, string 
 {
     http_response_code($status);
     $theme_version = (defined('APP_VERSION') ? (string) APP_VERSION : (string) time())
-        . '-' . (string) (@filemtime(BASE_PATH . '/theme.css') ?: '0');
+        . '-' . (string) (@filemtime(BASE_PATH . '/assets/css/theme.min.css') ?: '0');
     echo '<!DOCTYPE html><html><head><meta charset="UTF-8">';
     echo '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
     echo '<title>' . e($title) . '</title>';
     echo '<link href="tailwind.min.css?v=' . e($theme_version) . '" rel="stylesheet">';
-    echo '<link href="theme.css?v=' . e($theme_version) . '" rel="stylesheet">';
+    echo '<link href="assets/css/theme.min.css?v=' . e($theme_version) . '" rel="stylesheet">';
     echo '</head><body class="report-public-error-page">';
     echo '<main class="report-public-error-card">';
     echo '<h1>' . e($title) . '</h1>';
@@ -103,7 +103,7 @@ $extract_report_tags = static function ($value) {
     return array_slice(array_values($parts), 0, 4);
 };
 $report_public_theme_version = (defined('APP_VERSION') ? (string) APP_VERSION : '1')
-    . '-' . (string) (@filemtime(BASE_PATH . '/theme.css') ?: '0');
+    . '-' . (string) (@filemtime(BASE_PATH . '/assets/css/theme.min.css') ?: '0');
 $report_public_tailwind_version = (defined('APP_VERSION') ? (string) APP_VERSION : '1')
     . '-' . (string) (@filemtime(BASE_PATH . '/tailwind.min.css') ?: '0');
 ?>
@@ -116,7 +116,7 @@ $report_public_tailwind_version = (defined('APP_VERSION') ? (string) APP_VERSION
     <title><?php echo e($template['title']); ?> - <?php echo e($template['organization_name']); ?></title>
 
     <link href="tailwind.min.css?v=<?php echo e($report_public_tailwind_version); ?>" rel="stylesheet">
-    <link href="theme.css?v=<?php echo e($report_public_theme_version); ?>" rel="stylesheet">
+    <link href="assets/css/theme.min.css?v=<?php echo e($report_public_theme_version); ?>" rel="stylesheet">
     <link href="index.php?page=report-theme&amp;token=<?php echo e(rawurlencode($token)); ?>&amp;v=<?php echo e($report_public_theme_version); ?>" rel="stylesheet">
 
     <!-- Chart.js -->

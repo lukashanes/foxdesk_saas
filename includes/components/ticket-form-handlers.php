@@ -264,8 +264,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $old_status = get_status($ticket['status_id']);
                 $new_status = get_status($new_status_id);
 
-                db_update('tickets', ['status_id' => $new_status_id], 'id = ?', [$ticket_id]);
-                log_activity($ticket_id, $user['id'], 'status_changed', "Status changed from '{$old_status['name']}' to '{$new_status['name']}'");
+                ticket_transition_status($ticket, $old_status, $new_status, (int) $user['id']);
 
                 // Send status change notification (unless skipped)
                 if (!$skip_notification && !$will_send_public_comment_notification) {
@@ -568,38 +567,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $new_status = get_status($new_status_id);
         $status_changed = $new_status_id !== (int) $ticket['status_id'];
 
-        if ($status_changed) {
-            db_update('tickets', [
-                'status_id' => $new_status_id,
-                'updated_at' => date('Y-m-d H:i:s'),
-            ], 'id = ?', [$ticket_id]);
-            log_activity($ticket_id, $user['id'], 'status_changed', "Status changed from '{$old_status['name']}' to '{$new_status['name']}'");
-        }
-
-        $stopped_timer = null;
         $should_stop_timer_on_complete = !empty($_POST['stop_timer_on_complete'])
             || (
                 function_exists('ticket_status_group_from_status')
                 && ticket_status_group_from_status($new_status) === 'done'
             );
-        if ($should_stop_timer_on_complete && ticket_time_table_exists()) {
-            $stopped_timer = stop_active_ticket_timer($ticket_id, $user['id']);
-        }
-
-        // Add comment about status change - NOT internal (visible to customer)
-        if ($status_changed && !empty($status_comment)) {
-            $comment_content = $status_comment;
-            db_insert('comments', [
-                'ticket_id' => $ticket_id,
-                'user_id' => $user['id'],
-                'content' => $comment_content,
-                'is_internal' => 0, // Customer can see this
-                'created_at' => date('Y-m-d H:i:s')
-            ]);
-
-            // Touch ticket so "Last updated" sorting works
-            db_update('tickets', ['updated_at' => date('Y-m-d H:i:s')], 'id = ?', [$ticket_id]);
-        }
+        $transition = ticket_transition_status($ticket, $old_status, $new_status, (int) $user['id'], [
+            'comment' => $status_comment,
+            'stop_timer' => $should_stop_timer_on_complete,
+        ]);
+        $status_changed = !empty($transition['status_changed']);
+        $stopped_timer = $transition['timer_stopped'] ?? null;
 
         if ($status_changed) {
             require_once BASE_PATH . '/includes/mailer.php';
@@ -746,25 +724,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db_update('tickets', ['is_archived' => 0], 'id = ?', [$ticket_id]);
         log_activity($ticket_id, $user['id'], 'restored', 'Ticket restored from archive');
         flash(t('Ticket restored from archive.'), 'success');
-        redirect('ticket', ['id' => $ticket_id]);
-    }
-
-    // Delete time entry fallback for non-JS form submissions.
-    if (isset($_POST['delete_time_entry'])) {
-        $entry_id = (int) $_POST['entry_id'];
-        $entry = db_fetch_one("SELECT * FROM ticket_time_entries WHERE id = ?", [$entry_id]);
-
-        if ($entry && ($entry['ticket_id'] == $ticket_id) && can_manage_time_entry($entry, $user)) {
-            // Optional: If linked to a comment, maybe update comment time?
-            // For now, just delete the time entry using the function
-            require_once BASE_PATH . '/includes/ticket-time-functions.php';
-            if (delete_time_entry($entry_id)) {
-                log_activity($ticket_id, $user['id'], 'time_deleted', "Deleted time entry (" . format_duration_minutes($entry['duration_minutes'] ?? 0) . ")");
-                flash(t('Time entry deleted.'), 'success');
-            } else {
-                flash(t('Failed to delete time entry.'), 'error');
-            }
-        }
         redirect('ticket', ['id' => $ticket_id]);
     }
 

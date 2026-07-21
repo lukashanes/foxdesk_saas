@@ -26,6 +26,7 @@ function tenant_owned_tables(): array
         'api_tokens',
         'api_token_audit_logs',
         'api_idempotency_keys',
+        'pending_deletions',
         'mobile_auth_challenges',
         'mobile_sessions',
         'mobile_devices',
@@ -78,134 +79,19 @@ function ensure_tenant_baseline(): void
     }
     $done = true;
 
-    try {
-        db_query("
-            CREATE TABLE IF NOT EXISTS tenants (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                uuid CHAR(36) NOT NULL UNIQUE,
-                name VARCHAR(255) NOT NULL,
-                slug VARCHAR(120) NOT NULL UNIQUE,
-                primary_domain VARCHAR(255) NULL,
-                plan VARCHAR(50) NOT NULL DEFAULT 'cloud',
-                status ENUM('active', 'trialing', 'past_due', 'trial_expired', 'suspended', 'blocked', 'canceled') NOT NULL DEFAULT 'active',
-                trial_ends_at DATETIME NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                INDEX idx_status (status),
-                INDEX idx_domain (primary_domain)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ");
+    schema_require('SaaS workspace', ['tenants'], [
+        'tenants' => [
+            'uuid', 'slug', 'plan', 'status', 'trial_ends_at', 'owner_user_id',
+            'billing_email', 'stripe_customer_id', 'stripe_subscription_id',
+            'subscription_status', 'max_users', 'max_agents', 'suspended_at', 'blocked_at',
+        ],
+        'users' => ['tenant_id', 'is_platform_admin'],
+        'attachments' => ['tenant_id', 'storage_driver', 'storage_bucket', 'storage_key'],
+    ]);
 
-        $default = db_fetch_one("SELECT id FROM tenants WHERE slug = 'default' LIMIT 1");
-        if (!$default) {
-            db_query(
-                "INSERT INTO tenants (uuid, name, slug, status, created_at) VALUES (?, 'Default workspace', 'default', 'active', NOW())",
-                [tenant_generate_uuid()]
-            );
-        }
-        $default_id = (int) (db_fetch_one("SELECT id FROM tenants WHERE slug = 'default' LIMIT 1")['id'] ?? 1);
-
-        $tenant_columns = [
-            'owner_user_id' => "ALTER TABLE tenants ADD COLUMN owner_user_id INT NULL AFTER status",
-            'billing_email' => "ALTER TABLE tenants ADD COLUMN billing_email VARCHAR(255) NULL AFTER owner_user_id",
-            'stripe_customer_id' => "ALTER TABLE tenants ADD COLUMN stripe_customer_id VARCHAR(255) NULL AFTER billing_email",
-            'stripe_subscription_id' => "ALTER TABLE tenants ADD COLUMN stripe_subscription_id VARCHAR(255) NULL AFTER stripe_customer_id",
-            'subscription_status' => "ALTER TABLE tenants ADD COLUMN subscription_status VARCHAR(50) NOT NULL DEFAULT 'manual' AFTER stripe_subscription_id",
-            'max_users' => "ALTER TABLE tenants ADD COLUMN max_users INT NOT NULL DEFAULT 1000000 AFTER subscription_status",
-            'max_agents' => "ALTER TABLE tenants ADD COLUMN max_agents INT NOT NULL DEFAULT 1000000 AFTER max_users",
-            'billing_override_reason' => "ALTER TABLE tenants ADD COLUMN billing_override_reason VARCHAR(500) NULL AFTER max_agents",
-            'billing_override_at' => "ALTER TABLE tenants ADD COLUMN billing_override_at DATETIME NULL AFTER billing_override_reason",
-            'billing_override_by' => "ALTER TABLE tenants ADD COLUMN billing_override_by INT NULL AFTER billing_override_at",
-            'suspended_at' => "ALTER TABLE tenants ADD COLUMN suspended_at DATETIME NULL AFTER trial_ends_at",
-            'blocked_at' => "ALTER TABLE tenants ADD COLUMN blocked_at DATETIME NULL AFTER suspended_at",
-        ];
-        foreach ($tenant_columns as $column => $sql) {
-            if (!column_exists('tenants', $column)) {
-                db_query($sql);
-            }
-        }
-        try {
-            db_query("ALTER TABLE tenants MODIFY COLUMN status ENUM('active', 'trialing', 'past_due', 'trial_expired', 'suspended', 'blocked', 'canceled') NOT NULL DEFAULT 'active'");
-        } catch (Throwable $e) {
-            error_log('FoxDesk tenant status enum migration skipped: ' . $e->getMessage());
-        }
-
-        db_query("UPDATE tenants SET plan = 'cloud' WHERE plan IN ('', 'starter', 'pro', 'business') OR plan IS NULL");
-
-        if (table_exists('users') && !column_exists('users', 'is_platform_admin')) {
-            db_query("ALTER TABLE users ADD COLUMN is_platform_admin TINYINT(1) NOT NULL DEFAULT 0 AFTER role");
-            db_query("ALTER TABLE users ADD INDEX idx_platform_admin (is_platform_admin)");
-        }
-
-        if (table_exists('attachments')) {
-            $attachment_columns = [
-                'storage_driver' => "ALTER TABLE attachments ADD COLUMN storage_driver VARCHAR(20) NOT NULL DEFAULT 'local' AFTER file_size",
-                'storage_bucket' => "ALTER TABLE attachments ADD COLUMN storage_bucket VARCHAR(255) NULL AFTER storage_driver",
-                'storage_key' => "ALTER TABLE attachments ADD COLUMN storage_key VARCHAR(700) NULL AFTER storage_bucket",
-            ];
-            foreach ($attachment_columns as $column => $sql) {
-                if (!column_exists('attachments', $column)) {
-                    db_query($sql);
-                }
-            }
-            if (!db_fetch_one("SHOW INDEX FROM attachments WHERE Key_name = 'idx_storage_key'")) {
-                db_query("CREATE INDEX idx_storage_key ON attachments (storage_key(191))");
-            }
-        }
-
-        foreach (tenant_owned_tables() as $table) {
-            if (!table_exists($table) || column_exists($table, 'tenant_id')) {
-                continue;
-            }
-
-            try {
-                db_query("ALTER TABLE {$table} ADD COLUMN tenant_id INT NULL AFTER id");
-                db_query("ALTER TABLE {$table} ADD INDEX idx_tenant_id (tenant_id)");
-                db_query("UPDATE {$table} SET tenant_id = ? WHERE tenant_id IS NULL", [$default_id]);
-            } catch (Throwable $e) {
-                // Some legacy/shared hosts restrict ALTER. Keep the app usable and
-                // let the health/test layer surface the missing tenant column.
-                error_log("FoxDesk tenant migration skipped {$table}: " . $e->getMessage());
-            }
-        }
-
-        foreach (tenant_owned_tables() as $table) {
-            if (tenant_scoped_table_has_column($table)) {
-                db_query("UPDATE {$table} SET tenant_id = ? WHERE tenant_id IS NULL", [$default_id]);
-            }
-        }
-
-        if (table_exists('allowed_senders') && column_exists('allowed_senders', 'tenant_id')) {
-            try {
-                if (db_fetch_one("SHOW INDEX FROM allowed_senders WHERE Key_name = 'uniq_type_value'")) {
-                    db_query("ALTER TABLE allowed_senders DROP INDEX uniq_type_value");
-                }
-            } catch (Throwable $e) {
-                error_log('FoxDesk allowed_senders legacy unique key migration skipped: ' . $e->getMessage());
-            }
-
-            try {
-                if (!db_fetch_one("SHOW INDEX FROM allowed_senders WHERE Key_name = 'uniq_tenant_type_value'")) {
-                    db_query("ALTER TABLE allowed_senders ADD UNIQUE KEY uniq_tenant_type_value (tenant_id, type, value)");
-                }
-            } catch (Throwable $e) {
-                error_log('FoxDesk allowed_senders tenant unique key migration skipped: ' . $e->getMessage());
-            }
-        }
-
-        $allow_platform_bootstrap = defined('FOXDESK_AUTO_BOOTSTRAP_PLATFORM_ADMIN')
-            && (bool) FOXDESK_AUTO_BOOTSTRAP_PLATFORM_ADMIN;
-        if ($allow_platform_bootstrap && table_exists('users') && column_exists('users', 'is_platform_admin')) {
-            $platform_count = (int) (db_fetch_one("SELECT COUNT(*) AS c FROM users WHERE is_platform_admin = 1")['c'] ?? 0);
-            if ($platform_count === 0) {
-                db_query(
-                    "UPDATE users SET is_platform_admin = 1 WHERE tenant_id = ? AND role = 'admin' AND is_active = 1 ORDER BY id ASC LIMIT 1",
-                    [$default_id]
-                );
-            }
-        }
-    } catch (Throwable $e) {
-        error_log('FoxDesk tenant baseline failed: ' . $e->getMessage());
+    $default = db_fetch_one("SELECT id FROM tenants WHERE slug = 'default' LIMIT 1");
+    if (!$default) {
+        throw new FoxDeskDatabaseUpgradeRequired('SaaS workspace', ['default tenant row']);
     }
 }
 

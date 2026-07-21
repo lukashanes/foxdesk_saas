@@ -1,16 +1,18 @@
 <?php
 
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/ticket-detail-source.php';
 
 $module = file_get_contents($root . '/includes/modules/tickets/ticket-detail-actions.php');
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
 $page = file_get_contents($root . '/pages/ticket-detail.php');
 $sidebar = file_get_contents($root . '/includes/components/ticket-detail-sidebar.php');
 $handlers = file_get_contents($root . '/includes/components/ticket-form-handlers.php');
+$status_transition = file_get_contents($root . '/includes/modules/tickets/ticket-status-transition.php');
 $time_functions = file_get_contents($root . '/includes/ticket-time-functions.php');
-$detail_js = file_get_contents($root . '/assets/js/ticket-detail.js');
+$detail_js = ticket_detail_browser_source($root);
 
-if ($module === false || $bootstrap === false || $page === false || $sidebar === false || $handlers === false || $time_functions === false || $detail_js === false) {
+if ($module === false || $bootstrap === false || $page === false || $sidebar === false || $handlers === false || $status_transition === false || $time_functions === false || $detail_js === false) {
     fwrite(STDERR, "Unable to read ticket detail action files.\n");
     exit(1);
 }
@@ -40,7 +42,8 @@ $assert(str_contains($page, 'aria-label="<?php echo e($action_title); ?>"'), 'Pr
 $assert(str_contains($page, 'name="stop_timer_on_complete"'), 'Complete action must submit explicit stop_timer_on_complete intent.');
 $assert(str_contains($page, 'data-action-label="<?php echo e($action[\'key\'] ?? \'\'); ?>"'), 'Primary action labels must be targetable for live timer label updates.');
 $assert(str_contains($time_functions, 'function stop_active_ticket_timer'), 'Shared active timer stop helper is missing.');
-$assert(str_contains($handlers, 'stop_active_ticket_timer($ticket_id, $user[\'id\'])'), 'Standalone status changes must stop an active timer when completing work.');
+$assert(str_contains($handlers, 'ticket_transition_status('), 'Status changes must use the shared transactional transition helper.');
+$assert(str_contains($status_transition, 'stop_active_ticket_timer($ticket_id, $actor_id)'), 'The shared status transition must stop an active timer when completing work.');
 $assert(str_contains($handlers, '$should_stop_timer_on_complete'), 'Status change handler must make complete+timer stop intent explicit.');
 $assert(str_contains($handlers, '!empty($_POST[\'stop_timer_on_complete\'])'), 'Complete action must be able to stop a timer even when status inference is ambiguous.');
 $assert(str_contains($detail_js, 'completeTimerLabel'), 'Timer JS must update Complete label when a timer starts.');

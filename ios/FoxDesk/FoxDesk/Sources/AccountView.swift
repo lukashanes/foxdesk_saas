@@ -174,14 +174,11 @@ private struct WorkspaceStateSection: View {
         Section("Workspace") {
             if let tenantState = session.tenantState {
                 LabeledContent("Name", value: tenantState.tenant.name)
-                LabeledContent("Status", value: accessLabel(tenantState))
-                if let trialEndsAt = tenantState.tenant.trialEndsAt, !trialEndsAt.isEmpty {
-                    LabeledContent("Trial ends", value: trialEndsAt)
-                }
-                if let notice = workspaceNotice(tenantState), !notice.isEmpty {
-                    Text(notice)
+                LabeledContent("Status", value: tenantState.access.allowed ? "Active" : "Paused")
+                if !tenantState.access.allowed {
+                    Text("Contact your workspace administrator or FoxDesk support to restore access.")
                         .font(.footnote)
-                        .foregroundStyle(tenantState.access.allowed ? Color.secondary : Color.orange)
+                        .foregroundStyle(.secondary)
                 }
             } else if session.isLoadingTenantState {
                 HStack {
@@ -200,26 +197,5 @@ private struct WorkspaceStateSection: View {
                 Label("Refresh workspace status", systemImage: "arrow.clockwise")
             }
         }
-    }
-
-    private func accessLabel(_ state: TenantStatePayload) -> String {
-        if state.access.allowed {
-            return state.billingActions?.noticeTitle?.isEmpty == false
-                ? state.billingActions?.noticeTitle ?? "Active"
-                : "Active"
-        }
-        return state.billingActions?.noticeTitle?.isEmpty == false
-            ? state.billingActions?.noticeTitle ?? "Paused"
-            : "Paused"
-    }
-
-    private func workspaceNotice(_ state: TenantStatePayload) -> String? {
-        if state.access.message?.isEmpty == false {
-            return state.access.message
-        }
-        if state.billingActions?.noticeBody?.isEmpty == false {
-            return state.billingActions?.noticeBody
-        }
-        return nil
     }
 }

@@ -1046,55 +1046,9 @@ function ensure_email_templates_language_schema()
     }
     $checked = true;
 
-    try {
-        $has_language = db_fetch_one("SHOW COLUMNS FROM email_templates LIKE 'language'");
-        if (!$has_language) {
-            db_query("ALTER TABLE email_templates ADD COLUMN language VARCHAR(5) NOT NULL DEFAULT 'en' AFTER template_key");
-        }
-
-        $indexes = db_fetch_all("SHOW INDEX FROM email_templates");
-        $unique_indexes = [];
-
-        foreach ($indexes as $index_row) {
-            if ((int) ($index_row['Non_unique'] ?? 1) !== 0) {
-                continue;
-            }
-
-            $index_name = (string) ($index_row['Key_name'] ?? '');
-            $seq = (int) ($index_row['Seq_in_index'] ?? 0);
-            $column_name = (string) ($index_row['Column_name'] ?? '');
-            if ($index_name === '' || $seq <= 0 || $column_name === '') {
-                continue;
-            }
-
-            $unique_indexes[$index_name][$seq] = $column_name;
-        }
-
-        $has_key_lang_unique = false;
-        $single_key_unique_indexes = [];
-
-        foreach ($unique_indexes as $index_name => $columns_by_seq) {
-            ksort($columns_by_seq);
-            $columns = array_values($columns_by_seq);
-
-            if ($columns === ['template_key', 'language']) {
-                $has_key_lang_unique = true;
-            } elseif ($columns === ['template_key']) {
-                $single_key_unique_indexes[] = $index_name;
-            }
-        }
-
-        if (!$has_key_lang_unique) {
-            foreach ($single_key_unique_indexes as $index_name) {
-                $safe_index_name = str_replace('`', '', $index_name);
-                db_query("ALTER TABLE email_templates DROP INDEX `{$safe_index_name}`");
-            }
-
-            db_query("ALTER TABLE email_templates ADD UNIQUE KEY uniq_key_lang (template_key, language)");
-        }
-    } catch (Throwable $e) {
-        // Non-fatal: keep mailer working even if schema cannot be modified.
-    }
+    schema_require('localized email templates', ['email_templates'], [
+        'email_templates' => ['template_key', 'language', 'subject', 'body', 'is_active'],
+    ]);
 }
 
 /**

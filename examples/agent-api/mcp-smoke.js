@@ -23,6 +23,7 @@ async function call(id, method, params = {}) {
     'foxdesk_get_ticket',
     'foxdesk_create_ticket',
     'foxdesk_add_comment',
+    'foxdesk_add_work_entry',
     'foxdesk_log_time',
     'foxdesk_prepare_report',
   ]) {

@@ -54,7 +54,7 @@ FOXDESK_ORGANIZATION_ID=1 sh examples/agent-api/prepare-report.sh
 ## Raw curl shape
 
 ```bash
-curl -fsS -X POST "$FOXDESK_BASE_URL/index.php?page=api&action=app-create-ticket" \
+curl -fsS -X POST "$FOXDESK_BASE_URL/index.php?page=api&action=agent-create-ticket" \
   -H "Authorization: Bearer $FOXDESK_API_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: manual-create-ticket-1" \

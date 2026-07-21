@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo e($page_title); ?></title>
     <link rel="stylesheet" href="tailwind.min.css?v=<?php echo e((string) APP_VERSION); ?>">
-    <link rel="stylesheet" href="theme.css?v=<?php echo e((string) APP_VERSION); ?>">
+    <link rel="stylesheet" href="assets/css/theme.min.css?v=<?php echo e((string) APP_VERSION); ?>">
     <?php echo turnstile_script_tag(); ?>
 </head>
 <body class="signup-page">
@@ -127,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php echo turnstile_widget('signup'); ?>
                         <button type="submit" class="btn btn-primary w-full py-2.5">Start free trial</button>
                         <p class="text-xs leading-5 text-theme-muted">
-                            By continuing you agree to the
+                            By continuing, you confirm that you are acting for business or professional purposes, have authority to bind the customer, and agree to the
                             <a class="link-theme-primary" href="<?php echo e(url('legal', ['type' => 'terms'])); ?>" target="_blank" rel="noopener">Terms</a>
                             and
                             <a class="link-theme-primary" href="<?php echo e(url('legal', ['type' => 'privacy'])); ?>" target="_blank" rel="noopener">Privacy Policy</a>.

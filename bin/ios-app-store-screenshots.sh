@@ -7,18 +7,8 @@ BUNDLE_ID="net.foxdesk.ios"
 OUT_DIR="${IOS_APP_STORE_SCREENSHOT_DIR:-$ROOT/tmp/ios-app-store-screenshots}"
 DERIVED_DATA="$OUT_DIR/DerivedData"
 MANIFEST="$OUT_DIR/manifest.md"
-
-ios_source_fingerprint() {
-  find "$IOS_DIR" -type f \
-    ! -path '*/DerivedData/*' \
-    ! -path '*/xcuserdata/*' \
-    ! -name '.DS_Store' \
-    -print0 \
-    | sort -z \
-    | xargs -0 shasum -a 256 \
-    | shasum -a 256 \
-    | awk '{print $1}'
-}
+TARGET_WIDTH="${IOS_APP_STORE_SCREENSHOT_WIDTH:-1242}"
+TARGET_HEIGHT="${IOS_APP_STORE_SCREENSHOT_HEIGHT:-2688}"
 
 project_setting() {
   local name="$1"
@@ -117,7 +107,7 @@ fi
 log "Generating Xcode project"
 (cd "$IOS_DIR" && xcodegen generate >/dev/null)
 
-IOS_SOURCE_FINGERPRINT="$(ios_source_fingerprint)"
+IOS_SOURCE_FINGERPRINT="$($ROOT/bin/ios-source-fingerprint.sh)"
 MARKETING_VERSION="$(project_setting MARKETING_VERSION)"
 BUILD_NUMBER="$(project_setting CURRENT_PROJECT_VERSION)"
 
@@ -133,6 +123,14 @@ xcrun simctl bootstatus "$SIMULATOR_UDID" -b >/dev/null
 
 log "Installing app"
 xcrun simctl install "$SIMULATOR_UDID" "$APP_PATH"
+
+# Fresh simulators can show first-boot system banners several seconds after the
+# app launches. Let SpringBoard settle so those banners never enter App Store
+# marketing screenshots.
+# Fresh runtimes can deliver first-boot system notifications well after
+# SpringBoard becomes responsive. A longer default keeps Apple Intelligence,
+# tips, and setup banners out of App Store assets.
+sleep "${IOS_SCREENSHOT_BOOT_SETTLE_DELAY:-30}"
 
 {
   printf '# FoxDesk iOS App Store Screenshot Evidence\n\n'
@@ -154,16 +152,26 @@ xcrun simctl install "$SIMULATOR_UDID" "$APP_PATH"
 
 for screen in "${SCREENS[@]}"; do
   file="$OUT_DIR/${screen}.png"
+  raw_file="$DERIVED_DATA/${screen}-raw.png"
   log "Capturing $screen"
   xcrun simctl terminate "$SIMULATOR_UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true
   LAUNCH_OUTPUT="$(xcrun simctl launch "$SIMULATOR_UDID" "$BUNDLE_ID" --foxdesk-screenshot-mode --foxdesk-screenshot-screen "$screen")"
   printf '%s\n' "$LAUNCH_OUTPUT" > "$OUT_DIR/${screen}.launch.log"
   grep -Eq "${BUNDLE_ID}: [0-9]+" "$OUT_DIR/${screen}.launch.log" || fail "Launch failed for screenshot screen: $screen"
-  sleep "${IOS_SCREENSHOT_CAPTURE_DELAY:-2}"
-  xcrun simctl io "$SIMULATOR_UDID" screenshot "$file" >/dev/null
+  capture_delay="${IOS_SCREENSHOT_CAPTURE_DELAY:-2}"
+  if [[ "$screen" == "signin" ]]; then
+    capture_delay="${IOS_SCREENSHOT_FIRST_CAPTURE_DELAY:-8}"
+  fi
+  sleep "$capture_delay"
+  xcrun simctl io "$SIMULATOR_UDID" screenshot "$raw_file" >/dev/null
+  sips --resampleWidth "$TARGET_WIDTH" "$raw_file" --out "$file" >/dev/null
+  sips --cropToHeightWidth "$TARGET_HEIGHT" "$TARGET_WIDTH" "$file" --out "$file" >/dev/null
   [[ -s "$file" ]] || fail "Screenshot was not created: $file"
+  file_bytes="$(stat -f '%z' "$file")"
+  min_bytes="${IOS_SCREENSHOT_MIN_BYTES:-100000}"
+  (( file_bytes >= min_bytes )) || fail "Screenshot looks blank or incomplete: $file (${file_bytes} bytes; expected at least ${min_bytes})."
   dimensions="$(sips -g pixelWidth -g pixelHeight "$file" 2>/dev/null | awk '/pixel/{print $2}' | paste -sdx -)"
-  [[ "$dimensions" =~ ^[0-9]+x[0-9]+$ ]] || fail "Unable to read screenshot dimensions for $file."
+  [[ "$dimensions" == "${TARGET_WIDTH}x${TARGET_HEIGHT}" ]] || fail "Unexpected screenshot dimensions for $file: $dimensions."
   printf -- '- `%s.png` — %s\n' "$screen" "$dimensions" >> "$MANIFEST"
 done
 

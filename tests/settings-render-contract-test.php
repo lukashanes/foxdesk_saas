@@ -1,6 +1,7 @@
 <?php
 
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/settings-source.php';
 
 $assert = static function (bool $condition, string $message): void {
     if (!$condition) {
@@ -9,7 +10,9 @@ $assert = static function (bool $condition, string $message): void {
     }
 };
 
-$page = file_get_contents($root . '/pages/admin/settings.php');
+$page = settings_source_read($root, 'pages/admin/settings.php');
+$renderSurface = settings_source_read($root, 'includes/modules/settings/views/templates.php')
+    . "\n" . settings_source_read($root, 'includes/modules/settings/views/workflow.php');
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
 $functions = file_get_contents($root . '/includes/functions.php');
 $templates = file_get_contents($root . '/includes/modules/settings/settings-templates.php');
@@ -29,7 +32,7 @@ foreach ([
     'admin_workflow_cards()',
     'render_admin_workflow_card($workflow_card)',
 ] as $needle) {
-    $assert(str_contains($page, $needle), 'Settings page must delegate render logic: ' . $needle);
+    $assert(str_contains($renderSurface, $needle), 'Settings partials must delegate render logic: ' . $needle);
 }
 
 foreach ([

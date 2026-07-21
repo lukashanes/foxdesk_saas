@@ -25,17 +25,6 @@ function ensure_ticket_custom_billable_rate_column(): bool {
 
     $checked = true;
     $exists = column_exists('tickets', 'custom_billable_rate');
-    if ($exists) {
-        return true;
-    }
-
-    try {
-        db_query("ALTER TABLE tickets ADD COLUMN custom_billable_rate DECIMAL(10,2) NULL DEFAULT NULL AFTER due_date");
-    } catch (Throwable $e) {
-        // Ignore duplicate/unsupported migrations and fall back to runtime detection below.
-    }
-
-    $exists = column_exists('tickets', 'custom_billable_rate');
     return $exists;
 }
 
@@ -64,17 +53,6 @@ function ensure_user_billable_rate_column(): bool {
     }
 
     $checked = true;
-    $exists = column_exists('users', 'billable_rate');
-    if ($exists) {
-        return true;
-    }
-
-    try {
-        db_query("ALTER TABLE users ADD COLUMN billable_rate DECIMAL(10,2) DEFAULT 0 AFTER cost_rate");
-    } catch (Throwable $e) {
-        // Keep existing installs running if the runtime cannot migrate.
-    }
-
     $exists = column_exists('users', 'billable_rate');
     return $exists;
 }
@@ -139,34 +117,6 @@ function ensure_agent_client_billable_rates_table(): bool {
     }
 
     $checked = true;
-    if (table_exists('agent_client_billable_rates')) {
-        $exists = true;
-        return true;
-    }
-
-    try {
-        db_query("
-            CREATE TABLE IF NOT EXISTS agent_client_billable_rates (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                tenant_id INT NULL,
-                organization_id INT NOT NULL,
-                user_id INT NOT NULL,
-                billable_rate DECIMAL(10,2) NOT NULL DEFAULT 0,
-                notes TEXT NULL,
-                is_active TINYINT(1) NOT NULL DEFAULT 1,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                UNIQUE KEY uniq_agent_client_rate (tenant_id, organization_id, user_id),
-                INDEX idx_tenant_id (tenant_id),
-                INDEX idx_organization (organization_id),
-                INDEX idx_user (user_id),
-                INDEX idx_active (is_active)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ");
-    } catch (Throwable $e) {
-        // Keep the app usable on partially migrated installs.
-    }
-
     $exists = table_exists('agent_client_billable_rates');
     return $exists;
 }
@@ -397,7 +347,7 @@ function sync_ticket_time_entry_billable_rates(int $ticket_id): bool {
 /**
  * Get time entries for a ticket
  */
-function get_ticket_time_entries($ticket_id) {
+function get_ticket_time_entries($ticket_id, bool $strict = false) {
     if (!ticket_time_table_exists()) {
         return [];
     }
@@ -407,7 +357,10 @@ function get_ticket_time_entries($ticket_id) {
                              LEFT JOIN users u ON tte.user_id = u.id
                              WHERE tte.ticket_id = ?
                              ORDER BY tte.started_at DESC", [$ticket_id]);
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
+        if ($strict) {
+            throw new RuntimeException('Unable to read ticket time entries.', 0, $e);
+        }
         return [];
     }
 }
@@ -543,7 +496,7 @@ function time_entry_source_column_exists() {
 /**
  * Get total time logged on a ticket in minutes
  */
-function get_ticket_time_total($ticket_id) {
+function get_ticket_time_total($ticket_id, bool $strict = false) {
     if (!ticket_time_table_exists()) {
         return 0;
     }
@@ -554,7 +507,10 @@ function get_ticket_time_total($ticket_id) {
             [$ticket_id]
         );
         return (int)($row['total'] ?? 0);
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
+        if ($strict) {
+            throw new RuntimeException('Unable to read ticket time total.', 0, $e);
+        }
         return 0;
     }
 }
@@ -612,25 +568,11 @@ function timer_pause_columns_exist() {
     return $exists;
 }
 
-/**
- * Migrate database to add pause columns
- */
+/** Compatibility check retained for callers; schema changes run in migrations. */
 function migrate_timer_pause_columns() {
-    if (!ticket_time_table_exists()) {
-        return false;
-    }
-    if (timer_pause_columns_exist()) {
-        return true; // Already migrated
-    }
-    try {
-        $db = get_db();
-        $db->exec("ALTER TABLE ticket_time_entries ADD COLUMN paused_at DATETIME DEFAULT NULL AFTER ended_at");
-        $db->exec("ALTER TABLE ticket_time_entries ADD COLUMN paused_seconds INT DEFAULT 0 AFTER paused_at");
-        return true;
-    } catch (Exception $e) {
-        error_log("Failed to add pause columns: " . $e->getMessage());
-        return false;
-    }
+    return ticket_time_table_exists()
+        && column_exists('ticket_time_entries', 'paused_at')
+        && column_exists('ticket_time_entries', 'paused_seconds');
 }
 
 /**
@@ -895,7 +837,7 @@ function is_ai_user($user_id) {
  * @param int $ticket_id
  * @return array ['total' => int, 'human' => int, 'ai' => int] minutes
  */
-function get_ticket_time_breakdown($ticket_id) {
+function get_ticket_time_breakdown($ticket_id, bool $strict = false) {
     if (!ticket_time_table_exists()) {
         return ['total' => 0, 'human' => 0, 'ai' => 0];
     }
@@ -904,7 +846,7 @@ function get_ticket_time_breakdown($ticket_id) {
 
     // No AI agents exist — shortcut
     if (empty($ai_ids)) {
-        $total = get_ticket_time_total($ticket_id);
+        $total = get_ticket_time_total($ticket_id, $strict);
         return ['total' => $total, 'human' => $total, 'ai' => 0];
     }
 
@@ -921,7 +863,10 @@ function get_ticket_time_breakdown($ticket_id) {
         $total = (int) ($row['total'] ?? 0);
         $ai = (int) ($row['ai'] ?? 0);
         return ['total' => $total, 'human' => $total - $ai, 'ai' => $ai];
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
+        if ($strict) {
+            throw new RuntimeException('Unable to read ticket time breakdown.', 0, $e);
+        }
         return ['total' => 0, 'human' => 0, 'ai' => 0];
     }
 }

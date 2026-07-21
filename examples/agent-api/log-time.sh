@@ -22,4 +22,4 @@ payload="${payload}\"summary\":\"$(foxdesk_json_escape "$summary")\","
 payload="${payload}\"is_billable\":${is_billable}"
 payload="${payload}}"
 
-foxdesk_post_json "app-log-time" "$payload"
+foxdesk_post_json "agent-log-time" "$payload"

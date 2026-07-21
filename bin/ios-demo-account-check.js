@@ -243,7 +243,10 @@ async function verifyDemoWrite(accessToken, createOptions) {
     throw new Error('Demo reviewer write check did not create a ticket.');
   }
 
-  const manualDate = now.toISOString().slice(0, 10);
+  // Use a completed interval from the previous day. A fixed morning interval
+  // on the current date can still be in the future when the gate runs shortly
+  // after midnight and the API correctly rejects future work records.
+  const manualDate = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const manualStartTime = '09:00';
   const manualEndTime = '09:03';
 
@@ -293,6 +296,30 @@ async function verifyDemoWrite(accessToken, createOptions) {
   });
   if (!detail?.ticket || !commentRow || !linkedTimeRow) {
     throw new Error('Demo reviewer write check did not reload the created ticket with its linked timed comment.');
+  }
+
+  const archived = dataOf(await request(`tickets/${ticketId}`, {
+    method: 'POST',
+    token: accessToken,
+    body: {
+      ticket_id: ticketId,
+      is_archived: true,
+      skip_notification: true,
+    },
+  }));
+  const archivedTicket = archived?.ticket || archived;
+  const updatedFields = Array.isArray(archived?.updated_fields) ? archived.updated_fields : [];
+  const isArchived = archivedTicket?.is_archived === true
+    || Number(archivedTicket?.is_archived) === 1
+    || updatedFields.includes('is_archived');
+  record('demo-write-cleanup', isArchived, {
+    ticket_id: ticketId,
+    updated_fields: updatedFields,
+    response_keys: archived && typeof archived === 'object' ? Object.keys(archived).sort() : [],
+    message: isArchived ? 'Write-proof ticket archived after verification.' : 'Write-proof ticket could not be archived.',
+  });
+  if (!isArchived) {
+    throw new Error('Demo reviewer write check left its temporary ticket active.');
   }
 }
 

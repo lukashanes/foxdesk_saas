@@ -2,6 +2,7 @@
 
 $root = dirname(__DIR__);
 require_once $root . '/includes/modules/tickets/ticket-bulk-actions.php';
+require_once __DIR__ . '/support/ticket-list-source.php';
 
 $assert = static function (bool $condition, string $message): void {
     if (!$condition) {
@@ -40,7 +41,7 @@ $assert($empty_update['has_update'] === false, 'Unsupported tags must not count 
 $assert($empty_update['tags_mode'] === 'keep', 'Unsupported tags must force keep mode.');
 $assert($empty_update['base_update_data'] === [], 'Empty bulk update must not produce base update data.');
 
-$page = file_get_contents($root . '/pages/tickets.php');
+$page = ticket_list_controller_source($root);
 $module = file_get_contents($root . '/includes/modules/tickets/ticket-bulk-actions.php');
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
 $assert($page !== false && $module !== false && $bootstrap !== false, 'Bulk action files must be readable.');

@@ -1,5 +1,9 @@
 # Agent API Control
 
+The canonical ticket and tracked-work workflow is defined in
+[`AGENT_TICKET_WORKFLOW.md`](AGENT_TICKET_WORKFLOW.md) and returned by the live
+`agent-docs` endpoint in English, Czech, German, Spanish, or Italian.
+
 Goal: let a trusted assistant control FoxDesk through a scoped API key without
 giving it more power than the person who created the key.
 
@@ -26,9 +30,9 @@ Implemented v1:
 - Agent tool manifest, MCP write dry-run/confirmation, and local agent smoke
   gates are tracked in `docs/AGENT_API_MILESTONES.md`.
 
-Still future-facing:
-
-- Destructive write endpoints beyond ticket/comment/time workflows.
+Permanent ticket deletion is available only with `tickets:read`, `delete:write`,
+the creator's permanent-delete permission, preflight, and an exact ticket-code
+confirmation. Partial and bulk permanent deletion are intentionally unsupported.
 
 ## User Flow
 

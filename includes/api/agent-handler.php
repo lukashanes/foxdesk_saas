@@ -10,6 +10,8 @@
  *   Error:   {"success": false, "error": "message"}
  */
 
+require_once dirname(__DIR__) . '/modules/agent/operating-instructions.php';
+
 /**
  * Format a ticket code consistently with the rest of the app.
  */
@@ -226,15 +228,15 @@ function api_agent_docs_tools(): array
                 'due_date' => 'optional YYYY-MM-DD',
                 'created_at' => 'optional historical datetime, admin/agent only',
                 'tags' => 'optional comma-separated tags',
-                'duration_minutes' => 'optional time entry minutes',
             ],
         ],
         [
-            'action' => 'agent-add-comment',
+            'action' => 'agent-add-update',
             'method' => 'POST',
-            'scope' => 'tickets:read + comments:write; add time:write when duration/time fields are included',
+            'scope' => 'tickets:read + comments:write',
+            'required_scopes' => ['tickets:read', 'comments:write'],
             'writes' => true,
-            'description' => 'Add a public or internal comment to an accessible ticket. If time fields are included, the created time entry is linked to the comment.',
+            'description' => 'Add a public or internal comment without tracked time.',
             'query' => [],
             'body' => [
                 'ticket_hash' => 'required unless ticket_id is provided',
@@ -243,20 +245,13 @@ function api_agent_docs_tools(): array
                 'is_internal' => 'optional boolean',
                 'skip_notification' => 'optional boolean',
                 'created_at' => 'optional historical datetime, admin/agent only',
-                'duration_minutes' => 'optional time entry minutes; creates linked ticket_time_entries.comment_id',
-                'started_at' => 'optional datetime, requires ended_at',
-                'ended_at' => 'optional datetime, requires started_at',
-                'manual_date' => 'optional YYYY-MM-DD with manual_start_time/manual_end_time',
-                'manual_start_time' => 'optional HH:MM',
-                'manual_end_time' => 'optional HH:MM',
-                'is_billable' => 'optional boolean',
-                'time_summary' => 'optional time entry summary',
             ],
         ],
         [
-            'action' => 'app-add-comment-with-time',
+            'action' => 'agent-add-work-entry',
             'method' => 'POST',
             'scope' => 'tickets:read + comments:write + time:write',
+            'required_scopes' => ['tickets:read', 'comments:write', 'time:write'],
             'writes' => true,
             'description' => 'Create one work record: comment plus linked manual time entry. Use this when a customer-visible note and exact work time belong together.',
             'query' => [],
@@ -273,6 +268,7 @@ function api_agent_docs_tools(): array
                 'manual_start_time' => 'alternative HH:MM',
                 'manual_end_time' => 'alternative HH:MM',
                 'is_billable' => 'optional boolean, default true',
+                'time_summary' => 'optional short summary',
             ],
         ],
         [
@@ -307,6 +303,31 @@ function api_agent_docs_tools(): array
             ],
         ],
         [
+            'action' => 'agent-delete-ticket-preflight',
+            'method' => 'GET',
+            'scope' => 'tickets:read',
+            'required_scopes' => ['tickets:read'],
+            'writes' => false,
+            'description' => 'Preview the complete impact of a permanent ticket deletion. Available only to an authorized administrator.',
+            'query' => ['ticket_id', 'hash'],
+            'body' => null,
+            'requires_permanent_delete_permission' => true,
+        ],
+        [
+            'action' => 'agent-delete-ticket-permanently',
+            'method' => 'POST',
+            'scope' => 'tickets:read + delete:write',
+            'required_scopes' => ['tickets:read', 'delete:write'],
+            'writes' => true,
+            'description' => 'Permanently delete one complete ticket after preflight and exact ticket-code confirmation.',
+            'query' => [],
+            'body' => [
+                'ticket_id' => 'required integer',
+                'confirmation' => 'required exact ticket code from preflight',
+            ],
+            'requires_permanent_delete_permission' => true,
+        ],
+        [
             'action' => 'app-reporting-review',
             'method' => 'GET',
             'scope' => 'reports:read',
@@ -331,17 +352,31 @@ function api_agent_docs_tools(): array
     ];
 }
 
-function api_agent_docs_scope_allowed(?string $scope, ?array $token_row, array $user): bool
+function api_agent_docs_scope_allowed(?string $scope, ?array $token_row, array $user, array $required_scopes = []): bool
 {
-    if ($scope === null || $scope === '') {
+    if ($required_scopes === [] && $scope !== null && $scope !== '') {
+        $required_scopes = [$scope];
+    }
+    if ($required_scopes === []) {
         return true;
     }
 
     if ($token_row) {
-        return api_token_has_scope($scope);
+        foreach ($required_scopes as $required_scope) {
+            if (!api_token_has_scope($required_scope)) {
+                return false;
+            }
+        }
+        return true;
     }
 
-    return in_array($scope, api_token_allowed_scopes_for_user($user), true);
+    $allowed = api_token_allowed_scopes_for_user($user);
+    foreach ($required_scopes as $required_scope) {
+        if (!in_array($required_scope, $allowed, true)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // =============================================================================
@@ -362,22 +397,32 @@ function api_agent_docs()
     $scope_catalog = api_token_scope_catalog($user);
     $base_url = api_agent_base_url();
     $api_action_base = $base_url . '/index.php?page=api&action=';
+    $instruction_language = foxdesk_agent_instruction_language(
+        $_GET['instruction_language'] ?? null,
+        $user
+    );
+    $operating_instructions = foxdesk_agent_operating_instructions($instruction_language, $user);
 
     $actions = [];
     foreach (api_agent_docs_tools() as $tool) {
         $scope = $tool['scope'] ?? null;
-        $available = api_agent_docs_scope_allowed($scope, $token_row, $user);
+        $required_scopes = $tool['required_scopes'] ?? [];
+        $available = api_agent_docs_scope_allowed($scope, $token_row, $user, $required_scopes);
+        if (!empty($tool['requires_permanent_delete_permission'])) {
+            $available = $available && can_permanently_delete_tickets($user);
+        }
         $actions[] = array_merge($tool, [
             'url' => api_agent_endpoint_url($tool['action']),
             'available' => $available,
             'missing_scope' => $available ? null : $scope,
+            'missing_scopes' => $available ? [] : ($required_scopes ?: [$scope]),
             'idempotency_recommended' => !empty($tool['writes']),
         ]);
     }
 
     api_success([
         'documentation' => [
-            'schema_version' => 1,
+            'schema_version' => 2,
             'name' => 'FoxDesk Agent API',
             'purpose' => 'Use this endpoint at the start of every agent session to learn available actions, permissions, request shapes, and safety rules.',
             'base_url' => $base_url,
@@ -406,6 +451,8 @@ function api_agent_docs()
                 'scopes' => $token_scopes,
                 'scope_catalog' => $scope_catalog,
             ],
+            'operating_instructions' => $operating_instructions,
+            'operating_instructions_markdown' => foxdesk_agent_operating_instructions_markdown($instruction_language, $user),
             'workflow' => [
                 'start_here' => 'Treat base_url as an API host, not a web page to log into. Call agent-docs, then agent-me. Use read actions first. Use writes only when the user clearly asked for a change.',
                 'read_before_write' => 'Before changing a ticket, read it with agent-get-ticket or app-ticket-detail so the action is based on current state.',
@@ -422,7 +469,7 @@ function api_agent_docs()
                 'Never invent ticket ids, client ids, status ids, or priority ids; read them from the API first.',
                 'Never perform destructive or billing-impacting actions unless the user explicitly asked for that specific action.',
                 'Prefer internal comments for assistant notes and public comments only when the answer should go to the customer.',
-                'Log time only when the user asked you to record work or when the workflow explicitly includes time tracking.',
+                'Use agent-add-update for comments without time and agent-add-work-entry for tracked work. Never create both records separately.',
             ],
             'actions' => $actions,
             'examples' => [
@@ -445,37 +492,37 @@ function api_agent_docs()
                         'priority_id' => 1,
                     ],
                 ],
-                'log_time' => [
+                'comment_without_time' => [
                     'method' => 'POST',
-                    'url' => api_agent_endpoint_url('agent-log-time'),
+                    'url' => api_agent_endpoint_url('agent-add-update'),
                     'headers' => [
                         'Authorization' => 'Bearer $FOXDESK_API_TOKEN',
                         'Content-Type' => 'application/json',
-                        'Idempotency-Key' => 'agent-log-time-unique-key',
+                        'Idempotency-Key' => 'agent-comment-unique-key',
                     ],
                     'body' => [
                         'ticket_hash' => 'ticket_hash_from_agent_get_ticket',
-                        'duration_minutes' => 30,
-                        'summary' => 'Investigated and documented the fix.',
-                    ],
-                ],
-                'comment_with_time' => [
-                    'method' => 'POST',
-                    'url' => api_agent_endpoint_url('app-add-comment-with-time'),
-                    'headers' => [
-                        'Authorization' => 'Bearer $FOXDESK_API_TOKEN',
-                        'Content-Type' => 'application/json',
-                        'Idempotency-Key' => 'agent-comment-time-unique-key',
-                    ],
-                    'body' => [
-                        'ticket_hash' => 'ticket_hash_from_agent_get_ticket',
-                        'content' => '<p><strong>Work completed</strong></p><p>Implemented and tested the requested change.</p>',
+                        'content' => $operating_instructions['daily_entries']['example_html'],
                         'is_internal' => false,
                         'skip_notification' => true,
-                        'started_at' => '2026-05-25 21:18:00',
-                        'ended_at' => '2026-05-25 22:06:00',
-                        'duration_minutes' => 48,
-                        'is_billable' => true,
+                    ],
+                ],
+                'tracked_work_entry' => [
+                    'use_only_when' => 'The work must count toward tracked or billable time.',
+                    'method' => 'POST',
+                    'url' => api_agent_endpoint_url('agent-add-work-entry'),
+                    'headers' => [
+                        'Authorization' => 'Bearer $FOXDESK_API_TOKEN',
+                        'Content-Type' => 'application/json',
+                        'Idempotency-Key' => 'agent-work-entry-unique-key',
+                    ],
+                    'body' => [
+                        'ticket_hash' => 'ticket_hash_from_agent_get_ticket',
+                        'content' => '<p>Completed the requested work.</p>',
+                        'duration_minutes' => 27,
+                        'started_at' => '2026-07-13 10:00:00',
+                        'ended_at' => '2026-07-13 10:27:00',
+                        'skip_notification' => true,
                     ],
                 ],
             ],
@@ -619,6 +666,11 @@ function api_agent_create_ticket()
     if (empty($input['title'])) {
         api_error('Field "title" is required', 422);
     }
+    foreach (['duration_minutes', 'started_at', 'ended_at', 'manual_date', 'manual_start_time', 'manual_end_time', 'time_summary'] as $time_field) {
+        if (array_key_exists($time_field, $input)) {
+            api_error('Ticket creation does not accept time fields. Create the ticket first, then use agent-add-work-entry.', 422);
+        }
+    }
 
     $user = current_user();
     $owner_id = !empty($input['user_id']) ? (int) $input['user_id'] : (int) $user['id'];
@@ -629,7 +681,7 @@ function api_agent_create_ticket()
 
     $data = [
         'title' => trim($input['title']),
-        'description' => $input['description'] ?? '',
+        'description' => function_exists('safe_html') ? safe_html((string) ($input['description'] ?? '')) : (string) ($input['description'] ?? ''),
         'user_id' => $owner_id,
         'type' => $input['type'] ?? 'general',
     ];
@@ -710,29 +762,8 @@ function api_agent_create_ticket()
         'ticket_code' => api_agent_ticket_code($ticket_id),
     ];
 
-    // Auto-log time if duration_minutes provided
-    $duration = (int) ($input['duration_minutes'] ?? 0);
-    if ($duration > 0 && function_exists('add_manual_time_entry')) {
-        $end_dt = new DateTime($ticket_created_at);
-        $start_dt = (clone $end_dt)->modify('-' . $duration . ' minutes');
-        $source = (function_exists('is_ai_user') && is_ai_user($user['id'])) ? 'ai' : 'manual';
-        $time_data = [
-            'started_at' => $start_dt->format('Y-m-d H:i:s'),
-            'ended_at' => $end_dt->format('Y-m-d H:i:s'),
-            'duration_minutes' => $duration,
-            'summary' => $input['time_summary'] ?? t('Ticket creation'),
-            'is_billable' => 1,
-            'source' => $source,
-        ];
-        $time_entry_id = add_manual_time_entry($ticket_id, $user['id'], $time_data);
-        if ($time_entry_id) {
-            $response['time_entry_id'] = (int) $time_entry_id;
-            $response['duration_minutes'] = $duration;
-        }
-    }
-
     // In-app notifications
-    if (function_exists('ticket_event_dispatch_in_app')) {
+    if (!empty($transition['status_changed']) && function_exists('ticket_event_dispatch_in_app')) {
         $desc_text = strip_tags($input['description'] ?? '');
         $desc_preview = mb_strlen($desc_text) > 80 ? mb_substr($desc_text, 0, 77) . '...' : $desc_text;
         ticket_event_dispatch_in_app('ticket.created', $ticket_id, $user['id'], [
@@ -848,17 +879,15 @@ function api_agent_get_ticket()
     $user = current_user();
     $ticket = api_agent_resolve_ticket($_GET, $user, 'hash', 'id');
 
-    // Get time breakdown
-    $time_breakdown = ['total' => 0, 'human' => 0, 'ai' => 0];
-    if (function_exists('get_ticket_time_breakdown')) {
-        $time_breakdown = get_ticket_time_breakdown($ticket['id']);
+    try {
+        $activity = ticket_detail_activity_data((int) $ticket['id'], true);
+    } catch (Throwable $e) {
+        api_error('Ticket activity could not be loaded.', 500);
     }
+    $time_breakdown = $activity['time_breakdown'];
 
-    // Get comments
     $comments = [];
-    if (function_exists('get_ticket_comments')) {
-        $raw_comments = get_ticket_comments($ticket['id']);
-        foreach ($raw_comments as $c) {
+    foreach ($activity['comments'] as $c) {
             $comments[] = [
                 'id' => (int) $c['id'],
                 'content' => $c['content'],
@@ -868,16 +897,13 @@ function api_agent_get_ticket()
                 'is_ai_author' => function_exists('is_ai_user') ? is_ai_user((int) ($c['user_id'] ?? 0)) : false,
                 'created_at' => $c['created_at'],
             ];
-        }
     }
 
-    // Get time entries
     $time_entries = [];
-    if (function_exists('get_ticket_time_entries')) {
-        $raw_time = get_ticket_time_entries($ticket['id']);
-        foreach ($raw_time as $te) {
+    foreach ($activity['time_entries'] as $te) {
             $time_entries[] = [
                 'id' => (int) $te['id'],
+                'comment_id' => !empty($te['comment_id']) ? (int) $te['comment_id'] : null,
                 'user' => trim(($te['first_name'] ?? '') . ' ' . ($te['last_name'] ?? '')),
                 'started_at' => $te['started_at'],
                 'ended_at' => $te['ended_at'] ?? null,
@@ -889,7 +915,6 @@ function api_agent_get_ticket()
                 'source' => function_exists('get_time_entry_source') ? get_time_entry_source($te) : (!empty($te['is_manual']) ? 'manual' : 'timer'),
                 'is_ai_user' => function_exists('is_ai_user') ? is_ai_user((int) ($te['user_id'] ?? 0)) : false,
             ];
-        }
     }
 
     api_success([
@@ -942,6 +967,25 @@ function api_agent_add_comment()
     if (empty($input['content'])) {
         api_error('Field "content" is required', 422);
     }
+    $action = (string) ($GLOBALS['api_current_action'] ?? ($_GET['action'] ?? 'agent-add-comment'));
+    $time_fields = ['duration_minutes', 'started_at', 'ended_at', 'manual_date', 'manual_start_time', 'manual_end_time'];
+    $has_time_fields = false;
+    foreach ($time_fields as $time_field) {
+        $has_time_fields = $has_time_fields || array_key_exists($time_field, $input);
+    }
+    if (!empty($GLOBALS['is_api_token_auth']) && !api_token_has_scope('tickets:read')) {
+        api_error('Missing required scope: tickets:read', 403);
+    }
+    if ($action !== 'agent-add-work-entry' && $has_time_fields) {
+        api_error('agent-add-update is comment-only. Use agent-add-work-entry to save a linked comment and time entry.', 422);
+    }
+    if ($action === 'agent-add-work-entry' && !$has_time_fields) {
+        api_error('agent-add-work-entry requires duration_minutes or an explicit start/end time.', 422);
+    }
+    if ($action === 'agent-add-work-entry' && !empty($GLOBALS['is_api_token_auth']) && !api_token_has_scope('time:write')) {
+        api_error('Missing required scope: time:write', 403);
+    }
+    $input['content'] = function_exists('safe_html') ? safe_html((string) $input['content']) : (string) $input['content'];
 
     $user = current_user();
     $ticket = api_agent_resolve_ticket($input, $user, 'ticket_hash', 'ticket_id');
@@ -1084,19 +1128,16 @@ function api_agent_update_status()
         api_error('Status not found', 404);
     }
 
-    update_ticket($ticket_id, ['status_id' => $status_id]);
-
-    // Log activity
-    if (function_exists('log_activity')) {
-        log_activity($ticket_id, $user['id'], 'status_changed', json_encode([
-            'old_status_id' => (int) $ticket['status_id'],
-            'new_status_id' => $status_id,
-        ]));
-    }
+    $old_status_row = api_agent_status_by_id((int) $ticket['status_id']) ?: [];
+    $transition = ticket_transition_status(
+        $ticket,
+        $old_status_row,
+        $status,
+        (int) $user['id']
+    );
 
     // In-app notification for status change
     if (function_exists('ticket_event_dispatch_in_app')) {
-        $old_status_row = api_agent_status_by_id((int) $ticket['status_id']);
         ticket_event_dispatch_in_app('ticket.status_changed', $ticket_id, $user['id'], [
             'old_status' => $old_status_row['name'] ?? '',
             'new_status' => $status['name'] ?? '',
@@ -1107,6 +1148,7 @@ function api_agent_update_status()
         'ticket_id' => (int) $ticket_id,
         'status_id' => $status_id,
         'status' => $status['name'],
+        'timer_stopped' => !empty($transition['timer_stopped']),
     ]);
 }
 
@@ -1180,4 +1222,73 @@ function api_agent_log_time()
         'duration_minutes' => $duration,
         'source' => $source,
     ]);
+}
+
+function api_agent_delete_ticket_preflight(): void
+{
+    $user = current_user();
+    if (!$user || !can_permanently_delete_tickets($user)) {
+        api_error('Forbidden', 403);
+    }
+
+    $ticket = api_agent_resolve_ticket($_GET, $user, 'hash', 'ticket_id');
+    if (!$ticket) {
+        api_error('Ticket not found', 404);
+    }
+
+    $preflight = ticket_permanent_delete_preflight((int) $ticket['id']);
+    if (!$preflight) {
+        api_error('Ticket not found', 404);
+    }
+    api_success(['preflight' => $preflight]);
+}
+
+function api_agent_delete_ticket_permanently(): void
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        api_error('Method not allowed', 405);
+    }
+
+    $user = current_user();
+    if (!$user || !can_permanently_delete_tickets($user)) {
+        api_error('Forbidden', 403);
+    }
+    if (!empty($GLOBALS['is_api_token_auth']) && !api_token_has_scope('tickets:read')) {
+        api_error('Missing required scope: tickets:read', 403);
+    }
+    if (function_exists('api_token_idempotency_key') && api_token_idempotency_key() === '') {
+        api_error('Idempotency-Key header is required.', 422);
+    }
+
+    $input = get_json_input();
+    $ticket_id = (int) ($input['ticket_id'] ?? 0);
+    $confirmation = trim((string) ($input['confirmation'] ?? ''));
+    if ($ticket_id <= 0 || $confirmation === '') {
+        api_error('ticket_id and confirmation are required.', 422);
+    }
+    foreach (['delete_comments', 'delete_time_entries', 'delete_attachments'] as $flag) {
+        if (array_key_exists($flag, $input) && $input[$flag] !== true && $input[$flag] !== 1) {
+            api_error('Partial ticket deletion is not supported.', 422);
+        }
+    }
+
+    $ticket = get_ticket($ticket_id);
+    if ($ticket && !can_see_ticket($ticket, $user)) {
+        api_error('Forbidden', 403);
+    }
+
+    try {
+        $result = ticket_permanent_delete(
+            $ticket_id,
+            $confirmation,
+            $user,
+            function_exists('api_token_request_id') ? api_token_request_id() : null
+        );
+        api_success($result);
+    } catch (InvalidArgumentException $e) {
+        api_error($e->getMessage(), $e->getCode() ?: 422);
+    } catch (RuntimeException $e) {
+        $code = in_array($e->getCode(), [403, 404, 422], true) ? $e->getCode() : 500;
+        api_error($code === 500 ? 'Ticket could not be deleted safely.' : $e->getMessage(), $code);
+    }
 }

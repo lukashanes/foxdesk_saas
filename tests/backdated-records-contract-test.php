@@ -1,5 +1,6 @@
 <?php
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/ticket-detail-source.php';
 
 $read = static function (string $path) use ($root): string {
     $content = file_get_contents($root . '/' . $path);
@@ -19,7 +20,7 @@ $assert = static function (bool $condition, string $message): void {
 
 $functions = $read('includes/functions.php');
 $crud = $read('includes/ticket-crud-functions.php');
-$newTicket = $read('pages/new-ticket.php');
+$newTicket = new_ticket_composed_source($root);
 $composer = $read('includes/components/ticket-detail-composer.php');
 $handlers = $read('includes/components/ticket-form-handlers.php');
 $agentApi = $read('includes/api/agent-handler.php');

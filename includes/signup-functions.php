@@ -12,21 +12,11 @@ function signup_magic_link_ttl_seconds(): int
 
 function signup_magic_links_ensure_schema(): void
 {
-    db_query("
-        CREATE TABLE IF NOT EXISTS signup_magic_links (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            email VARCHAR(255) NOT NULL,
-            token_hash CHAR(64) NOT NULL UNIQUE,
-            expires_at DATETIME NOT NULL,
-            consumed_at DATETIME NULL,
-            ip VARCHAR(45) NULL,
-            user_agent VARCHAR(255) NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_email_created (email, created_at),
-            INDEX idx_expires_at (expires_at),
-            INDEX idx_consumed_at (consumed_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
+    schema_require('email-only signup', ['signup_magic_links'], [
+        'signup_magic_links' => [
+            'email', 'token_hash', 'expires_at', 'consumed_at', 'ip', 'user_agent', 'created_at',
+        ],
+    ]);
 }
 
 function signup_normalize_email(string $email): string

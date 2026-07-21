@@ -62,6 +62,9 @@ if (!$is_cli && !$is_admin_session) {
 
 $messages = [];
 
+require_once BASE_PATH . '/includes/update-functions.php';
+require_once BASE_PATH . '/includes/schema-migration-runner.php';
+
 function add_index_if_missing($table, $index_name, $sql)
 {
     global $messages;
@@ -1288,6 +1291,41 @@ if (!$check) {
     }
 }
 
+$check = db_fetch_one("SHOW TABLES LIKE 'ticket_deletion_receipts'");
+if (!$check) {
+    try {
+        db_query("CREATE TABLE ticket_deletion_receipts (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY, tenant_id INT NOT NULL DEFAULT 0, ticket_id INT NOT NULL,
+            ticket_code_hash CHAR(64) NOT NULL, deleted_by INT NOT NULL, request_id VARCHAR(64) NULL,
+            deleted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_ticket_deletion_receipt (tenant_id, ticket_id),
+            INDEX idx_deleted_at (deleted_at), INDEX idx_deleted_by (deleted_by)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $messages[] = "OK: Created table `ticket_deletion_receipts`";
+    } catch (Exception $e) { $messages[] = "ERROR: Failed to create ticket deletion receipts: " . $e->getMessage(); }
+}
+$check = db_fetch_one("SHOW TABLES LIKE 'ticket_storage_deletion_outbox'");
+if (!$check) {
+    try {
+        db_query("CREATE TABLE ticket_storage_deletion_outbox (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY, tenant_id INT NOT NULL DEFAULT 0, ticket_id INT NOT NULL,
+            attachment_payload JSON NOT NULL, attempts INT NOT NULL DEFAULT 0,
+            last_error VARCHAR(500) NULL, processed_at DATETIME NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_pending (processed_at, created_at), INDEX idx_ticket (tenant_id, ticket_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $messages[] = "OK: Created table `ticket_storage_deletion_outbox`";
+    } catch (Exception $e) { $messages[] = "ERROR: Failed to create ticket storage deletion outbox: " . $e->getMessage(); }
+}
+try {
+    db_query("UPDATE ticket_deletion_receipts SET tenant_id = 0 WHERE tenant_id IS NULL");
+    db_query("ALTER TABLE ticket_deletion_receipts MODIFY tenant_id INT NOT NULL DEFAULT 0");
+    db_query("UPDATE ticket_storage_deletion_outbox SET tenant_id = 0 WHERE tenant_id IS NULL");
+    db_query("ALTER TABLE ticket_storage_deletion_outbox MODIFY tenant_id INT NOT NULL DEFAULT 0");
+} catch (Exception $e) {
+    $messages[] = "ERROR: Failed to normalize ticket deletion tenant keys: " . $e->getMessage();
+}
+
 // Add AI agent columns to users table
 $check = db_fetch_one("SHOW COLUMNS FROM users LIKE 'is_ai_agent'");
 if (!$check) {
@@ -1344,6 +1382,9 @@ if (!$check) {
     }
 }
 
+$versioned_migrations = foxdesk_run_versioned_migrations(BASE_PATH . '/migrations');
+$messages = array_merge($messages, $versioned_migrations['messages'], $versioned_migrations['errors']);
+
 if (empty($messages)) {
     $messages[] = "Database is up to date; no changes were required.";
 }
@@ -1357,7 +1398,7 @@ if (empty($messages)) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upgrade - FoxDesk</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="theme.css" rel="stylesheet">
+    <link href="assets/css/theme.min.css" rel="stylesheet">
 </head>
 
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">

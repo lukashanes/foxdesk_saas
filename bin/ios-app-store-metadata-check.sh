@@ -58,6 +58,7 @@ not_contains "$SUBMISSION_PACKET" 'https://foxdesk.net/privacy' "Submission pack
 not_contains "$METADATA" 'https://foxdesk.net/#contact' "Metadata must not use the old empty contact anchor."
 not_contains "$SUBMISSION_PACKET" 'https://foxdesk.net/#contact' "Submission packet must not use the old empty contact anchor."
 not_contains "$METADATA" 'Stripe Checkout is available in iOS' "Metadata must not claim Stripe Checkout exists in iOS."
+not_contains "$METADATA" 'Subscription management, billing, public pricing' "Public App Store description must not advertise web billing surfaces."
 not_contains "$METADATA" 'upgrade subscriptions in the iOS app' "Metadata must not claim subscription upgrade exists in iOS."
 not_contains "$METADATA" 'platform admin from iPhone' "Metadata must not claim platform admin exists in iOS."
 not_contains "$METADATA" 'self-hosted setup from iPhone' "Metadata must not claim self-hosted setup exists in iOS."

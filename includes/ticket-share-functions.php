@@ -160,22 +160,9 @@ function ensure_report_template_share_columns(): void
     }
     $checked = true;
 
-    try {
-        if (!column_exists('report_shares', 'report_template_id')) {
-            db_query("ALTER TABLE report_shares ADD COLUMN report_template_id INT NULL AFTER organization_id");
-            db_query("ALTER TABLE report_shares ADD INDEX idx_report_template (report_template_id)");
-        }
-    } catch (Throwable $e) {
-        // Older/shared hosts may not support online DDL; callers fail gracefully.
-    }
-
-    try {
-        if (!column_exists('report_shares', 'share_secret')) {
-            db_query("ALTER TABLE report_shares ADD COLUMN share_secret VARCHAR(64) NULL AFTER token_hash");
-        }
-    } catch (Throwable $e) {
-        // Older/shared hosts may not support online DDL; callers fail gracefully.
-    }
+    schema_require('public report sharing', [], [
+        'report_shares' => ['report_template_id', 'share_secret'],
+    ]);
 }
 
 function report_template_share_token_from_secret($share_secret): string

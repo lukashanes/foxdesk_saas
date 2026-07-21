@@ -120,12 +120,7 @@ function migrate_ticket_hashes() {
     if ($migrated) return true;
 
     try {
-        // Check if hash column exists
-        if (!column_exists('tickets', 'hash')) {
-            // Add hash column
-            db_query("ALTER TABLE tickets ADD COLUMN hash VARCHAR(16) DEFAULT NULL AFTER id");
-            db_query("CREATE UNIQUE INDEX idx_hash ON tickets(hash)");
-        }
+        schema_require('ticket hashes', ['tickets'], ['tickets' => ['hash']]);
 
         // Generate hashes for tickets without one (batch via CASE WHEN)
         $tickets_without_hash = db_fetch_all("SELECT id FROM tickets WHERE hash IS NULL OR hash = ''");
@@ -646,22 +641,7 @@ function update_ticket($id, $data) {
  * Delete ticket
  */
 function delete_ticket($id) {
-    // Delete related records first
-    try {
-        db_delete('comments', 'ticket_id = ?', [$id]);
-        db_delete('attachments', 'ticket_id = ?', [$id]);
-        db_delete('activity_log', 'ticket_id = ?', [$id]);
-        if (ticket_time_table_exists()) {
-            db_delete('ticket_time_entries', 'ticket_id = ?', [$id]);
-        }
-        if (ticket_access_table_exists()) {
-            db_delete('ticket_access', 'ticket_id = ?', [$id]);
-        }
-    } catch (Exception $e) {
-        // Ignore if tables don't exist
-    }
-
-    return db_delete('tickets', 'id = ?', [$id]);
+    throw new LogicException('Unsafe delete_ticket() is disabled. Use ticket_permanent_delete().');
 }
 
 /**
@@ -892,30 +872,13 @@ function ticket_history_table_exists() {
  * Create ticket_history table if it doesn't exist
  */
 function ensure_ticket_history_table() {
-    if (ticket_history_table_exists()) {
-        return true;
-    }
-
     try {
-        db_query("
-            CREATE TABLE IF NOT EXISTS ticket_history (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                ticket_id INT NOT NULL,
-                user_id INT NOT NULL,
-                field_name VARCHAR(100) NOT NULL,
-                old_value TEXT,
-                new_value TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_ticket (ticket_id),
-                INDEX idx_user (user_id),
-                INDEX idx_created (created_at),
-                FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ");
+        schema_require('ticket history', ['ticket_history'], [
+            'ticket_history' => ['ticket_id', 'user_id', 'field_name', 'old_value', 'new_value', 'created_at'],
+        ]);
         return true;
-    } catch (Exception $e) {
-        error_log("Failed to create ticket_history table: " . $e->getMessage());
+    } catch (Throwable $e) {
+        error_log("Ticket history schema unavailable: " . $e->getMessage());
         return false;
     }
 }

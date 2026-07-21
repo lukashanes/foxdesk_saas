@@ -44,9 +44,9 @@ With FoxDesk for iPhone, signed-in workspace users can:
 - search tickets and clients,
 - receive ticket notifications and open the right ticket from a push.
 
-FoxDesk for iOS is designed for existing FoxDesk Cloud workspaces. Subscription
-management, billing, public pricing, platform administration, and self-hosted
-setup remain on the web.
+FoxDesk for iOS is designed for existing FoxDesk Cloud workspace users. It
+focuses on ticket work, time tracking, attachments, search, and notifications.
+Workspace setup and administration are not part of the native app.
 
 ## Keywords
 
@@ -57,10 +57,18 @@ helpdesk,support,tickets,time tracking,customer service,agents,comments
 FoxDesk is for existing FoxDesk Cloud workspace users. Please sign in with the
 demo workspace account provided in App Review Information.
 
-The iOS app does not sell subscriptions, does not include in-app purchases, does
-not show Stripe Checkout, and does not expose billing or platform
-administration. Subscription and workspace billing management are handled on
-the web.
+FoxDesk for iOS is a free stand-alone companion to the paid FoxDesk Cloud web
+tool under Apple App Review Guideline 3.1.3(f). It has no purchasing inside the
+app and no calls to action to purchase outside the app. It does not create
+accounts, show pricing, sell subscriptions, include in-app purchases, open
+Checkout, or link to subscription management. Users sign in with an existing
+organization-provided workspace account.
+
+The iOS app does not include in-app purchases.
+
+If signup, pricing, purchasing, upgrades, or external purchase calls to action
+are added later, this review note is no longer sufficient and the release must
+be reassessed for StoreKit and in-app purchase requirements.
 
 The demo account should include:
 
@@ -82,6 +90,46 @@ file. Do not commit real demo credentials to any Markdown file:
 - Email: `[fill before submission]`
 - Password: `[fill before submission]`
 - 2FA or backup code: `[fill if enabled]`
+
+App Review contact:
+
+- First name: `Lukas`
+- Last name: `Hanes`
+- Email: `lh@aenze.com`
+- Phone: `[enter a monitored phone number with country code]`
+
+Set `Sign-in required` to `Yes` and save the demo email and password in the
+dedicated App Review fields, not only in Review Notes. The account must remain
+active throughout review and must not require an email magic link or a one-time
+code unless the code is included in the review information.
+
+## Content Rights
+
+Answer `Yes` when App Store Connect asks whether the app contains, shows, or
+accesses third-party content. FoxDesk displays ticket text, files, names, logos,
+and other content supplied by customer workspaces. Confirm that the app has the
+necessary rights to display that content.
+
+Use this explanation if Apple asks for detail:
+
+```text
+FoxDesk displays private business support content uploaded by authorised users
+of each customer workspace. The content is not a public catalogue. FoxDesk's
+Terms require each business customer to hold all necessary rights, permissions,
+notices, and legal bases for customer and third-party content and grant Aenze
+s.r.o. the limited rights required to host, process, and display it to authorised
+workspace users.
+```
+
+## Agreements
+
+This build is a free app with no in-app purchases. The Account Holder must open
+`Business > Agreements` and confirm that the Apple Developer Program License
+Agreement for free app distribution is active and that App Store Connect shows
+no blocking agreement action. Do not sign the Paid Apps Agreement, add banking,
+or add tax forms solely for this free build unless App Store Connect presents a
+specific blocking requirement or a later release sells an app or in-app
+purchase.
 
 ## Privacy Summary
 

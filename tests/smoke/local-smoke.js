@@ -121,7 +121,7 @@ async function expectDashboardSurface(page) {
     const widget = document.querySelector('.db-widget');
     const configButton = document.querySelector('#dashboard-config-btn');
     const configPanel = document.querySelector('#dashboard-config-panel');
-    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.min.css"]')].map(link => link.getAttribute('href'));
     const rect = (element) => {
       const bounds = element.getBoundingClientRect();
       return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
@@ -163,8 +163,8 @@ async function expectDashboardSurface(page) {
   if (layout.bodyOpacity !== '1') {
     throw new Error(`Dashboard body is not fully visible: ${JSON.stringify(layout)}`);
   }
-  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
-    throw new Error(`Dashboard does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  if (!layout.themeLinks.some(href => href && href.includes('theme.min.css?v='))) {
+    throw new Error(`Dashboard does not use a versioned theme.min.css link: ${JSON.stringify(layout)}`);
   }
   if (layout.inlineDashboardStyles) {
     throw new Error(`Dashboard still contains page-level dashboard layout styles: ${JSON.stringify(layout)}`);
@@ -193,7 +193,7 @@ async function expectPublicRefactorSurfaces(page) {
   const signup = await page.evaluate(() => {
     const shell = document.querySelector('.signup-shell');
     const card = document.querySelector('.signup-card');
-    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.min.css"]')].map(link => link.getAttribute('href'));
     return {
       bodyClass: document.body.className,
       shellDisplay: shell ? getComputedStyle(shell).display : null,
@@ -208,8 +208,8 @@ async function expectPublicRefactorSurfaces(page) {
   if (!signup.bodyClass.includes('signup-page') || signup.shellDisplay !== 'grid' || signup.cardWidth < 300) {
     throw new Error(`Signup page layout is broken: ${JSON.stringify(signup)}`);
   }
-  if (!signup.themeLinks.some(href => href && href.includes('theme.css?v='))) {
-    throw new Error(`Signup page does not use a versioned theme.css link: ${JSON.stringify(signup)}`);
+  if (!signup.themeLinks.some(href => href && href.includes('theme.min.css?v='))) {
+    throw new Error(`Signup page does not use a versioned theme.min.css link: ${JSON.stringify(signup)}`);
   }
   if (signup.inlineSignupStyles) {
     throw new Error(`Signup page still contains local signup styles: ${JSON.stringify(signup)}`);
@@ -220,7 +220,7 @@ async function expectPublicRefactorSurfaces(page) {
     const shell = document.querySelector('.legal-shell');
     const card = document.querySelector('.legal-card');
     const nav = document.querySelector('.legal-nav');
-    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.min.css"]')].map(link => link.getAttribute('href'));
     return {
       bodyClass: document.body.className,
       shellWidth: shell ? shell.getBoundingClientRect().width : 0,
@@ -239,8 +239,8 @@ async function expectPublicRefactorSurfaces(page) {
   if (legal.navDisplay !== 'flex') {
     throw new Error(`Legal navigation is unstyled: ${JSON.stringify(legal)}`);
   }
-  if (!legal.themeLinks.some(href => href && href.includes('theme.css?v='))) {
-    throw new Error(`Legal page does not use a versioned theme.css link: ${JSON.stringify(legal)}`);
+  if (!legal.themeLinks.some(href => href && href.includes('theme.min.css?v='))) {
+    throw new Error(`Legal page does not use a versioned theme.min.css link: ${JSON.stringify(legal)}`);
   }
   if (legal.inlineLegalStyles) {
     throw new Error(`Legal page still contains local legal styles: ${JSON.stringify(legal)}`);
@@ -261,7 +261,7 @@ async function expectPlatformSurface(page) {
     const shell = document.querySelector('.op-shell');
     const sidebar = document.querySelector('.op-sidebar');
     const catalog = document.querySelector('#workspaces');
-    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.min.css"]')].map(link => link.getAttribute('href'));
     return {
       url: window.location.href,
       bodyClass: document.body.className,
@@ -288,8 +288,8 @@ async function expectPlatformSurface(page) {
   if (!layout.catalogExists || !layout.bodyText.includes('Workspace catalog')) {
     throw new Error(`Platform console content is missing: ${JSON.stringify(layout)}`);
   }
-  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
-    throw new Error(`Platform console does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  if (!layout.themeLinks.some(href => href && href.includes('theme.min.css?v='))) {
+    throw new Error(`Platform console does not use a versioned theme.min.css link: ${JSON.stringify(layout)}`);
   }
   if (layout.inlinePlatformStyles) {
     throw new Error(`Platform console still contains local operator styles: ${JSON.stringify(layout)}`);
@@ -304,7 +304,7 @@ async function expectSettingsSurface(page) {
     const sectionCards = document.querySelectorAll('.settings-section-card');
     const adminTabs = document.querySelector('.admin-tabs');
     const adminPageNav = document.querySelector('.admin-page-nav');
-    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.min.css"]')].map(link => link.getAttribute('href'));
     return {
       url: window.location.href,
       shellWidth: shell ? shell.getBoundingClientRect().width : 0,
@@ -325,8 +325,8 @@ async function expectSettingsSurface(page) {
   if (layout.adminTabsCount || layout.adminPageNavCount) {
     throw new Error(`Settings page must not render duplicate horizontal admin menus: ${JSON.stringify(layout)}`);
   }
-  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
-    throw new Error(`Settings page does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  if (!layout.themeLinks.some(href => href && href.includes('theme.min.css?v='))) {
+    throw new Error(`Settings page does not use a versioned theme.min.css link: ${JSON.stringify(layout)}`);
   }
   if (layout.inlineSettingsStyles) {
     throw new Error(`Settings page still contains moved notice/system styles: ${JSON.stringify(layout)}`);
@@ -435,7 +435,7 @@ async function expectNewTicketSurface(page) {
     const editor = document.querySelector('.editor-wrapper');
     const uploadZone = document.querySelector('#upload-zone');
     const optionPill = document.querySelector('.option-pill');
-    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.min.css"]')].map(link => link.getAttribute('href'));
     const rect = (element) => {
       const bounds = element.getBoundingClientRect();
       return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
@@ -475,8 +475,8 @@ async function expectNewTicketSurface(page) {
   if (layout.optionPillDisplay !== null && !['flex', 'inline-flex'].includes(layout.optionPillDisplay)) {
     throw new Error(`New ticket option pills are unstyled: ${JSON.stringify(layout)}`);
   }
-  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
-    throw new Error(`New ticket does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  if (!layout.themeLinks.some(href => href && href.includes('theme.min.css?v='))) {
+    throw new Error(`New ticket does not use a versioned theme.min.css link: ${JSON.stringify(layout)}`);
   }
   if (layout.inlineNewTicketStyles) {
     throw new Error(`New ticket still contains page-level layout styles: ${JSON.stringify(layout)}`);
@@ -494,7 +494,7 @@ async function expectReportsSurface(page) {
     const flowCard = document.querySelector('.reporting-flow-card');
     const filterCard = document.querySelector('#report-filters');
     const card = document.querySelector('.card');
-    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.min.css"]')].map(link => link.getAttribute('href'));
     const rect = (element) => {
       const bounds = element.getBoundingClientRect();
       return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
@@ -546,8 +546,8 @@ async function expectReportsSurface(page) {
   if (layout.bodyOpacity !== '1') {
     throw new Error(`Reports page shell is not fully visible: ${JSON.stringify(layout)}`);
   }
-  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
-    throw new Error(`Reports page does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  if (!layout.themeLinks.some(href => href && href.includes('theme.min.css?v='))) {
+    throw new Error(`Reports page does not use a versioned theme.min.css link: ${JSON.stringify(layout)}`);
   }
   if (layout.inlineReportStyles) {
     throw new Error(`Reports page still contains page-level print styles: ${JSON.stringify(layout)}`);
@@ -563,7 +563,7 @@ async function expectBillingSurface(page) {
     const summary = document.querySelector('.billing-summary-grid');
     const storage = document.querySelector('.billing-storage-progress');
     const actions = document.querySelector('.billing-actions');
-    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.min.css"]')].map(link => link.getAttribute('href'));
     const rect = (element) => {
       const bounds = element.getBoundingClientRect();
       return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
@@ -608,8 +608,8 @@ async function expectBillingSurface(page) {
   if (layout.scopedInlineStyles !== 0) {
     throw new Error(`Billing page still has scoped inline styles: ${JSON.stringify(layout)}`);
   }
-  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
-    throw new Error(`Billing page does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  if (!layout.themeLinks.some(href => href && href.includes('theme.min.css?v='))) {
+    throw new Error(`Billing page does not use a versioned theme.min.css link: ${JSON.stringify(layout)}`);
   }
 }
 
@@ -642,7 +642,7 @@ async function expectClientSurface(page) {
     const profile = document.querySelector('.client-profile-list');
     const ticket = document.querySelector('.client-ticket');
     const status = document.querySelector('.client-ticket-status');
-    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.min.css"]')].map(link => link.getAttribute('href'));
     const scopedInlineStyles = shell ? [...shell.querySelectorAll('[style]')].map(node => ({
       className: node.className,
       style: node.getAttribute('style')
@@ -698,8 +698,8 @@ async function expectClientSurface(page) {
   if (layout.bodyOpacity !== '1') {
     throw new Error(`Client detail shell is not fully visible: ${JSON.stringify(layout)}`);
   }
-  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
-    throw new Error(`Client detail does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  if (!layout.themeLinks.some(href => href && href.includes('theme.min.css?v='))) {
+    throw new Error(`Client detail does not use a versioned theme.min.css link: ${JSON.stringify(layout)}`);
   }
 
   await page.locator('.client-tab[href*="work_view=all"]').click();
@@ -717,7 +717,7 @@ async function expectTicketDetailSurface(page) {
     const timelineOverlay = document.querySelector('#timeline-overlay');
     const workPanel = document.querySelector('.ticket-work-panel');
     const workActions = document.querySelector('.ticket-work-panel__actions');
-    const themeLinks = [...document.querySelectorAll('link[href*="theme.css"]')].map(link => link.getAttribute('href'));
+    const themeLinks = [...document.querySelectorAll('link[href*="theme.min.css"]')].map(link => link.getAttribute('href'));
     const rect = (element) => {
       const bounds = element.getBoundingClientRect();
       return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
@@ -762,8 +762,8 @@ async function expectTicketDetailSurface(page) {
   if (layout.timelineAriaHidden !== null && layout.timelineAriaHidden !== 'true') {
     throw new Error(`Ticket timeline overlay should be aria-hidden by default: ${JSON.stringify(layout)}`);
   }
-  if (!layout.themeLinks.some(href => href && href.includes('theme.css?v='))) {
-    throw new Error(`Ticket detail does not use a versioned theme.css link: ${JSON.stringify(layout)}`);
+  if (!layout.themeLinks.some(href => href && href.includes('theme.min.css?v='))) {
+    throw new Error(`Ticket detail does not use a versioned theme.min.css link: ${JSON.stringify(layout)}`);
   }
   if (layout.inlineDetailStyles) {
     throw new Error(`Ticket detail still contains page-level layout styles: ${JSON.stringify(layout)}`);

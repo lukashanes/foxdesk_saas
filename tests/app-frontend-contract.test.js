@@ -15,10 +15,23 @@ const footer = read('includes/footer.php');
 const header = read('includes/header.php');
 const workspaceSurface = read('includes/components/workspace-surface.php');
 const ticketRegistrySurface = read('includes/components/ticket-registry-surface.php');
-const ticketsPage = read('pages/tickets.php');
+const ticketsPage = [
+  read('pages/tickets.php'),
+  read('includes/modules/tickets/ticket-list-page-controller.php'),
+  read('includes/components/ticket-list-page.php'),
+  read('includes/components/ticket-list-board.php'),
+  read('includes/components/ticket-list-table.php'),
+].join('\n');
 const inboxPage = read('pages/inbox.php');
 const clientPage = read('pages/client.php');
-const reportsPage = read('pages/admin/reports.php');
+const reportsPage = [
+  read('pages/admin/reports.php'),
+  read('includes/modules/reports/report-page-controller.php'),
+  read('includes/modules/reports/report-page-view-model.php'),
+  read('includes/modules/reports/report-page-render.php'),
+  read('includes/modules/reports/views/page.php'),
+  read('includes/modules/reports/views/billing.php'),
+].join('\n');
 const apiClient = read('assets/js/app-api-client.js');
 const shellBridge = read('assets/js/app-contract-shell.js');
 const docs = read('docs/product-architecture-refactor.md');

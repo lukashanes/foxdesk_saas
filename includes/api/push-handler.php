@@ -24,7 +24,7 @@ function api_push_subscribe(): void
         api_error('Unauthorized', 401);
     }
 
-    $input = json_decode(file_get_contents('php://input'), true);
+    $input = get_json_input();
     $endpoint = trim($input['endpoint'] ?? '');
     $p256dh = trim($input['p256dh'] ?? '');
     $auth = trim($input['auth'] ?? '');
@@ -56,7 +56,7 @@ function api_push_unsubscribe(): void
         api_error('Unauthorized', 401);
     }
 
-    $input = json_decode(file_get_contents('php://input'), true);
+    $input = get_json_input();
     $endpoint = trim($input['endpoint'] ?? '');
 
     if (empty($endpoint)) {

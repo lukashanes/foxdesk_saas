@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
                 'color' => $color,
                 'sort_order' => $new_order,
                 'is_default' => 0,
-                'is_closed' => isset($_POST['is_closed']) ? 1 : 0
+                'is_closed' => 0
             ]);
 
             flash(t('Status added.'), 'success');
@@ -60,10 +60,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tab === 'workflow') {
         $color = $_POST['color'] ?? '#3b82f6';
 
         if (!empty($name) && $id > 0) {
+            $existing_status = admin_crud_fetch_record('statuses', $id);
             admin_crud_update_record('statuses', $id, [
                 'name' => $name,
                 'color' => $color,
-                'is_closed' => isset($_POST['is_closed']) ? 1 : 0
+                'is_closed' => strtolower((string) ($existing_status['slug'] ?? '')) === 'done' ? 1 : 0
             ]);
 
             flash(t('Status updated.'), 'success');
@@ -144,10 +145,6 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
                     <?php endforeach; ?>
                 </select>
             </div>
-            <label class="flex items-center gap-2 text-xs cursor-pointer text-theme-secondary">
-                <input type="checkbox" name="is_closed" class="fd-rounded-control w-3.5 h-3.5">
-                <?php echo e(t('Mark as closed')); ?>
-            </label>
             <div class="flex gap-2 pt-1">
                 <button type="submit" name="add_status" class="flex-1 btn btn-primary btn-sm text-xs">
                     <?php echo e(t('Create')); ?>
@@ -233,11 +230,6 @@ $edit_status = $edit_status_id ? get_status($edit_status_id) : null;
                                 </label>
                                 <input type="color" name="color" value="<?php echo e($status['color']); ?>" class="w-full h-8 fd-rounded-control fd-color-input cursor-pointer">
                             </div>
-
-                            <label class="flex items-center gap-2 text-xs cursor-pointer text-theme-secondary">
-                                <input type="checkbox" name="is_closed" class="fd-rounded-control w-3.5 h-3.5" <?php echo $status['is_closed'] ? 'checked' : ''; ?>>
-                                <?php echo e(t('Mark as closed')); ?>
-                            </label>
 
                             <div class="pt-2 border-t border-theme-light">
                                 <div class="flex gap-2 mb-2">

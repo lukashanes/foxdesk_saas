@@ -4,6 +4,7 @@ public enum FoxDeskAPIError: Error, Equatable, LocalizedError {
     case invalidURL
     case invalidResponse
     case unauthorized
+    case network(String)
     case server(statusCode: Int, message: String)
     case decoding(String)
 
@@ -15,6 +16,8 @@ public enum FoxDeskAPIError: Error, Equatable, LocalizedError {
             return "FoxDesk returned an invalid response."
         case .unauthorized:
             return "Sign in again to continue."
+        case .network(let message):
+            return message
         case .server(_, let message):
             return message
         case .decoding(let message):
@@ -253,6 +256,115 @@ public final class FoxDeskAPIClient {
             method: "POST",
             bearerToken: accessToken,
             body: request
+        )
+    }
+
+    public func updateComment(
+        accessToken: String,
+        commentId: Int,
+        content: String
+    ) async throws -> AppEnvelope<UpdateCommentPayload> {
+        try await send(
+            path: "comments/\(commentId)",
+            method: "POST",
+            bearerToken: accessToken,
+            body: UpdateCommentRequest(commentId: commentId, content: content)
+        )
+    }
+
+    public func updateTimeEntry(
+        accessToken: String,
+        timeEntryId: Int,
+        durationMinutes: Int,
+        summary: String?,
+        isBillable: Bool,
+        startedAt: String? = nil,
+        endedAt: String? = nil
+    ) async throws -> AppEnvelope<UpdateTimeEntryPayload> {
+        try await send(
+            path: "time-entries/\(timeEntryId)",
+            method: "POST",
+            bearerToken: accessToken,
+            body: UpdateTimeEntryRequest(
+                timeEntryId: timeEntryId,
+                durationMinutes: durationMinutes,
+                summary: summary,
+                isBillable: isBillable,
+                startedAt: startedAt,
+                endedAt: endedAt
+            )
+        )
+    }
+
+    public func deleteComment(
+        accessToken: String,
+        commentId: Int
+    ) async throws -> AppEnvelope<DeleteTicketItemPayload> {
+        try await send(
+            path: "comments/\(commentId)/delete",
+            method: "POST",
+            bearerToken: accessToken,
+            body: DeleteCommentRequest(commentId: commentId)
+        )
+    }
+
+    public func restoreComment(
+        accessToken: String,
+        undoToken: String
+    ) async throws -> AppEnvelope<RestoreTicketItemPayload> {
+        try await send(
+            path: "comments/restore",
+            method: "POST",
+            bearerToken: accessToken,
+            body: RestoreTicketItemRequest(undoToken: undoToken)
+        )
+    }
+
+    public func deleteTimeEntry(
+        accessToken: String,
+        timeEntryId: Int
+    ) async throws -> AppEnvelope<DeleteTicketItemPayload> {
+        try await send(
+            path: "time-entries/\(timeEntryId)/delete",
+            method: "POST",
+            bearerToken: accessToken,
+            body: DeleteTimeEntryRequest(timeEntryId: timeEntryId)
+        )
+    }
+
+    public func restoreTimeEntry(
+        accessToken: String,
+        undoToken: String
+    ) async throws -> AppEnvelope<RestoreTicketItemPayload> {
+        try await send(
+            path: "time-entries/restore",
+            method: "POST",
+            bearerToken: accessToken,
+            body: RestoreTicketItemRequest(undoToken: undoToken)
+        )
+    }
+
+    public func deleteAttachment(
+        accessToken: String,
+        attachmentId: Int
+    ) async throws -> AppEnvelope<DeleteTicketItemPayload> {
+        try await send(
+            path: "attachments/\(attachmentId)/delete",
+            method: "POST",
+            bearerToken: accessToken,
+            body: DeleteAttachmentRequest(attachmentId: attachmentId)
+        )
+    }
+
+    public func restoreAttachment(
+        accessToken: String,
+        undoToken: String
+    ) async throws -> AppEnvelope<RestoreTicketItemPayload> {
+        try await send(
+            path: "attachments/restore",
+            method: "POST",
+            bearerToken: accessToken,
+            body: RestoreTicketItemRequest(undoToken: undoToken)
         )
     }
 
@@ -525,18 +637,30 @@ public final class FoxDeskAPIClient {
         let preferServerMessageForUnauthorized = ["login", "verify-2fa"].contains(
             path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         )
+        let normalizedPath = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let missingResourceMessage = ["login", "verify-2fa", "refresh"].contains(normalizedPath)
+            ? "The FoxDesk mobile API is not available on this server."
+            : nil
 
         return try await sendJSONRequest(
             request,
-            preferServerMessageForUnauthorized: preferServerMessageForUnauthorized
+            preferServerMessageForUnauthorized: preferServerMessageForUnauthorized,
+            missingResourceMessage: missingResourceMessage
         )
     }
 
     private func sendJSONRequest<Response: Decodable>(
         _ request: URLRequest,
-        preferServerMessageForUnauthorized: Bool = false
+        preferServerMessageForUnauthorized: Bool = false,
+        missingResourceMessage: String? = nil
     ) async throws -> Response {
-        let (data, response) = try await performIdempotentDataRequest(request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await performIdempotentDataRequest(request)
+        } catch let error as URLError {
+            throw FoxDeskAPIError.network(Self.networkMessage(for: error))
+        }
         guard let httpResponse = response as? HTTPURLResponse else {
             throw FoxDeskAPIError.invalidResponse
         }
@@ -550,7 +674,9 @@ public final class FoxDeskAPIClient {
                 }
                 throw FoxDeskAPIError.unauthorized
             }
-            let message = apiErrorMessage(from: data) ?? "FoxDesk request failed."
+            let message = apiErrorMessage(from: data)
+                ?? (httpResponse.statusCode == 404 ? missingResourceMessage : nil)
+                ?? Self.defaultServerMessage(statusCode: httpResponse.statusCode)
             throw FoxDeskAPIError.server(statusCode: httpResponse.statusCode, message: message)
         }
 
@@ -565,7 +691,54 @@ public final class FoxDeskAPIClient {
         guard let response = try? decoder.decode(APIErrorResponse.self, from: data) else {
             return nil
         }
-        return response.message?.isEmpty == false ? response.message : response.error
+        if response.message?.isEmpty == false {
+            return Self.clearServerMessage(response.message!, statusCode: nil)
+        }
+        if response.error?.isEmpty == false {
+            return Self.clearServerMessage(response.error!, statusCode: nil)
+        }
+        if let message = response.errors?.compactMap(\.message).first(where: { !$0.isEmpty }) {
+            return Self.clearServerMessage(message, statusCode: nil)
+        }
+        return nil
+    }
+
+    private static func defaultServerMessage(statusCode: Int) -> String {
+        switch statusCode {
+        case 400: return "FoxDesk could not process this request. Check the entered values and try again."
+        case 403: return "You do not have permission to perform this action."
+        case 404: return "This FoxDesk item is no longer available."
+        case 409: return "This item changed on another device. Refresh it and try again."
+        case 410: return "Undo is no longer available."
+        case 422: return "Some required information is missing or invalid."
+        case 429: return "Too many requests. Wait a moment and try again."
+        case 500...599: return "FoxDesk could not complete the request. Try again shortly."
+        default: return "FoxDesk request failed."
+        }
+    }
+
+    private static func clearServerMessage(_ message: String, statusCode: Int?) -> String {
+        let normalized = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        if normalized.caseInsensitiveCompare("Forbidden") == .orderedSame {
+            return defaultServerMessage(statusCode: statusCode ?? 403)
+        }
+        if normalized.caseInsensitiveCompare("Unauthorized") == .orderedSame {
+            return "Sign in again to continue."
+        }
+        return normalized
+    }
+
+    private static func networkMessage(for error: URLError) -> String {
+        switch error.code {
+        case .notConnectedToInternet, .networkConnectionLost:
+            return "FoxDesk is offline. Check your connection and try again."
+        case .timedOut:
+            return "FoxDesk took too long to respond. Try again."
+        case .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
+            return "The FoxDesk server could not be reached."
+        default:
+            return "FoxDesk could not connect to the server. Try again."
+        }
     }
 
     private func sendMultipart<Response: Decodable>(

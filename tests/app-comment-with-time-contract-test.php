@@ -117,11 +117,11 @@ foreach ([
 }
 
 foreach ([
-    "'action' => 'app-add-comment-with-time'",
+    "'action' => 'agent-add-work-entry'",
     "'scope' => 'tickets:read + comments:write + time:write'",
-    'comment_with_time',
+    'tracked_work_entry',
     'Idempotency-Key',
-    'creates linked ticket_time_entries.comment_id',
+    'linked manual time entry',
 ] as $needle) {
     $assert(str_contains($contents['agent'], $needle), 'Agent docs missing comment-with-time guidance: ' . $needle);
 }

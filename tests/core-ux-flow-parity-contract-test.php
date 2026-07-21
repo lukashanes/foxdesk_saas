@@ -1,6 +1,9 @@
 <?php
 
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/ticket-list-source.php';
+require_once __DIR__ . '/support/ticket-detail-source.php';
+require_once __DIR__ . '/support/report-page-source.php';
 
 function assert_core_ux_flow(bool $condition, string $message): void
 {
@@ -114,10 +117,8 @@ foreach (['open_tickets', 'done_tickets', 'archived_tickets', 'clients', 'contac
 $pages = [
     'pages/work.php' => ['work_queue_summary', 'workspace_render_queue_page'],
     'pages/inbox.php' => ["redirect('work'", "'triage' => 'unassigned'"],
-    'pages/tickets.php' => ['ticket_list_view_from_request', 'ticket_list_view_apply_filters', 'ticket_registry_split_model', 'name="search_scope" value="all"'],
     'pages/ticket-detail.php' => ['ticket_detail_primary_actions(', 'Ticket Work Panel'],
     'pages/client.php' => ['client_overview(', 'All tickets'],
-    'pages/admin/reports.php' => ['reporting_flow_steps()', 'billing_review_adjustment_actions()', 'billing_review_bulk_adjustment_actions()'],
 ];
 
 foreach ($pages as $path => $needles) {
@@ -127,7 +128,17 @@ foreach ($pages as $path => $needles) {
     }
 }
 
-$new_ticket = read_core_ux_flow_file($root, 'pages/new-ticket.php');
+$reports_page = report_page_source_bundle($root);
+foreach (['data-report-unified-workspace', 'billing_review_adjustment_actions()', 'billing_review_bulk_adjustment_actions()'] as $needle) {
+    assert_core_ux_flow(str_contains($reports_page, $needle), 'Reports must use the shared core UX flow: ' . $needle);
+}
+
+$ticket_list_surface = ticket_list_surface_source($root);
+foreach (['ticket_list_view_from_request', 'ticket_list_view_apply_filters', 'ticket_registry_split_model', 'name="search_scope" value="all"'] as $needle) {
+    assert_core_ux_flow(str_contains($ticket_list_surface, $needle), 'Ticket list must use shared core UX flow: ' . $needle);
+}
+
+$new_ticket = new_ticket_composed_source($root);
 assert_core_ux_flow(str_contains($new_ticket, "'organization_id' => \$organization_id"), 'New ticket must pass the selected client explicitly, including a blank client.');
 assert_core_ux_flow(str_contains($new_ticket, '$default_organization_id = null'), 'New ticket must default to no selected client.');
 assert_core_ux_flow(str_contains($new_ticket, 'data-reset-on-fresh-ticket="1"'), 'New ticket form must reset client selection for fresh tickets.');
@@ -144,7 +155,7 @@ foreach ([
     assert_core_ux_flow(str_contains($ticket_crud, $needle), 'Ticket creation must avoid random staff client fallback: ' . $needle);
 }
 
-$ticket_api = read_core_ux_flow_file($root, 'includes/api/ticket-handler.php');
-assert_core_ux_flow(str_contains($ticket_api, "'organization_id' => null"), 'Quick ticket must explicitly start without a client.');
+$quick_start = read_core_ux_flow_file($root, 'includes/modules/work/quick-start-work.php');
+assert_core_ux_flow(str_contains($quick_start, "'organization_id' => null"), 'Quick ticket must explicitly start without a client.');
 
 echo "Core UX flow parity contract OK\n";

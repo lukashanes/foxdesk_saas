@@ -98,3 +98,18 @@ function ticket_detail_build_timeline(array $comments, array $time_entries): arr
         'timeline_items' => $timeline_items,
     ];
 }
+
+/**
+ * Canonical ticket activity read model shared by web and API clients.
+ * Strict mode deliberately surfaces schema/query failures instead of returning
+ * a believable empty timeline.
+ */
+function ticket_detail_activity_data(int $ticket_id, bool $strict = false): array
+{
+    return [
+        'comments' => get_ticket_comments($ticket_id),
+        'attachments' => get_ticket_attachments($ticket_id),
+        'time_entries' => get_ticket_time_entries($ticket_id, $strict),
+        'time_breakdown' => get_ticket_time_breakdown($ticket_id, $strict),
+    ];
+}

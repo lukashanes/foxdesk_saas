@@ -39,20 +39,8 @@ function team_users_ensure_ai_agent_schema(): bool
         return false;
     }
 
-    try {
-        if (!team_users_schema_column_exists('users', 'is_ai_agent')) {
-            db_query("ALTER TABLE users ADD COLUMN is_ai_agent TINYINT(1) NOT NULL DEFAULT 0 AFTER is_active");
-        }
-
-        if (!team_users_schema_column_exists('users', 'ai_model')) {
-            db_query("ALTER TABLE users ADD COLUMN ai_model VARCHAR(100) NULL DEFAULT NULL AFTER is_ai_agent");
-        }
-
-        $available = team_users_schema_column_exists('users', 'is_ai_agent');
-    } catch (Throwable $e) {
-        error_log('AI agent schema check failed: ' . $e->getMessage());
-        $available = false;
-    }
+    $available = team_users_schema_column_exists('users', 'is_ai_agent')
+        && team_users_schema_column_exists('users', 'ai_model');
 
     return $available;
 }
@@ -127,6 +115,7 @@ function team_users_permission_payload(string $role, ?int $organization_id, arra
             'ticket_scope' => 'all',
             'organization_ids' => team_users_filter_organization_ids($organization_membership_ids, $valid_organization_ids),
             'can_archive' => true,
+            'can_delete_tickets_permanently' => true,
             'can_view_edit_history' => true,
             'can_import_md' => true,
             'can_view_time' => true,
@@ -158,6 +147,7 @@ function team_users_permission_payload(string $role, ?int $organization_id, arra
         'ticket_scope' => $ticket_scope,
         'organization_ids' => $effective_organization_ids,
         'can_archive' => $role === 'agent' && isset($input['can_archive']),
+        'can_delete_tickets_permanently' => $role === 'agent' && isset($input['can_delete_tickets_permanently']),
         'can_view_edit_history' => isset($input['can_view_edit_history']),
         'can_import_md' => $role === 'agent' && isset($input['can_import_md']),
         'can_view_time' => isset($input['can_view_time']),

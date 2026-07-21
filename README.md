@@ -256,7 +256,7 @@ FoxDesk includes a REST API for automation and AI agent integrations.
 - `POST agent-log-time` — Log time entries
 - `GET agent-list-tickets` — List and filter tickets
 
-Authentication via Bearer token generated in **Profile -> API access**. Tokens
+Authentication via Bearer token generated in **Settings -> API & agents**. Tokens
 inherit the creator's permissions and can be scoped by capability.
 
 The **Agent Connect** page and `examples/agent-api/` provide ready-to-use

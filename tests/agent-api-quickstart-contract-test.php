@@ -98,10 +98,10 @@ foreach ([
 }
 
 foreach ([
-    'examples/agent-api/create-ticket.sh' => 'app-create-ticket',
-    'examples/agent-api/add-comment.sh' => 'app-add-comment',
-    'examples/agent-api/comment-with-time.sh' => 'app-add-comment-with-time',
-    'examples/agent-api/log-time.sh' => 'app-log-time',
+    'examples/agent-api/create-ticket.sh' => 'agent-create-ticket',
+    'examples/agent-api/add-comment.sh' => 'agent-add-update',
+    'examples/agent-api/comment-with-time.sh' => 'agent-add-work-entry',
+    'examples/agent-api/log-time.sh' => 'agent-log-time',
     'examples/agent-api/prepare-report.sh' => 'app-reporting-review',
 ] as $script => $action) {
     $assert(str_contains($read($script), $action), $script . ' must call ' . $action);
@@ -110,7 +110,7 @@ foreach ([
 foreach ([
     'agent-docs',
     'curl -fsS -X POST',
-    'app-create-ticket',
+    'agent-create-ticket',
     'Authorization: Bearer $FOXDESK_API_TOKEN',
     'Idempotency-Key',
 ] as $needle) {

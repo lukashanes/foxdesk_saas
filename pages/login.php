@@ -218,7 +218,7 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['verify_2fa'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo e(t('Sign in')); ?> - <?php echo e($login_brand_name); ?></title>
     <link href="tailwind.min.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
-    <link href="theme.css?v=<?php echo e((string) (@filemtime(BASE_PATH . '/theme.css') ?: APP_VERSION)); ?>" rel="stylesheet">
+    <link href="assets/css/theme.min.css?v=<?php echo e((string) (@filemtime(BASE_PATH . '/assets/css/theme.min.css') ?: APP_VERSION)); ?>" rel="stylesheet">
     <?php echo turnstile_script_tag(); ?>
     <script>
         // Apply theme immediately to prevent flash

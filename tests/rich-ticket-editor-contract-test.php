@@ -1,9 +1,10 @@
 <?php
 
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/ticket-detail-source.php';
 $ticket_detail_page = file_get_contents($root . '/pages/ticket-detail.php');
-$new_ticket_page = file_get_contents($root . '/pages/new-ticket.php');
-$ticket_detail_js = file_get_contents($root . '/assets/js/ticket-detail.js');
+$new_ticket_page = new_ticket_composed_source($root);
+$ticket_detail_js = ticket_detail_browser_source($root);
 $autosave_js = file_get_contents($root . '/assets/js/autosave.js');
 $rich_text_js = file_get_contents($root . '/assets/js/rich-text-editor.js');
 $functions = file_get_contents($root . '/includes/functions.php');

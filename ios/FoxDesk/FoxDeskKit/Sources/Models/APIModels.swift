@@ -4,6 +4,7 @@ public struct APIErrorResponse: Decodable, Equatable {
     public let success: Bool?
     public let error: String?
     public let message: String?
+    public let errors: [APIMessage]?
 }
 
 public struct AppEnvelope<DataPayload: Decodable & Sendable>: Decodable, Sendable {
@@ -61,4 +62,3 @@ public struct DeviceContext: Sendable, Equatable {
         self.appVersion = appVersion
     }
 }
-

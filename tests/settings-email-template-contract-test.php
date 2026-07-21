@@ -1,6 +1,7 @@
 <?php
 
 define('BASE_PATH', dirname(__DIR__));
+require_once __DIR__ . '/support/settings-source.php';
 
 function t($key, $replacements = [])
 {
@@ -85,7 +86,7 @@ $assert($unknown_key['valid'] === false, 'Unknown template keys must be rejected
 $assert(in_array('Unknown email template.', $unknown_key['errors'], true), 'Unknown template key must be reported.');
 
 $actions = $read('includes/modules/settings/settings-actions.php');
-$page = $read('pages/admin/settings.php');
+$page = settings_source_bundle(BASE_PATH);
 $templates = $read('includes/modules/settings/settings-templates.php');
 
 $assert(str_contains($actions, 'settings_validate_email_template_input'), 'Settings action handler must validate templates before saving.');

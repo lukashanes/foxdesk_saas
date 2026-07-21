@@ -91,9 +91,7 @@ function report_template_column_exists($column_name) {
     return column_exists('report_templates', $column_name);
 }
 
-/**
- * Auto-migrate: add custom billable rate override to report templates.
- */
+/** Check report template rate support installed by the database migration. */
 function ensure_report_custom_billable_rate_column(): void
 {
     static $checked = false;
@@ -102,15 +100,7 @@ function ensure_report_custom_billable_rate_column(): void
     }
     $checked = true;
 
-    if (report_template_column_exists('custom_billable_rate')) {
-        return;
-    }
-
-    try {
-        db_query("ALTER TABLE report_templates ADD COLUMN custom_billable_rate DECIMAL(10,2) NULL DEFAULT NULL AFTER show_cost_breakdown");
-    } catch (Throwable $e) {
-        // Ignore duplicate/unsupported migrations.
-    }
+    schema_require('report billing rates', [], ['report_templates' => ['custom_billable_rate']]);
 }
 
 function ensure_report_filter_columns(): void
@@ -121,21 +111,7 @@ function ensure_report_filter_columns(): void
     }
     $checked = true;
 
-    $columns = [
-        'tags' => "ALTER TABLE report_templates ADD COLUMN tags TEXT NULL DEFAULT NULL AFTER custom_billable_rate",
-        'agent_ids' => "ALTER TABLE report_templates ADD COLUMN agent_ids TEXT NULL DEFAULT NULL AFTER tags",
-    ];
-
-    foreach ($columns as $column => $sql) {
-        if (report_template_column_exists($column)) {
-            continue;
-        }
-        try {
-            db_query($sql);
-        } catch (Throwable $e) {
-            // Ignore duplicate/unsupported migrations.
-        }
-    }
+    schema_require('report filters', [], ['report_templates' => ['tags', 'agent_ids']]);
 }
 
 function report_normalize_agent_ids($value, bool $as_array = false)
@@ -317,9 +293,7 @@ function update_report_template($id, $data) {
     return $result;
 }
 
-/**
- * Auto-migrate: add public report expiration support.
- */
+/** Check public report expiration support installed by the database migration. */
 function ensure_report_expiration_column(): void
 {
     static $checked = false;
@@ -328,15 +302,7 @@ function ensure_report_expiration_column(): void
     }
     $checked = true;
 
-    if (report_template_column_exists('expires_at')) {
-        return;
-    }
-
-    try {
-        db_query("ALTER TABLE report_templates ADD COLUMN expires_at DATETIME NULL DEFAULT NULL AFTER is_archived");
-    } catch (Throwable $e) {
-        // Ignore duplicate/unsupported migrations.
-    }
+    schema_require('report expiration', [], ['report_templates' => ['expires_at']]);
 }
 
 /**
@@ -739,31 +705,19 @@ function create_report_template_share($report_template_id, $organization_id, $ex
 
 // ── RP10/RP11: Scheduled Reports & Email Delivery ───────────────────────────
 
-/**
- * Auto-migrate: add schedule columns to report_templates.
- */
+/** Check scheduled-report support installed by the database migration. */
 function ensure_report_schedule_columns(): void
 {
     static $done = false;
     if ($done) return;
     $done = true;
 
-    $cols = [
-        'schedule_enabled'    => "TINYINT(1) NOT NULL DEFAULT 0",
-        'schedule_interval'   => "VARCHAR(20) NOT NULL DEFAULT 'monthly'",
-        'schedule_day'        => "INT NOT NULL DEFAULT 1",
-        'schedule_recipients' => "TEXT NULL",
-        'schedule_last_sent'  => "DATETIME NULL",
-        'schedule_next_due'   => "DATE NULL",
-    ];
-
-    foreach ($cols as $col => $def) {
-        if (!report_template_column_exists($col)) {
-            try {
-                db_query("ALTER TABLE report_templates ADD COLUMN {$col} {$def}");
-            } catch (Throwable $e) { /* ignore */ }
-        }
-    }
+    schema_require('scheduled reports', [], [
+        'report_templates' => [
+            'schedule_enabled', 'schedule_interval', 'schedule_day', 'schedule_recipients',
+            'schedule_last_sent', 'schedule_next_due',
+        ],
+    ]);
 }
 
 /**

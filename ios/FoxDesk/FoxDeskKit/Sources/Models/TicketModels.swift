@@ -15,6 +15,20 @@ public struct TicketDetailPayload: Codable, Sendable, Equatable {
     public let attachments: [TicketAttachment]
     public let timeEntries: [TicketTimeEntry]
     public let actions: TicketActionsPayload?
+
+    public init(
+        ticket: TicketSummary,
+        comments: [TicketComment],
+        attachments: [TicketAttachment],
+        timeEntries: [TicketTimeEntry],
+        actions: TicketActionsPayload?
+    ) {
+        self.ticket = ticket
+        self.comments = comments
+        self.attachments = attachments
+        self.timeEntries = timeEntries
+        self.actions = actions
+    }
 }
 
 public struct TicketActionsResponse: Codable, Sendable, Equatable {
@@ -186,12 +200,80 @@ public struct UploadedFile: Decodable, Sendable, Equatable {
 public struct TicketTimeEntry: Codable, Sendable, Equatable, Identifiable {
     public let id: Int
     public let commentId: Int?
+    public let userId: Int?
     public let userName: String?
     public let startedAt: String?
     public let endedAt: String?
     public let durationMinutes: Int
     public let summary: String?
     public let isBillable: Bool?
+}
+
+public struct DeleteTicketItemPayload: Decodable, Sendable, Equatable {
+    public let ticketId: Int
+    public let commentId: Int?
+    public let timeEntryId: Int?
+    public let attachmentId: Int?
+    public let deleted: Bool
+    public let undoToken: String
+    public let undoAction: String?
+    public let undoSeconds: Int?
+}
+
+public struct RestoreTicketItemPayload: Decodable, Sendable, Equatable {
+    public let ticketId: Int
+    public let commentId: Int?
+    public let timeEntryId: Int?
+    public let attachmentId: Int?
+    public let restored: Bool
+}
+
+public struct UpdateCommentPayload: Decodable, Sendable, Equatable {
+    public let ticketId: Int
+    public let commentId: Int
+    public let content: String
+    public let contentHtml: String?
+    public let updated: Bool
+}
+
+public struct UpdateTimeEntryPayload: Decodable, Sendable, Equatable {
+    public let ticketId: Int
+    public let timeEntryId: Int
+    public let startedAt: String
+    public let endedAt: String
+    public let durationMinutes: Int
+    public let summary: String?
+    public let isBillable: Bool
+}
+
+struct UpdateCommentRequest: Encodable {
+    let commentId: Int
+    let content: String
+}
+
+struct UpdateTimeEntryRequest: Encodable {
+    let timeEntryId: Int
+    let durationMinutes: Int
+    let summary: String?
+    let isBillable: Bool
+    let startedAt: String?
+    let endedAt: String?
+}
+
+struct DeleteCommentRequest: Encodable {
+    let commentId: Int
+}
+
+struct DeleteTimeEntryRequest: Encodable {
+    let timeEntryId: Int
+}
+
+struct DeleteAttachmentRequest: Encodable {
+    let attachmentId: Int
+}
+
+struct RestoreTicketItemRequest: Encodable {
+    let undoToken: String
 }
 
 public struct TicketTimerPayload: Decodable, Sendable, Equatable {
@@ -230,6 +312,8 @@ public struct UpdateTicketRequest: Encodable, Sendable {
     public let includePriorityId: Bool
     public let assigneeId: Int?
     public let includeAssigneeId: Bool
+    public let isArchived: Bool?
+    public let includeIsArchived: Bool
 
     public init(
         ticketId: Int,
@@ -237,7 +321,9 @@ public struct UpdateTicketRequest: Encodable, Sendable {
         priorityId: Int? = nil,
         includePriorityId: Bool = false,
         assigneeId: Int? = nil,
-        includeAssigneeId: Bool = false
+        includeAssigneeId: Bool = false,
+        isArchived: Bool? = nil,
+        includeIsArchived: Bool = false
     ) {
         self.ticketId = ticketId
         self.statusId = statusId
@@ -245,6 +331,8 @@ public struct UpdateTicketRequest: Encodable, Sendable {
         self.includePriorityId = includePriorityId
         self.assigneeId = assigneeId
         self.includeAssigneeId = includeAssigneeId
+        self.isArchived = isArchived
+        self.includeIsArchived = includeIsArchived
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -252,6 +340,7 @@ public struct UpdateTicketRequest: Encodable, Sendable {
         case statusId
         case priorityId
         case assigneeId
+        case isArchived
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -271,6 +360,9 @@ public struct UpdateTicketRequest: Encodable, Sendable {
             } else {
                 try container.encodeNil(forKey: .assigneeId)
             }
+        }
+        if includeIsArchived {
+            try container.encode(isArchived ?? false, forKey: .isArchived)
         }
     }
 }

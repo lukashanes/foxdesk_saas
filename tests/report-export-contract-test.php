@@ -10,17 +10,18 @@ $assert = static function (bool $condition, string $message): void {
 };
 
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
-$page = file_get_contents($root . '/pages/admin/reports.php');
+$route = file_get_contents($root . '/pages/admin/reports.php');
+$controller = file_get_contents($root . '/includes/modules/reports/report-page-controller.php');
 $export = file_get_contents($root . '/includes/modules/reports/report-export.php');
 $query = file_get_contents($root . '/includes/modules/reports/report-query.php');
 $totals = file_get_contents($root . '/includes/modules/reports/report-totals.php');
 
-$assert($bootstrap !== false && $page !== false && $export !== false && $query !== false && $totals !== false, 'Report module files must be readable.');
+$assert($bootstrap !== false && $route !== false && $controller !== false && $export !== false && $query !== false && $totals !== false, 'Report module files must be readable.');
 $assert(str_contains($bootstrap, '/reports/report-totals.php'), 'Module bootstrap must load report totals.');
 $assert(str_contains($bootstrap, '/reports/report-query.php'), 'Module bootstrap must load report query.');
 $assert(str_contains($bootstrap, '/reports/report-export.php'), 'Module bootstrap must load report export.');
-$assert(str_contains($page, 'report_query_time_entries($report_filter_state'), 'Reports page must load entries through the report query module.');
-$assert(str_contains($page, 'report_export_csv_if_requested($_GET'), 'Reports page must delegate CSV export.');
+$assert(str_contains($controller, 'report_query_time_entries($report_filter_state'), 'Reports controller must load entries through the report query module.');
+$assert(str_contains($controller, 'report_export_csv_if_requested($request'), 'Reports controller must delegate CSV export.');
 
 foreach ([
     'function report_query_time_entries',
@@ -53,7 +54,7 @@ foreach ([
     '$csv = fopen',
     '$sql = "SELECT tte.*',
 ] as $needle) {
-    $assert(!str_contains($page, $needle), 'Reports page must not own query/export logic: ' . $needle);
+    $assert(!str_contains($route, $needle), 'Reports route must not own query/export logic: ' . $needle);
 }
 
 echo "Report export contract OK\n";

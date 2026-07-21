@@ -47,10 +47,20 @@ final scope guard before pasting into App Store Connect.
 ## Review Notes
 
 FoxDesk is for existing FoxDesk Cloud workspace users. Reviewers should sign in
-with the demo workspace account below. The app does not sell subscriptions,
-does not include in-app purchases, does not show pricing, and does not open
-Stripe Checkout. Billing and workspace subscription management are handled on
-the web outside the iOS app.
+with the demo workspace account below.
+
+FoxDesk for iOS is a free stand-alone companion to the paid FoxDesk Cloud web
+tool under Apple App Review Guideline 3.1.3(f). It has no purchasing inside the
+app and no calls to action to purchase outside the app. It does not create
+accounts, show pricing, sell subscriptions, include in-app purchases, open
+Checkout, or link to subscription management. Users sign in with an existing
+organization-provided workspace account.
+
+The iOS app does not include in-app purchases.
+
+If any future iOS release adds signup, pricing, purchase, upgrade, or an
+external purchase call to action, the business model and StoreKit requirements
+must be reviewed again before submission.
 
 Demo reviewer account:
 
@@ -77,6 +87,30 @@ npm run ios:release:env
 npm run ios:demo:check -- --require-credentials --json
 FOXDESK_IOS_DEMO_WRITE=1 npm run ios:demo:check -- --require-credentials --json
 ```
+
+The native companion business-model check is a blocking gate:
+
+```bash
+npm run ios:companion:gate
+```
+
+This gate scans the native app and shared Swift package for purchase, pricing,
+trial, subscription, billing, Checkout, Portal, and StoreKit surfaces. It also
+checks that a blocked workspace shows only a generic access message. Web SaaS
+billing QA remains a separate operational release gate and is not part of the
+App Store submission.
+
+After Xcode reports a successful App Store upload, record the exact archive:
+
+```bash
+npm run ios:upload:record
+npm run ios:upload:evidence
+```
+
+The submission gate rejects a manual "uploaded" flag if the archive, binary,
+version, build number, or current iOS source fingerprint no longer matches.
+Apple processing and build selection still must be confirmed in App Store
+Connect before setting `TESTFLIGHT_BUILD_UPLOADED=1`.
 
 Put `FOXDESK_IOS_DEMO_EMAIL` and `FOXDESK_IOS_DEMO_PASSWORD` in the ignored
 local `.env.ios-release` file. If 2FA is enabled, also set
@@ -112,9 +146,15 @@ Store Connect form before setting `APP_STORE_PRIVACY_REVIEWED=1`.
 
 The first iOS release must also be configured as a free download, have explicit
 country or region availability, have Content Rights answered for
-customer-supplied ticket content, and have no blocking agreement, tax, or
-banking action. Disable Apple Silicon Mac and Apple Vision Pro availability
+customer-supplied ticket content, and have the free-app agreement active with
+no blocking App Store Connect agreement action. Paid Apps, tax, and banking are
+not otherwise required for this free no-IAP build. Disable Apple Silicon Mac and Apple Vision Pro availability
 until those platforms are intentionally tested and supported.
+
+Use `docs/IOS_APP_STORE_LEGAL_CHECKLIST.md` for the exact App Privacy, App
+Review, Content Rights, and Agreements values. Those four human confirmations
+must remain at `0` until the corresponding App Store Connect form has been
+saved or published successfully.
 
 ## Capabilities
 

@@ -18,6 +18,8 @@ $page_title = t('Agent Connect');
 $page_extra_css = ['assets/css/agent-connect.css'];
 $agent_id = (int) ($_GET['id'] ?? 0);
 
+require_once BASE_PATH . '/includes/modules/agent/operating-instructions.php';
+
 // Load agent
 $agent = null;
 if ($agent_id > 0) {
@@ -105,14 +107,12 @@ $priority_list = implode(', ', array_map(fn($p) => $p['name'], $priorities));
 $type_list = !empty($ticket_types) ? implode(', ', array_map(fn($t) => $t['name'], $ticket_types)) : 'None configured';
 
 $token_display = $token ?? 'YOUR_API_TOKEN_HERE';
+$agent_instruction_language = foxdesk_agent_instruction_language(get_app_language(), $agent);
+$canonical_agent_instructions = foxdesk_agent_operating_instructions_markdown($agent_instruction_language, $agent);
 
 // === Instruction templates ===
 
-$system_prompt = "# {$app_name} — AI Agent Instructions
-
-You are an AI assistant connected to the {$app_name} helpdesk system.
-You can create tickets, add comments, update statuses, and log time via the REST API.
-
+$system_prompt = $canonical_agent_instructions . "
 ## Authentication
 
 - **API Base URL:** `{$api_base}`
@@ -136,16 +136,12 @@ You can create tickets, add comments, update statuses, and log time via the REST
 ### Write Operations (POST, JSON body)
 - **POST** `agent-create-ticket` — Create a ticket
   - Required: `title`
-  - Optional: `description`, `priority_id`, `status_id`, `assignee_id`, `due_date`, `tags`, `duration_minutes`, `time_summary`
+  - Optional: `description`, `priority_id`, `status_id`, `assignee_id`, `due_date`, `tags`
 - **POST** `agent-add-comment` — Add comment to a ticket
   - Required: `ticket_hash` or `ticket_id`, `content`
-  - Optional: `is_internal` (boolean), `duration_minutes`, `time_summary`
+  - Optional: `is_internal` (boolean), `skip_notification` (boolean)
 - **POST** `agent-update-status` — Change ticket status
   - Required: `ticket_hash` or `ticket_id`, `status_id` or `status` (name)
-- **POST** `agent-log-time` — Log time entry
-  - Required: `ticket_hash` or `ticket_id`, `duration_minutes`
-  - Optional: `summary`, `is_billable`, `started_at`, `ended_at`
-
 ## Current System Configuration
 
 - **Statuses:** {$status_list}
@@ -185,6 +181,8 @@ $claude_md = "# CLAUDE.md — {$app_name} Agent Context
 
 {$app_name} — connected helpdesk system.
 URL: {$base_url}
+
+" . $canonical_agent_instructions . "
 
 ## API Access
 
@@ -227,10 +225,9 @@ curl -s \"\${HELPDESK_API_URL}agent-list-tickets?status=Open&limit=10\" \\
 - GET `agent-list-users` — Users (?role=agent)
 - GET `agent-list-tickets` — Search (status, priority, search, limit)
 - GET `agent-get-ticket` — Detail (?hash= or ?id=)
-- POST `agent-create-ticket` — {title, description, priority_id, tags, duration_minutes}
-- POST `agent-add-comment` — {ticket_hash, content, is_internal, duration_minutes}
+- POST `agent-create-ticket` — {title, description, priority_id, status_id, assignee_id}
+- POST `agent-add-comment` — {ticket_hash, content, is_internal, skip_notification}
 - POST `agent-update-status` — {ticket_hash, status_id or status}
-- POST `agent-log-time` — {ticket_hash, duration_minutes, summary}
 ";
 
 if (!empty(trim($custom_instructions))) {

@@ -24,12 +24,13 @@ require_once $root . '/includes/modules/reports/billing-review.php';
 require_once $root . '/includes/modules/reports/report-adjustments.php';
 
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
-$page = file_get_contents($root . '/pages/admin/reports.php');
+$route = file_get_contents($root . '/pages/admin/reports.php');
+$controller = file_get_contents($root . '/includes/modules/reports/report-page-controller.php');
 $adjustments = file_get_contents($root . '/includes/modules/reports/report-adjustments.php');
 
-$assert($bootstrap !== false && $page !== false && $adjustments !== false, 'Report adjustment files must be readable.');
+$assert($bootstrap !== false && $route !== false && $controller !== false && $adjustments !== false, 'Report adjustment files must be readable.');
 $assert(str_contains($bootstrap, '/reports/report-adjustments.php'), 'Module bootstrap must load report adjustments.');
-$assert(str_contains($page, 'report_handle_admin_post_actions($_POST, $rounding)'), 'Reports page must delegate POST actions to report adjustments.');
+$assert(str_contains($controller, 'report_handle_admin_post_actions($post, $rounding)'), 'Reports controller must delegate POST actions to report adjustments.');
 
 foreach ([
     'function report_handle_admin_post_actions',
@@ -53,7 +54,7 @@ foreach ([
     "isset(\$_POST['adjust_billable_entry'])",
     "isset(\$_POST['create_report_share'])",
 ] as $needle) {
-    $assert(!str_contains($page, $needle), 'Reports page must not own report POST handler: ' . $needle);
+    $assert(!str_contains($route, $needle), 'Reports route must not own report POST handler: ' . $needle);
 }
 
 $entry = [

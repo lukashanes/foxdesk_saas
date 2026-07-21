@@ -2,15 +2,18 @@
 
 $root = dirname(__DIR__);
 
+require_once __DIR__ . '/support/report-page-source.php';
+
 $module = file_get_contents($root . '/includes/modules/reports/reporting-flow.php');
 $billing = file_get_contents($root . '/includes/modules/reports/billing-review.php');
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
-$reports = file_get_contents($root . '/pages/admin/reports.php');
+$reports = report_page_source_bundle($root);
+$report_page_js = file_get_contents($root . '/assets/js/report-page.js');
 $billing_js = file_get_contents($root . '/assets/js/report-billing-review.js');
 $builder = file_get_contents($root . '/pages/admin/report-builder.php');
 $theme = file_get_contents($root . '/theme.css');
 
-if ($module === false || $billing === false || $bootstrap === false || $reports === false || $builder === false || $theme === false) {
+if ($module === false || $billing === false || $bootstrap === false || $builder === false || $theme === false || $report_page_js === false) {
     fwrite(STDERR, "Unable to read reporting flow files.\n");
     exit(1);
 }
@@ -65,8 +68,8 @@ $assert($billing_js !== false && str_contains($billing_js, "selectedAction === '
 $assert(!str_contains($reports, 'class="report-page-toolbar report-page-toolbar--modes"'), 'Reports page must not render the old mode toolbar.');
 $assert(!str_contains($reports, 'class="report-mode-link'), 'Reports page must not render report tabs as separate agendas.');
 $assert(str_contains($reports, 'name="tab" value="billing"'), 'Unified report form must open the client report review path for admins.');
-$assert(str_contains($reports, "elseif (\$tab === 'published')"), 'Old published report URL must remain compatible.');
-$assert(str_contains($reports, "if (\$tab === 'time')"), 'Old time overview URL must remain compatible.');
+$assert(str_contains($reports, "'published' => 'published'"), 'Old published report URL must remain compatible.');
+$assert(str_contains($reports, "default => 'time'"), 'Old time overview URL must remain compatible.');
 $assert(str_contains($reports, 'class="report-filter-pills"'), 'Reports page must use shared filter pills.');
 $assert(str_contains($reports, 'class="card-header report-filter-summary"'), 'Reports page must use the shared filter summary surface.');
 $assert(str_contains($reports, 'class="report-summary-strip"'), 'Summary report totals must use the shared summary strip.');
@@ -84,7 +87,7 @@ $assert(str_contains($report_totals, "t('Why is billable time higher?')"), 'Bill
 $assert(str_contains($theme, '.report-billing-note'), 'Billable time notice styling is missing.');
 $assert(str_contains($reports, 'report-mini-progress__bar--org <?php echo e(report_width_class($org_pct)); ?>'), 'Organization progress bars must use width classes.');
 $assert(str_contains($reports, 'report-week-segment <?php echo e(report_width_class($seg_pct)); ?>'), 'Weekly stacked bars must use width classes.');
-$assert(str_contains($reports, "cell.classList.toggle('is-hidden', !visible)"), 'Column picker must use CSS classes, not inline display writes.');
+$assert(str_contains($report_page_js, "cell.classList.toggle('is-hidden', !visible)"), 'Column picker must use CSS classes, not inline display writes.');
 $assert(str_contains($builder, '$_GET[\'organization_id\']'), 'Report builder must accept a prefilled organization.');
 $assert(str_contains($builder, '$_GET[\'date_from\']'), 'Report builder must accept a prefilled start date.');
 $assert(str_contains($builder, '$_GET[\'date_to\']'), 'Report builder must accept a prefilled end date.');
@@ -117,7 +120,7 @@ $assert(!str_contains($reports, 'style="display: flex; border: 1px solid var(--b
 $assert(!str_contains($reports, 'btn.style.background'), 'Range preset state must use CSS classes.');
 $assert(!str_contains($reports, 'reportCustomRange.style.display'), 'Custom date range visibility must use CSS classes.');
 $assert(!str_contains($reports, 'style="'), 'Reports page must not use inline style attributes.');
-$assert(!str_contains($reports, 'style.'), 'Reports page JS must not write inline styles.');
+$assert(!str_contains($report_page_js, 'style.'), 'Reports page JS must not write inline styles.');
 $assert(!str_contains($reports, 'weekly_agent_color_map'), 'Weekly report colors must use CSS tone classes.');
 
 echo "Reporting flow contract OK\n";

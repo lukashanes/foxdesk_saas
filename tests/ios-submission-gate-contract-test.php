@@ -23,7 +23,9 @@ $assert($contains('source "$ROOT_DIR/bin/ios-release-env.sh"'), 'Submission gate
 $assert($contains('npm run ios:mvp:audit'), 'Submission gate must run the local iOS MVP audit.');
 $assert($contains('npm run ios:beta:gate'), 'Submission gate must run the local beta readiness gate.');
 $assert($contains('npm run ios:completion:audit'), 'Submission gate must run the iOS completion audit.');
+$assert($contains('npm run ios:companion:gate'), 'Submission gate must block submission until the native free-companion gate passes.');
 $assert($contains('npm run ios:assets:check'), 'Submission gate must verify screenshot and privacy assets against the current iOS source.');
+$assert($contains('npm run ios:upload:evidence'), 'Submission gate must verify that the uploaded archive matches the current iOS source.');
 
 $assert($contains('DEMO_EVIDENCE="$ROOT_DIR/tmp/ios-demo-account-check/latest-live-demo-account.json"'), 'Submission gate must require demo-account evidence JSON.');
 $assert($contains('API_READ_EVIDENCE="$ROOT_DIR/tmp/ios-api-smoke/latest-live-read-only.json"'), 'Submission gate must require live read-only API evidence JSON.');
@@ -82,7 +84,8 @@ $assert($contains('APP_STORE_PRIVACY_REVIEWED'), 'Submission gate must require A
 $assert($contains('APP_STORE_PRICING_READY'), 'Submission gate must require app download pricing.');
 $assert($contains('APP_STORE_AVAILABILITY_READY'), 'Submission gate must require App Store availability.');
 $assert($contains('APP_STORE_CONTENT_RIGHTS_READY'), 'Submission gate must require Content Rights confirmation.');
-$assert($contains('APP_STORE_AGREEMENTS_READY'), 'Submission gate must require agreement, tax, and banking readiness.');
+$assert($contains('APP_STORE_AGREEMENTS_READY'), 'Submission gate must require free-app agreement readiness.');
+$assert($contains('free-app Apple Developer Program License Agreement'), 'Submission gate must describe the current free no-IAP agreement requirement.');
 $assert($contains('APP_STORE_UNTESTED_PLATFORMS_DISABLED'), 'Submission gate must require untested Apple platforms to be disabled.');
 $assert($contains('APP_STORE_SELECTED_MARKETING_VERSION'), 'Submission gate must require the selected App Store marketing version.');
 $assert($contains('APP_STORE_SELECTED_BUILD_NUMBER'), 'Submission gate must require the selected App Store build number.');

@@ -6,8 +6,8 @@ import FoxDeskKit
 
 struct NewTicketView: View {
     @Environment(AppSession.self) private var session
-    @Environment(\.dismiss) private var dismiss
 
+    let onCancel: () -> Void
     let onCreated: (Int) async -> Void
 
     @State private var title = ""
@@ -41,177 +41,106 @@ struct NewTicketView: View {
     @State private var createdTicketID: Int?
     @State private var didAddWorkedTime = false
     @State private var didStartTimer = false
+    @State private var isMoreOptionsExpanded = false
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Ticket") {
-                    TextField("Subject", text: $title)
-                    TextEditor(text: $details)
-                        .frame(minHeight: 160)
-                        .overlay(alignment: .topLeading) {
-                            if details.isEmpty {
-                                Text("Describe the request")
-                                    .foregroundStyle(.tertiary)
-                                    .padding(.top, 8)
-                                    .padding(.leading, 5)
-                                    .allowsHitTesting(false)
-                            }
-                        }
-                    TextField("Tags", text: $tags)
-                        .textInputAutocapitalization(.never)
-                }
+            ZStack {
+                Color(uiColor: .systemGroupedBackground)
+                    .ignoresSafeArea()
 
-                Section("Attachments") {
-                    HStack {
-                        if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                            Button {
-                                isCameraPresented = true
-                            } label: {
-                                Label("Take photo", systemImage: "camera")
-                            }
-                            .buttonStyle(.bordered)
-                            .disabled(isSaving)
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        NewTicketGlassSection(title: "Ticket") {
+                            TextField("Subject", text: $title)
+                                .font(.headline)
+                                .textFieldStyle(.plain)
+
+                            Divider()
+
+                            TextEditor(text: $details)
+                                .frame(minHeight: 132)
+                                .scrollContentBackground(.hidden)
+                                .overlay(alignment: .topLeading) {
+                                    if details.isEmpty {
+                                        Text("Describe the request")
+                                            .foregroundStyle(.tertiary)
+                                            .padding(.top, 8)
+                                            .padding(.leading, 5)
+                                            .allowsHitTesting(false)
+                                    }
+                                }
                         }
 
-                        PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                            Label("Add photo", systemImage: "photo")
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(isSaving)
+                        NewTicketGlassSection(title: "Add") {
+                            HStack(spacing: 10) {
+                                Menu {
+                                    if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                                        Button {
+                                            isCameraPresented = true
+                                        } label: {
+                                            Label("Take photo", systemImage: "camera")
+                                        }
+                                    }
 
-                        Button {
-                            isFileImporterPresented = true
-                        } label: {
-                            Label("Add file", systemImage: "doc.badge.plus")
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(isSaving)
-                    }
+                                    PhotosPicker(selection: $selectedPhoto, matching: .images) {
+                                        Label("Photo library", systemImage: "photo.on.rectangle")
+                                    }
 
-                    if pendingAttachments.isEmpty {
-                        Text("Attach photos or files before creating the ticket.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        ForEach(pendingAttachments) { attachment in
-                            HStack {
-                                Label(attachment.filename, systemImage: attachment.iconName)
-                                    .lineLimit(1)
-                                Spacer()
-                                Text(attachment.sizeLabel)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Button(role: .destructive) {
-                                    attachment.remove()
-                                    pendingAttachments.removeAll { $0.id == attachment.id }
+                                    Button {
+                                        isFileImporterPresented = true
+                                    } label: {
+                                        Label("Choose file", systemImage: "doc.badge.plus")
+                                    }
                                 } label: {
-                                    Image(systemName: "xmark.circle.fill")
+                                    NewTicketActionLabel(
+                                        title: pendingAttachments.isEmpty ? "Attachment" : "Attachments (\(pendingAttachments.count))",
+                                        systemImage: "paperclip"
+                                    )
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(NewTicketGlassButtonStyle())
                                 .disabled(isSaving)
-                            }
-                        }
-                    }
 
-                    if let attachmentMessage {
-                        Text(attachmentMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Section("Routing") {
-                    if isLoadingOptions {
-                        HStack {
-                            ProgressView()
-                            Text("Loading ticket options")
-                                .foregroundStyle(.secondary)
-                        }
-                    } else if let createOptions {
-                        if !createOptions.clients.isEmpty {
-                            Picker("Client", selection: $selectedClientID) {
-                                Text("No client").tag(Optional<Int>.none)
-                                ForEach(createOptions.clients) { client in
-                                    Text(client.name).tag(Optional(client.id))
-                                }
-                            }
-                        }
-
-                        if !createOptions.priorities.isEmpty {
-                            Picker("Priority", selection: $selectedPriorityID) {
-                                Text("Default").tag(Optional<Int>.none)
-                                ForEach(createOptions.priorities) { priority in
-                                    Text(priority.name).tag(Optional(priority.id))
-                                }
-                            }
-                        }
-
-                        if !createOptions.statuses.isEmpty {
-                            Picker("Status", selection: $selectedStatusID) {
-                                Text("Default").tag(Optional<Int>.none)
-                                ForEach(createOptions.statuses) { status in
-                                    Text(status.name).tag(Optional(status.id))
-                                }
-                            }
-                        }
-
-                        if !createOptions.assignees.isEmpty {
-                            Picker("Assignee", selection: $selectedAssigneeID) {
-                                Text("Unassigned").tag(Optional<Int>.none)
-                                ForEach(createOptions.assignees) { assignee in
-                                    Text(assignee.name).tag(Optional(assignee.id))
-                                }
-                            }
-                        }
-                    }
-
-                    if let optionsMessage {
-                        Text(optionsMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Section("Schedule") {
-                    Toggle("Set due date", isOn: $hasDueDate)
-                    if hasDueDate {
-                        DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
-                    }
-                }
-
-                if canTrackTime {
-                    Section("Work") {
-                        Toggle("Add worked time", isOn: $includeWorkedTime)
-
-                        if includeWorkedTime {
-                            DatePicker("Work date", selection: $workDate, displayedComponents: .date)
-                            Toggle("Use exact start and end", isOn: $useExactWorkTime)
-
-                            if useExactWorkTime {
-                                DatePicker("Start", selection: $workStartTime, displayedComponents: .hourAndMinute)
-                                DatePicker("End", selection: $workEndTime, displayedComponents: .hourAndMinute)
-                                LabeledContent("Duration", value: durationLabel(resolvedWorkedTimeMinutes))
-                            } else {
-                                Stepper(value: $workedTimeMinutes, in: 1...1440, step: 5) {
-                                    LabeledContent("Duration", value: durationLabel(workedTimeMinutes))
+                                if canTrackTime {
+                                    Button {
+                                        withAnimation(.snappy) {
+                                            includeWorkedTime.toggle()
+                                        }
+                                    } label: {
+                                        NewTicketActionLabel(
+                                            title: includeWorkedTime ? durationLabel(resolvedWorkedTimeMinutes) : "Add time",
+                                            systemImage: "clock"
+                                        )
+                                    }
+                                    .buttonStyle(NewTicketGlassButtonStyle(isSelected: includeWorkedTime))
+                                    .disabled(isSaving)
                                 }
                             }
 
-                            TextField("Work note", text: $workNote, axis: .vertical)
-                                .lineLimit(2...4)
-                            Toggle("Billable", isOn: $isBillable)
+                            pendingAttachmentsView
+
+                            if includeWorkedTime && canTrackTime {
+                                Divider()
+                                quickTimeView
+                            }
+
+                            if canTrackTime {
+                                Toggle("Start timer after creating", isOn: $startTimerAfterCreate)
+                            }
                         }
 
-                        Toggle("Start timer after creating", isOn: $startTimerAfterCreate)
-                    }
-                }
+                        routingSection
+                        moreOptionsSection
 
-                if let errorMessage {
-                    Section {
-                        Text(errorMessage)
-                            .foregroundStyle(.red)
+                        if let errorMessage {
+                            NewTicketGlassSection {
+                                Label(errorMessage, systemImage: "exclamationmark.triangle")
+                                    .foregroundStyle(.red)
+                            }
+                        }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
                 }
             }
             .navigationTitle("New ticket")
@@ -249,8 +178,7 @@ struct NewTicketView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        discardPendingAttachments()
-                        dismiss()
+                        cancelCreation()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
@@ -333,7 +261,6 @@ struct NewTicketView: View {
             try await addWorkedTimeIfNeeded(to: ticketID, ticketTitle: trimmedTitle)
             try await startTimerIfNeeded(on: ticketID)
             resetForm()
-            dismiss()
             await onCreated(ticketID)
         } catch {
             if createdTicketID != nil {
@@ -471,6 +398,12 @@ struct NewTicketView: View {
         pendingAttachments.removeAll()
     }
 
+    private func cancelCreation() {
+        guard !isSaving else { return }
+        resetForm()
+        onCancel()
+    }
+
     private func resetForm() {
         title = ""
         details = ""
@@ -497,6 +430,154 @@ struct NewTicketView: View {
         createdTicketID = nil
         didAddWorkedTime = false
         didStartTimer = false
+        isMoreOptionsExpanded = false
+    }
+
+    @ViewBuilder
+    private var pendingAttachmentsView: some View {
+        if !pendingAttachments.isEmpty {
+            VStack(spacing: 8) {
+                ForEach(pendingAttachments) { attachment in
+                    HStack(spacing: 10) {
+                        Image(systemName: attachment.iconName)
+                            .foregroundStyle(.tint)
+                        Text(attachment.filename)
+                            .lineLimit(1)
+                        Spacer()
+                        Text(attachment.sizeLabel)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Button(role: .destructive) {
+                            attachment.remove()
+                            pendingAttachments.removeAll { $0.id == attachment.id }
+                            updateAttachmentMessage()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isSaving)
+                    }
+                    .font(.subheadline)
+                }
+            }
+        }
+
+        if let attachmentMessage {
+            Text(attachmentMessage)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var quickTimeView: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Worked time")
+                .font(.subheadline.weight(.semibold))
+
+            HStack(spacing: 8) {
+                ForEach([5, 15, 30, 60], id: \.self) { minutes in
+                    Button(minutes == 60 ? "1 h" : "\(minutes) min") {
+                        useExactWorkTime = false
+                        workedTimeMinutes = minutes
+                    }
+                    .buttonStyle(NewTicketTimeChipStyle(isSelected: !useExactWorkTime && workedTimeMinutes == minutes))
+                }
+            }
+
+            DatePicker("Date", selection: $workDate, displayedComponents: .date)
+            Toggle("Exact start and end", isOn: $useExactWorkTime)
+
+            if useExactWorkTime {
+                HStack {
+                    DatePicker("Start", selection: $workStartTime, displayedComponents: .hourAndMinute)
+                    DatePicker("End", selection: $workEndTime, displayedComponents: .hourAndMinute)
+                }
+                LabeledContent("Duration", value: durationLabel(resolvedWorkedTimeMinutes))
+                    .font(.subheadline)
+            }
+
+            TextField("What was done?", text: $workNote, axis: .vertical)
+                .lineLimit(1...3)
+                .textFieldStyle(.plain)
+                .padding(12)
+                .background(.background.opacity(0.55), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            Toggle("Billable", isOn: $isBillable)
+        }
+    }
+
+    private var routingSection: some View {
+        NewTicketGlassSection(title: "Routing") {
+            if isLoadingOptions {
+                HStack {
+                    ProgressView()
+                    Text("Loading options")
+                        .foregroundStyle(.secondary)
+                }
+            } else if let createOptions {
+                if !createOptions.clients.isEmpty {
+                    Picker("Client", selection: $selectedClientID) {
+                        Text("No client").tag(Optional<Int>.none)
+                        ForEach(createOptions.clients) { client in
+                            Text(client.name).tag(Optional(client.id))
+                        }
+                    }
+                }
+
+                if !createOptions.assignees.isEmpty {
+                    Picker("Assignee", selection: $selectedAssigneeID) {
+                        Text("Unassigned").tag(Optional<Int>.none)
+                        ForEach(createOptions.assignees) { assignee in
+                            Text(assignee.name).tag(Optional(assignee.id))
+                        }
+                    }
+                }
+            }
+
+            if let optionsMessage {
+                Text(optionsMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var moreOptionsSection: some View {
+        NewTicketGlassSection {
+            DisclosureGroup("More options", isExpanded: $isMoreOptionsExpanded) {
+                VStack(spacing: 14) {
+                    TextField("Tags", text: $tags)
+                        .textInputAutocapitalization(.never)
+
+                    if let createOptions {
+                        if !createOptions.priorities.isEmpty {
+                            Picker("Priority", selection: $selectedPriorityID) {
+                                Text("Default").tag(Optional<Int>.none)
+                                ForEach(createOptions.priorities) { priority in
+                                    Text(priority.name).tag(Optional(priority.id))
+                                }
+                            }
+                        }
+
+                        if !createOptions.statuses.isEmpty {
+                            Picker("Status", selection: $selectedStatusID) {
+                                Text("Default").tag(Optional<Int>.none)
+                                ForEach(createOptions.statuses) { status in
+                                    Text(status.name).tag(Optional(status.id))
+                                }
+                            }
+                        }
+                    }
+
+                    Toggle("Set due date", isOn: $hasDueDate)
+                    if hasDueDate {
+                        DatePicker("Due date", selection: $dueDate, displayedComponents: .date)
+                    }
+                }
+                .padding(.top, 12)
+            }
+            .font(.subheadline.weight(.semibold))
+        }
     }
 
     private var canTrackTime: Bool {
@@ -568,4 +649,94 @@ struct NewTicketView: View {
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return formatter
     }()
+}
+
+private struct NewTicketGlassSection<Content: View>: View {
+    let title: String?
+    let content: Content
+
+    init(title: String? = nil, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if let title {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+
+            content
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        }
+    }
+}
+
+private struct NewTicketActionLabel: View {
+    let title: String
+    let systemImage: String
+
+    var body: some View {
+        Label(title, systemImage: systemImage)
+            .font(.subheadline.weight(.semibold))
+            .lineLimit(1)
+            .frame(maxWidth: .infinity)
+    }
+}
+
+private struct NewTicketGlassButtonStyle: ButtonStyle {
+    var isSelected = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(isSelected ? Color.accentColor : Color.primary)
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(isSelected ? Color.accentColor.opacity(0.13) : Color.clear)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(
+                        isSelected ? Color.accentColor.opacity(0.42) : Color.primary.opacity(0.09),
+                        lineWidth: 1
+                    )
+            }
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .opacity(configuration.isPressed ? 0.84 : 1)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+private struct NewTicketTimeChipStyle: ButtonStyle {
+    let isSelected: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(isSelected ? Color.white : Color.primary)
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, minHeight: 36)
+            .background(.thinMaterial, in: Capsule())
+            .overlay {
+                Capsule()
+                    .fill(isSelected ? Color.accentColor : Color.clear)
+            }
+            .overlay {
+                Capsule()
+                    .stroke(isSelected ? Color.clear : Color.primary.opacity(0.09), lineWidth: 1)
+            }
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
 }

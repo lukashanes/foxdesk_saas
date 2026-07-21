@@ -20,7 +20,7 @@ function render_share_message($app_name, $title, $message)
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title><?php echo e($title); ?> - <?php echo e($app_name); ?></title>
         <link href="tailwind.min.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
-        <link href="theme.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
+        <link href="assets/css/theme.min.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
     </head>
 
     <body class="bg-gray-100 min-h-screen">
@@ -66,7 +66,7 @@ $expires_label = !empty($share['expires_at']) ? format_date($share['expires_at']
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo e(get_ticket_code($ticket['id'])); ?> - <?php echo e($app_name); ?></title>
     <link href="tailwind.min.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
-    <link href="theme.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
+    <link href="assets/css/theme.min.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
 </head>
 
 <body class="bg-gray-100 min-h-screen">

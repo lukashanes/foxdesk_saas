@@ -254,16 +254,6 @@ function report_handle_admin_post_actions(array $post, int $rounding): bool
         report_redirect_current('summary');
     }
 
-    if (isset($post['delete_entry'])) {
-        $entry_id = (int) ($post['entry_id'] ?? 0);
-        if ($entry_id > 0) {
-            require_once BASE_PATH . '/includes/ticket-time-functions.php';
-            $deleted = delete_time_entry($entry_id);
-            flash($deleted ? t('Time entry deleted.') : t('Failed to delete time entry.'), $deleted ? 'success' : 'error');
-        }
-        report_redirect_current('summary');
-    }
-
     if (isset($post['update_time_inline'])) {
         $entry_id = (int) ($post['entry_id'] ?? 0);
         $entry_date = $post['entry_date'] ?? date('Y-m-d');

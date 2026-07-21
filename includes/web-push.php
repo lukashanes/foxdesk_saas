@@ -7,48 +7,18 @@
  * Requires: PHP 8.1+, openssl extension with EC support, curl extension.
  */
 
-// ── Table & Column Management ───────────────────────────────────────────────
+// ── Schema capability ───────────────────────────────────────────────────────
 
-/**
- * Ensure push_subscriptions table exists.
- */
+/** Verify web-push schema installed by the database migration. */
 function ensure_push_subscriptions_table(): void
 {
     static $done = false;
     if ($done) return;
     $done = true;
 
-    try {
-        $exists = (bool) db_fetch_one("SHOW TABLES LIKE 'push_subscriptions'");
-        if (!$exists) {
-            db_query("CREATE TABLE push_subscriptions (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                tenant_id INT NULL,
-                user_id INT NOT NULL,
-                endpoint TEXT NOT NULL,
-                p256dh VARCHAR(255) NOT NULL DEFAULT '',
-                auth_key VARCHAR(255) NOT NULL DEFAULT '',
-                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_tenant_id (tenant_id),
-                INDEX idx_push_user (user_id),
-                INDEX idx_push_tenant_user (tenant_id, user_id),
-                INDEX idx_push_endpoint (endpoint(255))
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-        } elseif (function_exists('column_exists') && !column_exists('push_subscriptions', 'tenant_id')) {
-            db_query("ALTER TABLE push_subscriptions ADD COLUMN tenant_id INT NULL AFTER id");
-            db_query("ALTER TABLE push_subscriptions ADD INDEX idx_tenant_id (tenant_id)");
-            db_query("ALTER TABLE push_subscriptions ADD INDEX idx_push_tenant_user (tenant_id, user_id)");
-
-            if (function_exists('column_exists') && column_exists('users', 'tenant_id')) {
-                db_query("
-                    UPDATE push_subscriptions ps
-                    JOIN users u ON u.id = ps.user_id
-                    SET ps.tenant_id = u.tenant_id
-                    WHERE ps.tenant_id IS NULL
-                ");
-            }
-        }
-    } catch (Throwable $e) { /* ignore */ }
+    schema_require('web push', ['push_subscriptions'], [
+        'push_subscriptions' => ['tenant_id', 'user_id', 'endpoint', 'p256dh', 'auth_key', 'created_at'],
+    ]);
 }
 
 function push_subscriptions_has_tenant_scope(): bool

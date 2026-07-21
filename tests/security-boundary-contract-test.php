@@ -19,6 +19,8 @@ $read = static function (string $path) use ($root): string {
 };
 
 $tenant = $read('includes/tenant-functions.php');
+$schema = $read('includes/schema.sql');
+$tenantMigration = $read('migrations/2026072003_runtime_feature_columns.php');
 $database = $read('includes/database.php');
 $allowed = $read('includes/api/allowed-senders-handler.php');
 $users = $read('includes/api/user-handler.php');
@@ -50,7 +52,11 @@ foreach ([
 
 $assert(str_contains($database, 'tenant_scope_mutation_where($table, $where, $where_params)'), 'db_update must scope tenant-owned mutations.');
 $assert(str_contains($database, 'tenant_scope_mutation_where($table, $where, $params)'), 'db_delete must scope tenant-owned deletes.');
-$assert(str_contains($tenant, 'uniq_tenant_type_value (tenant_id, type, value)'), 'allowed_senders must use a tenant-scoped unique key.');
+$assert(
+    str_contains($schema, 'uniq_tenant_type_value (tenant_id, type, value)') &&
+    str_contains($tenantMigration, 'ADD UNIQUE KEY uniq_tenant_type_value (tenant_id, type, value)'),
+    'allowed_senders must use a tenant-scoped unique key in fresh installs and upgrades.'
+);
 $assert(
     preg_match('/function\s+tenant_owned_tables\s*\(\)\s*:\s*array\s*\{[\s\S]*?return\s*\[(?<tables>[\s\S]*?)\];/m', $tenant, $owned_match) === 1,
     'Unable to inspect tenant_owned_tables().'

@@ -17,18 +17,6 @@ fi
 mkdir -p "$OUT_DIR"
 failures=()
 
-ios_source_fingerprint() {
-  find "$IOS_DIR" -type f \
-    ! -path '*/DerivedData/*' \
-    ! -path '*/xcuserdata/*' \
-    ! -name '.DS_Store' \
-    -print0 \
-    | sort -z \
-    | xargs -0 shasum -a 256 \
-    | shasum -a 256 \
-    | awk '{print $1}'
-}
-
 project_setting() {
   local name="$1"
   awk -F': ' -v name="$name" '$1 ~ "^[[:space:]]*" name "$" { print $2; exit }' "$IOS_DIR/project.yml"
@@ -64,7 +52,7 @@ fi
 [[ -f "$SCREENSHOT_MANIFEST" ]] || failures+=("Screenshot manifest is missing. Run npm run ios:screenshots.")
 [[ -f "$SCREENSHOT_DIR/account.png" ]] || failures+=("Screenshot packet is missing account.png.")
 
-current_fingerprint="$(ios_source_fingerprint)"
+current_fingerprint="$($ROOT/bin/ios-source-fingerprint.sh)"
 marketing_version="$(project_setting MARKETING_VERSION)"
 build_number="$(project_setting CURRENT_PROJECT_VERSION)"
 manifest_fingerprint=""

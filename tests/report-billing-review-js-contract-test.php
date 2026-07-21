@@ -9,7 +9,9 @@ $assert = static function (bool $condition, string $message): void {
     }
 };
 
-$page = file_get_contents($root . '/pages/admin/reports.php');
+require_once __DIR__ . '/support/report-page-source.php';
+
+$page = report_page_source_bundle($root);
 $asset = file_get_contents($root . '/assets/js/report-billing-review.js');
 
 $assert($page !== false && $asset !== false, 'Report page and billing review JS asset must be readable.');

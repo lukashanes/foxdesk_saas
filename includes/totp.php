@@ -238,35 +238,16 @@ function is_2fa_required_for_role(string $role): bool
     return ($settings[$key] ?? '0') === '1';
 }
 
-/**
- * Ensure TOTP columns exist on the users table.
- * Safe to call multiple times — checks before altering.
- */
+/** Ensure the installed schema supports TOTP. */
 function ensure_totp_columns(): void
 {
     static $checked = false;
     if ($checked) return;
     $checked = true;
 
-    try {
-        $cols = db_fetch_all("SHOW COLUMNS FROM users");
-        $existing = array_column($cols, 'Field');
-
-        if (!in_array('totp_secret', $existing)) {
-            db_execute("ALTER TABLE users ADD COLUMN totp_secret VARCHAR(64) NULL");
-        }
-        if (!in_array('totp_enabled', $existing)) {
-            db_execute("ALTER TABLE users ADD COLUMN totp_enabled TINYINT(1) DEFAULT 0");
-        }
-        if (!in_array('totp_backup_codes', $existing)) {
-            db_execute("ALTER TABLE users ADD COLUMN totp_backup_codes TEXT NULL");
-        }
-    } catch (Throwable $e) {
-        // Silently fail — table might already have columns
-        if (function_exists('debug_log')) {
-            debug_log('ensure_totp_columns failed', ['error' => $e->getMessage()], 'error', 'auth');
-        }
-    }
+    schema_require('two-factor authentication', [], [
+        'users' => ['totp_secret', 'totp_enabled', 'totp_backup_codes'],
+    ]);
 }
 
 /**

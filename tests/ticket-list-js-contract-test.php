@@ -1,8 +1,17 @@
 <?php
 
 $root = dirname(__DIR__);
-$page = file_get_contents($root . '/pages/tickets.php');
-$asset = file_get_contents($root . '/assets/js/ticket-list.js');
+require_once __DIR__ . '/support/ticket-list-source.php';
+
+$route = ticket_list_route_source($root);
+$controller = ticket_list_controller_source($root);
+$view = ticket_list_view_source($root);
+$board = ticket_list_board_source($root);
+$table = ticket_list_table_source($root);
+$component = ticket_list_read_source($root, 'includes/components/ticket-list-assets.php');
+$asset = ticket_list_read_source($root, 'assets/js/ticket-list.js');
+$dueDateAsset = ticket_list_read_source($root, 'assets/js/ticket-list-due-date.js');
+$timeAsset = ticket_list_read_source($root, 'assets/js/ticket-list-time.js');
 
 $assert = static function (bool $condition, string $message): void {
     if (!$condition) {
@@ -11,19 +20,49 @@ $assert = static function (bool $condition, string $message): void {
     }
 };
 
-$assert($page !== false, 'Tickets page must be readable.');
-$assert($asset !== false, 'Ticket list JS asset must be readable.');
-$assert(str_contains($page, 'window.FoxDeskTicketListConfig'), 'Tickets page must expose only the ticket-list JS config.');
-$assert(str_contains($page, 'assets/js/ticket-list.js'), 'Tickets page must load the extracted ticket-list JS asset.');
-$assert(str_contains($page, '$date_sort_url'), 'Tickets page must expose a clickable date sort URL.');
-$assert(str_contains($page, '$date_sort_next = $sort === \'oldest\' ? \'newest\' : \'oldest\';'), 'Date header must toggle newest/oldest sorting.');
-$assert(str_contains($page, 'class="ticket-date-sort'), 'Date column header must be a clickable sort control.');
-$assert(str_contains($page, 'get_icon($date_sort_icon'), 'Date sort control must show direction.');
-$assert(str_contains($page, '$ticket_list_asset_version'), 'Tickets page must define a ticket-list asset cache buster.');
-$assert(str_contains($page, "filemtime(\$file)"), 'Ticket list asset version must change when the JS file changes.');
-$assert(str_contains($page, "assets/js/ticket-list.js?v=<?php echo e(\$ticket_list_asset_version('assets/js/ticket-list.js')); ?>"), 'Tickets page must load ticket-list.js with filemtime cache busting.');
+$assert(count(file($root . '/pages/tickets.php') ?: []) <= 700, 'pages/tickets.php must stay at or below 700 lines.');
+$assert(count(file($root . '/assets/js/ticket-list.js') ?: []) <= 900, 'assets/js/ticket-list.js must stay at or below 900 lines.');
+$assert(count(file($root . '/assets/js/ticket-list-due-date.js') ?: []) <= 900, 'Ticket due-date JS module must stay at or below 900 lines.');
+$assert(count(file($root . '/assets/js/ticket-list-time.js') ?: []) <= 900, 'Ticket time JS module must stay at or below 900 lines.');
+$assert(count(file($root . '/includes/components/ticket-list-board.php') ?: []) <= 900, 'Ticket-list board component must stay at or below 900 lines.');
+$assert(count(file($root . '/includes/components/ticket-list-table.php') ?: []) <= 900, 'Ticket-list table component must stay at or below 900 lines.');
 
 foreach ([
+    'ticket-list-page-controller.php',
+    'ticket-list-page.php',
+    'ticket-list-assets.php',
+] as $needle) {
+    $assert(str_contains($route, $needle), 'Tickets route missing composition boundary: ' . $needle);
+}
+$assert(!str_contains($route, 'get_tickets('), 'Tickets route must not own query logic.');
+$assert(!str_contains($route, 'data-ticket-registry-surface'), 'Tickets route must not own registry markup.');
+$assert(str_contains($controller, '$date_sort_url'), 'Ticket-list controller must expose the date sort URL.');
+$assert(str_contains($controller, '$ticket_list_asset_version'), 'Ticket-list controller must define the cache buster.');
+$assert(str_contains($controller, "\$file = BASE_PATH . '/'"), 'Ticket-list cache buster must resolve assets from the application root.');
+$assert(str_contains($controller, "filemtime(\$file)"), 'Ticket-list cache buster must change with asset files.');
+$assert(str_contains($view, 'data-ticket-registry-surface'), 'Ticket-list view must own registry markup.');
+$assert(str_contains($view, 'ticket-list-board.php'), 'Ticket-list view must delegate board rendering.');
+$assert(str_contains($view, 'ticket-list-table.php'), 'Ticket-list view must delegate table rendering.');
+$assert(str_contains($board, 'data-kanban-scope="main"'), 'Ticket-list board component must own Kanban rendering.');
+$assert(str_contains($table, 'tickets-table'), 'Ticket-list table component must own table rendering.');
+
+foreach ([
+    'window.FoxDeskTicketListConfig',
+    'assets/js/ticket-list.js',
+    'assets/js/ticket-list-due-date.js',
+    'assets/js/ticket-list-time.js',
+] as $needle) {
+    $assert(str_contains($component, $needle), 'Ticket-list asset loader missing: ' . $needle);
+}
+foreach (['ticket-list.js', 'ticket-list-due-date.js', 'ticket-list-time.js'] as $filename) {
+    $assert(
+        str_contains($component, "assets/js/{$filename}?v=<?php echo e(\$ticket_list_asset_version('assets/js/{$filename}')); ?>"),
+        $filename . ' must use filemtime cache busting.'
+    );
+}
+
+foreach ([
+    'window.FoxDeskTicketList = {',
     'window.applyHeaderSort',
     'window.toggleBulkMode',
     'window.toggleAll',
@@ -33,37 +72,44 @@ foreach ([
     'window.inlineUpdateCompany = function',
     'window.inlineUpdateAssign = function',
     'function bindSearchSuggestions',
-    'function bindInlineLogTime',
+    'function bindInlineDropdowns',
+    'function bindSubjectInlineEditor',
+    'function bindNewTicketRow',
     'document.body.appendChild(dropdown)',
     'restoreOpenDropdown()',
     'clearDropdownPosition(openDropdown)',
-    "dropdown.style.position = 'absolute';",
-    'var scrollX = window.pageXOffset',
-    'var scrollY = window.pageYOffset',
+    "dropdown.style.position = 'fixed';",
+    'var left = rect.left;',
+    'var top = rect.bottom + 4;',
     "document.addEventListener('DOMContentLoaded'",
 ] as $needle) {
-    $assert(str_contains($asset, $needle), 'Ticket list JS asset missing behavior: ' . $needle);
+    $assert(str_contains($asset, $needle), 'Core ticket-list JS missing behavior: ' . $needle);
 }
-
-$assert(
-    strpos($asset, 'document.body.appendChild(dropdown)') < strpos($asset, "dropdown.style.position = 'absolute';"),
-    'Ticket inline dropdowns must be portaled to body before page-level positioning.'
-);
-$assert(
-    str_contains($asset, 'openOriginalParent.insertBefore(openDropdown, openOriginalNextSibling)'),
-    'Ticket inline dropdowns must restore to their original table cell after close.'
-);
 
 foreach ([
-    'function applyHeaderSort',
-    'let bulkMode',
-    'window.inlineUpdate = function',
-    'window.inlineUpdateType = function',
-    'window.inlineUpdateCompany = function',
-    'window.inlineUpdateAssign = function',
-    'let activeChips',
+    'function bindDueDatePopover',
+    "apiCall('quick-due-date'",
+    'document.body.appendChild(popover)',
+    "document.addEventListener('DOMContentLoaded', bindDueDatePopover)",
 ] as $needle) {
-    $assert(!str_contains($page, $needle), 'Tickets page must not own extracted JS behavior: ' . $needle);
+    $assert(str_contains($dueDateAsset, $needle), 'Due-date module missing behavior: ' . $needle);
 }
+
+foreach ([
+    'function bindInlineLogTime',
+    "action=quick-log-time",
+    'function openCustom',
+    'function openChips',
+    "document.addEventListener('DOMContentLoaded', bindInlineLogTime)",
+] as $needle) {
+    $assert(str_contains($timeAsset, $needle), 'Time module missing behavior: ' . $needle);
+}
+
+$assert(!str_contains($asset, 'function bindDueDatePopover'), 'Due-date behavior must not move back into the core asset.');
+$assert(!str_contains($asset, 'function bindInlineLogTime'), 'Time behavior must not move back into the core asset.');
+$assert(strpos($asset, 'document.body.appendChild(dropdown)') < strpos($asset, "dropdown.style.position = 'fixed';"), 'Inline dropdown must be portaled before positioning.');
+$assert(!str_contains($asset, 'window.pageXOffset'), 'Fixed dropdowns must not add document scroll offsets.');
+$assert(!str_contains($asset, 'window.pageYOffset'), 'Fixed dropdowns must not add document scroll offsets.');
+$assert(str_contains($asset, 'openOriginalParent.insertBefore(openDropdown, openOriginalNextSibling)'), 'Inline dropdowns must restore to their original cell.');
 
 echo "Ticket list JS contract OK\n";

@@ -1,6 +1,8 @@
 <?php
 
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/ticket-list-source.php';
+require_once __DIR__ . '/support/report-page-source.php';
 
 $read = static function (string $path) use ($root): string {
     $contents = file_get_contents($root . '/' . $path);
@@ -20,11 +22,11 @@ $assert = static function (bool $condition, string $message): void {
 
 $theme = $read('theme.css');
 $workspace = $read('includes/components/workspace-surface.php');
-$tickets = $read('pages/tickets.php');
+$tickets = ticket_list_surface_source($root);
 $ticketDetail = $read('pages/ticket-detail.php');
 $ticketSidebar = $read('includes/components/ticket-detail-sidebar.php');
 $client = $read('pages/client.php');
-$reports = $read('pages/admin/reports.php');
+$reports = report_page_source_bundle($root);
 $billing = $read('pages/billing.php');
 
 foreach ([

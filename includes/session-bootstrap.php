@@ -488,16 +488,8 @@ if (!function_exists('foxdesk_ensure_app_sessions_table')) {
         try {
             $exists = $pdo->query("SHOW TABLES LIKE 'app_sessions'")->fetchColumn();
             if (!$exists) {
-                $pdo->exec(
-                    "CREATE TABLE app_sessions (
-                        id VARCHAR(128) NOT NULL PRIMARY KEY,
-                        session_data MEDIUMBLOB NOT NULL,
-                        last_activity INT UNSIGNED NOT NULL,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                        INDEX idx_last_activity (last_activity)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-                );
+                error_log('FoxDesk app_sessions table is missing; run the database upgrade.');
+                return false;
             }
 
             $checked = true;

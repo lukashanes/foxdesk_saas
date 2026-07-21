@@ -6,10 +6,7 @@
 $page_title = t('Organizations');
 $page = 'admin';
 
-// Auto-migrate: add logo column if missing
-if (!column_exists('organizations', 'logo')) {
-    try { db_query("ALTER TABLE organizations ADD COLUMN logo TEXT DEFAULT NULL AFTER notes"); } catch (Exception $e) {}
-}
+schema_require('client logos', ['organizations'], ['organizations' => ['logo']]);
 
 $time_range = $_GET['time_range'] ?? 'all';
 $from_date = $_GET['from_date'] ?? '';

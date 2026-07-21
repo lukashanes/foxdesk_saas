@@ -72,9 +72,14 @@ struct SignedInShellView: View {
             .tag(AppTab.tickets)
 
             WorkspaceAccessGate {
-                NewTicketView { ticketID in
-                    openTicket(ticketID)
-                }
+                NewTicketView(
+                    onCancel: {
+                        selectedTab = .dashboard
+                    },
+                    onCreated: { ticketID in
+                        openTicket(ticketID)
+                    }
+                )
             }
             .tabItem {
                 Label("New ticket", systemImage: "plus.circle")
@@ -159,16 +164,44 @@ private struct WorkspaceAccessGate<Content: View>: View {
     }
 
     var body: some View {
-        if session.workspaceAccessAllowed {
-            content
-                .task {
-                    if session.tenantState == nil && !session.isLoadingTenantState {
-                        await session.refreshTenantState()
+        Group {
+            if session.tenantState == nil {
+                WorkspaceAccessCheckView()
+            } else if session.workspaceAccessAllowed {
+                content
+            } else {
+                WorkspaceAccessBlockedView()
+            }
+        }
+        .task {
+            if session.tenantState == nil && !session.isLoadingTenantState && session.tenantStateError == nil {
+                await session.refreshTenantState()
+            }
+        }
+    }
+}
+
+private struct WorkspaceAccessCheckView: View {
+    @Environment(AppSession.self) private var session
+
+    var body: some View {
+        Group {
+            if let error = session.tenantStateError, !error.isEmpty {
+                ContentUnavailableView {
+                    Label("Could not check workspace access", systemImage: "wifi.exclamationmark")
+                } description: {
+                    Text(error)
+                } actions: {
+                    Button("Try again") {
+                        Task { await session.refreshTenantState() }
                     }
                 }
-        } else {
-            WorkspaceAccessBlockedView()
+            } else {
+                ProgressView("Checking workspace access")
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .navigationTitle("Workspace")
     }
 }
 
@@ -179,9 +212,9 @@ private struct WorkspaceAccessBlockedView: View {
         List {
             Section {
                 ContentUnavailableView(
-                    title,
+                    "Workspace access is paused",
                     systemImage: "lock.circle",
-                    description: Text(message)
+                    description: Text("This workspace is not available right now. Contact your workspace administrator or FoxDesk support.")
                 )
 
                 if session.isLoadingTenantState {
@@ -205,30 +238,8 @@ private struct WorkspaceAccessBlockedView: View {
             }
         }
         .navigationTitle("Workspace access")
-        .task {
-            if session.tenantState == nil && !session.isLoadingTenantState {
-                await session.refreshTenantState()
-            }
-        }
         .refreshable {
             await session.refreshTenantState()
         }
-    }
-
-    private var title: String {
-        let notice = session.tenantState?.billingActions?.noticeTitle
-        return notice?.isEmpty == false ? notice ?? "Workspace access is paused" : "Workspace access is paused"
-    }
-
-    private var message: String {
-        let accessMessage = session.tenantState?.access.message
-        if accessMessage?.isEmpty == false {
-            return accessMessage ?? ""
-        }
-        let noticeBody = session.tenantState?.billingActions?.noticeBody
-        if noticeBody?.isEmpty == false {
-            return noticeBody ?? ""
-        }
-        return session.tenantStateError ?? "This workspace is not available right now."
     }
 }

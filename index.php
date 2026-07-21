@@ -42,9 +42,49 @@ ini_set('display_errors', (!$is_health_request && $debug) ? '1' : '0');
 ini_set('log_errors', '1');
 
 require_once BASE_PATH . '/includes/database.php';
+set_exception_handler(static function (Throwable $error): void {
+    if (!$error instanceof FoxDeskDatabaseUpgradeRequired) {
+        error_log('Unhandled FoxDesk exception: ' . $error->getMessage());
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo 'An unexpected error occurred.';
+        return;
+    }
+
+    http_response_code(503);
+    if (($_GET['page'] ?? '') === 'api') {
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode([
+            'success' => false,
+            'error' => 'database_upgrade_required',
+            'message' => 'Run the FoxDesk database upgrade before using this feature.',
+        ]);
+        return;
+    }
+
+    header('Content-Type: text/html; charset=UTF-8');
+    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">';
+    echo '<title>Database upgrade required</title><link href="assets/css/theme.min.css?v=' . rawurlencode((string) APP_VERSION) . '" rel="stylesheet"></head>';
+    echo '<body class="system-notice-page"><main class="system-notice-card" role="alert">';
+    echo '<h1 class="system-notice-title">Database upgrade required</h1>';
+    echo '<p class="system-notice-copy">Run the FoxDesk database upgrade before using this version.</p>';
+    echo '</main></body></html>';
+});
 foxdesk_bootstrap_session();
 require_once BASE_PATH . '/includes/tenant-functions.php';
-ensure_tenant_baseline();
+try {
+    ensure_tenant_baseline();
+} catch (FoxDeskDatabaseUpgradeRequired $e) {
+    http_response_code(503);
+    header('Content-Type: text/html; charset=UTF-8');
+    echo '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">';
+    echo '<title>Database upgrade required</title><link href="assets/css/theme.min.css?v=' . rawurlencode((string) APP_VERSION) . '" rel="stylesheet"></head>';
+    echo '<body class="system-notice-page"><main class="system-notice-card" role="alert">';
+    echo '<h1 class="system-notice-title">Database upgrade required</h1>';
+    echo '<p class="system-notice-copy">Run the FoxDesk database upgrade before using this version.</p>';
+    echo '</main></body></html>';
+    exit;
+}
 
 // Force UTF-8 for all HTML responses to prevent mojibake in translations.
 ini_set('default_charset', 'UTF-8');
@@ -68,7 +108,7 @@ if (file_exists($maintenance_file)) {
             $theme_version = htmlspecialchars((string) APP_VERSION, ENT_QUOTES, 'UTF-8');
             echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Maintenance</title>';
             echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
-            echo '<link href="theme.css?v=' . $theme_version . '" rel="stylesheet">';
+            echo '<link href="assets/css/theme.min.css?v=' . $theme_version . '" rel="stylesheet">';
             echo '<meta http-equiv="refresh" content="15"></head>';
             echo '<body class="system-notice-page">';
             echo '<main class="system-notice-card" role="status" aria-live="polite">';

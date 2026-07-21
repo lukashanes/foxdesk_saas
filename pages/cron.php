@@ -151,7 +151,25 @@ if ($now - $last_billing_usage >= 86400) {
 }
 
 // -----------------------------------------------------------------
-// 6. Maintenance — notification cleanup, update check (every 24 hours)
+// 6. Attachment deletion outbox (every run)
+// -----------------------------------------------------------------
+try {
+    if (function_exists('ticket_permanent_delete_retry_pending_storage')) {
+        $storage_cleanup = ticket_permanent_delete_retry_pending_storage(25);
+        if (!empty($storage_cleanup['pending'])) {
+            $errors[] = 'ticket_storage_cleanup: ' . (int) $storage_cleanup['pending'] . ' attachment(s) still pending';
+        }
+        if (!empty($storage_cleanup['failed'])) {
+            $errors[] = 'ticket_storage_cleanup: ' . (int) $storage_cleanup['failed'] . ' attachment(s) require manual intervention';
+        }
+    }
+} catch (Throwable $e) {
+    $errors[] = 'ticket_storage_cleanup: ' . $e->getMessage();
+    error_log('[pseudo-cron] ticket storage cleanup error: ' . $e->getMessage());
+}
+
+// -----------------------------------------------------------------
+// 7. Maintenance — notification cleanup, update check (every 24 hours)
 // -----------------------------------------------------------------
 $last_maintenance = (int) get_setting('pseudo_cron_last_maintenance', '0');
 if ($now - $last_maintenance >= 86400) {
@@ -186,6 +204,16 @@ if ($now - $last_maintenance >= 86400) {
     } catch (Throwable $e) {
         $errors[] = 'page_views_cleanup: ' . $e->getMessage();
     }
+}
+
+// Finalize expired 10-second Undo items on every run so orphaned files do not
+// depend on a later browser request.
+try {
+    if (function_exists('ticket_undo_finalize_all_expired')) {
+        ticket_undo_finalize_all_expired(250);
+    }
+} catch (Throwable $e) {
+    $errors[] = 'pending_deletions: ' . $e->getMessage();
 }
 
 // --- Release lock ---

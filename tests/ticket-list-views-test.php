@@ -1,5 +1,6 @@
 <?php
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/ticket-list-source.php';
 require_once $root . '/includes/modules/tickets/ticket-status-groups.php';
 require_once $root . '/includes/modules/tickets/ticket-list-views.php';
 require_once $root . '/includes/modules/tickets/ticket-row-view-model.php';
@@ -107,7 +108,7 @@ assert_ticket_list_view(in_array('done_today', $done_group_names, true), 'Done v
 assert_ticket_list_view(in_array('done_yesterday', $done_group_names, true), 'Done view should expose Done yesterday section.');
 assert_ticket_list_view(count(array_merge(...array_map(static fn(array $group): array => $group['tickets'], $done_groups))) === 4, 'Done section model must not duplicate ticket rows.');
 
-$tickets_page = file_get_contents($root . '/pages/tickets.php');
+$tickets_page = ticket_list_surface_source($root);
 assert_ticket_list_view($tickets_page !== false, 'Tickets page must be readable.');
 assert_ticket_list_view(str_contains($tickets_page, 'ticket_registry_render_view_tabs'), 'Tickets page should render view tabs through the registry surface component.');
 assert_ticket_list_view(str_contains($tickets_page, '$ticket_show_all_url'), 'Tickets page should use a real All view URL for Show all.');

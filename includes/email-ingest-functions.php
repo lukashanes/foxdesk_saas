@@ -1013,135 +1013,24 @@ function email_ingest_validate_config($cfg)
  */
 function email_ingest_ensure_schema()
 {
-    $checks = [
-        "SHOW TABLES LIKE 'allowed_senders'" => "
-            CREATE TABLE allowed_senders (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                type ENUM('email','domain') NOT NULL,
-                value VARCHAR(255) NOT NULL,
-                user_id INT NULL,
-                active TINYINT(1) DEFAULT 1,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                UNIQUE KEY uniq_type_value (type, value),
-                INDEX idx_active (active),
-                INDEX idx_user (user_id),
-                CONSTRAINT fk_allowed_senders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ",
-        "SHOW TABLES LIKE 'ticket_messages'" => "
-            CREATE TABLE ticket_messages (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                ticket_id INT NOT NULL,
-                direction ENUM('in','out') NOT NULL DEFAULT 'in',
-                user_id INT NULL,
-                comment_id INT NULL,
-                sender_email VARCHAR(255) NULL,
-                subject VARCHAR(255) NULL,
-                body_text MEDIUMTEXT,
-                body_html MEDIUMTEXT NULL,
-                body_html_raw MEDIUMTEXT NULL,
-                raw_headers MEDIUMTEXT,
-                message_id VARCHAR(255) NULL,
-                in_reply_to VARCHAR(255) NULL,
-                references_header TEXT NULL,
-                mailbox VARCHAR(120) NULL,
-                uid INT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY uniq_ticket_messages_message_id (message_id),
-                UNIQUE KEY uniq_ticket_messages_mailbox_uid (mailbox, uid),
-                INDEX idx_ticket (ticket_id),
-                INDEX idx_comment (comment_id),
-                INDEX idx_user (user_id),
-                INDEX idx_created (created_at),
-                CONSTRAINT fk_ticket_messages_ticket FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
-                CONSTRAINT fk_ticket_messages_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-                CONSTRAINT fk_ticket_messages_comment FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE SET NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ",
-        "SHOW TABLES LIKE 'ticket_message_attachments'" => "
-            CREATE TABLE ticket_message_attachments (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                ticket_message_id INT NOT NULL,
-                attachment_id INT NULL,
-                filename VARCHAR(255) NOT NULL,
-                mime VARCHAR(120) NULL,
-                size INT DEFAULT 0,
-                storage_path VARCHAR(500) NOT NULL,
-                content_id VARCHAR(255) NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_message (ticket_message_id),
-                INDEX idx_attachment (attachment_id),
-                CONSTRAINT fk_tma_message FOREIGN KEY (ticket_message_id) REFERENCES ticket_messages(id) ON DELETE CASCADE,
-                CONSTRAINT fk_tma_attachment FOREIGN KEY (attachment_id) REFERENCES attachments(id) ON DELETE SET NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ",
-        "SHOW TABLES LIKE 'email_ingest_logs'" => "
-            CREATE TABLE email_ingest_logs (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                tenant_id INT NULL,
-                mailbox VARCHAR(120) NOT NULL,
-                uid INT NOT NULL,
-                message_id VARCHAR(255) NULL,
-                sender_email VARCHAR(255) NULL,
-                subject VARCHAR(255) NULL,
-                ticket_id INT NULL,
-                status ENUM('processed','skipped','failed') NOT NULL,
-                reason VARCHAR(100) NULL,
-                error TEXT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY uniq_mailbox_uid (mailbox, uid),
-                INDEX idx_tenant_id (tenant_id),
-                INDEX idx_message_id (message_id),
-                INDEX idx_sender_email (sender_email),
-                INDEX idx_ticket_id (ticket_id),
-                INDEX idx_status_created (status, created_at)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ",
-        "SHOW TABLES LIKE 'email_ingest_state'" => "
-            CREATE TABLE email_ingest_state (
-                mailbox VARCHAR(120) PRIMARY KEY,
-                last_seen_uid INT DEFAULT 0,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ",
-    ];
-
-    foreach ($checks as $check_sql => $create_sql) {
-        $exists = db_fetch_one($check_sql);
-        if (!$exists) {
-            db_query($create_sql);
-        }
-    }
-
-    $tenant_col = db_fetch_one("SHOW COLUMNS FROM email_ingest_logs LIKE 'tenant_id'");
-    if (!$tenant_col) {
-        db_query("ALTER TABLE email_ingest_logs ADD COLUMN tenant_id INT NULL AFTER id");
-        db_query("CREATE INDEX idx_tenant_id ON email_ingest_logs (tenant_id)");
-    }
-
-    $source_col = db_fetch_one("SHOW COLUMNS FROM tickets LIKE 'source'");
-    if (!$source_col) {
-        db_query("ALTER TABLE tickets ADD COLUMN source VARCHAR(20) DEFAULT 'web' AFTER ticket_type_id");
-        db_query("CREATE INDEX idx_source ON tickets (source)");
-    }
-
-    $sender_col = db_fetch_one("SHOW COLUMNS FROM email_ingest_logs LIKE 'sender_email'");
-    if (!$sender_col) {
-        db_query("ALTER TABLE email_ingest_logs ADD COLUMN sender_email VARCHAR(255) NULL AFTER message_id");
-        db_query("CREATE INDEX idx_sender_email ON email_ingest_logs (sender_email)");
-    }
-
-    $subject_col = db_fetch_one("SHOW COLUMNS FROM email_ingest_logs LIKE 'subject'");
-    if (!$subject_col) {
-        db_query("ALTER TABLE email_ingest_logs ADD COLUMN subject VARCHAR(255) NULL AFTER sender_email");
-    }
-
-    $ticket_col = db_fetch_one("SHOW COLUMNS FROM email_ingest_logs LIKE 'ticket_id'");
-    if (!$ticket_col) {
-        db_query("ALTER TABLE email_ingest_logs ADD COLUMN ticket_id INT NULL AFTER subject");
-        db_query("CREATE INDEX idx_ticket_id ON email_ingest_logs (ticket_id)");
-    }
+    schema_require('incoming email', [
+        'allowed_senders', 'ticket_messages', 'ticket_message_attachments',
+        'email_ingest_logs', 'email_ingest_state',
+    ], [
+        'allowed_senders' => ['tenant_id', 'type', 'value', 'user_id', 'active'],
+        'ticket_messages' => [
+            'tenant_id', 'ticket_id', 'direction', 'user_id', 'comment_id', 'sender_email',
+            'subject', 'body_text', 'body_html', 'body_html_raw', 'message_id', 'mailbox', 'uid',
+        ],
+        'ticket_message_attachments' => [
+            'tenant_id', 'ticket_message_id', 'attachment_id', 'filename', 'mime', 'storage_path', 'content_id',
+        ],
+        'email_ingest_logs' => [
+            'tenant_id', 'mailbox', 'uid', 'message_id', 'sender_email', 'subject', 'ticket_id', 'status',
+        ],
+        'email_ingest_state' => ['mailbox', 'last_seen_uid', 'updated_at'],
+        'tickets' => ['source'],
+    ]);
 }
 
 /**

@@ -1,8 +1,9 @@
 <?php
 
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/ticket-detail-source.php';
 $page = file_get_contents($root . '/pages/ticket-detail.php');
-$asset = file_get_contents($root . '/assets/js/ticket-detail.js');
+$asset = ticket_detail_browser_source($root);
 $rich_text_asset = file_get_contents($root . '/assets/js/rich-text-editor.js');
 $paste_drop_asset = file_get_contents($root . '/assets/js/attachment-paste-drop.js');
 $quill_upload_asset = file_get_contents($root . '/assets/js/quill-image-upload.js');

@@ -147,8 +147,43 @@ function foxdesk_mobile_v1_route_from_request(string $method, string $uri): ?arr
             $route['query']['attachment_id'] = (int) $second;
             return $set_action('app-attachment-metadata');
         }
+        if ($second !== '' && $third === 'delete' && $method === 'POST') {
+            $route['input_defaults']['attachment_id'] = (int) $second;
+            return $set_action('app-delete-attachment');
+        }
+        if ($second === 'restore' && $method === 'POST') {
+            return $set_action('app-restore-attachment');
+        }
         if ($second === '' && $method === 'POST') {
             return $set_action('upload');
+        }
+    }
+
+    if ($first === 'comments') {
+        if ($second === 'restore' && $method === 'POST') {
+            return $set_action('app-restore-comment');
+        }
+        if ($second !== '' && $third === '' && $method === 'POST') {
+            $route['input_defaults']['comment_id'] = (int) $second;
+            return $set_action('app-update-comment');
+        }
+        if ($second !== '' && $third === 'delete' && $method === 'POST') {
+            $route['input_defaults']['comment_id'] = (int) $second;
+            return $set_action('app-delete-comment');
+        }
+    }
+
+    if ($first === 'time-entries') {
+        if ($second === 'restore' && $method === 'POST') {
+            return $set_action('app-restore-time-entry');
+        }
+        if ($second !== '' && $third === '' && $method === 'POST') {
+            $route['input_defaults']['time_entry_id'] = (int) $second;
+            return $set_action('app-update-time-entry');
+        }
+        if ($second !== '' && $third === 'delete' && $method === 'POST') {
+            $route['input_defaults']['time_entry_id'] = (int) $second;
+            return $set_action('app-delete-time-entry');
         }
     }
 

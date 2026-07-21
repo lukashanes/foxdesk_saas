@@ -125,7 +125,7 @@ $assert(str_contains($public_page, 'data-report-ticket-details'), 'Public report
 $assert(str_contains($public_page, 'data-report-comment-row'), 'Public report must render comment detail rows.');
 $assert(str_contains($public_page, 'fd-report-ticket-summary'), 'Public report ticket summary must use the hardened formatted summary layout.');
 $assert(str_contains($public_page, 'fd-report-ticket-totals'), 'Public report ticket summary must align time and amount totals.');
-$assert(str_contains($public_page, '$report_public_theme_version') && str_contains($public_page, "@filemtime(BASE_PATH . '/theme.css')"), 'Public report must cache-bust theme.css after report layout CSS changes.');
+$assert(str_contains($public_page, '$report_public_theme_version') && str_contains($public_page, "@filemtime(BASE_PATH . '/assets/css/theme.min.css')"), 'Public report must cache-bust theme.min.css after report layout CSS changes.');
 $assert(str_contains($export, "'ticket_summary'"), 'CSV export must include ticket_summary rows.');
 $assert(str_contains($export, "'comment_detail'"), 'CSV export must include comment_detail rows.');
 $assert(str_contains($theme, '.report-ticket-summary'), 'Ticket summary styling is missing.');

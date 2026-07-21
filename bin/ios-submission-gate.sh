@@ -218,8 +218,14 @@ log "Running local beta readiness gate"
 log "Running completion audit"
 (cd "$ROOT_DIR" && npm run ios:completion:audit)
 
+log "Running native free-companion readiness gate"
+(cd "$ROOT_DIR" && npm run ios:companion:gate)
+
 log "Checking App Store privacy and screenshot assets"
 (cd "$ROOT_DIR" && npm run ios:assets:check)
+
+log "Checking that the uploaded archive matches the current iOS source"
+(cd "$ROOT_DIR" && npm run ios:upload:evidence)
 
 log "Checking final human and live-smoke gates"
 
@@ -233,7 +239,7 @@ require_env_flag "APP_STORE_PRIVACY_REVIEWED" "Set APP_STORE_PRIVACY_REVIEWED=1 
 require_env_flag "APP_STORE_PRICING_READY" "Set APP_STORE_PRICING_READY=1 after configuring the iOS app download price as Free."
 require_env_flag "APP_STORE_AVAILABILITY_READY" "Set APP_STORE_AVAILABILITY_READY=1 after saving the intended App Store countries or regions."
 require_env_flag "APP_STORE_CONTENT_RIGHTS_READY" "Set APP_STORE_CONTENT_RIGHTS_READY=1 after answering Content Rights for customer-supplied ticket content."
-require_env_flag "APP_STORE_AGREEMENTS_READY" "Set APP_STORE_AGREEMENTS_READY=1 after confirming no blocking agreement, tax, or banking action remains."
+require_env_flag "APP_STORE_AGREEMENTS_READY" "Set APP_STORE_AGREEMENTS_READY=1 after confirming the free-app Apple Developer Program License Agreement is active and no blocking agreement action remains. Paid Apps, tax, and banking are not otherwise required for this free no-IAP build."
 require_env_flag "APP_STORE_UNTESTED_PLATFORMS_DISABLED" "Set APP_STORE_UNTESTED_PLATFORMS_DISABLED=1 after disabling Apple Silicon Mac and Apple Vision Pro availability for this iPhone-only release."
 require_env_value "APP_STORE_SELECTED_MARKETING_VERSION" "Set APP_STORE_SELECTED_MARKETING_VERSION to the exact marketing version selected in App Store Connect."
 require_env_value "APP_STORE_SELECTED_BUILD_NUMBER" "Set APP_STORE_SELECTED_BUILD_NUMBER to the exact processed build selected in App Store Connect."

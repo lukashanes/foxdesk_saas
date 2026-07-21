@@ -155,6 +155,11 @@ public final class AppSession {
             }
             let refreshedTokens = try await refreshStoredSession()
             return try await operation(refreshedTokens.accessToken)
+        } catch let error as FoxDeskAPIError {
+            if case .server(let statusCode, _) = error, statusCode == 402 {
+                await refreshTenantState()
+            }
+            throw error
         }
     }
 

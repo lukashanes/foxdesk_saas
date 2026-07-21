@@ -97,10 +97,15 @@ log "Running mobile API contracts"
 (cd "$ROOT" && ./bin/run-php.sh tests/native-app-api-freeze-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/app-home-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/ios-mvp-scope-contract-test.php)
+(cd "$ROOT" && ./bin/run-php.sh tests/ios-companion-business-model-contract-test.php)
+(cd "$ROOT" && ./bin/run-php.sh tests/api-workspace-access-contract-test.php)
+(cd "$ROOT" && ./bin/run-php.sh tests/ios-workspace-access-gate-contract-test.php)
+(cd "$ROOT" && ./bin/run-php.sh tests/ios-companion-readiness-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/ios-dashboard-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/ios-ticket-detail-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/ios-mvp-traceability-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/ios-external-gates-contract-test.php)
 (cd "$ROOT" && ./bin/run-php.sh tests/ios-submission-gate-contract-test.php)
+(cd "$ROOT" && ./bin/run-php.sh tests/ios-upload-evidence-contract-test.php)
 
 log "iOS MVP gate OK"

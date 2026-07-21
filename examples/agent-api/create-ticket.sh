@@ -22,4 +22,4 @@ if [ -n "${FOXDESK_STATUS_ID:-}" ]; then
 fi
 
 payload="${payload}}"
-foxdesk_post_json "app-create-ticket" "$payload"
+foxdesk_post_json "agent-create-ticket" "$payload"

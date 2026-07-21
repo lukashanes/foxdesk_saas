@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $valid_token) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo e(t('New password')); ?> - <?php echo e($app_name); ?></title>
     <link href="tailwind.min.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
-    <link href="theme.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
+    <link href="assets/css/theme.min.css?v=<?php echo e((string) APP_VERSION); ?>" rel="stylesheet">
     <?php echo turnstile_script_tag(); ?>
     <script>
         (function() {

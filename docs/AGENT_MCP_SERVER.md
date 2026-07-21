@@ -53,7 +53,8 @@ Use absolute paths in real client configs:
 - `foxdesk_get_ticket` reads one ticket by id or hash.
 - `foxdesk_create_ticket` creates a ticket.
 - `foxdesk_add_comment` adds a public or internal comment.
-- `foxdesk_log_time` logs manual time.
+- `foxdesk_add_work_entry` atomically adds a comment and its linked time entry.
+- `foxdesk_log_time` logs standalone time only when no comment belongs to the work.
 - `foxdesk_prepare_report` prepares a report review.
 
 ## Scopes
@@ -61,8 +62,9 @@ Use absolute paths in real client configs:
 - `foxdesk_agent_docs` requires only a valid token, not a specific scope.
 - `tickets:read` for listing and reading tickets.
 - `tickets:write` for creating tickets.
-- `comments:write` for comments.
-- `time:write` for time entries.
+- `tickets:read` plus `comments:write` for comments.
+- `tickets:read`, `comments:write`, and `time:write` for linked work entries.
+- `time:write` for standalone time entries.
 - `reports:read` for report review.
 
 401 means the key is missing or invalid. 403 means the key is valid but the

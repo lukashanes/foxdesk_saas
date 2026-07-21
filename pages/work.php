@@ -360,7 +360,7 @@ require_once BASE_PATH . '/includes/header.php';
         </div>
         <div class="fd-section-actions work-range-controls">
             <?php if (!empty($time_view_scope['can_view_team'])): ?>
-                <div class="fd-segmented work-scope-switch" aria-label="<?php echo e(t('Worked time')); ?>">
+                <div class="fd-segmented work-scope-switch" aria-label="<?php echo e(t('Time overview')); ?>">
                     <?php foreach (($time_view_scope['options'] ?? []) as $scope_key => $scope_label): ?>
                         <a href="<?php echo e($work_scope_url((string) $scope_key)); ?>"
                            class="fd-segmented__item work-period-link <?php echo ($time_view_scope['key'] ?? 'mine') === $scope_key ? 'is-active' : ''; ?>">

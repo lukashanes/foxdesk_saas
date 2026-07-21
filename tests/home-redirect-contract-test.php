@@ -1,6 +1,7 @@
 <?php
 
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/ticket-detail-source.php';
 
 function assert_home_redirect_contract(bool $condition, string $message): void
 {
@@ -26,7 +27,9 @@ $files = [
 ];
 
 foreach ($files as $file) {
-    $contents = file_get_contents($root . '/' . $file);
+    $contents = $file === 'pages/new-ticket.php'
+        ? new_ticket_composed_source($root)
+        : file_get_contents($root . '/' . $file);
     assert_home_redirect_contract($contents !== false, $file . ' must be readable.');
     assert_home_redirect_contract(
         strpos($contents, "header('Location: index.php?page=dashboard');") === false,
@@ -47,7 +50,9 @@ foreach ([
     'pages/admin/agent-connect.php',
     'pages/admin/reports.php',
 ] as $file) {
-    $contents = file_get_contents($root . '/' . $file);
+    $contents = $file === 'pages/new-ticket.php'
+        ? new_ticket_composed_source($root)
+        : file_get_contents($root . '/' . $file);
     assert_home_redirect_contract(
         strpos($contents, 'foxdesk_authenticated_home_page') !== false,
         $file . ' should use authenticated home routing for fallback redirects.'

@@ -122,8 +122,8 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
 
     <link href="tailwind.min.css?v=<?php echo APP_VERSION; ?>" rel="stylesheet">
 
-    <?php $theme_asset_version = (string) APP_VERSION . '-' . (string) (@filemtime(BASE_PATH . '/theme.css') ?: '0'); ?>
-    <link href="theme.css?v=<?php echo e($theme_asset_version); ?>" rel="stylesheet">
+    <?php $theme_asset_version = (string) APP_VERSION . '-' . (string) (@filemtime(BASE_PATH . '/assets/css/theme.min.css') ?: '0'); ?>
+    <link href="assets/css/theme.min.css?v=<?php echo e($theme_asset_version); ?>" rel="stylesheet">
     <?php foreach ((array) ($page_extra_css ?? []) as $extra_css_path): ?>
         <?php
         $extra_css_path = ltrim((string) $extra_css_path, '/');
@@ -302,24 +302,24 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                     </a>
                 <?php endif; ?>
 
-                <?php $is_new_ticket = ($page ?? '') === 'new-ticket' && !isset($_GET['auto_timer']); ?>
+                <?php $is_new_ticket = ($page ?? '') === 'new-ticket'; ?>
                 <?php $has_quick_start = (is_admin() || is_agent()) && function_exists('ticket_time_table_exists') && ticket_time_table_exists(); ?>
-                <?php if ($has_quick_start): ?><div class="nav-item-group"><?php endif; ?>
-                <a href="<?php echo url('new-ticket'); ?>"
-                    class="nav-item nav-item--cta <?php echo $is_new_ticket ? 'active' : ''; ?>"
-                    title="<?php echo e(t('New ticket')); ?>"
-                    <?php echo $is_new_ticket ? 'aria-current="page"' : ''; ?>>
-                    <?php echo get_icon('plus', 'nav-item__icon'); ?>
-                    <span><?php echo e(t('New ticket')); ?></span>
-                </a>
                 <?php if ($has_quick_start): ?>
-                <div class="nav-item-flyout">
-                    <a href="<?php echo url('new-ticket', ['auto_timer' => '1']); ?>" class="nav-item-flyout__item">
+                    <button type="button"
+                        class="nav-item nav-item--cta nav-item--button"
+                        data-quick-start-work
+                        title="<?php echo e(t('Creates a draft ticket and starts the timer. Add the title and client next.')); ?>">
                         <?php echo get_icon('play', 'nav-item__icon'); ?>
-                        <span><?php echo e(t('New ticket + timer')); ?></span>
+                        <span><?php echo e(t('Start work')); ?></span>
+                    </button>
+                <?php else: ?>
+                    <a href="<?php echo url('new-ticket'); ?>"
+                        class="nav-item nav-item--cta <?php echo $is_new_ticket ? 'active' : ''; ?>"
+                        title="<?php echo e(t('New ticket')); ?>"
+                        <?php echo $is_new_ticket ? 'aria-current="page"' : ''; ?>>
+                        <?php echo get_icon('plus', 'nav-item__icon'); ?>
+                        <span><?php echo e(t('New ticket')); ?></span>
                     </a>
-                </div>
-                </div>
                 <?php endif; ?>
             </nav>
 

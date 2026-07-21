@@ -12,4 +12,4 @@ payload="${payload}\"content\":\"$(foxdesk_json_escape "$comment")\","
 payload="${payload}\"is_internal\":${is_internal}"
 payload="${payload}}"
 
-foxdesk_post_json "app-add-comment" "$payload"
+foxdesk_post_json "agent-add-update" "$payload"

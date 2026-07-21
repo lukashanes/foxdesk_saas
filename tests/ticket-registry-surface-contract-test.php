@@ -1,9 +1,10 @@
 <?php
 
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/ticket-list-source.php';
 $functions = file_get_contents($root . '/includes/functions.php');
 $component = file_get_contents($root . '/includes/components/ticket-registry-surface.php');
-$page = file_get_contents($root . '/pages/tickets.php');
+$page = ticket_list_surface_source($root);
 $theme = file_get_contents($root . '/theme.css');
 $js = file_get_contents($root . '/assets/js/ticket-list.js');
 

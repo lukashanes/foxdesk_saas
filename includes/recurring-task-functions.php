@@ -3,7 +3,7 @@
  * Recurring Task Management Functions
  */
 
-// ── Auto-migration ──────────────────────────────────────────────────────────
+// ── Schema capability ───────────────────────────────────────────────────────
 
 function ensure_recurring_task_columns(): void
 {
@@ -11,54 +11,10 @@ function ensure_recurring_task_columns(): void
     if ($done) return;
     $done = true;
 
-    $db = get_db();
-
-    // Add due_days column (configurable due date instead of hardcoded 7)
-    try {
-        $cols = $db->query("SHOW COLUMNS FROM recurring_tasks LIKE 'due_days'")->fetchAll();
-        if (empty($cols)) {
-            $db->exec("ALTER TABLE recurring_tasks ADD COLUMN due_days INT DEFAULT 7 AFTER status_id");
-        }
-    } catch (Throwable $e) { /* ignore */ }
-
-    // Create run history table
-    try {
-        $db->exec("
-            CREATE TABLE IF NOT EXISTS recurring_task_runs (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                recurring_task_id INT NOT NULL,
-                ticket_id INT NULL,
-                status ENUM('success','failed') DEFAULT 'success',
-                error_message TEXT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_task_id (recurring_task_id),
-                INDEX idx_created (created_at)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        ");
-    } catch (Throwable $e) { /* ignore */ }
-
-    // Add paused_at and resume_date columns for pause-with-resume
-    try {
-        $cols = $db->query("SHOW COLUMNS FROM recurring_tasks LIKE 'paused_at'")->fetchAll();
-        if (empty($cols)) {
-            $db->exec("ALTER TABLE recurring_tasks ADD COLUMN paused_at DATETIME NULL DEFAULT NULL");
-        }
-    } catch (Throwable $e) { /* ignore */ }
-
-    try {
-        $cols = $db->query("SHOW COLUMNS FROM recurring_tasks LIKE 'resume_date'")->fetchAll();
-        if (empty($cols)) {
-            $db->exec("ALTER TABLE recurring_tasks ADD COLUMN resume_date DATE NULL DEFAULT NULL");
-        }
-    } catch (Throwable $e) { /* ignore */ }
-
-    // Add tags column for auto-tagging generated tickets
-    try {
-        $cols = $db->query("SHOW COLUMNS FROM recurring_tasks LIKE 'tags'")->fetchAll();
-        if (empty($cols)) {
-            $db->exec("ALTER TABLE recurring_tasks ADD COLUMN tags TEXT NULL DEFAULT NULL");
-        }
-    } catch (Throwable $e) { /* ignore */ }
+    schema_require('recurring tasks', ['recurring_tasks', 'recurring_task_runs'], [
+        'recurring_tasks' => ['due_days', 'paused_at', 'resume_date', 'tags'],
+        'recurring_task_runs' => ['recurring_task_id', 'ticket_id', 'status', 'error_message', 'created_at'],
+    ]);
 }
 
 // ── Next Run Preview ────────────────────────────────────────────────────────

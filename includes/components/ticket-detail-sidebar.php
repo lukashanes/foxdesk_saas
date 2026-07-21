@@ -450,6 +450,15 @@ if (is_agent()) {
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
+
+                <?php if (can_permanently_delete_tickets($user)): ?>
+                    <div class="ticket-side-field ticket-side-field--danger">
+                        <button type="button" class="btn btn-danger btn-sm w-full justify-center" data-open-permanent-delete>
+                            <?php echo get_icon('trash', 'w-4 h-4 mr-1.5'); ?><?php echo e(t('Permanently delete ticket')); ?>
+                        </button>
+                        <p class="ticket-side-help"><?php echo e(t('This removes the ticket, comments, time entries, attachments, and related records.')); ?></p>
+                    </div>
+                <?php endif; ?>
             </div>
         </details>
     <?php endif; ?>

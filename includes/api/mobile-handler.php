@@ -5,93 +5,23 @@
 
 function mobile_api_ensure_tables(): void
 {
-    db_query("CREATE TABLE IF NOT EXISTS mobile_auth_challenges (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        tenant_id INT NULL,
-        user_id INT NOT NULL,
-        challenge_hash CHAR(64) NOT NULL,
-        expires_at DATETIME NOT NULL,
-        consumed_at DATETIME NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY uniq_mobile_challenge_hash (challenge_hash),
-        INDEX idx_tenant_id (tenant_id),
-        INDEX idx_user (user_id),
-        INDEX idx_expires (expires_at),
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-
-    db_query("CREATE TABLE IF NOT EXISTS mobile_sessions (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        tenant_id INT NULL,
-        user_id INT NOT NULL,
-        platform VARCHAR(20) NOT NULL DEFAULT 'ios',
-        device_id VARCHAR(191) NULL,
-        device_name VARCHAR(255) NULL,
-        app_version VARCHAR(50) NULL,
-        access_token_hash CHAR(64) NOT NULL,
-        refresh_token_hash CHAR(64) NOT NULL,
-        token_prefix VARCHAR(16) NOT NULL,
-        access_expires_at DATETIME NOT NULL,
-        refresh_expires_at DATETIME NOT NULL,
-        revoked_at DATETIME NULL,
-        last_used_at DATETIME NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY uniq_mobile_access_token_hash (access_token_hash),
-        UNIQUE KEY uniq_mobile_refresh_token_hash (refresh_token_hash),
-        INDEX idx_tenant_id (tenant_id),
-        INDEX idx_user (user_id),
-        INDEX idx_device (device_id),
-        INDEX idx_access_expires (access_expires_at),
-        INDEX idx_refresh_expires (refresh_expires_at),
-        INDEX idx_revoked (revoked_at),
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-
-    db_query("CREATE TABLE IF NOT EXISTS mobile_idempotency_keys (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        tenant_id INT NULL,
-        mobile_session_id INT NOT NULL,
-        user_id INT NOT NULL,
-        idempotency_key VARCHAR(128) NOT NULL,
-        action VARCHAR(120) NOT NULL,
-        request_hash CHAR(64) NOT NULL,
-        response_json MEDIUMTEXT NULL,
-        status_code INT DEFAULT 200,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        expires_at DATETIME NOT NULL,
-        UNIQUE KEY uniq_mobile_idempotency_session_key (mobile_session_id, action, idempotency_key),
-        INDEX idx_tenant_id (tenant_id),
-        INDEX idx_expires (expires_at),
-        FOREIGN KEY (mobile_session_id) REFERENCES mobile_sessions(id) ON DELETE CASCADE,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-
-    db_query("CREATE TABLE IF NOT EXISTS mobile_devices (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        tenant_id INT NULL,
-        user_id INT NOT NULL,
-        mobile_session_id INT NULL,
-        platform VARCHAR(20) NOT NULL DEFAULT 'ios',
-        device_id VARCHAR(191) NULL,
-        device_name VARCHAR(255) NULL,
-        app_version VARCHAR(50) NULL,
-        apns_environment ENUM('sandbox', 'production') NOT NULL DEFAULT 'sandbox',
-        apns_token TEXT NOT NULL,
-        apns_token_hash CHAR(64) NOT NULL,
-        is_active TINYINT(1) NOT NULL DEFAULT 1,
-        last_registered_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY uniq_mobile_apns_token_hash (apns_token_hash),
-        INDEX idx_tenant_id (tenant_id),
-        INDEX idx_user (user_id),
-        INDEX idx_session (mobile_session_id),
-        INDEX idx_device (device_id),
-        INDEX idx_active (is_active),
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (mobile_session_id) REFERENCES mobile_sessions(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    schema_require('native mobile API', [
+        'mobile_auth_challenges', 'mobile_sessions', 'mobile_idempotency_keys', 'mobile_devices',
+    ], [
+        'mobile_auth_challenges' => ['tenant_id', 'user_id', 'challenge_hash', 'expires_at', 'consumed_at'],
+        'mobile_sessions' => [
+            'tenant_id', 'user_id', 'platform', 'device_id', 'access_token_hash', 'refresh_token_hash',
+            'access_expires_at', 'refresh_expires_at', 'revoked_at',
+        ],
+        'mobile_idempotency_keys' => [
+            'tenant_id', 'mobile_session_id', 'user_id', 'idempotency_key', 'action',
+            'request_hash', 'response_json', 'status_code', 'expires_at',
+        ],
+        'mobile_devices' => [
+            'tenant_id', 'user_id', 'mobile_session_id', 'platform', 'device_id',
+            'apns_environment', 'apns_token', 'apns_token_hash', 'is_active',
+        ],
+    ]);
 }
 
 function mobile_api_short_string($value, int $max): string

@@ -1,6 +1,7 @@
 <?php
 
 $root = dirname(__DIR__);
+require_once __DIR__ . '/support/settings-source.php';
 
 $assert = static function (bool $condition, string $message): void {
     if (!$condition) {
@@ -14,11 +15,12 @@ $aiAgentsComponent = file_get_contents($root . '/includes/components/team-ai-age
 $usersComponent = file_get_contents($root . '/includes/components/team-users-tab.php');
 $agentConnectPage = file_get_contents($root . '/pages/admin/agent-connect.php');
 $profilePage = file_get_contents($root . '/pages/profile.php');
-$settingsPage = file_get_contents($root . '/pages/admin/settings.php');
+$settingsPage = settings_source_bundle($root);
 $bootstrap = file_get_contents($root . '/includes/modules/bootstrap.php');
 $module = file_get_contents($root . '/includes/modules/team/team-users.php');
+$schemaMigration = file_get_contents($root . '/migrations/2026072003_runtime_feature_columns.php');
 
-$assert($page !== false && $aiAgentsComponent !== false && $usersComponent !== false && $agentConnectPage !== false && $profilePage !== false && $settingsPage !== false && $bootstrap !== false && $module !== false, 'Team users contract files must be readable.');
+$assert($page !== false && $aiAgentsComponent !== false && $usersComponent !== false && $agentConnectPage !== false && $profilePage !== false && $settingsPage !== false && $bootstrap !== false && $module !== false && $schemaMigration !== false, 'Team users contract files must be readable.');
 $assert(str_contains($bootstrap, '/team/team-users.php'), 'Module bootstrap must load team users helpers.');
 $teamUiSurface = $page . "\n" . $aiAgentsComponent . "\n" . $usersComponent;
 
@@ -68,7 +70,7 @@ $assert(str_contains($profilePage, 'id="api-access"'), 'Profile page must keep t
 $assert(str_contains($profilePage, 'Open API & agents'), 'Profile API anchor must point users to Settings API & agents.');
 
 foreach ([
-    "elseif (\$tab === 'api')",
+    "'api' => 'api.php'",
     'data-settings-api-access',
     'data-api-token-create-form',
     'data-api-tester',
@@ -128,11 +130,18 @@ foreach ([
 }
 
 foreach ([
-    'ALTER TABLE users ADD COLUMN is_ai_agent',
-    'ALTER TABLE users ADD COLUMN ai_model',
     'team_users_schema_column_exists(\'users\', \'is_ai_agent\')',
 ] as $needle) {
-    $assert(str_contains($module, $needle), 'Team users schema self-healing missing: ' . $needle);
+    $assert(str_contains($module, $needle), 'Team users capability check missing: ' . $needle);
+}
+foreach (['CREATE TABLE', 'ALTER TABLE'] as $runtimeDdl) {
+    $assert(!str_contains($module, $runtimeDdl), 'Team users request module must not mutate schema: ' . $runtimeDdl);
+}
+foreach ([
+    "'is_ai_agent' => 'TINYINT(1) NOT NULL DEFAULT 0'",
+    "'ai_model' => 'VARCHAR(100) NULL DEFAULT NULL'",
+] as $needle) {
+    $assert(str_contains($schemaMigration, $needle), 'Team users versioned migration missing: ' . $needle);
 }
 
 foreach ([
