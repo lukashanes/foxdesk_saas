@@ -446,6 +446,29 @@ async function runWriteSmoke(accessToken) {
   if (!detailOK) {
     throw new Error('Created ticket detail did not expose the smoke comment, linked 5-minute exact manual time entry, and attachment together.');
   }
+
+  const archived = dataOf(await request(`tickets/${ticketId}`, {
+    method: 'POST',
+    token: accessToken,
+    body: {
+      ticket_id: ticketId,
+      is_archived: true,
+      skip_notification: true,
+    },
+  }));
+  const archivedTicket = archived?.ticket || archived;
+  const updatedFields = Array.isArray(archived?.updated_fields) ? archived.updated_fields : [];
+  const isArchived = archivedTicket?.is_archived === true
+    || Number(archivedTicket?.is_archived) === 1
+    || updatedFields.includes('is_archived');
+  record('write-smoke-cleanup', isArchived, {
+    ticket_id: ticketId,
+    updated_fields: updatedFields,
+    message: isArchived ? 'Smoke ticket archived after verification.' : 'Smoke ticket could not be archived.',
+  });
+  if (!isArchived) {
+    throw new Error('iOS API write smoke left its temporary ticket active.');
+  }
 }
 
 async function main() {

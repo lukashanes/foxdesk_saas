@@ -113,6 +113,7 @@ api_write_ready() {
       "attachment-metadata",
       "attachment-download",
       "created-ticket-detail",
+      "write-smoke-cleanup",
     ];
     for (const name of required) {
       const step = steps.find((row) => row && row.name === name);
@@ -120,6 +121,8 @@ api_write_ready() {
     }
     const download = steps.find((row) => row && row.name === "attachment-download");
     if (!Number.isInteger(Number(download.bytes)) || Number(download.bytes) <= 0) process.exit(1);
+    const cleanup = steps.find((row) => row && row.name === "write-smoke-cleanup");
+    if (!cleanup || cleanup.ok !== true || !Number.isInteger(Number(cleanup.ticket_id))) process.exit(1);
   ' "$file"
 }
 
