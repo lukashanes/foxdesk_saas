@@ -27,9 +27,7 @@
         errorLabel: <?php echo json_encode(t('Error')); ?>,
         savedLabel: <?php echo json_encode(t('Saved')); ?>,
         pauseLabel: <?php echo json_encode(t('Pause')); ?>,
-        resumeLabel: <?php echo json_encode(t('Resume')); ?>,
-        startingWorkLabel: <?php echo json_encode(t('Starting...')); ?>,
-        startWorkFailedLabel: <?php echo json_encode(t('Could not start work.')); ?>
+        resumeLabel: <?php echo json_encode(t('Resume')); ?>
     };
 </script>
 <?php

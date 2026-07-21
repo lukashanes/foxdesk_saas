@@ -6629,21 +6629,6 @@ background: var(--surface-secondary);
 border-top: 1px solid var(--border-light);
 flex-shrink: 0;
 }
-.quick-start-ticket-note {
-margin: 0 0 var(--space-4);
-color: var(--text-secondary);
-font-size: var(--text-sm);
-line-height: 1.5;
-}
-.modal-overlay.is-quick-start .modal-panel {
-max-width: 32rem;
-}
-.modal-overlay.is-quick-start .quick-start-ticket-note {
-display: block;
-}
-.modal-overlay.is-quick-start [data-quick-start-optional] {
-display: none;
-}
 .time-entry-actions {
 display: inline-flex;
 align-items: center;

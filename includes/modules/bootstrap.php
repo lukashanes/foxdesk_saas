@@ -23,7 +23,6 @@ require_once __DIR__ . '/notifications/notification-policy.php';
 require_once __DIR__ . '/email/email-renderer.php';
 require_once __DIR__ . '/work/work-queues.php';
 require_once __DIR__ . '/work/time-activity-summary.php';
-require_once __DIR__ . '/work/quick-start-work.php';
 require_once __DIR__ . '/inbox/inbox-service.php';
 require_once __DIR__ . '/search/global-search.php';
 require_once __DIR__ . '/clients/client-overview.php';

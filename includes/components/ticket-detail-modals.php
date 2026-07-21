@@ -21,10 +21,6 @@
                             <span data-edit-ticket-title><?php echo e(t('Edit ticket')); ?></span>
                         </h3>
 
-                        <p class="quick-start-ticket-note hidden" data-quick-start-note>
-                            <?php echo e(t('The timer is running. Add a subject and client now; everything else can wait.')); ?>
-                        </p>
-
                         <div class="space-y-3">
                             <div>
                                 <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('Subject')); ?> *</label>
@@ -32,7 +28,7 @@
                                     value="<?php echo e($ticket['title']); ?>" class="form-input w-full" required>
                             </div>
 
-                            <div data-quick-start-optional>
+                            <div>
                                 <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('Description')); ?></label>
                                 <div class="editor-wrapper">
                                     <div id="edit-description-editor"></div>
@@ -42,7 +38,7 @@
                             </div>
 
                             <?php if ($tags_supported): ?>
-                                    <div data-quick-start-optional>
+                                    <div>
                                         <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('Tags')); ?></label>
                                         <input type="text" name="edit_tags" id="edit-ticket-tags-input"
                                             value="<?php echo e($ticket['tags'] ?? ''); ?>" class="form-input w-full"
@@ -65,7 +61,7 @@
                             <?php endif; ?>
 
                             <?php if (is_admin()): ?>
-                                    <div data-quick-start-optional>
+                                    <div>
                                         <label class="block text-xs font-medium mb-1 text-theme-muted"><?php echo e(t('Custom billable rate (per hour)')); ?></label>
                                         <input type="number" name="edit_custom_billable_rate" step="0.01" min="0"
                                             value="<?php echo e($ticket_custom_billable_rate !== null ? number_format((float) $ticket_custom_billable_rate, 2, '.', '') : ''); ?>"

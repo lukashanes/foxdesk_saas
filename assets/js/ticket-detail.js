@@ -789,21 +789,6 @@
         initAutosave();
         initPermanentDelete();
 
-        if (config.quickStart) {
-            var quickModal = document.getElementById('edit-ticket-modal');
-            if (quickModal) {
-                quickModal.classList.add('is-quick-start');
-                var quickHeading = quickModal.querySelector('[data-edit-ticket-title]');
-                if (quickHeading) quickHeading.textContent = t('quickStartDetails', 'Name this work');
-            }
-            window.openEditTicketModal();
-            var titleInput = document.querySelector('#edit-ticket-modal input[name="edit_title"]');
-            if (titleInput) {
-                titleInput.focus();
-                titleInput.select();
-            }
-        }
-
         document.addEventListener('keydown', function (event) {
             if (event.key !== 'Escape') return;
             window.closeEditCommentModal();

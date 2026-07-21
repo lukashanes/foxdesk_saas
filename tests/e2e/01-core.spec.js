@@ -102,76 +102,36 @@ test('admin can collapse the sidebar and keep more workspace width', async ({ pa
   expect(isCompact).toBe(false);
 });
 
-test('admin can start work first and name the ticket afterwards', async ({ page }) => {
-  const title = `Quick work ${Date.now()}`;
+test('opening and cancelling New ticket does not create a ticket or start a timer', async ({ page }) => {
   const admin = rowObject(dbQuery(`
-    SELECT tenant_id
+    SELECT id, tenant_id
     FROM users
     WHERE email = 'admin@example.test'
     LIMIT 1
   `));
-  dbQuery(`
-    INSERT INTO organizations (tenant_id, name, is_active, created_at)
-    VALUES (${Number(admin.tenant_id)}, ${sqlString(`Quick client ${Date.now()}`)}, 1, NOW())
-  `);
-  const seededOrganization = rowObject(dbQuery(`
-    SELECT id
-    FROM organizations
-    WHERE tenant_id = ${Number(admin.tenant_id)}
-    ORDER BY id DESC
-    LIMIT 1
+  const before = rowObject(dbQuery(`
+    SELECT
+      (SELECT COUNT(*) FROM tickets WHERE tenant_id = ${Number(admin.tenant_id)}) AS ticket_count,
+      (SELECT COUNT(*) FROM ticket_time_entries WHERE user_id = ${Number(admin.id)} AND ended_at IS NULL) AS active_timer_count
   `));
 
   await login(page);
-  const startWork = page.locator('[data-quick-start-work]');
-  await expect(startWork).toBeVisible();
-  await startWork.click();
-  await page.waitForURL(/page=ticket.*quick_start=1/);
+  const newTicket = page.locator('a[href*="page=new-ticket"]').filter({ hasText: 'New ticket' }).first();
+  await expect(newTicket).toBeVisible();
+  await expect(page.locator('[data-quick-start-work]')).toHaveCount(0);
+  await newTicket.click();
+  await page.waitForURL(/page=new-ticket/);
+  await expect(page.locator('form#new-ticket-form')).toBeVisible();
 
-  const ticketHash = new URL(page.url()).searchParams.get('t');
-  expect(ticketHash).toBeTruthy();
-  const ticketRow = rowObject(dbQuery(`
-    SELECT id
-    FROM tickets
-    WHERE hash = ${sqlString(ticketHash)}
-    LIMIT 1
+  await page.goBack();
+
+  const after = rowObject(dbQuery(`
+    SELECT
+      (SELECT COUNT(*) FROM tickets WHERE tenant_id = ${Number(admin.tenant_id)}) AS ticket_count,
+      (SELECT COUNT(*) FROM ticket_time_entries WHERE user_id = ${Number(admin.id)} AND ended_at IS NULL) AS active_timer_count
   `));
-  const ticketId = Number(ticketRow.id);
-  expect(ticketId).toBeGreaterThan(0);
-
-  const modal = page.locator('#edit-ticket-modal');
-  await expect(modal).toBeVisible();
-  await expect(modal).toHaveClass(/is-quick-start/);
-  await expect(modal.locator('input[name="edit_title"]')).toBeFocused();
-  await expect(modal.locator('select[name="edit_organization_id"]')).toBeVisible();
-  await expect(modal.locator('[data-quick-start-optional]:visible')).toHaveCount(0);
-
-  const activeTimer = rowObject(dbQuery(`
-    SELECT COUNT(*) AS active_count
-    FROM ticket_time_entries
-    WHERE ticket_id = ${ticketId} AND ended_at IS NULL
-  `));
-  expect(Number(activeTimer.active_count)).toBe(1);
-
-  await modal.locator('input[name="edit_title"]').fill(title);
-  const organization = modal.locator('select[name="edit_organization_id"]');
-  const organizationValue = String(seededOrganization.id);
-  await organization.selectOption(organizationValue);
-  await modal.locator('button[name="update_ticket"]').click();
-  await expect(modal).toBeHidden();
-
-  await expect(page.locator('body')).toContainText(title);
-  const saved = rowObject(dbQuery(`
-    SELECT t.title, t.organization_id,
-      SUM(CASE WHEN e.ended_at IS NULL THEN 1 ELSE 0 END) AS active_count
-    FROM tickets t
-    LEFT JOIN ticket_time_entries e ON e.ticket_id = t.id
-    WHERE t.id = ${ticketId}
-    GROUP BY t.id, t.title, t.organization_id
-  `));
-  expect(saved.title).toBe(title);
-  expect(Number(saved.organization_id)).toBe(Number(organizationValue));
-  expect(Number(saved.active_count)).toBe(1);
+  expect(Number(after.ticket_count)).toBe(Number(before.ticket_count));
+  expect(Number(after.active_timer_count)).toBe(Number(before.active_timer_count));
 });
 
 test('admin can create a ticket, upload, preview, download, and delete attachments', async ({ page }) => {

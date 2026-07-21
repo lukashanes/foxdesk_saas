@@ -303,24 +303,13 @@ if (file_exists(__DIR__ . '/pseudo-cron.php')) {
                 <?php endif; ?>
 
                 <?php $is_new_ticket = ($page ?? '') === 'new-ticket'; ?>
-                <?php $has_quick_start = (is_admin() || is_agent()) && function_exists('ticket_time_table_exists') && ticket_time_table_exists(); ?>
-                <?php if ($has_quick_start): ?>
-                    <button type="button"
-                        class="nav-item nav-item--cta nav-item--button"
-                        data-quick-start-work
-                        title="<?php echo e(t('Creates a draft ticket and starts the timer. Add the title and client next.')); ?>">
-                        <?php echo get_icon('play', 'nav-item__icon'); ?>
-                        <span><?php echo e(t('Start work')); ?></span>
-                    </button>
-                <?php else: ?>
-                    <a href="<?php echo url('new-ticket'); ?>"
-                        class="nav-item nav-item--cta <?php echo $is_new_ticket ? 'active' : ''; ?>"
-                        title="<?php echo e(t('New ticket')); ?>"
-                        <?php echo $is_new_ticket ? 'aria-current="page"' : ''; ?>>
-                        <?php echo get_icon('plus', 'nav-item__icon'); ?>
-                        <span><?php echo e(t('New ticket')); ?></span>
-                    </a>
-                <?php endif; ?>
+                <a href="<?php echo url('new-ticket'); ?>"
+                    class="nav-item nav-item--cta <?php echo $is_new_ticket ? 'active' : ''; ?>"
+                    title="<?php echo e(t('New ticket')); ?>"
+                    <?php echo $is_new_ticket ? 'aria-current="page"' : ''; ?>>
+                    <?php echo get_icon('plus', 'nav-item__icon'); ?>
+                    <span><?php echo e(t('New ticket')); ?></span>
+                </a>
             </nav>
 
             <!-- Active timers (staff only) -->

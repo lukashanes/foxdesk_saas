@@ -247,26 +247,6 @@ function api_start_timer() {
 }
 
 /**
- * Quick start — instantly create a ticket and start a timer
- */
-function api_quick_start() {
-    $user = api_require_staff_post();
-
-    if (!ticket_time_table_exists()) {
-        api_error(t('Time tracking is not available.'), 400);
-    }
-
-    try {
-        $result = quick_start_work_create($user);
-    } catch (Throwable $e) {
-        error_log('Quick start failed: ' . $e->getMessage());
-        api_error(t('Could not start work.'), 500);
-    }
-
-    api_success($result + ['message' => t('Work started. Add a title and client.')]);
-}
-
-/**
  * Pause timer for a ticket (AJAX)
  */
 function api_pause_timer() {
@@ -440,7 +420,7 @@ function api_discard_timer() {
 }
 
 /**
- * Cancel (delete) a ticket with running timer — for quick-start tickets.
+ * Cancel a newly created ticket with a running timer.
  * Only allowed if ticket has no comments and no completed time entries.
  */
 function api_cancel_ticket() {

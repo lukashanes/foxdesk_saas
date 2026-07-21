@@ -155,7 +155,8 @@ foreach ([
     assert_core_ux_flow(str_contains($ticket_crud, $needle), 'Ticket creation must avoid random staff client fallback: ' . $needle);
 }
 
-$quick_start = read_core_ux_flow_file($root, 'includes/modules/work/quick-start-work.php');
-assert_core_ux_flow(str_contains($quick_start, "'organization_id' => null"), 'Quick ticket must explicitly start without a client.');
+$header = read_core_ux_flow_file($root, 'includes/header.php');
+assert_core_ux_flow(str_contains($header, "href=\"<?php echo url('new-ticket'); ?>\""), 'Primary ticket action must open the normal new-ticket form.');
+assert_core_ux_flow(!str_contains($header, 'data-quick-start-work'), 'Primary ticket action must not create a draft or start a timer before form submission.');
 
 echo "Core UX flow parity contract OK\n";

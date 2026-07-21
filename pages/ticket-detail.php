@@ -514,7 +514,6 @@ require_once BASE_PATH . '/includes/header.php';
 <?php
 $ticket_detail_js_config = [
     'ticketId' => (int) $ticket_id,
-    'quickStart' => isset($_GET['quick_start']) && $_GET['quick_start'] === '1',
     'timerState' => (string) $timer_state,
     'csrfToken' => csrf_token(),
     'pageTitle' => ($page_title ?? t('Dashboard')) . ' - ' . $app_name,
@@ -573,7 +572,6 @@ $ticket_detail_js_config = [
         'replyPlaceholder' => t('Write a reply...'),
         'internalPlaceholder' => t('Internal note for agents...'),
         'descriptionPlaceholder' => t('Description...'),
-        'quickStartDetails' => t('Name this work'),
         'draftRestored' => t('Draft restored'),
         'loading' => t('Loading...'),
         'noActivity' => t('No activity found'),

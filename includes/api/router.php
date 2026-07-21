@@ -180,7 +180,6 @@ function route_api_request($action) {
 
         // Ticket handlers
         'change-status' => 'api_change_status',
-        'quick-start' => 'api_quick_start',
         'start-timer' => 'api_start_timer',
         'pause-timer' => 'api_pause_timer',
         'resume-timer' => 'api_resume_timer',
